@@ -1,0 +1,164 @@
+{
+  "feasible_pin_rejected": {
+    "baseline_error": null,
+    "independent_feasible_schedule": {
+      "valid": true,
+      "errors": [],
+      "score": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        180
+      ],
+      "coverage": "complete"
+    }
+  },
+  "picking_of_lateness": {
+    "bars": {
+      "cut": {
+        "resource_id": "meba",
+        "start_minute": 0,
+        "end_minute": 60,
+        "segments": [
+          [
+            0,
+            60
+          ]
+        ],
+        "duration_minutes": 60,
+        "option_id": null,
+        "provisional": false,
+        "provisional_reasons": []
+      },
+      "boc": {
+        "resource_id": "boc",
+        "start_minute": 60,
+        "end_minute": 120,
+        "segments": [
+          [
+            60,
+            120
+          ]
+        ],
+        "duration_minutes": 60,
+        "option_id": null,
+        "provisional": false,
+        "provisional_reasons": []
+      }
+    },
+    "score": [
+      0,
+      60,
+      0,
+      60,
+      0,
+      0,
+      0,
+      120
+    ],
+    "expected_picking_lateness_minutes": 60,
+    "actual_picking_lateness_minutes": 60
+  },
+  "provisional_dependency": {
+    "cut_provisional": true,
+    "boc_provisional": true,
+    "validation": {
+      "valid": true,
+      "errors": [],
+      "score": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        120
+      ],
+      "coverage": "complete"
+    }
+  },
+  "obsolete_macro_balance_after_quantity_edit": {
+    "reconciled_remaining": null,
+    "planning_remaining": null,
+    "balance_origin": null,
+    "provisional": false,
+    "evidence": [],
+    "reasons": [
+      "Quantidade necessária alterada ou não comprovada na origem do saldo da macro."
+    ]
+  },
+  "manual_week": {
+    "shared_resolver": [
+      2026,
+      43,
+      "Decisão local"
+    ],
+    "gantt_state": "ready",
+    "gantt_deadline": "2026-10-26T00:00:00+00:00",
+    "gantt_reasons": [],
+    "milestones": {
+      "operation_forecast": "2026-09-22",
+      "cut_date": "2026-09-22",
+      "period_year": 2026,
+      "period_week": 43,
+      "period_origin": "Decisão local",
+      "period_deadline": "2026-10-26T00:00:00+00:00",
+      "picking": null,
+      "picking_provisional": false,
+      "planned_start_date": null,
+      "planned_finish_date": null,
+      "delivery_date": null
+    }
+  },
+  "manual_conflict": {
+    "shared_resolver": [
+      null,
+      null,
+      "Data prevista e semana escolhida não coincidem."
+    ],
+    "gantt_state": "blocked",
+    "gantt_deadline": null,
+    "gantt_reasons": [
+      "Data prevista e semana escolhida não coincidem."
+    ],
+    "milestones": {
+      "operation_forecast": "2026-09-22",
+      "cut_date": null,
+      "period_year": null,
+      "period_week": null,
+      "period_origin": "Data prevista e semana escolhida não coincidem.",
+      "period_deadline": null,
+      "picking": null,
+      "picking_provisional": false,
+      "planned_start_date": null,
+      "planned_finish_date": null,
+      "delivery_date": null
+    }
+  },
+  "duplicate_keys": {
+    "input_count": 2,
+    "baseline_error": "Proposta inicial inválida: A entrada contém chaves de operação repetidas.",
+    "validation": {
+      "valid": false,
+      "errors": [
+        "A entrada contém chaves de operação repetidas."
+      ],
+      "score": [
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0
+      ],
+      "coverage": "partial"
+    }
+  }
+}

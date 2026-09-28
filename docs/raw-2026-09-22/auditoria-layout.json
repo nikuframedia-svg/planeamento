@@ -1,0 +1,105 @@
+{
+  "columns": 42,
+  "rows": 7391,
+  "snapshot": {
+    "snapshot_id": "mtg2_9ed22bcb188e3cd1",
+    "source_filename": "Met2_Plan_Perfis.xlsm",
+    "loaded_at": "2026-09-21T12:19:58.711075+00:00"
+  },
+  "examples": [
+    {
+      "id": 28956,
+      "matches": 1
+    },
+    {
+      "id": 29329,
+      "matches": 1
+    },
+    {
+      "id": 29330,
+      "matches": 1
+    },
+    {
+      "id": 29307,
+      "matches": 1
+    },
+    {
+      "id": 29426,
+      "matches": 1
+    },
+    {
+      "id": 29427,
+      "matches": 1
+    },
+    {
+      "id": 29424,
+      "matches": 1
+    },
+    {
+      "id": 29593,
+      "matches": 1
+    },
+    {
+      "id": 29645,
+      "matches": 1
+    },
+    {
+      "id": 29646,
+      "matches": 1
+    },
+    {
+      "id": 29647,
+      "matches": 1
+    },
+    {
+      "id": 29648,
+      "matches": 1
+    },
+    {
+      "id": 29642,
+      "matches": 1
+    },
+    {
+      "id": 29643,
+      "matches": 1
+    },
+    {
+      "id": 29644,
+      "matches": 1
+    },
+    {
+      "id": 29877,
+      "matches": 1
+    },
+    {
+      "id": 29878,
+      "matches": 1
+    },
+    {
+      "id": 30222,
+      "matches": 1
+    },
+    {
+      "id": 30223,
+      "matches": 1
+    },
+    {
+      "id": 30224,
+      "matches": 1
+    },
+    {
+      "id": 30225,
+      "matches": 1
+    },
+    {
+      "id": 30226,
+      "matches": 1
+    },
+    {
+      "id": 30227,
+      "matches": 1
+    }
+  ],
+  "ocr_cut_rows": 273,
+  "ocr_boc_rows": 27
+}

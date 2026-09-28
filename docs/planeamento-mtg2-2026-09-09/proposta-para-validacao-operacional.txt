@@ -1,0 +1,65 @@
+Proposta de funcionamento do planeamento MTG2 Perfis
+
+Atualização de 10/09/2026, após as confirmações operacionais. Este texto descreve os requisitos da proposta; a aplicação ainda não foi alterada.
+
+A primeira versão organizará as necessidades de produção, proporá carga e sequência por máquina/operação e acompanhará a execução. A integração de stock de matéria-prima com SAP fica para uma segunda fase.
+
+Os registos acrescentam peças boas ao contador correspondente.
+
+Cada novo registo de produção válido é associado à linha correta:
+
+- A máquina Abocardar incrementa Aboc..
+- Todas as restantes máquinas autorizadas incrementam Ser..
+- As peças rejeitadas ficam registadas no verso do Kanban e não entram nestes contadores.
+
+A proposta técnica é aplicar o incremento quando o registo é validado e identificá-lo para que uma nova importação do mesmo Kanban não volte a somar a quantidade. Uma correção ajusta a contribuição desse registo. É necessário definir o destino da escrita dos contadores e a ligação à importação seguinte do Excel.
+
+As datas orientam decisões diferentes.
+
+- Data Corte: data prevista de corte. A origem humana é provável, ainda por confirmar. Serve de referência ao planeamento atual.
+- Picking: semana em que o setor seguinte demanda a obra/material pronto. A proposta é utilizá-la para orientar a entrega da MTG2 ao setor seguinte.
+- Data Cpis: data fim prevista para a Produção entregar a obra no último setor. Serve para perceber o impacto futuro nos restantes setores.
+
+Falta definir o dia limite e o ano associados à semana de Picking. No plano analisado de 09/09, 165 das 1.083 linhas de corte candidatas têm Picking positivo e 918 têm zero ou vazio. Para estas últimas, propomos usar Data Corte como referência provisória, assinalando a ausência de Picking; esta alternativa ainda precisa de validação.
+
+A escolha da máquina vem da folha Dados, coluna B.
+
+O sistema deverá ler as opções dessa coluna. O catálogo identifica as escolhas permitidas; continuam a ser necessários os horários, tempos e limites de execução de cada recurso para calendarizar os trabalhos.
+
+Corte e abocardar são operações distintas.
+
+Terão registos e filas separados. Retiramos a passagem automática de parcelas do corte para abocardar. A diferença entre Ser. e Aboc. também não será utilizada como stock físico disponível.
+
+Continua por descrever a regra que torna um trabalho elegível para entrar na fila de abocardar. A proibição de transferência de parcelas não define, por si só, essa regra. Os contadores de cada operação continuam a acumular a produção boa efetivamente registada.
+
+OF fechada no CPIS não permite novo registo.
+
+A pesquisa para registo e a confirmação final devem aceitar apenas OF abertas no CPIS. Um saldo em falta no Excel não permite registar numa OF fechada, pois a OF pode ter sido anulada mesmo incompleta. O histórico de produção já registada mantém-se como histórico.
+
+A tradução proposta de OF aberta é aceitar os estados Em Aberto e Em Produção, bloqueando Fechada e estados sem confirmação. Este mapeamento dos nomes dos estados precisa de validação antes de ser codificado.
+
+O stock fica fora do âmbito da primeira fase.
+
+Não haverá controlo ou reserva de matéria-prima nesta fase. A integração com SAP fica para a parte 2. Também não será criado stock de produto acabado: o acompanhamento será feito pelas necessidades das linhas e pelos contadores de produção boa.
+
+O plano inicial representará necessidades, carga e sequência. A existência física do material continuará a ser verificada pela operação no processo atual, podendo o planeador ajustar a fila quando souber de uma indisponibilidade.
+
+O sistema funcionaria assim.
+
+1. Importar o plano, o catálogo de máquinas, o estado CPIS e os registos de produção, preservando a identidade e a origem de cada linha.
+2. Restringir novos registos às OF abertas e somar cada quantidade boa uma única vez ao contador correto.
+3. Apresentar saldos e filas separados por operação, com OF, referência, perfil, qualidade, comprimento e quantidade.
+4. Propor a sequência com base na necessidade expressa pelo Picking, na Data Corte e nas prioridades revistas pelo planeador; mostrar o impacto na Data CPIS.
+5. Com horários e tempos validados, distribuir os trabalhos pela capacidade disponível, mostrar o que fica de fora e guardar a proposta aceite.
+6. Comparar o planeado com o realizado e atualizar as previsões do trabalho restante.
+
+O que ainda falta para calendarizar com confiança.
+
+- Horários úteis das máquinas, operadores partilhados e restrições de execução.
+- Tempos de preparação e produção por operação; validação das capacidades antigas e da regra de corte em feixe do Thomas.
+- Regra de Picking: ano, dia limite, campos vazios/zero e conflitos com Data Corte.
+- Regra de entrada de trabalhos na fila de abocardar.
+- Mapeamento dos estados CPIS e frequência de atualização.
+- Quantidade autorizada quando os dois campos de quantidade divergem, correções de qualidade/dimensões e ligação entre registos incorporados e contadores.
+
+Estas confirmações substituem as hipóteses anteriores de material reservado na primeira fase, transferência de parcelas entre operações e possíveis exceções de registo em OF fechadas.

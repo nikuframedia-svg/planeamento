@@ -1,0 +1,12 @@
+AssertionError [ERR_ASSERTION]: {"error":"A definição ou os dados mudaram. Revê a pré-visualização.","fields":{}}
+
+409 !== 200
+
+    at /tmp/raw_real_browser.cjs:9:1512 {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: 409,
+  expected: 200,
+  operator: 'strictEqual',
+  diff: 'simple'
+}

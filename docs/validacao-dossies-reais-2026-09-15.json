@@ -1,0 +1,1099 @@
+{
+  "validated_at": "2026-09-15T17:38:23+00:00",
+  "scope": "Cinco PDFs processados integralmente pela API, incluindo lista de corte e desenho isolado sem matriz, comparados com a conferência independente congelada.",
+  "reference": "tests/fixtures/dossier_reference_2026-09.json",
+  "capture_contract": {
+    "pipeline_version": "dossier-pipeline-v3-flexible-items",
+    "image_preparation": "table-regions-v4-oriented",
+    "model": "xai.grok-4.6",
+    "api_format": "chat_completions",
+    "reasoning_effort": "high",
+    "max_tokens": 24000,
+    "timeout_s": 600
+  },
+  "implementation": {
+    "selection_flow": "Inventário de conteúdo → itens de trabalho → extração → cruzamento CPIS/Plano → resolução de material/máquina.",
+    "matrix_behavior": "A matriz continua prioritária quando existe; sem matriz, linhas de corte preenchidas e desenhos com quantidade explícita podem criar itens independentes.",
+    "provenance_layers": [
+      "leitura original do modelo",
+      "valor documental atual após correção auditada",
+      "valor efetivo e origem por campo"
+    ],
+    "interface": "Linha principal com referência, perfil, quantidade, comprimento, máquina e estado; ações diretas sem nome ou justificação obrigatórios.",
+    "operational_guards": "OF fechada continua visível, mas não gera necessidades; máquina desconhecida permanece Por atribuir; histórico de outra OF não fornece quantidade ou produção."
+  },
+  "test_suite": {
+    "passed": 589,
+    "skipped": 9,
+    "duration_seconds": 114.52,
+    "directed_final": {
+      "passed": 4,
+      "duration_seconds": 4.73
+    },
+    "javascript_syntax": "passed"
+  },
+  "evaluator": {
+    "reference_version": "2026-09-15.2",
+    "passed": true,
+    "expected_needs": 12,
+    "actual_needs": 12,
+    "missing": [],
+    "unexpected": [],
+    "mismatches": [],
+    "structural_errors": [],
+    "totals": {
+      "needs": 12,
+      "quantity_required": 323,
+      "resolved_by_machine": {
+        "Serrote": 69,
+        "Vanguard": 212
+      },
+      "unresolved_quantity": 42
+    },
+    "expected_totals": {
+      "needs": 12,
+      "quantity_required": 323,
+      "resolved_by_machine": {
+        "Vanguard": 212,
+        "Serrote": 69
+      },
+      "unresolved_quantity": 42
+    },
+    "totals_match": true
+  },
+  "documents": {
+    "OF260221": {
+      "document_id": "51b41fe6-7aae-46d1-8b28-5508c9db3d8e",
+      "sha256": "718e3075c1a5bbd46cd1772bd119e9ce6fba657dea45b75bb75ebfd8ff0b03f9",
+      "pages": 2,
+      "progress": 100,
+      "status": "review",
+      "needs": 1,
+      "quantity_required": 5,
+      "document_identifiers": {
+        "production_orders": [
+          "OF260221/35"
+        ],
+        "sales_orders": [
+          "OV2600186"
+        ]
+      },
+      "cpis_status": "Fechada",
+      "snapshot_id": "mtg2_bb7d779ecfc88284",
+      "document_issue_codes": [],
+      "pieces": [
+        {
+          "reference": "CI.77/12.A4.002",
+          "drawing_pages": [
+            1
+          ],
+          "selection": {
+            "source": "cut_list",
+            "page": 1,
+            "source_id": "pecas-para-corte-linha-1",
+            "status": "explicit",
+            "evidence": "Primeira linha preenchida da LISTA DE CORTE / PEÇAS PARA CORTE: QUANT. 5, perfil Tubo Redondo Ø 2",
+            "reference": null,
+            "aliases": []
+          },
+          "literal": {
+            "component_ref": "CI.77/12.A4.002",
+            "drawing_ref": "CI.77/12.A4.002",
+            "profile": "Ø 2″ S.L",
+            "material_type": "Tubo redondo",
+            "grade": "S235JR",
+            "quantity_required": 5,
+            "length_mm": 170.0
+          },
+          "effective": {
+            "component_ref": "CI.77/12.A4.002",
+            "drawing_ref": "CI.77/12.A4.002",
+            "profile": "60.3x2.9",
+            "material_type": "Tubo redondo",
+            "grade": "S235JR",
+            "quantity_required": 5,
+            "length_mm": 170.0,
+            "outer_diameter_mm": 60.3,
+            "thickness_mm": 2.9,
+            "machine_group": "Serrote"
+          },
+          "supplemented_sources": {
+            "profile": {
+              "source": "plan",
+              "snapshot_id": "mtg2_bb7d779ecfc88284",
+              "source_line_id": "mtg2_bb7d779ecfc88284:plan:1556",
+              "excel_row": 1556
+            },
+            "outer_diameter_mm": {
+              "source": "plan",
+              "snapshot_id": "mtg2_bb7d779ecfc88284",
+              "source_line_id": "mtg2_bb7d779ecfc88284:plan:1556",
+              "excel_row": 1556
+            },
+            "thickness_mm": {
+              "source": "plan",
+              "snapshot_id": "mtg2_bb7d779ecfc88284",
+              "source_line_id": "mtg2_bb7d779ecfc88284:plan:1556",
+              "excel_row": 1556
+            },
+            "angle_deg": {
+              "source": "plan",
+              "snapshot_id": "mtg2_bb7d779ecfc88284",
+              "source_line_id": "mtg2_bb7d779ecfc88284:plan:1556",
+              "excel_row": 1556
+            },
+            "abocardar": {
+              "source": "plan",
+              "snapshot_id": "mtg2_bb7d779ecfc88284",
+              "source_line_id": "mtg2_bb7d779ecfc88284:plan:1556",
+              "excel_row": 1556
+            },
+            "chanfro": {
+              "source": "plan",
+              "snapshot_id": "mtg2_bb7d779ecfc88284",
+              "source_line_id": "mtg2_bb7d779ecfc88284:plan:1556",
+              "excel_row": 1556
+            },
+            "machine_group": {
+              "source": "plan",
+              "snapshot_id": "mtg2_bb7d779ecfc88284",
+              "source_line_id": "mtg2_bb7d779ecfc88284:plan:1556",
+              "excel_row": 1556
+            }
+          },
+          "machine_resolution": {
+            "status": "resolved_from_plan",
+            "machine_group": "Serrote",
+            "assigned_machine": "Serrote Fita Thomas IS639 Pav.1",
+            "suggestions": [
+              {
+                "machine": "Serrote Fita Thomas IS639 Pav.1",
+                "machine_group": "Serrote",
+                "production_order": "OF263137",
+                "excel_row": 4193,
+                "profile": "60.3x2.9"
+              }
+            ]
+          },
+          "state": "blocked",
+          "issue_codes": [
+            "of_closed",
+            "plan_row_closed"
+          ]
+        }
+      ],
+      "audited_visual_correction": {
+        "fields": {
+          "profile": {
+            "model_reading": "Ø2 retrograde",
+            "current": "Ø 2″ S.L"
+          },
+          "length_mm": {
+            "model_reading": 190,
+            "current": 170
+          }
+        },
+        "basis": "Conferência visual da primeira linha preenchida; histórico e leitura original conservados."
+      }
+    },
+    "OF263785": {
+      "document_id": "d38c7490-d64c-48c3-8018-d562db2c544e",
+      "sha256": "d158d57e5df049b9167d4c0cc4a36362edcf416bc9043e1b8b129088ec78fae1",
+      "pages": 75,
+      "progress": 100,
+      "status": "review",
+      "needs": 3,
+      "quantity_required": 108,
+      "document_identifiers": null,
+      "cpis_status": "Em Produção",
+      "snapshot_id": "mtg2_bb7d779ecfc88284",
+      "document_issue_codes": [
+        "inventory_2_0"
+      ],
+      "pieces": [
+        {
+          "reference": "1234.T.120",
+          "drawing_pages": [
+            32
+          ],
+          "selection": null,
+          "literal": {
+            "component_ref": "1234.T.120",
+            "drawing_ref": "1234.T.120",
+            "profile": "UPN80",
+            "material_type": "Perfil U",
+            "grade": "S355J2",
+            "quantity_required": 36,
+            "length_mm": 480.0,
+            "height_mm": 80.0
+          },
+          "effective": {
+            "component_ref": "1234.T.120",
+            "drawing_ref": "1234.T.120",
+            "profile": "UPN80x45",
+            "material_type": "Perfil U",
+            "grade": "S355J2",
+            "quantity_required": 36,
+            "length_mm": 480.0,
+            "height_mm": 80.0,
+            "machine_group": "Vanguard"
+          },
+          "supplemented_sources": {},
+          "machine_resolution": null,
+          "state": "blocked",
+          "issue_codes": [
+            "plan_row_closed",
+            "different_quantity_required",
+            "different_angle_deg",
+            "document_review"
+          ]
+        },
+        {
+          "reference": "1234.T.121",
+          "drawing_pages": [
+            33
+          ],
+          "selection": null,
+          "literal": {
+            "component_ref": "1234.T.121",
+            "drawing_ref": "1234.T.121",
+            "profile": "UPN80",
+            "material_type": "Perfil U",
+            "grade": "S355J2",
+            "quantity_required": 36,
+            "length_mm": 346.0,
+            "width_mm": 45.0,
+            "height_mm": 80.0
+          },
+          "effective": {
+            "component_ref": "1234.T.121",
+            "drawing_ref": "1234.T.121",
+            "profile": "UPN80x45",
+            "material_type": "Perfil U",
+            "grade": "S355J2",
+            "quantity_required": 36,
+            "length_mm": 346.0,
+            "width_mm": 45.0,
+            "height_mm": 80.0,
+            "machine_group": "Vanguard"
+          },
+          "supplemented_sources": {},
+          "machine_resolution": null,
+          "state": "blocked",
+          "issue_codes": [
+            "chanfro_mapping",
+            "plan_row_closed",
+            "different_quantity_required",
+            "different_chanfro",
+            "document_review"
+          ]
+        },
+        {
+          "reference": "1234.T.122",
+          "drawing_pages": [
+            34
+          ],
+          "selection": null,
+          "literal": {
+            "component_ref": "1234.T.122",
+            "drawing_ref": "1234.T.122",
+            "profile": "UPN80",
+            "material_type": "Perfil U",
+            "grade": "S355J2",
+            "quantity_required": 36,
+            "length_mm": 500.0,
+            "height_mm": 80.0
+          },
+          "effective": {
+            "component_ref": "1234.T.122",
+            "drawing_ref": "1234.T.122",
+            "profile": "UPN80x45",
+            "material_type": "Perfil U",
+            "grade": "S355J2",
+            "quantity_required": 36,
+            "length_mm": 500.0,
+            "height_mm": 80.0,
+            "machine_group": "Vanguard"
+          },
+          "supplemented_sources": {},
+          "machine_resolution": null,
+          "state": "blocked",
+          "issue_codes": [
+            "plan_row_closed",
+            "different_quantity_required",
+            "different_angle_deg",
+            "document_review"
+          ]
+        }
+      ]
+    },
+    "OF265931": {
+      "document_id": "58a87488-7215-4c9e-8b8c-83d6ff9a593e",
+      "sha256": "187f9b570b6f7934a7a9d38c527a8e0f3eb0115cc937badb3c7b5fbef71bccd2",
+      "pages": 9,
+      "progress": 100,
+      "status": "ready",
+      "needs": 2,
+      "quantity_required": 12,
+      "document_identifiers": {
+        "production_orders": [
+          "OF265931/26"
+        ],
+        "sales_orders": [
+          "OV2607672"
+        ]
+      },
+      "cpis_status": "Em Produção",
+      "snapshot_id": "mtg2_bb7d779ecfc88284",
+      "document_issue_codes": [],
+      "pieces": [
+        {
+          "reference": "CI25J001",
+          "drawing_pages": [
+            4
+          ],
+          "selection": null,
+          "literal": {
+            "component_ref": "CI25J001",
+            "drawing_ref": "CI.23/14.A4.J01",
+            "profile": "114x3",
+            "material_type": "Tubo redondo",
+            "grade": "S275JR",
+            "quantity_required": 6,
+            "length_mm": 1200.0,
+            "outer_diameter_mm": 114.0,
+            "thickness_mm": 3.0
+          },
+          "effective": {
+            "component_ref": "CI25J001",
+            "drawing_ref": "CI.23/14.A4.J01",
+            "profile": "114x3",
+            "material_type": "Tubo redondo",
+            "grade": "S275JR",
+            "quantity_required": 6,
+            "length_mm": 1200.0,
+            "outer_diameter_mm": 114.0,
+            "thickness_mm": 3.0,
+            "machine_group": "Serrote"
+          },
+          "supplemented_sources": {
+            "angle_deg": {
+              "source": "plan",
+              "snapshot_id": "mtg2_bb7d779ecfc88284",
+              "source_line_id": "mtg2_bb7d779ecfc88284:plan:7021",
+              "excel_row": 7021
+            },
+            "abocardar": {
+              "source": "plan",
+              "snapshot_id": "mtg2_bb7d779ecfc88284",
+              "source_line_id": "mtg2_bb7d779ecfc88284:plan:7021",
+              "excel_row": 7021
+            },
+            "chanfro": {
+              "source": "plan",
+              "snapshot_id": "mtg2_bb7d779ecfc88284",
+              "source_line_id": "mtg2_bb7d779ecfc88284:plan:7021",
+              "excel_row": 7021
+            },
+            "machine_group": {
+              "source": "document_or_user"
+            }
+          },
+          "machine_resolution": {
+            "status": "resolved",
+            "machine_group": "Serrote",
+            "assigned_machine": null,
+            "suggestions": []
+          },
+          "state": "ready",
+          "issue_codes": []
+        },
+        {
+          "reference": "CI25J003",
+          "drawing_pages": [
+            5
+          ],
+          "selection": null,
+          "literal": {
+            "component_ref": "CI25J003",
+            "drawing_ref": "CI.23/14.A4.J02",
+            "profile": "60x3",
+            "material_type": "Tubo redondo",
+            "grade": "S275JR",
+            "quantity_required": 6,
+            "length_mm": 1760.0,
+            "outer_diameter_mm": 60.0,
+            "thickness_mm": 3.0
+          },
+          "effective": {
+            "component_ref": "CI25J003",
+            "drawing_ref": "CI.23/14.A4.J02",
+            "profile": "60x3",
+            "material_type": "Tubo redondo",
+            "grade": "S275JR",
+            "quantity_required": 6,
+            "length_mm": 1760.0,
+            "outer_diameter_mm": 60.0,
+            "thickness_mm": 3.0,
+            "machine_group": "Serrote"
+          },
+          "supplemented_sources": {
+            "angle_deg": {
+              "source": "plan",
+              "snapshot_id": "mtg2_bb7d779ecfc88284",
+              "source_line_id": "mtg2_bb7d779ecfc88284:plan:7022",
+              "excel_row": 7022
+            },
+            "abocardar": {
+              "source": "plan",
+              "snapshot_id": "mtg2_bb7d779ecfc88284",
+              "source_line_id": "mtg2_bb7d779ecfc88284:plan:7022",
+              "excel_row": 7022
+            },
+            "chanfro": {
+              "source": "plan",
+              "snapshot_id": "mtg2_bb7d779ecfc88284",
+              "source_line_id": "mtg2_bb7d779ecfc88284:plan:7022",
+              "excel_row": 7022
+            },
+            "machine_group": {
+              "source": "document_or_user"
+            }
+          },
+          "machine_resolution": {
+            "status": "resolved",
+            "machine_group": "Serrote",
+            "assigned_machine": null,
+            "suggestions": []
+          },
+          "state": "ready",
+          "issue_codes": []
+        }
+      ]
+    },
+    "OF265941": {
+      "document_id": "d19a0136-6ddb-4df1-8bda-99c4d48fee04",
+      "sha256": "28e10dca95e150b730b3f5b023a6b09f6af29429cfac2c9c19f92de60d154adf",
+      "pages": 17,
+      "progress": 100,
+      "status": "review",
+      "needs": 5,
+      "quantity_required": 156,
+      "document_identifiers": {
+        "production_orders": [
+          "265941",
+          "OF265941/33"
+        ],
+        "sales_orders": [
+          "OV26060537",
+          "OV2606537"
+        ]
+      },
+      "cpis_status": "Em Produção",
+      "snapshot_id": "mtg2_bb7d779ecfc88284",
+      "document_issue_codes": [],
+      "pieces": [
+        {
+          "reference": "pr.3",
+          "drawing_pages": [
+            6
+          ],
+          "selection": null,
+          "literal": {
+            "component_ref": "pr.3",
+            "drawing_ref": "pr.3",
+            "profile": "R80",
+            "material_type": "barra",
+            "grade": "S355J2",
+            "quantity_required": 52,
+            "length_mm": 539.0,
+            "outer_diameter_mm": 80.0
+          },
+          "effective": {
+            "component_ref": "pr.3",
+            "drawing_ref": "pr.3",
+            "profile": "R80",
+            "material_type": "barra",
+            "grade": "S355J2",
+            "quantity_required": 52,
+            "length_mm": 539.0,
+            "outer_diameter_mm": 80.0,
+            "machine_group": "Serrote"
+          },
+          "supplemented_sources": {
+            "angle_deg": {
+              "source": "plan",
+              "snapshot_id": "mtg2_bb7d779ecfc88284",
+              "source_line_id": "mtg2_bb7d779ecfc88284:plan:6932",
+              "excel_row": 6932
+            },
+            "abocardar": {
+              "source": "plan",
+              "snapshot_id": "mtg2_bb7d779ecfc88284",
+              "source_line_id": "mtg2_bb7d779ecfc88284:plan:6932",
+              "excel_row": 6932
+            },
+            "chanfro": {
+              "source": "plan",
+              "snapshot_id": "mtg2_bb7d779ecfc88284",
+              "source_line_id": "mtg2_bb7d779ecfc88284:plan:6932",
+              "excel_row": 6932
+            },
+            "machine_group": {
+              "source": "document_or_user"
+            }
+          },
+          "machine_resolution": {
+            "status": "resolved",
+            "machine_group": "Serrote",
+            "assigned_machine": null,
+            "suggestions": []
+          },
+          "state": "review",
+          "issue_codes": [
+            "reading_1",
+            "different_material_type"
+          ]
+        },
+        {
+          "reference": "pr.4",
+          "drawing_pages": [
+            7
+          ],
+          "selection": null,
+          "literal": {
+            "component_ref": "pr.4",
+            "drawing_ref": "pr.4",
+            "profile": "HEB320",
+            "material_type": "Perfil HEB",
+            "grade": "S355J2",
+            "quantity_required": 26,
+            "length_mm": 12450.0,
+            "height_mm": 320.0
+          },
+          "effective": {
+            "component_ref": "pr.4",
+            "drawing_ref": "pr.4",
+            "profile": "HEB320B",
+            "material_type": "Perfil H",
+            "grade": "S355J2",
+            "quantity_required": 26,
+            "length_mm": 12450.0,
+            "height_mm": 320.0,
+            "machine_group": "Vanguard"
+          },
+          "supplemented_sources": {
+            "material_type": {
+              "source": "catalog",
+              "catalog_version": "6d29da7e6fe7d90a11ae89809e89d4b4c1f32f833f3f2f7e42277e5f42a63b4e",
+              "resolution": "catalog_alias"
+            },
+            "profile": {
+              "source": "catalog",
+              "catalog_version": "6d29da7e6fe7d90a11ae89809e89d4b4c1f32f833f3f2f7e42277e5f42a63b4e",
+              "resolution": "catalog_alias"
+            },
+            "angle_deg": {
+              "source": "plan",
+              "snapshot_id": "mtg2_bb7d779ecfc88284",
+              "source_line_id": "mtg2_bb7d779ecfc88284:plan:6933",
+              "excel_row": 6933
+            },
+            "abocardar": {
+              "source": "plan",
+              "snapshot_id": "mtg2_bb7d779ecfc88284",
+              "source_line_id": "mtg2_bb7d779ecfc88284:plan:6933",
+              "excel_row": 6933
+            },
+            "chanfro": {
+              "source": "plan",
+              "snapshot_id": "mtg2_bb7d779ecfc88284",
+              "source_line_id": "mtg2_bb7d779ecfc88284:plan:6933",
+              "excel_row": 6933
+            },
+            "machine_group": {
+              "source": "document_or_user"
+            }
+          },
+          "machine_resolution": {
+            "status": "resolved",
+            "machine_group": "Vanguard",
+            "assigned_machine": null,
+            "suggestions": []
+          },
+          "state": "ready",
+          "issue_codes": []
+        },
+        {
+          "reference": "pr.5",
+          "drawing_pages": [
+            8
+          ],
+          "selection": null,
+          "literal": {
+            "component_ref": "pr.5",
+            "drawing_ref": "pr.5",
+            "profile": "HEB320",
+            "material_type": "Perfil HEB",
+            "grade": "S355J2",
+            "quantity_required": 26,
+            "length_mm": 12450.0
+          },
+          "effective": {
+            "component_ref": "pr.5",
+            "drawing_ref": "pr.5",
+            "profile": "HEB320B",
+            "material_type": "Perfil H",
+            "grade": "S355J2",
+            "quantity_required": 26,
+            "length_mm": 12450.0,
+            "machine_group": "Vanguard"
+          },
+          "supplemented_sources": {
+            "material_type": {
+              "source": "catalog",
+              "catalog_version": "6d29da7e6fe7d90a11ae89809e89d4b4c1f32f833f3f2f7e42277e5f42a63b4e",
+              "resolution": "catalog_alias"
+            },
+            "profile": {
+              "source": "catalog",
+              "catalog_version": "6d29da7e6fe7d90a11ae89809e89d4b4c1f32f833f3f2f7e42277e5f42a63b4e",
+              "resolution": "catalog_alias"
+            },
+            "angle_deg": {
+              "source": "plan",
+              "snapshot_id": "mtg2_bb7d779ecfc88284",
+              "source_line_id": "mtg2_bb7d779ecfc88284:plan:6934",
+              "excel_row": 6934
+            },
+            "abocardar": {
+              "source": "plan",
+              "snapshot_id": "mtg2_bb7d779ecfc88284",
+              "source_line_id": "mtg2_bb7d779ecfc88284:plan:6934",
+              "excel_row": 6934
+            },
+            "chanfro": {
+              "source": "plan",
+              "snapshot_id": "mtg2_bb7d779ecfc88284",
+              "source_line_id": "mtg2_bb7d779ecfc88284:plan:6934",
+              "excel_row": 6934
+            },
+            "machine_group": {
+              "source": "document_or_user"
+            }
+          },
+          "machine_resolution": {
+            "status": "resolved",
+            "machine_group": "Vanguard",
+            "assigned_machine": null,
+            "suggestions": []
+          },
+          "state": "existing",
+          "issue_codes": []
+        },
+        {
+          "reference": "pr.8",
+          "drawing_pages": [
+            9
+          ],
+          "selection": null,
+          "literal": {
+            "component_ref": "pr.8",
+            "drawing_ref": "pr.8",
+            "profile": "HEB320",
+            "material_type": "Perfil HEB",
+            "grade": "S355J2",
+            "quantity_required": 26,
+            "length_mm": 13450.0
+          },
+          "effective": {
+            "component_ref": "pr.8",
+            "drawing_ref": "pr.8",
+            "profile": "HEB320B",
+            "material_type": "Perfil H",
+            "grade": "S355J2",
+            "quantity_required": 26,
+            "length_mm": 13450.0,
+            "machine_group": "Vanguard"
+          },
+          "supplemented_sources": {
+            "material_type": {
+              "source": "catalog",
+              "catalog_version": "6d29da7e6fe7d90a11ae89809e89d4b4c1f32f833f3f2f7e42277e5f42a63b4e",
+              "resolution": "catalog_alias"
+            },
+            "profile": {
+              "source": "catalog",
+              "catalog_version": "6d29da7e6fe7d90a11ae89809e89d4b4c1f32f833f3f2f7e42277e5f42a63b4e",
+              "resolution": "catalog_alias"
+            },
+            "angle_deg": {
+              "source": "plan",
+              "snapshot_id": "mtg2_bb7d779ecfc88284",
+              "source_line_id": "mtg2_bb7d779ecfc88284:plan:6935",
+              "excel_row": 6935
+            },
+            "abocardar": {
+              "source": "plan",
+              "snapshot_id": "mtg2_bb7d779ecfc88284",
+              "source_line_id": "mtg2_bb7d779ecfc88284:plan:6935",
+              "excel_row": 6935
+            },
+            "chanfro": {
+              "source": "plan",
+              "snapshot_id": "mtg2_bb7d779ecfc88284",
+              "source_line_id": "mtg2_bb7d779ecfc88284:plan:6935",
+              "excel_row": 6935
+            },
+            "machine_group": {
+              "source": "document_or_user"
+            }
+          },
+          "machine_resolution": {
+            "status": "resolved",
+            "machine_group": "Vanguard",
+            "assigned_machine": null,
+            "suggestions": []
+          },
+          "state": "existing",
+          "issue_codes": []
+        },
+        {
+          "reference": "pr.9",
+          "drawing_pages": [
+            10
+          ],
+          "selection": null,
+          "literal": {
+            "component_ref": "pr.9",
+            "drawing_ref": "pr.9",
+            "profile": "HEB320",
+            "material_type": "Perfil HEB",
+            "grade": "S355J2",
+            "quantity_required": 26,
+            "length_mm": 13450.0
+          },
+          "effective": {
+            "component_ref": "pr.9",
+            "drawing_ref": "pr.9",
+            "profile": "HEB320B",
+            "material_type": "Perfil H",
+            "grade": "S355J2",
+            "quantity_required": 26,
+            "length_mm": 13450.0,
+            "machine_group": "Vanguard"
+          },
+          "supplemented_sources": {
+            "material_type": {
+              "source": "catalog",
+              "catalog_version": "6d29da7e6fe7d90a11ae89809e89d4b4c1f32f833f3f2f7e42277e5f42a63b4e",
+              "resolution": "catalog_alias"
+            },
+            "profile": {
+              "source": "catalog",
+              "catalog_version": "6d29da7e6fe7d90a11ae89809e89d4b4c1f32f833f3f2f7e42277e5f42a63b4e",
+              "resolution": "catalog_alias"
+            },
+            "angle_deg": {
+              "source": "plan",
+              "snapshot_id": "mtg2_bb7d779ecfc88284",
+              "source_line_id": "mtg2_bb7d779ecfc88284:plan:6936",
+              "excel_row": 6936
+            },
+            "abocardar": {
+              "source": "plan",
+              "snapshot_id": "mtg2_bb7d779ecfc88284",
+              "source_line_id": "mtg2_bb7d779ecfc88284:plan:6936",
+              "excel_row": 6936
+            },
+            "chanfro": {
+              "source": "plan",
+              "snapshot_id": "mtg2_bb7d779ecfc88284",
+              "source_line_id": "mtg2_bb7d779ecfc88284:plan:6936",
+              "excel_row": 6936
+            },
+            "machine_group": {
+              "source": "document_or_user"
+            }
+          },
+          "machine_resolution": {
+            "status": "resolved",
+            "machine_group": "Vanguard",
+            "assigned_machine": null,
+            "suggestions": []
+          },
+          "state": "existing",
+          "issue_codes": []
+        }
+      ]
+    },
+    "OF266229": {
+      "document_id": "78052ee6-1ad8-4ef6-b31b-e3aca97ab96c",
+      "sha256": "00575c5b3cab9256e8707cc14721a62e4b2d974f8c8681929aa608d20c23bde1",
+      "pages": 2,
+      "progress": 100,
+      "status": "review",
+      "needs": 1,
+      "quantity_required": 42,
+      "document_identifiers": {
+        "production_orders": [
+          "OF266229/33"
+        ],
+        "sales_orders": [
+          "OV2607544",
+          "OV2607578",
+          "OV2607587",
+          "OV2607675",
+          "OV2607678"
+        ]
+      },
+      "cpis_status": "Em Aberto",
+      "snapshot_id": "mtg2_bb7d779ecfc88284",
+      "document_issue_codes": [],
+      "pieces": [
+        {
+          "reference": "5877T5102",
+          "drawing_pages": [
+            2
+          ],
+          "selection": {
+            "source": "drawing",
+            "page": 2,
+            "source_id": "Nº5877T5102",
+            "status": "explicit",
+            "evidence": "QUANT.: 42 ( A FABRICAR ) no cartucho <fim_suffix>da pe<0xC3><0xA7>a U50x200 N<0xC2><0xBA>5877T5102",
+            "reference": "5877T5102",
+            "aliases": [
+              "PEÇA U50x200",
+              "U50x200",
+              "5877T5102.dwg"
+            ]
+          },
+          "literal": {
+            "component_ref": "5877T5102",
+            "drawing_ref": "5877T5102",
+            "profile": "U50",
+            "material_type": "Perfil U",
+            "grade": "S355J2",
+            "quantity_required": 42,
+            "length_mm": 200.0,
+            "width_mm": 38.0,
+            "height_mm": 50.0
+          },
+          "effective": {
+            "component_ref": "5877T5102",
+            "drawing_ref": "5877T5102",
+            "profile": "UPN50x38",
+            "material_type": "Perfil U",
+            "grade": "S355J2",
+            "quantity_required": 42,
+            "length_mm": 200.0,
+            "width_mm": 38.0,
+            "height_mm": 50.0,
+            "machine_group": "Por atribuir"
+          },
+          "supplemented_sources": {
+            "profile": {
+              "source": "catalog",
+              "catalog_version": "6d29da7e6fe7d90a11ae89809e89d4b4c1f32f833f3f2f7e42277e5f42a63b4e",
+              "resolution": "catalog_alias"
+            }
+          },
+          "machine_resolution": {
+            "status": "unresolved",
+            "machine_group": "Por atribuir",
+            "assigned_machine": null,
+            "suggestions": []
+          },
+          "state": "blocked",
+          "issue_codes": [
+            "machine_unresolved"
+          ]
+        }
+      ]
+    }
+  },
+  "processing_diagnostics": {
+    "OF260221": {
+      "runs": {
+        "completed": 3
+      },
+      "model_attempts": 10,
+      "attempts_by_stage_status": {
+        "extraction:completed": 1,
+        "extraction:rejected": 1,
+        "extraction_compact_retry:completed": 1,
+        "inventory:completed": 6,
+        "work_item_verification:completed": 1
+      }
+    },
+    "OF263785": {
+      "runs": {
+        "completed": 3,
+        "failed": 1,
+        "interrupted": 1
+      },
+      "model_attempts": 95,
+      "attempts_by_stage_status": {
+        "extraction:completed": 8,
+        "extraction:rejected": 1,
+        "extraction_compact_retry:completed": 1,
+        "inventory:completed": 72,
+        "inventory:rejected": 6,
+        "inventory:timeout": 1,
+        "inventory_compact_retry:completed": 6
+      }
+    },
+    "OF265931": {
+      "runs": {
+        "completed": 6,
+        "failed": 3
+      },
+      "model_attempts": 44,
+      "attempts_by_stage_status": {
+        "extraction:completed": 6,
+        "extraction:timeout": 1,
+        "inventory:completed": 19,
+        "inventory:rejected": 5,
+        "inventory_compact_retry:completed": 3,
+        "inventory_compact_retry:rejected": 1,
+        "link:completed": 8,
+        "link:rejected": 1
+      }
+    },
+    "OF265941": {
+      "runs": {
+        "completed": 2,
+        "failed": 1
+      },
+      "model_attempts": 54,
+      "attempts_by_stage_status": {
+        "extraction:completed": 8,
+        "extraction:rejected": 4,
+        "extraction_compact_retry:completed": 2,
+        "inventory:completed": 30,
+        "inventory:rejected": 5,
+        "inventory_compact_retry:completed": 4,
+        "inventory_compact_retry:rejected": 1
+      }
+    },
+    "OF266229": {
+      "runs": {
+        "completed": 3,
+        "failed": 2
+      },
+      "model_attempts": 13,
+      "attempts_by_stage_status": {
+        "extraction:completed": 1,
+        "extraction:rejected": 1,
+        "inventory:completed": 7,
+        "inventory:rejected": 4
+      }
+    }
+  },
+  "remaining_decisions": [
+    {
+      "production_order": "OF266229",
+      "reference": "5877T5102",
+      "field": "machine",
+      "question": "Escolher o grupo ou a máquina aplicável a UPN50x38; o documento, a OF atual e o histórico geometricamente compatível não contêm uma atribuição segura."
+    },
+    {
+      "production_order": "OF263785",
+      "reference": "1234.T.120 / .121 / .122",
+      "field": "operational_review",
+      "question": "As linhas do plano estão fechadas; a página 2 não repete os cabeçalhos e persistem diferenças explícitas de quantidade, ângulo e, em T.121, chanfro."
+    },
+    {
+      "production_order": "OF265941",
+      "reference": "pr.3",
+      "field": "material_type",
+      "question": "Decidir a equivalência entre a leitura barra redonda R80 e o tipo Varão redondo do plano."
+    }
+  ],
+  "macro": {
+    "current_source_snapshot": "mtg2_bb7d779ecfc88284",
+    "operational_export_generated": false,
+    "reason": "OF260221 está fechada e produzida; OF266229 ainda não tem máquina resolvida; os restantes dossiês conservam as revisões operacionais existentes.",
+    "source_overwritten": false,
+    "production_fields_changed": false,
+    "excel_windows_recalculation": "separada; não necessária para validar estes dois formatos"
+  },
+  "publication": {
+    "published_at": "2026-09-15T17:24:05+00:00",
+    "verified_at": "2026-09-15T17:38:23+00:00",
+    "public_url": "https://louise-pest-performed-atom.trycloudflare.com/planeamento",
+    "method": "Cópia SQLite consistente e substituição atómica, preservando UUID, PDFs, eventos, configuração do modelo e credenciais.",
+    "database": {
+      "sha256": "152fd6d55b1c98045498c5a6d0dda75a7fa3466250fe423c2ef6164b6317a7d3",
+      "immediate_backup_path": "data/dossiers/backups/dossiers-prepublish-flexible-20260915-192405.db",
+      "immediate_backup_sha256": "649db76ca6bde89cea61af86cd97cd0dba319aa039ac4d611ba048d44f4bb14c",
+      "initial_backup_path": "data/dossiers/backups/dossiers-before-flexible-reading-20260915-182542.db",
+      "integrity_check": "ok",
+      "foreign_key_violations": 0,
+      "counts": {
+        "documents": 5,
+        "checkpoints": 132,
+        "checkpoint_history": 178,
+        "pieces": 12,
+        "processing_runs": 25,
+        "model_attempts": 216,
+        "events": 56,
+        "needs": 6,
+        "exports": 0,
+        "export_proposals": 0
+      },
+      "published_backup_path": "data/dossiers/backups/dossiers-published-flexible-20260915-193933.db",
+      "published_backup_sha256": "f932dae2bee773f53735e6f2e482948a3c337fecea918a81db28c892961e1ae5"
+    },
+    "services": {
+      "main_8101": "active",
+      "planning_8113": "active",
+      "public_http_status": 200,
+      "model_configured": true
+    },
+    "public_api_evaluator": {
+      "reference_version": "2026-09-15.2",
+      "passed": true,
+      "expected_needs": 12,
+      "actual_needs": 12,
+      "missing": [],
+      "unexpected": [],
+      "mismatches": [],
+      "structural_errors": [],
+      "totals": {
+        "needs": 12,
+        "quantity_required": 323,
+        "resolved_by_machine": {
+          "Serrote": 69,
+          "Vanguard": 212
+        },
+        "unresolved_quantity": 42
+      },
+      "expected_totals": {
+        "needs": 12,
+        "quantity_required": 323,
+        "resolved_by_machine": {
+          "Vanguard": 212,
+          "Serrote": 69
+        },
+        "unresolved_quantity": 42
+      },
+      "totals_match": true
+    },
+    "privacy_check": {
+      "private_context_keys_exposed": [],
+      "provider_key_exposed": false
+    },
+    "frontend_asset": {
+      "served_current_version": true,
+      "effective_machine_shown_in_editor": true,
+      "required_actor_or_reason_controls": false
+    },
+    "legacy_qualifier_migration": {
+      "OF265931/26": "removed after file, PDF base and CPIS agreed; literal identifier retained",
+      "OF265941/33": "removed after file, PDF base and CPIS agreed; literal identifiers retained"
+    }
+  },
+  "limits": "Esta validação demonstra os cinco formatos reais congelados; não mede suporte universal para PDFs não observados."
+}

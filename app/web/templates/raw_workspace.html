@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="pt">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>RAW · Planeamento</title>
+    <link rel="stylesheet" href="/static/raw_workspace.css" />
+    <script src="/static/raw_workspace.js" defer></script>
+    <script src="/static/raw_charts.js" defer></script>
+    <script src="/static/raw_panels.js" defer></script>
+  <link rel="stylesheet" href="/static/planning_typography.css">
+</head>
+  <body>
+    <header class="appbar">
+      <a href="/planeamento" class="brand">RAW <span>Planeamento</span></a>
+      <nav>
+        <a id="manual" href="/planeamento/manual">Preencher manualmente</a
+        ><a id="pdf" href="/planeamento/dossies">Carregar PDF</a
+        ><a href="/planeamento/gantt">Gantt · Perfis</a><button id="sources">Fontes</button>
+      </nav>
+    </header>
+    <main>
+      <div class="toolbar">
+        <select id="area" aria-label="Área de trabalho">
+          <option value="perfis">Perfis</option>
+          <option value="cantoneiras">Cantoneiras</option></select
+        ><select id="views" aria-label="Vista guardada">
+          <option value="">Vista inicial · repor colunas</option></select
+        ><button id="view-actions" title="Guardar e gerir vistas">
+          Guardar vista
+        </button>
+        <form id="search-form">
+          <input
+            id="search"
+            name="q"
+            aria-label="Pesquisar na tabela"
+            placeholder="Pesquisar OF, OV, referência…"
+          /><button aria-label="Pesquisar">⌕</button>
+        </form>
+        <button id="open-columns">Colunas</button
+        ><button id="formula">ƒ Fórmula</button
+        ><button id="capacity">Capacidades</button
+        ><button id="chat" class="primary">✦ Analisar / Chat</button
+        ><button id="more">Mais</button>
+      </div>
+      <div class="subbar">
+        <label>População
+          <select id="population" aria-label="População">
+            <option value="active">Planeamento ativo</option>
+            <option value="history">Histórico · fechados</option>
+            <option value="all">Todos · ativo e histórico</option>
+          </select>
+        </label>
+        <label
+          ><input type="checkbox" id="open-only" /> OFs abertas / em
+          produção</label
+        >
+        <div id="filter-chips"></div>
+        <button id="clear-filters" hidden>Limpar filtros</button
+        ><span class="grow"></span
+        ><select id="density" aria-label="Densidade">
+          <option value="compact">Compacta</option>
+          <option value="comfortable">Confortável</option></select
+        ><button id="refresh">Atualizar lista</button>
+      </div>
+      <div id="notice" role="status" aria-live="polite"></div>
+      <div id="grid" class="grid" tabindex="0" aria-label="Tabela RAW">
+        <table id="sheet">
+          <thead></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="horizontal-control">
+        <button id="scroll-first" type="button" aria-label="Primeira coluna">←</button>
+        <label for="horizontal-position">Posição horizontal</label>
+        <input id="horizontal-position" type="range" min="0" max="0" value="0" step="1" aria-label="Posição horizontal das colunas">
+        <button id="scroll-last" type="button" aria-label="Última coluna">→</button>
+      </div>
+      <footer class="pager">
+        <span id="count">A preparar a tabela…</span><span id="selection"></span
+        ><span class="grow"></span
+        ><label
+          >Linhas
+          <select id="page-size">
+            <option>25</option>
+            <option>50</option>
+            <option selected>100</option>
+            <option>250</option>
+            <option>500</option>
+          </select></label
+        ><button id="prev" aria-label="Página anterior">←</button
+        ><span id="page-number"></span
+        ><button id="next" aria-label="Página seguinte">→</button>
+      </footer>
+    </main>
+    <dialog id="drawer">
+      <div class="dialog-head">
+        <h2 id="drawer-title"></h2>
+        <button id="close-drawer" aria-label="Fechar painel">×</button>
+      </div>
+      <div id="drawer-body"></div>
+      <p id="drawer-error" role="alert"></p>
+    </dialog>
+    <dialog id="editor">
+      <form id="editor-form">
+        <h2 id="edit-title"></h2>
+        <div id="edit-control"></div>
+        <p id="edit-error" role="alert"></p>
+        <div class="actions">
+          <button class="primary">Guardar rascunho</button
+          ><button type="button" id="cell-evidence">
+            Ver origem e produção</button
+          ><button type="button" id="cancel-edit">Cancelar</button>
+        </div>
+      </form>
+    </dialog>
+    <dialog id="confirm-dialog">
+      <h2 id="confirm-title">Confirmar alterações</h2>
+      <div id="confirm-body"></div>
+      <div class="actions">
+        <button id="confirm-yes" class="primary">Confirmar</button
+        ><button id="confirm-no">Cancelar</button>
+      </div>
+    </dialog>
+  </body>
+</html>

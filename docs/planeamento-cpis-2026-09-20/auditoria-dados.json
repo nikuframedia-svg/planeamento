@@ -1,0 +1,1119 @@
+{
+  "observed_at_utc": "2026-09-20T20:27:26.243843+00:00",
+  "scope": "Imported workbook versions and central validated OCR; not a live CPIS query",
+  "queries": {
+    "snapshots": [
+      {
+        "snapshot_id": "mtg_da883132feefabc2",
+        "dataset_id": "ds-2638099daddc474e",
+        "source_filename": "Met3_Plan_Cantoneiras.xlsm",
+        "source_path": "/home/luis/projects/DATARESEARCHMTG/Met3_Plan_Cantoneiras.xlsm",
+        "source_sha256": "da883132feefabc247cb639260a2caed4d2fa256a5a81812af9222c7735b264f",
+        "source_size_bytes": 55278373,
+        "loader_version": "dataresearchmtg-loader-v1",
+        "row_hash_algorithm": "sha256:jsonb-text:v1",
+        "closed_x_policy": "exclude_from_planning",
+        "loaded_at": "2026-09-20 17:16:20.966495+00:00",
+        "local_file_present": true,
+        "current_file_sha256": "da883132feefabc247cb639260a2caed4d2fa256a5a81812af9222c7735b264f",
+        "matches_imported_hash": true
+      },
+      {
+        "snapshot_id": "mtg2_756950d5721977a8",
+        "dataset_id": "ds-met2-perfis",
+        "source_filename": "Met2_Plan_Perfis.xlsm",
+        "source_path": "/home/luis/projects/DATARESEARCHMTG/Met2_Plan_Perfis.xlsm",
+        "source_sha256": "756950d5721977a82b51dc319fcf37462da40f01daea35bf977e0c9858887914",
+        "source_size_bytes": 12918237,
+        "loader_version": "dataresearchmtg-met2-loader-v3",
+        "row_hash_algorithm": "sha256:jsonb-text:v1",
+        "closed_x_policy": "exclude_from_planning",
+        "loaded_at": "2026-09-20 17:16:04.563012+00:00",
+        "local_file_present": true,
+        "current_file_sha256": "756950d5721977a82b51dc319fcf37462da40f01daea35bf977e0c9858887914",
+        "matches_imported_hash": true
+      }
+    ],
+    "cpis_states": [
+      {
+        "dataset_id": "ds-2638099daddc474e",
+        "status": "Em Aberto",
+        "rows": 729,
+        "orders": 729
+      },
+      {
+        "dataset_id": "ds-2638099daddc474e",
+        "status": "Em Produção",
+        "rows": 1107,
+        "orders": 1107
+      },
+      {
+        "dataset_id": "ds-2638099daddc474e",
+        "status": "Fechada",
+        "rows": 68262,
+        "orders": 68262
+      },
+      {
+        "dataset_id": "ds-2638099daddc474e",
+        "status": "Pronta",
+        "rows": 31,
+        "orders": 31
+      },
+      {
+        "dataset_id": "ds-met2-perfis",
+        "status": "Em Aberto",
+        "rows": 339,
+        "orders": 339
+      },
+      {
+        "dataset_id": "ds-met2-perfis",
+        "status": "Em Produção",
+        "rows": 1020,
+        "orders": 1020
+      },
+      {
+        "dataset_id": "ds-met2-perfis",
+        "status": "Fechada",
+        "rows": 10978,
+        "orders": 10978
+      },
+      {
+        "dataset_id": "ds-met2-perfis",
+        "status": "Pronta",
+        "rows": 25,
+        "orders": 25
+      }
+    ],
+    "cpis_duplicate_orders": [],
+    "cpis_field_quality_open": [
+      {
+        "dataset_id": "ds-2638099daddc474e",
+        "orders": 1836,
+        "missing_ov": 357,
+        "missing_customer": 357,
+        "missing_description": 306,
+        "missing_production_finish": 679,
+        "missing_delivery": 715,
+        "finish_delivery_different": 346,
+        "production_finish_after_delivery": 279,
+        "has_actual_finish": 70,
+        "of_below_old_filter": 521
+      },
+      {
+        "dataset_id": "ds-met2-perfis",
+        "orders": 1359,
+        "missing_ov": 21,
+        "missing_customer": 21,
+        "missing_description": 15,
+        "missing_production_finish": 255,
+        "missing_delivery": 295,
+        "finish_delivery_different": 358,
+        "production_finish_after_delivery": 290,
+        "has_actual_finish": 2,
+        "of_below_old_filter": 0
+      }
+    ],
+    "cpis_dates_examples": [
+      {
+        "production_order_no": "OF266200",
+        "planned_finish_date": "2026-09-18 00:00:00",
+        "delivery_date": null,
+        "actual_finish_date": null,
+        "status": "Em Produção"
+      },
+      {
+        "production_order_no": "OF266199",
+        "planned_finish_date": "2026-09-18 00:00:00",
+        "delivery_date": null,
+        "actual_finish_date": null,
+        "status": "Em Produção"
+      },
+      {
+        "production_order_no": "OF266196",
+        "planned_finish_date": "2026-09-18 00:00:00",
+        "delivery_date": null,
+        "actual_finish_date": null,
+        "status": "Em Produção"
+      },
+      {
+        "production_order_no": "OF266194",
+        "planned_finish_date": "2026-09-18 00:00:00",
+        "delivery_date": null,
+        "actual_finish_date": null,
+        "status": "Em Produção"
+      },
+      {
+        "production_order_no": "OF266192",
+        "planned_finish_date": "2026-09-18 00:00:00",
+        "delivery_date": null,
+        "actual_finish_date": null,
+        "status": "Em Produção"
+      },
+      {
+        "production_order_no": "OF266190",
+        "planned_finish_date": "2026-09-18 00:00:00",
+        "delivery_date": null,
+        "actual_finish_date": null,
+        "status": "Em Produção"
+      },
+      {
+        "production_order_no": "OF266179",
+        "planned_finish_date": "2026-09-18 00:00:00",
+        "delivery_date": null,
+        "actual_finish_date": null,
+        "status": "Em Produção"
+      },
+      {
+        "production_order_no": "OF266176",
+        "planned_finish_date": "2026-09-18 00:00:00",
+        "delivery_date": null,
+        "actual_finish_date": null,
+        "status": "Em Produção"
+      }
+    ],
+    "open_plan_coverage": [
+      {
+        "dataset_id": "ds-2638099daddc474e",
+        "open_orders": 1836,
+        "with_own_plan": 376,
+        "with_any_plan": 621
+      },
+      {
+        "dataset_id": "ds-met2-perfis",
+        "open_orders": 1359,
+        "with_own_plan": 351,
+        "with_any_plan": 645
+      }
+    ],
+    "combined_open": [
+      {
+        "orders": 1921,
+        "open_in_both": 1274,
+        "open_in_one_but_not_other": 98,
+        "only_one_copy": 549,
+        "without_any_plan": 1265
+      }
+    ],
+    "cpis_status_differences": [
+      {
+        "perfis_status": "Em Aberto",
+        "cantoneiras_status": "Em Produção",
+        "orders": 2
+      },
+      {
+        "perfis_status": "Em Aberto",
+        "cantoneiras_status": "Fechada",
+        "orders": 32
+      },
+      {
+        "perfis_status": "Em Produção",
+        "cantoneiras_status": "Fechada",
+        "orders": 53
+      },
+      {
+        "perfis_status": "Fechada",
+        "cantoneiras_status": "Em Produção",
+        "orders": 3
+      },
+      {
+        "perfis_status": "Pronta",
+        "cantoneiras_status": "Em Produção",
+        "orders": 10
+      }
+    ],
+    "cpis_field_differences": [
+      {
+        "common_orders": 12362,
+        "ov": 0,
+        "customer": 2,
+        "description": 5,
+        "production_finish": 36,
+        "delivery": 32,
+        "actual_finish": 48,
+        "factory_unit": 0
+      }
+    ],
+    "cpis_conflict_examples": [
+      {
+        "production_order_no": "OF266198",
+        "perfis_status": "Pronta",
+        "cantoneiras_status": "Em Produção",
+        "perfis_finish": null,
+        "cantoneiras_finish": "2026-09-18 00:00:00",
+        "perfis_delivery": null,
+        "cantoneiras_delivery": null
+      },
+      {
+        "production_order_no": "OF266132",
+        "perfis_status": "Em Aberto",
+        "cantoneiras_status": "Em Produção",
+        "perfis_finish": "2026-10-16 00:00:00",
+        "cantoneiras_finish": "2026-10-16 00:00:00",
+        "perfis_delivery": "2026-10-16 00:00:00",
+        "cantoneiras_delivery": "2026-10-16 00:00:00"
+      },
+      {
+        "production_order_no": "OF266069",
+        "perfis_status": "Em Aberto",
+        "cantoneiras_status": "Em Produção",
+        "perfis_finish": "2026-10-02 00:00:00",
+        "cantoneiras_finish": "2026-10-02 00:00:00",
+        "perfis_delivery": "2026-10-02 00:00:00",
+        "cantoneiras_delivery": "2026-10-02 00:00:00"
+      },
+      {
+        "production_order_no": "OF266056",
+        "perfis_status": "Pronta",
+        "cantoneiras_status": "Em Produção",
+        "perfis_finish": "2026-09-29 00:00:00",
+        "cantoneiras_finish": "2026-09-29 00:00:00",
+        "perfis_delivery": "2026-09-29 00:00:00",
+        "cantoneiras_delivery": "2026-09-29 00:00:00"
+      },
+      {
+        "production_order_no": "OF266055",
+        "perfis_status": "Pronta",
+        "cantoneiras_status": "Em Produção",
+        "perfis_finish": "2026-09-29 00:00:00",
+        "cantoneiras_finish": "2026-09-29 00:00:00",
+        "perfis_delivery": "2026-09-29 00:00:00",
+        "cantoneiras_delivery": "2026-09-29 00:00:00"
+      },
+      {
+        "production_order_no": "OF266054",
+        "perfis_status": "Pronta",
+        "cantoneiras_status": "Em Produção",
+        "perfis_finish": "2026-09-29 00:00:00",
+        "cantoneiras_finish": "2026-09-29 00:00:00",
+        "perfis_delivery": "2026-09-29 00:00:00",
+        "cantoneiras_delivery": "2026-09-29 00:00:00"
+      },
+      {
+        "production_order_no": "OF266049",
+        "perfis_status": "Pronta",
+        "cantoneiras_status": "Em Produção",
+        "perfis_finish": "2026-09-28 00:00:00",
+        "cantoneiras_finish": "2026-09-28 00:00:00",
+        "perfis_delivery": "2026-09-28 00:00:00",
+        "cantoneiras_delivery": "2026-09-28 00:00:00"
+      },
+      {
+        "production_order_no": "OF266048",
+        "perfis_status": "Pronta",
+        "cantoneiras_status": "Em Produção",
+        "perfis_finish": "2026-09-29 00:00:00",
+        "cantoneiras_finish": "2026-09-29 00:00:00",
+        "perfis_delivery": "2026-09-29 00:00:00",
+        "cantoneiras_delivery": "2026-09-29 00:00:00"
+      },
+      {
+        "production_order_no": "OF266036",
+        "perfis_status": "Pronta",
+        "cantoneiras_status": "Em Produção",
+        "perfis_finish": "2026-09-29 00:00:00",
+        "cantoneiras_finish": "2026-09-29 00:00:00",
+        "perfis_delivery": "2026-09-29 00:00:00",
+        "cantoneiras_delivery": "2026-09-29 00:00:00"
+      },
+      {
+        "production_order_no": "OF266035",
+        "perfis_status": "Pronta",
+        "cantoneiras_status": "Em Produção",
+        "perfis_finish": "2026-09-29 00:00:00",
+        "cantoneiras_finish": "2026-09-29 00:00:00",
+        "perfis_delivery": "2026-09-29 00:00:00",
+        "cantoneiras_delivery": "2026-09-29 00:00:00"
+      },
+      {
+        "production_order_no": "OF266034",
+        "perfis_status": "Pronta",
+        "cantoneiras_status": "Em Produção",
+        "perfis_finish": "2026-09-29 00:00:00",
+        "cantoneiras_finish": "2026-09-29 00:00:00",
+        "perfis_delivery": "2026-09-29 00:00:00",
+        "cantoneiras_delivery": "2026-09-29 00:00:00"
+      },
+      {
+        "production_order_no": "OF266019",
+        "perfis_status": "Pronta",
+        "cantoneiras_status": "Em Produção",
+        "perfis_finish": "2026-09-28 00:00:00",
+        "cantoneiras_finish": "2026-09-28 00:00:00",
+        "perfis_delivery": "2026-09-28 00:00:00",
+        "cantoneiras_delivery": "2026-09-28 00:00:00"
+      }
+    ],
+    "plan_quality": [
+      {
+        "source_app": "kanban-mes",
+        "lines": 75192,
+        "orders": 1384,
+        "missing_reference": 0,
+        "missing_profile": 83,
+        "missing_or_nonpositive_length": 306,
+        "unknown_required": 0,
+        "nonpositive_required": 7,
+        "fractional_required": 0,
+        "unknown_remaining": 0,
+        "positive_remaining": 18613,
+        "closed_with_remaining": 0,
+        "unclosed_zero_remaining": 0,
+        "unknown_accumulated": 0,
+        "blank_maq_as_zero": 18608,
+        "missing_in_own_cpis_copy": 3634
+      },
+      {
+        "source_app": "kanban-mes-mtg2",
+        "lines": 7199,
+        "orders": 2035,
+        "missing_reference": 0,
+        "missing_profile": 0,
+        "missing_or_nonpositive_length": 1,
+        "unknown_required": 1,
+        "nonpositive_required": 102,
+        "fractional_required": 0,
+        "unknown_remaining": 1,
+        "positive_remaining": 1682,
+        "closed_with_remaining": 0,
+        "unclosed_zero_remaining": 14,
+        "unknown_accumulated": 7199,
+        "blank_maq_as_zero": 0,
+        "missing_in_own_cpis_copy": 54
+      }
+    ],
+    "plan_on_open_orders": [
+      {
+        "source_app": "kanban-mes",
+        "lines": 37396,
+        "orders": 376,
+        "unknown_remaining": 0,
+        "positive_remaining": 15227,
+        "closed_with_remaining": 0
+      },
+      {
+        "source_app": "kanban-mes-mtg2",
+        "lines": 2092,
+        "orders": 351,
+        "unknown_remaining": 0,
+        "positive_remaining": 1144,
+        "closed_with_remaining": 0
+      }
+    ],
+    "reused_references_different_geometry": [
+      {
+        "source_app": "kanban-mes",
+        "groups": 2,
+        "lines": "4"
+      },
+      {
+        "source_app": "kanban-mes-mtg2",
+        "groups": 256,
+        "lines": "640"
+      }
+    ],
+    "geometry_examples": [
+      {
+        "source_app": "kanban-mes-mtg2",
+        "production_order_no": "OF266099",
+        "component_ref": "CI7018A4001",
+        "n": 3,
+        "profiles": [
+          "101x3",
+          "133x3",
+          "76x2.6"
+        ],
+        "lengths": [
+          "3000",
+          "3050",
+          "3250"
+        ],
+        "machines": [
+          null
+        ]
+      },
+      {
+        "source_app": "kanban-mes-mtg2",
+        "production_order_no": "OF266068",
+        "component_ref": "7450V001",
+        "n": 5,
+        "profiles": [
+          "139.7x3",
+          "76.1x2.5"
+        ],
+        "lengths": [
+          "1725",
+          "1925",
+          "3150",
+          "4150",
+          "5150"
+        ],
+        "machines": [
+          null
+        ]
+      },
+      {
+        "source_app": "kanban-mes-mtg2",
+        "production_order_no": "OF266067",
+        "component_ref": "7450V001",
+        "n": 5,
+        "profiles": [
+          "139.7x3",
+          "76.1x2.5"
+        ],
+        "lengths": [
+          "1725",
+          "1925",
+          "3150",
+          "4150",
+          "5150"
+        ],
+        "machines": [
+          null
+        ]
+      },
+      {
+        "source_app": "kanban-mes-mtg2",
+        "production_order_no": "OF266008",
+        "component_ref": "CI7912A4002",
+        "n": 3,
+        "profiles": [
+          "88.9x3.2"
+        ],
+        "lengths": [
+          "166",
+          "200",
+          "506"
+        ],
+        "machines": [
+          null
+        ]
+      },
+      {
+        "source_app": "kanban-mes-mtg2",
+        "production_order_no": "OF265945",
+        "component_ref": "6309U001",
+        "n": 2,
+        "profiles": [
+          "133x4",
+          "76x4"
+        ],
+        "lengths": [
+          "2400",
+          "2950"
+        ],
+        "machines": [
+          null
+        ]
+      },
+      {
+        "source_app": "kanban-mes-mtg2",
+        "production_order_no": "OF265944",
+        "component_ref": "B708S001",
+        "n": 2,
+        "profiles": [
+          "108x3.2",
+          "76x2.9"
+        ],
+        "lengths": [
+          "1600",
+          "3450"
+        ],
+        "machines": [
+          null
+        ]
+      },
+      {
+        "source_app": "kanban-mes-mtg2",
+        "production_order_no": "OF265943",
+        "component_ref": "AFNTD001.1",
+        "n": 3,
+        "profiles": [
+          "80",
+          "HEB320"
+        ],
+        "lengths": [
+          "539",
+          "11450"
+        ],
+        "machines": [
+          null
+        ]
+      },
+      {
+        "source_app": "kanban-mes-mtg2",
+        "production_order_no": "OF265943",
+        "component_ref": "AFNTD002.1",
+        "n": 3,
+        "profiles": [
+          "80",
+          "HEB320"
+        ],
+        "lengths": [
+          "539",
+          "12450"
+        ],
+        "machines": [
+          null
+        ]
+      },
+      {
+        "source_app": "kanban-mes-mtg2",
+        "production_order_no": "OF265943",
+        "component_ref": "AFNTD011.1",
+        "n": 3,
+        "profiles": [
+          "80",
+          "HEB320"
+        ],
+        "lengths": [
+          "529",
+          "12450"
+        ],
+        "machines": [
+          null
+        ]
+      },
+      {
+        "source_app": "kanban-mes-mtg2",
+        "production_order_no": "OF265943",
+        "component_ref": "AFNTD140.1",
+        "n": 3,
+        "profiles": [
+          "80",
+          "HEB320"
+        ],
+        "lengths": [
+          "529",
+          "10450"
+        ],
+        "machines": [
+          null
+        ]
+      },
+      {
+        "source_app": "kanban-mes-mtg2",
+        "production_order_no": "OF265793",
+        "component_ref": "6309U001",
+        "n": 2,
+        "profiles": [
+          "133x4",
+          "76x4"
+        ],
+        "lengths": [
+          "2400",
+          "2950"
+        ],
+        "machines": [
+          null
+        ]
+      },
+      {
+        "source_app": "kanban-mes-mtg2",
+        "production_order_no": "OF265793",
+        "component_ref": "B708S001",
+        "n": 2,
+        "profiles": [
+          "108x3.2",
+          "76x2.9"
+        ],
+        "lengths": [
+          "1600",
+          "3450"
+        ],
+        "machines": [
+          null
+        ]
+      }
+    ],
+    "same_geometry_multiple_machines": [],
+    "ocr_summary": [
+      {
+        "source_app": "kanban-mes",
+        "sheets": 74,
+        "records": 727,
+        "written_of_variants": 64,
+        "first_production": "2026-08-26",
+        "last_production": "2026-09-17",
+        "last_validation": "2026-09-18 14:27:15.175888+00:00",
+        "unknown_quantity": 109,
+        "zero_quantity": 2,
+        "negative_quantity": 0,
+        "fractional_quantity": 0,
+        "missing_length": 727,
+        "missing_profile": 113,
+        "no_parent_key": 196,
+        "full_profile": 88,
+        "frozen_identity": 110,
+        "parent_key_any_import": 110,
+        "parent_key_current_import": 110
+      },
+      {
+        "source_app": "kanban-mes-mtg2",
+        "sheets": 77,
+        "records": 381,
+        "written_of_variants": 73,
+        "first_production": "2026-08-19",
+        "last_production": "2026-09-17",
+        "last_validation": "2026-09-18 07:48:25.268292+00:00",
+        "unknown_quantity": 0,
+        "zero_quantity": 0,
+        "negative_quantity": 0,
+        "fractional_quantity": 0,
+        "missing_length": 4,
+        "missing_profile": 3,
+        "no_parent_key": 1,
+        "full_profile": 1,
+        "frozen_identity": 253,
+        "parent_key_any_import": 252,
+        "parent_key_current_import": 0
+      }
+    ],
+    "ocr_expanded_refs": [
+      {
+        "source_app": "kanban-mes",
+        "child_rows": 48,
+        "parent_records": 2,
+        "unknown_quantity": 0,
+        "zero_quantity": 48,
+        "negative_quantity": 0,
+        "current_key": 0,
+        "historical_key": 0
+      },
+      {
+        "source_app": "kanban-mes-mtg2",
+        "child_rows": 1,
+        "parent_records": 1,
+        "unknown_quantity": 0,
+        "zero_quantity": 0,
+        "negative_quantity": 0,
+        "current_key": 0,
+        "historical_key": 1
+      }
+    ],
+    "ocr_possible_repeated_images": [],
+    "cpis_direct_versions": [
+      {
+        "versions": 0,
+        "last_confirmation": null
+      }
+    ],
+    "preparations": []
+  },
+  "current_hub_associations": {
+    "kanban-mes-mtg2": {
+      "technical_unique": 375,
+      "technical_unique_missing_top_level_geometry": 3,
+      "unmatched": 4,
+      "ambiguous": 2
+    },
+    "kanban-mes": {
+      "unmatched": 259,
+      "technical_unique": 358,
+      "technical_unique_missing_top_level_geometry": 356,
+      "explicit": 110
+    }
+  },
+  "association_examples": {
+    "kanban-mes-mtg2:technical_unique": [
+      {
+        "id": 18,
+        "production_order": "265396",
+        "model_ref": "2615 V001",
+        "length_mm": null,
+        "profile_type": null,
+        "machine": "VANGUARD",
+        "matched_plan_key": "mtg2_29b206f77e13ba4b:plan:6379",
+        "resolved_plan_keys": [
+          "mtg2_756950d5721977a8:plan:6276"
+        ]
+      },
+      {
+        "id": 19,
+        "production_order": "265126",
+        "model_ref": "6482 b-1",
+        "length_mm": null,
+        "profile_type": null,
+        "machine": "VANGUARD",
+        "matched_plan_key": "mtg2_29b206f77e13ba4b:plan:5977",
+        "resolved_plan_keys": [
+          "mtg2_756950d5721977a8:plan:6020"
+        ]
+      },
+      {
+        "id": 20,
+        "production_order": "265396",
+        "model_ref": "2615V001",
+        "length_mm": null,
+        "profile_type": null,
+        "machine": "VANGUARD",
+        "matched_plan_key": "mtg2_29b206f77e13ba4b:plan:6379",
+        "resolved_plan_keys": [
+          "mtg2_756950d5721977a8:plan:6276"
+        ]
+      },
+      {
+        "id": 22,
+        "production_order": "265424",
+        "model_ref": "2Ci2",
+        "length_mm": 4230.0,
+        "profile_type": "IPE330",
+        "machine": "Vanguard",
+        "matched_plan_key": "mtg2_98164fe64ecbd85e:plan:6353",
+        "resolved_plan_keys": [
+          "mtg2_756950d5721977a8:plan:6353"
+        ]
+      },
+      {
+        "id": 23,
+        "production_order": "265424",
+        "model_ref": "2Ci3",
+        "length_mm": 4230.0,
+        "profile_type": "IPE330",
+        "machine": "Vanguard",
+        "matched_plan_key": "mtg2_98164fe64ecbd85e:plan:6354",
+        "resolved_plan_keys": [
+          "mtg2_756950d5721977a8:plan:6354"
+        ]
+      },
+      {
+        "id": 24,
+        "production_order": "264612",
+        "model_ref": "2265V001",
+        "length_mm": 2050.0,
+        "profile_type": "76x2.9",
+        "machine": "MEBA",
+        "matched_plan_key": "mtg2_98164fe64ecbd85e:plan:5407",
+        "resolved_plan_keys": [
+          "mtg2_756950d5721977a8:plan:5407"
+        ]
+      }
+    ],
+    "kanban-mes-mtg2:unmatched": [
+      {
+        "id": 65,
+        "production_order": "264845",
+        "model_ref": "CI7018A4001",
+        "length_mm": 3000.0,
+        "profile_type": "133",
+        "machine": "MEBA",
+        "matched_plan_key": "mtg2_98164fe64ecbd85e:plan:5609",
+        "resolved_plan_keys": []
+      },
+      {
+        "id": 66,
+        "production_order": "264845",
+        "model_ref": "CI7018A4001",
+        "length_mm": 3050.0,
+        "profile_type": "101",
+        "machine": "MEBA",
+        "matched_plan_key": "mtg2_98164fe64ecbd85e:plan:5608",
+        "resolved_plan_keys": []
+      },
+      {
+        "id": 67,
+        "production_order": "264845",
+        "model_ref": "CI7018A4001",
+        "length_mm": 3250.0,
+        "profile_type": "76",
+        "machine": "MEBA",
+        "matched_plan_key": "mtg2_98164fe64ecbd85e:plan:5607",
+        "resolved_plan_keys": []
+      },
+      {
+        "id": 68,
+        "production_order": "265378",
+        "model_ref": "CI5021A4000",
+        "length_mm": 2100.0,
+        "profile_type": "114",
+        "machine": "MEBA",
+        "matched_plan_key": "mtg2_98164fe64ecbd85e:plan:6270",
+        "resolved_plan_keys": []
+      }
+    ],
+    "kanban-mes:unmatched": [
+      {
+        "id": 69,
+        "production_order": "263764",
+        "model_ref": "E2F9",
+        "length_mm": null,
+        "profile_type": "L40x3",
+        "machine": "Ficep XP T4",
+        "matched_plan_key": "mtg_1520a974ec5b0a3e:plan:45695",
+        "resolved_plan_keys": []
+      },
+      {
+        "id": 84,
+        "production_order": "262797",
+        "model_ref": "QA149",
+        "length_mm": null,
+        "profile_type": "60x4",
+        "machine": "Ficep XP T4",
+        "matched_plan_key": "mtg_1520a974ec5b0a3e:plan:36915",
+        "resolved_plan_keys": []
+      },
+      {
+        "id": 91,
+        "production_order": "262797",
+        "model_ref": "E2F33",
+        "length_mm": null,
+        "profile_type": "40x3",
+        "machine": "Ficep XP T4",
+        "matched_plan_key": "mtg_1520a974ec5b0a3e:plan:28965",
+        "resolved_plan_keys": []
+      },
+      {
+        "id": 92,
+        "production_order": "262797",
+        "model_ref": "E2F32",
+        "length_mm": null,
+        "profile_type": null,
+        "machine": "Ficep XP T4",
+        "matched_plan_key": "mtg_1520a974ec5b0a3e:plan:28964",
+        "resolved_plan_keys": []
+      },
+      {
+        "id": 93,
+        "production_order": "262797",
+        "model_ref": "EEB22",
+        "length_mm": null,
+        "profile_type": null,
+        "machine": "Ficep XP T4",
+        "matched_plan_key": "mtg_1520a974ec5b0a3e:plan:29018",
+        "resolved_plan_keys": []
+      },
+      {
+        "id": 94,
+        "production_order": "262797",
+        "model_ref": "E2F-25",
+        "length_mm": null,
+        "profile_type": null,
+        "machine": "Ficep XP T4",
+        "matched_plan_key": "mtg_1520a974ec5b0a3e:plan:28953",
+        "resolved_plan_keys": []
+      }
+    ],
+    "kanban-mes:technical_unique": [
+      {
+        "id": 70,
+        "production_order": "263764",
+        "model_ref": "E2F26",
+        "length_mm": null,
+        "profile_type": "L40X40X3",
+        "machine": "Ficep XP T4",
+        "matched_plan_key": "mtg_1520a974ec5b0a3e:plan:45665",
+        "resolved_plan_keys": [
+          "mtg_da883132feefabc2:plan:45665"
+        ]
+      },
+      {
+        "id": 71,
+        "production_order": "263764",
+        "model_ref": "E2F35",
+        "length_mm": null,
+        "profile_type": "L40X40X3",
+        "machine": "Ficep XP T4",
+        "matched_plan_key": "mtg_1520a974ec5b0a3e:plan:45675",
+        "resolved_plan_keys": [
+          "mtg_da883132feefabc2:plan:45675"
+        ]
+      },
+      {
+        "id": 72,
+        "production_order": "263764",
+        "model_ref": "E2F34",
+        "length_mm": null,
+        "profile_type": "L40X40X3",
+        "machine": "Ficep XP T4",
+        "matched_plan_key": "mtg_1520a974ec5b0a3e:plan:45674",
+        "resolved_plan_keys": [
+          "mtg_da883132feefabc2:plan:45674"
+        ]
+      },
+      {
+        "id": 73,
+        "production_order": "263764",
+        "model_ref": "EEB29",
+        "length_mm": null,
+        "profile_type": "L40X40X3",
+        "machine": "Ficep XP T4",
+        "matched_plan_key": "mtg_1520a974ec5b0a3e:plan:45711",
+        "resolved_plan_keys": [
+          "mtg_da883132feefabc2:plan:45711"
+        ]
+      },
+      {
+        "id": 74,
+        "production_order": "263764",
+        "model_ref": "E2F44",
+        "length_mm": null,
+        "profile_type": "L40X40X3",
+        "machine": "Ficep XP T4",
+        "matched_plan_key": "mtg_1520a974ec5b0a3e:plan:45680",
+        "resolved_plan_keys": [
+          "mtg_da883132feefabc2:plan:45680"
+        ]
+      },
+      {
+        "id": 75,
+        "production_order": "263764",
+        "model_ref": "E2F47",
+        "length_mm": null,
+        "profile_type": "L40X40X3",
+        "machine": "Ficep XP T4",
+        "matched_plan_key": "mtg_1520a974ec5b0a3e:plan:45683",
+        "resolved_plan_keys": [
+          "mtg_da883132feefabc2:plan:45683"
+        ]
+      }
+    ],
+    "kanban-mes-mtg2:ambiguous": [
+      {
+        "id": 783,
+        "production_order": "265528",
+        "model_ref": "2843",
+        "length_mm": 2843.0,
+        "profile_type": "50x50x3",
+        "machine": "Serrote Doall Pav.1",
+        "matched_plan_key": "mtg2_d92027db24c68fee:plan:6673",
+        "resolved_plan_keys": []
+      },
+      {
+        "id": 784,
+        "production_order": "265528",
+        "model_ref": "2843",
+        "length_mm": 2843.0,
+        "profile_type": "50x50x3",
+        "machine": "Serrote Doall Pav.1",
+        "matched_plan_key": "mtg2_d92027db24c68fee:plan:6673",
+        "resolved_plan_keys": []
+      }
+    ],
+    "kanban-mes:explicit": [
+      {
+        "id": 1017,
+        "production_order": "265141",
+        "model_ref": "ELT5125",
+        "length_mm": null,
+        "profile_type": "L50X50X5",
+        "machine": "Ficep Rapid 20T -2",
+        "matched_plan_key": "mtg_da883132feefabc2:plan:67470",
+        "resolved_plan_keys": [
+          "mtg_da883132feefabc2:plan:67470"
+        ]
+      },
+      {
+        "id": 1018,
+        "production_order": "265141",
+        "model_ref": "ELT522A",
+        "length_mm": null,
+        "profile_type": "L55X55X5",
+        "machine": "Ficep Rapid 20T -2",
+        "matched_plan_key": "mtg_da883132feefabc2:plan:67474",
+        "resolved_plan_keys": [
+          "mtg_da883132feefabc2:plan:67474"
+        ]
+      },
+      {
+        "id": 1019,
+        "production_order": "265141",
+        "model_ref": "ELT5221A",
+        "length_mm": null,
+        "profile_type": "L50X50X4",
+        "machine": "Ficep Rapid 20T -2",
+        "matched_plan_key": "mtg_da883132feefabc2:plan:67468",
+        "resolved_plan_keys": [
+          "mtg_da883132feefabc2:plan:67468"
+        ]
+      },
+      {
+        "id": 1020,
+        "production_order": "265141",
+        "model_ref": "ELT5225",
+        "length_mm": null,
+        "profile_type": "L50X50X4",
+        "machine": "Ficep Rapid 20T -2",
+        "matched_plan_key": "mtg_da883132feefabc2:plan:67469",
+        "resolved_plan_keys": [
+          "mtg_da883132feefabc2:plan:67469"
+        ]
+      },
+      {
+        "id": 1021,
+        "production_order": "265141",
+        "model_ref": "ELT5251",
+        "length_mm": null,
+        "profile_type": "L45X45X4",
+        "machine": "Ficep Rapid 20T -2",
+        "matched_plan_key": "mtg_da883132feefabc2:plan:67466",
+        "resolved_plan_keys": [
+          "mtg_da883132feefabc2:plan:67466"
+        ]
+      },
+      {
+        "id": 1022,
+        "production_order": "265141",
+        "model_ref": "ELT5253",
+        "length_mm": null,
+        "profile_type": "L45X45X4",
+        "machine": "Ficep Rapid 20T -2",
+        "matched_plan_key": "mtg_da883132feefabc2:plan:67467",
+        "resolved_plan_keys": [
+          "mtg_da883132feefabc2:plan:67467"
+        ]
+      }
+    ]
+  },
+  "frozen_evidence": {
+    "kanban-mes-mtg2": {
+      "records": 381,
+      "extra_identity": 253,
+      "cross_identity": 253,
+      "cross_children": 1,
+      "pg_children": 1
+    },
+    "kanban-mes": {
+      "records": 727,
+      "extra_identity": 110,
+      "cross_identity": 110,
+      "cross_children": 2,
+      "pg_children": 2,
+      "full_without_pg_children": 86,
+      "full_without_pg_but_cross_children": 0
+    }
+  },
+  "ocr_normalized_orders": {
+    "kanban-mes": 60,
+    "kanban-mes-mtg2": 73
+  },
+  "ocr_machine_counts": {
+    "kanban-mes": {
+      "Ficep XP T4": 199,
+      "Ficep XP T6": 57,
+      "Peddi 8": 136,
+      "Ficep Rapid 25T": 94,
+      "Ficep Rapid 20T -2": 108,
+      "Ficep Rapid 20T -1": 111,
+      "Rapid 20T - 1": 15,
+      "Peddi 6": 7
+    },
+    "kanban-mes-mtg2": {
+      "VANGUARD": 3,
+      "Vanguard": 52,
+      "MEBA": 19,
+      "Serrote Fita Thomas IS639 Pav.1": 38,
+      "Serrote Doall Pav.1": 107,
+      "Serrote MEBA IS381 Pav 3": 63,
+      "Abocardar": 40,
+      "Serrote Disco pav 1": 59
+    }
+  },
+  "perfis_accumulated": {
+    "cut_value_present": 5533,
+    "aboc_value_present": 172,
+    "aboc_requirement_marks": {
+      "-": 7120,
+      "X": 79
+    }
+  },
+  "perfis_closed_with_remaining_examples": []
+}

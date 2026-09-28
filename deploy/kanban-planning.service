@@ -1,0 +1,15 @@
+[Unit]
+Description=Planeamento de Perfis e Cantoneiras
+After=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/luis/projects/planeamento
+EnvironmentFile=/home/luis/projects/planeamento/.env
+ExecStart=/home/luis/projects/planeamento/.venv/bin/python -m uvicorn app.web.planning_app:app --host 127.0.0.1 --port 8113 --proxy-headers
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+
+[Install]
+WantedBy=default.target

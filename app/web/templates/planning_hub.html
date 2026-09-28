@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="pt">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Planeamento · Ordens de fabrico</title>
+  <link rel="stylesheet" href="/static/planning_hub.css?v={{ version }}">
+  <script src="/static/planning_hub.js?v={{ version }}" defer></script>
+<link rel="stylesheet" href="/static/planning_typography.css">
+</head>
+<body>
+  <header class="plant-head">
+    <a class="wordmark" href="/planeamento"><span>METALOGALVA</span><small>Planeamento</small></a>
+    <nav aria-label="Entrada do planeamento">
+      <a href="/planeamento" aria-current="page">Ordens de fabrico</a>
+      {% if raw_enabled() %}<a href="/planeamento/raw">Vista RAW</a>{% endif %}
+      <a href="/planeamento/dossies">Carregar PDF</a>
+      <a href="/planeamento/manual">Preencher manualmente</a><details class="consult-menu"><summary>Consultas</summary><a href="/planeamento/ocr-original">OCR original</a></details>
+    </nav>
+  </header>
+
+  <main>
+    <section class="intro">
+      <div>
+        <p class="eyebrow">Fila de trabalho</p>
+        <h1>Ordens de fabrico</h1>
+        <p>Seleciona uma OF, prepara as peças e confere o que já foi registado na produção.</p>
+      </div>
+      <button id="refresh" type="button" class="secondary">Atualizar lista</button>
+    </section>
+
+    <p class="refresh-help">Atualizar lista consulta os dados disponíveis; não força uma consulta direta ao CPIS.</p>
+    <section id="source-rail" class="source-rail" aria-label="Estado das fontes" aria-live="polite">
+      <p class="loading">A verificar CPIS, macros e OCR…</p>
+    </section>
+
+    <section class="workbench">
+      <div class="list-pane">
+        <form id="filters" class="filters" role="search">
+          <label class="search"><span>Pesquisar</span><input id="query" type="search" placeholder="OF, OV, cliente, obra ou referência" autocomplete="off"></label>
+          {% if population_contract %}<label><span>População</span><select id="population"><option value="active">Ativos</option><option value="history">Histórico / fechados</option><option value="all">Todos</option></select></label>{% endif %}
+          <label><span>Estado CPIS</span><select id="state"><option value="all">Todos os estados</option><option value="open"{% if not population_contract %} selected{% endif %}>Abertas e em produção</option><option value="Fechada">Fechadas</option><option value="Pronta">Prontas</option></select></label>
+          <label class="pending-filter"><input id="pending-only" type="checkbox"> Por fazer</label>
+          <button type="submit">Pesquisar</button>
+        </form>
+        <div class="list-meta"><p id="count">A carregar ordens…</p><p id="origin-note"></p></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>OF / OV</th><th>Cliente e obra</th><th>Área</th><th>Preparação</th><th>Execução</th><th></th></tr></thead>
+            <tbody id="orders"><tr><td colspan="6" class="empty">A carregar…</td></tr></tbody>
+          </table>
+        </div>
+        <div class="pager"><button id="prev" type="button" class="secondary">Anterior</button><span id="page">—</span><button id="next" type="button" class="secondary">Seguinte</button></div>
+      </div>
+
+      <aside id="detail" class="detail-pane" aria-live="polite">
+        <div class="detail-empty"><span>OF</span><h2>Escolhe uma ordem</h2><p>Aqui vais ver os dados do CPIS, as referências, os PDFs e a produção já validada.</p></div>
+      </aside>
+    </section>
+  </main>
+
+  <dialog id="reconcile-dialog">
+    <form id="reconcile-form">
+      <div class="dialog-head"><div><p class="eyebrow">Conferência de saldo</p><h2 id="reconcile-title">Conferir peça</h2></div><button type="button" id="close-dialog" aria-label="Fechar">×</button></div>
+      <input type="hidden" name="of"><input type="hidden" name="area"><input type="hidden" name="component_ref"><input type="hidden" name="operation">
+      <p id="reconcile-evidence"></p>
+      <div class="compare-grid"><label>Quantidade total confirmada<input name="accepted_required" inputmode="decimal"></label><label>Quantidade em falta confirmada<input name="accepted_remaining" inputmode="decimal"></label></div>
+      <label>Motivo da decisão<textarea name="reason" required rows="3" maxlength="1000"></textarea></label>
+      <p id="reconcile-error" class="form-error" hidden></p>
+      <button type="submit" class="primary">Guardar conferência</button>
+    </form>
+  </dialog>
+
+  <dialog id="output-dialog">
+    <form id="output-form">
+      <div class="dialog-head"><div><p class="eyebrow">Saída de Perfis</p><h2>Comparar com a macro</h2></div><button type="button" id="close-output" aria-label="Fechar">×</button></div>
+      <p>A cópia só fica disponível depois de reveres as células propostas.</p>
+      <p id="output-error" class="form-error" hidden></p>
+      <button id="compare-output" type="submit" class="primary">Preparar comparação</button>
+      <div id="output-comparison" hidden></div>
+    </form>
+  </dialog>
+</body>
+</html>

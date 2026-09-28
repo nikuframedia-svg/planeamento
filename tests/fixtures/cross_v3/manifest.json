@@ -1,0 +1,140 @@
+{
+  "corpus_version": "mtg2-cross-v3-real-2026-09-08-v1",
+  "created_at": "2026-09-08",
+  "baseline_commit": "e4a0608",
+  "current_snapshot_id": "mtg2_9a728e5c0baa6d6b",
+  "plan_age_days": 0.0,
+  "plan_age_note": "fixed_diagnostic_age_identical_for_both_engines_not_historical_calibration",
+  "params": {
+    "channel": {
+      "sub_default_bits": 8.0,
+      "glyph_pair_bits": 2.0,
+      "indel_bits": 5.0,
+      "case_free": true,
+      "g_l0_bits": 12.0,
+      "g_cap": 0.85,
+      "learned_subs": {}
+    },
+    "score": {
+      "m_default": 0.6,
+      "m_by_field": {
+        "nesting": 1.0,
+        "maquina": 0.97
+      },
+      "u_min_corpus": 1000,
+      "w_min_bits": 1.0,
+      "w_cap_bits": 14.0,
+      "sim_full": 1.0,
+      "sim_near": 0.9,
+      "near_fraction": 0.5,
+      "channel_floor_sim": 0.8,
+      "channel_g_floor": 0.3,
+      "disagree_code_bits": -1.5,
+      "disagree_text_bits": -1.0,
+      "veto_valid_code_bits": -3.0,
+      "dim_disagree_bits": -2.5,
+      "dim_disagree_cap_bits": -5.0,
+      "dim_joint_cap_bits": 12.0,
+      "dim_u_floor": 0.1,
+      "context_cap_bits": 2.0,
+      "active_of_bonus_bits": 2.0,
+      "active_of_days": 14,
+      "margin_decisive_bits": 4.0
+    },
+    "posterior": {
+      "temperature_bits": 2.0,
+      "b_h0_raw_bits": 10.0,
+      "pi_h0_base": 0.05,
+      "pi_h0_per_day": 0.01,
+      "pi_h0_max": 0.5
+    },
+    "policy": {
+      "write_threshold_identity": 0.95,
+      "write_threshold_critical_dim": 0.98,
+      "write_threshold_default": 0.9,
+      "propose_threshold": 0.5,
+      "replace_with_plan": true,
+      "criticality": {
+        "esp": 5,
+        "thickness_mm": 5,
+        "comp_mm": 5,
+        "length_mm": 5,
+        "of": 3,
+        "ov": 3,
+        "cliente": 3,
+        "modelo": 3,
+        "lote": 3,
+        "nesting": 3,
+        "perfil": 3,
+        "maquina": 3
+      },
+      "criticality_default": 1
+    },
+    "fitted_from": "backtest 2026-08-06"
+  },
+  "snapshots": [
+    {
+      "snapshot_id": "mtg2_29b206f77e13ba4b",
+      "loaded_at": "2026-08-20T18:02:12.915144+00:00",
+      "loaded_at_provenance": "earliest_known_load_in_25_aug_dump",
+      "file": "mtg2_29b206f77e13ba4b.json.gz",
+      "entries": 6723,
+      "source_sha256": "29b206f77e13ba4be19d88237fdb93752dbb748fe3d979d4a00f2c8a8370cbe0",
+      "source_filename": "Met2_Plan_Perfis.xlsm",
+      "source_archive": "dataresearchmtg-before-cross-20260901T000819.dump",
+      "remaining_reconstruction": "raw.row_data.Qtd em Falta; historical typed column was null",
+      "profile_contract": "loader_v2_structured_profile"
+    },
+    {
+      "snapshot_id": "mtg2_98164fe64ecbd85e",
+      "loaded_at": "2026-08-26 13:46:17.959037+00",
+      "loaded_at_provenance": "audit_snapshot_from_dump",
+      "file": "mtg2_98164fe64ecbd85e.json.gz",
+      "entries": 6737,
+      "source_sha256": "98164fe64ecbd85e5a60501cf9588b76029a5b7cfc2b7e1a0dfef0cc2ca17de6",
+      "source_filename": "Met2_Plan_Perfis.xlsm",
+      "source_archive": "dataresearchmtg-before-cross-20260901T000819.dump",
+      "remaining_reconstruction": "raw.row_data.Qtd em Falta; historical typed column was null",
+      "profile_contract": "loader_v2_structured_profile"
+    },
+    {
+      "snapshot_id": "mtg2_9a728e5c0baa6d6b",
+      "loaded_at": "2026-09-05T06:18:57.960954+00:00",
+      "loaded_at_provenance": "audit_mtg.snapshots_verified_read_only_2026-09-08",
+      "file": "mtg2_9a728e5c0baa6d6b.json.gz",
+      "entries": 6946,
+      "source_sha256": "9a728e5c0baa6d6b3fcff2c046f7e964a97bf0145899599e294fc4da1a7de2cd",
+      "source_filename": "Met2_Plan_Perfis.xlsm",
+      "source_archive": null,
+      "remaining_reconstruction": "current_loader_v3_typed_source",
+      "profile_contract": "loader_v3_structured_profile"
+    }
+  ],
+  "sha256": {
+    "mtg2_9a728e5c0baa6d6b.json.gz": "325f44ac60cc89ab6643ac9d9cb0e3ed4e04618f8ff5af2b51674f759bc62954",
+    "mtg2_98164fe64ecbd85e.json.gz": "ce40d6f101b980f5a41b2b876def2f8f3bd05720e18ec295a2ff0f06376c221b",
+    "sheets.json": "f9bc9d10422062aa69888d5db07aab038e5793b1683d5b938df841b63bb4e49b",
+    "labels.json": "427931dd67a1a2d7279942282d0b239cc26b3b473a698592bcf1c77ae99f928b",
+    "mtg2_29b206f77e13ba4b.json.gz": "960653e44d03b7c8fca19297a7504f6e961fa8e346114d950260db26a60e369f",
+    "legacy_source.json.gz": "08ba0e16357df3fa628addbd366dd70bd584a73aaf208bf42647d7bb490c43ea",
+    "legacy_history_remaining.json": "1259ebcf53887e661ed2b9f870add3380a23131805b9f982191d58748c81a27f"
+  },
+  "expected_cohort": {
+    "sheets_total": 14,
+    "real_applicable_sheets": 9,
+    "applicable_rows": 36,
+    "observable_of_labels": 35,
+    "current_of_coverage": 34,
+    "observable_model_labels": 25,
+    "current_model_coverage": 22
+  },
+  "limits": [
+    "raw OCR is independent from CROSS but is not ground truth",
+    "labels were read independently from images; no prior CROSS as truth",
+    "closest historical snapshot is later than most sheet dates and must be marked approximate",
+    "historical typed remaining missing: reconstructed from raw JSON source",
+    "benchmark excludes unsupported and failed empty OCR, but reports these exclusions"
+  ],
+  "baseline_source_file": "legacy_source.json.gz",
+  "legacy_history_fixture_file": "legacy_history_remaining.json"
+}

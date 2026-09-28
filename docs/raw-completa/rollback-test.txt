@@ -1,0 +1,3 @@
+MES_RAW_WORKSPACE_ENABLED=0: HTTP 200; planning_raw.js
+MES_RAW_WORKSPACE_ENABLED=1: HTTP 200; raw_workspace.js
+Additive migrations remain present in the disposable full database.

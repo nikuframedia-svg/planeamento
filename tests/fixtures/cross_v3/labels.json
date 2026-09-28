@@ -1,0 +1,393 @@
+{
+  "label_source": "independent_visual_inspection_2026-09-08",
+  "model_comparison": "ignore_spaces_and_hyphens_only_via_code_canonicalization",
+  "certainty": "high",
+  "rows": [
+    {
+      "uid": "e0759433fe1e",
+      "row_index": 0,
+      "of": "265396",
+      "evidence": "visual_image_inspection",
+      "certainty": "high",
+      "modelo": "2615V001"
+    },
+    {
+      "uid": "e0759433fe1e",
+      "row_index": 1,
+      "of": "265126",
+      "evidence": "visual_image_inspection",
+      "certainty": "high",
+      "modelo": "6482b-1"
+    },
+    {
+      "uid": "1fb333b28059",
+      "row_index": 0,
+      "of": "265180",
+      "evidence": "visual_image_inspection",
+      "certainty": "high",
+      "modelo": "CA1 A019"
+    },
+    {
+      "uid": "1fb333b28059",
+      "row_index": 1,
+      "of": "265180",
+      "evidence": "visual_image_inspection",
+      "certainty": "high",
+      "modelo": "6647V009"
+    },
+    {
+      "uid": "1fb333b28059",
+      "row_index": 2,
+      "of": "265180",
+      "evidence": "visual_image_inspection",
+      "certainty": "high",
+      "modelo": "CA4317A4007"
+    },
+    {
+      "uid": "1fb333b28059",
+      "row_index": 3,
+      "of": "265180",
+      "evidence": "visual_image_inspection",
+      "certainty": "high"
+    },
+    {
+      "uid": "1fb333b28059",
+      "row_index": 4,
+      "of": "265180",
+      "evidence": "visual_image_inspection",
+      "certainty": "high"
+    },
+    {
+      "uid": "1fb333b28059",
+      "row_index": 5,
+      "of": "265180",
+      "evidence": "visual_image_inspection",
+      "certainty": "high"
+    },
+    {
+      "uid": "1fb333b28059",
+      "row_index": 6,
+      "of": "265180",
+      "evidence": "visual_image_inspection",
+      "certainty": "high"
+    },
+    {
+      "uid": "1fb333b28059",
+      "row_index": 7,
+      "of": "265180",
+      "evidence": "visual_image_inspection",
+      "certainty": "high"
+    },
+    {
+      "uid": "1fb333b28059",
+      "row_index": 8,
+      "of": "264441",
+      "evidence": "visual_image_inspection",
+      "certainty": "high"
+    },
+    {
+      "uid": "1fb333b28059",
+      "row_index": 9,
+      "of": "265191",
+      "evidence": "visual_image_inspection",
+      "certainty": "high"
+    },
+    {
+      "uid": "1fb333b28059",
+      "row_index": 10,
+      "of": null,
+      "evidence": "visual_image_inspection",
+      "certainty": "high",
+      "unlabelled_reason": "internal_production_no_observable_OF"
+    },
+    {
+      "uid": "1fb333b28059",
+      "row_index": 11,
+      "of": "264640",
+      "evidence": "visual_image_inspection",
+      "certainty": "high"
+    },
+    {
+      "uid": "2834c405ca66",
+      "row_index": 0,
+      "of": "264879",
+      "evidence": "visual_image_inspection",
+      "certainty": "high",
+      "modelo": "CR1516A3536"
+    },
+    {
+      "uid": "580ab6abb6e9",
+      "row_index": 0,
+      "of": "265424",
+      "evidence": "visual_image_inspection",
+      "certainty": "high",
+      "modelo": "2C12"
+    },
+    {
+      "uid": "580ab6abb6e9",
+      "row_index": 1,
+      "of": "264186",
+      "evidence": "visual_image_inspection",
+      "certainty": "high",
+      "modelo": "M222-502"
+    },
+    {
+      "uid": "cf06a7a9286f",
+      "row_index": 0,
+      "of": "264186",
+      "evidence": "visual_image_inspection",
+      "certainty": "high",
+      "modelo": "M222-502"
+    },
+    {
+      "uid": "cf06a7a9286f",
+      "row_index": 1,
+      "of": "264332",
+      "evidence": "visual_image_inspection",
+      "certainty": "high",
+      "modelo": "2035-V-107"
+    },
+    {
+      "uid": "cf06a7a9286f",
+      "row_index": 2,
+      "of": "265396",
+      "evidence": "visual_image_inspection",
+      "certainty": "high",
+      "modelo": "2615V002"
+    },
+    {
+      "uid": "cf06a7a9286f",
+      "row_index": 3,
+      "of": "265396",
+      "evidence": "visual_image_inspection",
+      "certainty": "high",
+      "modelo": "2615V001"
+    },
+    {
+      "uid": "fb898aa06d2c",
+      "row_index": 0,
+      "of": "264348",
+      "evidence": "visual_image_inspection",
+      "certainty": "high",
+      "modelo": "2003V1"
+    },
+    {
+      "uid": "fb898aa06d2c",
+      "row_index": 1,
+      "of": "264348",
+      "evidence": "visual_image_inspection",
+      "certainty": "high",
+      "modelo": "2003V107",
+      "of_evidence": "visual_ditto_from_row_0"
+    },
+    {
+      "uid": "cf5652489c6d",
+      "row_index": 0,
+      "of": "265180",
+      "evidence": "visual_image_inspection",
+      "certainty": "high",
+      "modelo": "CA2397A4001"
+    },
+    {
+      "uid": "cf5652489c6d",
+      "row_index": 1,
+      "of": "265180",
+      "evidence": "visual_image_inspection",
+      "certainty": "high",
+      "modelo": "PA0107A4300"
+    },
+    {
+      "uid": "cf5652489c6d",
+      "row_index": 2,
+      "of": "265180",
+      "evidence": "visual_image_inspection",
+      "certainty": "high",
+      "modelo": "PA0107A4301"
+    },
+    {
+      "uid": "cf5652489c6d",
+      "row_index": 3,
+      "of": "265180",
+      "evidence": "visual_image_inspection",
+      "certainty": "high",
+      "modelo": "CA6319A4127"
+    },
+    {
+      "uid": "cf5652489c6d",
+      "row_index": 4,
+      "of": "265180",
+      "evidence": "visual_image_inspection",
+      "certainty": "high",
+      "modelo": "CA6319A4128"
+    },
+    {
+      "uid": "cf5652489c6d",
+      "row_index": 5,
+      "of": "265180",
+      "evidence": "visual_image_inspection",
+      "certainty": "high",
+      "modelo": "6647V013"
+    },
+    {
+      "uid": "cf5652489c6d",
+      "row_index": 6,
+      "of": "265180",
+      "evidence": "visual_image_inspection",
+      "certainty": "high",
+      "modelo": "CA4317A4014"
+    },
+    {
+      "uid": "cf5652489c6d",
+      "row_index": 7,
+      "of": "265180",
+      "evidence": "visual_image_inspection",
+      "certainty": "high",
+      "modelo": "CA1396A4500"
+    },
+    {
+      "uid": "cf5652489c6d",
+      "row_index": 8,
+      "of": "265180",
+      "evidence": "visual_image_inspection",
+      "certainty": "high",
+      "modelo": "CA2098A4500"
+    },
+    {
+      "uid": "cf5652489c6d",
+      "row_index": 9,
+      "of": "264984",
+      "evidence": "visual_image_inspection",
+      "certainty": "high",
+      "modelo": "CI7712A4026"
+    },
+    {
+      "uid": "0a699f2a94dc",
+      "row_index": 0,
+      "of": "264348",
+      "evidence": "visual_image_inspection",
+      "certainty": "high"
+    },
+    {
+      "uid": "0a699f2a94dc",
+      "row_index": 1,
+      "of": "264991",
+      "evidence": "visual_image_inspection",
+      "certainty": "high"
+    },
+    {
+      "uid": "6d535b704bb0",
+      "row_index": 0,
+      "of": "265243",
+      "evidence": "visual_image_inspection",
+      "certainty": "high",
+      "modelo": "BA1225A4011"
+    }
+  ],
+  "applicable": [
+    {
+      "uid": "e0759433fe1e",
+      "row_indices": [
+        0,
+        1
+      ]
+    },
+    {
+      "uid": "1fb333b28059",
+      "row_indices": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11
+      ]
+    },
+    {
+      "uid": "2834c405ca66",
+      "row_indices": [
+        0
+      ]
+    },
+    {
+      "uid": "580ab6abb6e9",
+      "row_indices": [
+        0,
+        1
+      ]
+    },
+    {
+      "uid": "cf06a7a9286f",
+      "row_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "uid": "fb898aa06d2c",
+      "row_indices": [
+        0,
+        1
+      ]
+    },
+    {
+      "uid": "cf5652489c6d",
+      "row_indices": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ]
+    },
+    {
+      "uid": "0a699f2a94dc",
+      "row_indices": [
+        0,
+        1
+      ]
+    },
+    {
+      "uid": "6d535b704bb0",
+      "row_indices": [
+        0
+      ]
+    }
+  ],
+  "excluded": [
+    {
+      "uids": [
+        "755596f0d014",
+        "66409cab2812",
+        "6e8a0dd64add"
+      ],
+      "reason": "synthetic_test_images"
+    },
+    {
+      "uid": "10d7ff5011d8",
+      "reason": "unsupported_TFL999"
+    },
+    {
+      "uid": "faab390cdfb2",
+      "reason": "empty_OCR_despite_visible_content_coverage_failure"
+    },
+    {
+      "uid": "cf5652489c6d",
+      "row_index": 10,
+      "reason": "activity_ARRUMAR_LIMPEZAS_not_production"
+    }
+  ],
+  "label_policy": "all_25_high_confidence_visual_model_labels_on_the_36_applicable_rows_no_selection_by_engine_result"
+}

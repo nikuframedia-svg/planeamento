@@ -1,0 +1,32 @@
+[project]
+name = "planeamento"
+version = "0.2.0"
+description = "Planeamento de Perfis e Cantoneiras — aplicação e worker independentes"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "jinja2>=3.1",
+    "python-multipart>=0.0.9",
+    "psycopg[binary]>=3.2",
+    "anthropic>=0.40",
+    "pillow>=10.0",
+    "openpyxl>=3.1",
+    "fpdf2>=2.8",
+    "pypdfium2>=4.30",
+    "httpx>=0.27",
+    "opencv-python-headless>=4.10,<5",
+    "ortools>=9.15,<9.16",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "httpx>=0.27"]
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "pg_integration: testes contra PostgreSQL descartável (RUN_PG_INTEGRATION=1)",
+]

@@ -1,0 +1,379 @@
+{
+  "checked_at": "2026-09-14T01:42:56.724607+00:00",
+  "document_id": "58a87488-7215-4c9e-8b8c-83d6ff9a593e",
+  "filename": "OF265931.pdf",
+  "pdf_sha256": "187f9b570b6f7934a7a9d38c527a8e0f3eb0115cc937badb3c7b5fbef71bccd2",
+  "model": "xai.grok-4.6",
+  "reasoning_effort_extraction": "high",
+  "inventory_pages": [
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6",
+    "7",
+    "8",
+    "9"
+  ],
+  "human_field_corrections": 0,
+  "pieces": [
+    {
+      "id": "95ecc3c4-c410-42d8-af0a-a8201c0e95f6",
+      "document_id": "58a87488-7215-4c9e-8b8c-83d6ff9a593e",
+      "source_key": "7b3b357e24cf27667f212c24cbab418b51cac5764e4a80f8e554d4c93cec190a:0",
+      "machine_group": "Serrote",
+      "index_page": 1,
+      "index_ref": "CI23JJ01",
+      "state": "ready",
+      "revision": 1,
+      "drawing_pages": [
+        4
+      ],
+      "raw": {
+        "component_ref": "CI25J001",
+        "drawing_ref": "CI.23/14.A4.J01",
+        "variant": "Fuste 3,0m Fix. Flange",
+        "material_type": "Tubo redondo",
+        "material_description": "Tubo Ø114 x 3 x 1200",
+        "profile": "114x3",
+        "grade": "S275JR",
+        "quantity_required": 6,
+        "length_mm": 1200.0,
+        "outer_diameter_mm": 114.0,
+        "width_mm": null,
+        "height_mm": null,
+        "thickness_mm": 3.0,
+        "angle_deg": null,
+        "abocardar": null,
+        "chanfro": null,
+        "ponteira": null,
+        "operations": [],
+        "notes": "OBS: SOLDADURA. Tubo de acordo com a norma EN10219. Fuste nº 1.",
+        "evidence": {
+          "component_ref": {
+            "page": 4,
+            "text": "CI25J001"
+          },
+          "drawing_ref": {
+            "page": 4,
+            "text": "N° CI.23/14.A4.J01"
+          },
+          "variant": {
+            "page": 4,
+            "text": "Fuste 3,0m Fix. Flange"
+          },
+          "material_type": {
+            "page": 4,
+            "text": "Tubo Ø114 x 3 x 1200"
+          },
+          "material_description": {
+            "page": 4,
+            "text": "Tubo Ø114 x 3 x 1200"
+          },
+          "profile": {
+            "page": 4,
+            "text": "Tubo Ø114 x 3 x 1200"
+          },
+          "grade": {
+            "page": 4,
+            "text": "S275JR"
+          },
+          "quantity_required": {
+            "page": 4,
+            "text": "6"
+          },
+          "length_mm": {
+            "page": 4,
+            "text": "x 1200"
+          },
+          "outer_diameter_mm": {
+            "page": 4,
+            "text": "Ø114"
+          },
+          "thickness_mm": {
+            "page": 4,
+            "text": "x 3 x"
+          }
+        },
+        "warnings": []
+      },
+      "values": {
+        "component_ref": "CI25J001",
+        "drawing_ref": "CI.23/14.A4.J01",
+        "variant": "Fuste 3,0m Fix. Flange",
+        "material_type": "Tubo redondo",
+        "material_description": "Tubo Ø114 x 3 x 1200",
+        "profile": "114x3",
+        "grade": "S275JR",
+        "quantity_required": 6,
+        "length_mm": 1200.0,
+        "outer_diameter_mm": 114.0,
+        "width_mm": null,
+        "height_mm": null,
+        "thickness_mm": 3.0,
+        "angle_deg": null,
+        "abocardar": null,
+        "chanfro": null,
+        "ponteira": null,
+        "operations": [],
+        "notes": "OBS: SOLDADURA. Tubo de acordo com a norma EN10219. Fuste nº 1.",
+        "evidence": {
+          "component_ref": {
+            "page": 4,
+            "text": "CI25J001"
+          },
+          "drawing_ref": {
+            "page": 4,
+            "text": "N° CI.23/14.A4.J01"
+          },
+          "variant": {
+            "page": 4,
+            "text": "Fuste 3,0m Fix. Flange"
+          },
+          "material_type": {
+            "page": 4,
+            "text": "Tubo Ø114 x 3 x 1200"
+          },
+          "material_description": {
+            "page": 4,
+            "text": "Tubo Ø114 x 3 x 1200"
+          },
+          "profile": {
+            "page": 4,
+            "text": "Tubo Ø114 x 3 x 1200"
+          },
+          "grade": {
+            "page": 4,
+            "text": "S275JR"
+          },
+          "quantity_required": {
+            "page": 4,
+            "text": "6"
+          },
+          "length_mm": {
+            "page": 4,
+            "text": "x 1200"
+          },
+          "outer_diameter_mm": {
+            "page": 4,
+            "text": "Ø114"
+          },
+          "thickness_mm": {
+            "page": 4,
+            "text": "x 3 x"
+          }
+        },
+        "warnings": []
+      },
+      "issues": [],
+      "match": {
+        "kind": "new",
+        "quantity_completed": null,
+        "quantity_to_plan": null
+      },
+      "reviewed": {}
+    },
+    {
+      "id": "7ac54d9f-64ac-4e75-a245-d2b35793a79e",
+      "document_id": "58a87488-7215-4c9e-8b8c-83d6ff9a593e",
+      "source_key": "5296b4007e11195bd4905051d1eec3a6762b3d50bc632b68efc00aa60b649e3a:0",
+      "machine_group": "Serrote",
+      "index_page": 1,
+      "index_ref": "CI23JJ02",
+      "state": "ready",
+      "revision": 1,
+      "drawing_pages": [
+        5
+      ],
+      "raw": {
+        "component_ref": "CI25J003",
+        "drawing_ref": "CI.23/14.A4.J02",
+        "variant": "Fuste 3,0m Fix. Flange",
+        "material_type": "Tubo redondo",
+        "material_description": "Tubo Ø60 x 3 x 1760",
+        "profile": "60x3",
+        "grade": "S275JR",
+        "quantity_required": 6,
+        "length_mm": 1760.0,
+        "outer_diameter_mm": 60.0,
+        "width_mm": null,
+        "height_mm": null,
+        "thickness_mm": 3.0,
+        "angle_deg": null,
+        "abocardar": null,
+        "chanfro": null,
+        "ponteira": null,
+        "operations": [
+          "SOLDADURA"
+        ],
+        "notes": "CORTE DE TUBO FUSTE Nº 2. Tubo de acordo com a norma EN10219. *-TAMPA PLÁSTICA NO TOPO DA COLUNA.",
+        "evidence": {
+          "component_ref": {
+            "page": 5,
+            "text": "NORMA DES. N° CI25J003"
+          },
+          "drawing_ref": {
+            "page": 5,
+            "text": "N°. CI.23/14.A4.J02"
+          },
+          "variant": {
+            "page": 5,
+            "text": "Fuste 3,0m Fix. Flange"
+          },
+          "material_type": {
+            "page": 5,
+            "text": "Tubo Ø60 x 3 x 1760"
+          },
+          "material_description": {
+            "page": 5,
+            "text": "Tubo Ø60 x 3 x 1760"
+          },
+          "profile": {
+            "page": 5,
+            "text": "Tubo Ø60 x 3 x 1760"
+          },
+          "grade": {
+            "page": 5,
+            "text": "S275JR"
+          },
+          "quantity_required": {
+            "page": 5,
+            "text": "N° peças 6"
+          },
+          "length_mm": {
+            "page": 5,
+            "text": "Tubo Ø60 x 3 x 1760"
+          },
+          "outer_diameter_mm": {
+            "page": 5,
+            "text": "Ø60"
+          },
+          "thickness_mm": {
+            "page": 5,
+            "text": "Ø60 x 3"
+          },
+          "operations": {
+            "page": 5,
+            "text": "OBS. SOLDADURA"
+          }
+        },
+        "warnings": []
+      },
+      "values": {
+        "component_ref": "CI25J003",
+        "drawing_ref": "CI.23/14.A4.J02",
+        "variant": "Fuste 3,0m Fix. Flange",
+        "material_type": "Tubo redondo",
+        "material_description": "Tubo Ø60 x 3 x 1760",
+        "profile": "60x3",
+        "grade": "S275JR",
+        "quantity_required": 6,
+        "length_mm": 1760.0,
+        "outer_diameter_mm": 60.0,
+        "width_mm": null,
+        "height_mm": null,
+        "thickness_mm": 3.0,
+        "angle_deg": null,
+        "abocardar": null,
+        "chanfro": null,
+        "ponteira": null,
+        "operations": [
+          "SOLDADURA"
+        ],
+        "notes": "CORTE DE TUBO FUSTE Nº 2. Tubo de acordo com a norma EN10219. *-TAMPA PLÁSTICA NO TOPO DA COLUNA.",
+        "evidence": {
+          "component_ref": {
+            "page": 5,
+            "text": "NORMA DES. N° CI25J003"
+          },
+          "drawing_ref": {
+            "page": 5,
+            "text": "N°. CI.23/14.A4.J02"
+          },
+          "variant": {
+            "page": 5,
+            "text": "Fuste 3,0m Fix. Flange"
+          },
+          "material_type": {
+            "page": 5,
+            "text": "Tubo Ø60 x 3 x 1760"
+          },
+          "material_description": {
+            "page": 5,
+            "text": "Tubo Ø60 x 3 x 1760"
+          },
+          "profile": {
+            "page": 5,
+            "text": "Tubo Ø60 x 3 x 1760"
+          },
+          "grade": {
+            "page": 5,
+            "text": "S275JR"
+          },
+          "quantity_required": {
+            "page": 5,
+            "text": "N° peças 6"
+          },
+          "length_mm": {
+            "page": 5,
+            "text": "Tubo Ø60 x 3 x 1760"
+          },
+          "outer_diameter_mm": {
+            "page": 5,
+            "text": "Ø60"
+          },
+          "thickness_mm": {
+            "page": 5,
+            "text": "Ø60 x 3"
+          },
+          "operations": {
+            "page": 5,
+            "text": "OBS. SOLDADURA"
+          }
+        },
+        "warnings": []
+      },
+      "issues": [],
+      "match": {
+        "kind": "new",
+        "quantity_completed": null,
+        "quantity_to_plan": null
+      },
+      "reviewed": {}
+    }
+  ],
+  "cpis": {
+    "production_order": "OF265931",
+    "sales_order": "OV2607672",
+    "customer": "ECLIPSE DIFFUSION",
+    "status": "Em Aberto"
+  },
+  "export_file": "/home/luis/projects/kanban-mes-mtg2/data/dossiers/exports/Planeamento_OF265931_Grok46_20260914.xlsm",
+  "export_sha256": "69e6b8d2aad10337d6b2a7ca822ba90404b6b785ab6d7c29a824d1973f362cef",
+  "source_sha256_unchanged": "aa2d59af81541c37165b4d611ed698dad97bcbc9b7cf74ca3db8ace7cf572968",
+  "changed_zip_members": [
+    "xl/workbook.xml",
+    "xl/worksheets/sheet1.xml"
+  ],
+  "vba_identical": true,
+  "other_rows_and_zip_members_identical": true,
+  "filled_rows": [
+    {
+      "excel_row": 7000,
+      "reference": "CI25J001",
+      "quantity": "6",
+      "profile": "114x3",
+      "length_mm": "1200.0"
+    },
+    {
+      "excel_row": 7001,
+      "reference": "CI25J003",
+      "quantity": "6",
+      "profile": "60x3",
+      "length_mm": "1760.0"
+    }
+  ],
+  "excel_recalculation_verified": false,
+  "scope": "Um dossiê real, após ajustes de conector e instruções; não é uma medição estatística de precisão."
+}

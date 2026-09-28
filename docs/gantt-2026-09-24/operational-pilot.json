@@ -1,0 +1,44 @@
+{
+  "http_status": 200,
+  "enqueue_seconds": 0.029,
+  "enqueued_status": "queued",
+  "scenario_id": "1562708f-d2e7-49cb-a6c4-1f885531bb7d",
+  "scenario_revision": 2,
+  "job_id": "e73e6c32-0344-41e7-8347-710826dd5112",
+  "status": "done",
+  "stale": false,
+  "timings": {
+    "total_seconds": 0.568,
+    "initial_seconds": 0.488
+  },
+  "operations": 1167,
+  "bars": 0,
+  "coverage": "partial",
+  "validation": {
+    "score": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "valid": true,
+    "errors": [],
+    "coverage": "partial"
+  },
+  "solver": {
+    "status": "sem operações elegíveis",
+    "optimal": false,
+    "seconds": 0
+  },
+  "runtime_manifest": {
+    "code_sha256": "ae65783b51260e76ec044860cd7266a2dc49c4389e0107214e68047b88c58482",
+    "python_dependencies": {
+      "ortools": "9.15.6755",
+      "psycopg": "3.3.4"
+    }
+  }
+}

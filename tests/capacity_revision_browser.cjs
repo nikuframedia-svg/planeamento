@@ -1,0 +1,27 @@
+/* Real read-only workbook checks; mutations allowed only on the disposable test service. */
+const assert=require('node:assert/strict');
+const {chromium}=require(process.env.PLAYWRIGHT_CORE||'/home/luis/.npm/_npx/fd3bca3c548369c0/node_modules/playwright-core');
+const base=process.env.CAPACITY_TEST_BASE||'http://127.0.0.1:8119';
+assert.match(base,/^http:\/\/127\.0\.0\.1:8119$/);
+(async()=>{
+ const b=await chromium.launch({executablePath:process.env.CHROME_PATH||'/home/luis/.cache/ms-playwright/chromium-1243/chrome-linux64/chrome',headless:true,args:['--no-sandbox']});
+ const p=await b.newPage({viewport:{width:1440,height:920}}),errors=[];p.on('pageerror',e=>errors.push(e.message));p.on('dialog',d=>d.accept());
+ await p.goto(base+'/planeamento/raw?area=cantoneiras&q=DLR777');await p.locator('#sheet tbody tr').first().waitFor();
+ const heads=await p.locator('#sheet th').allTextContents();assert.deepEqual(heads.map(x=>x.replace('⌄','').trim()),['OF','OV','Referência','Data de corte','Tipo de material','QTD','Descrição do material','Comp. (mm)','1.ª op.','2.ª op.','Equipa','Pavilhão']);
+ assert.match(await p.locator('#sheet tbody').innerText(),/L45X45X4 S355J0 EN10025/);assert.match(await p.locator('#sheet tbody').innerText(),/737/);
+ await p.screenshot({path:'docs/capacidades-2026-09-22/cantoneiras.png',fullPage:true});
+ await p.goto(base+'/planeamento/disponibilidade?area=perfis');await p.locator('#matrix tbody tr').first().waitFor();await p.locator('#year').fill('2026');await p.locator('#week').fill('39');await p.getByRole('button',{name:'Consultar',exact:true}).click();await p.waitForTimeout(700);
+ const vanguard=p.locator('#matrix tbody tr').filter({hasText:'Vanguard'});assert.match(await vanguard.innerText(),/80 \/ 32/);assert.match(await vanguard.innerText(),/não somadas/);
+ await vanguard.getByRole('button',{name:'Vanguard',exact:true}).click();await p.getByRole('button',{name:'Calendário e parâmetros'}).click();assert.match(await p.locator('#panel-body').innerText(),/Calendário duplicado/);
+ await p.screenshot({path:'docs/capacidades-2026-09-22/vanguard-conflito.png',fullPage:true});await p.locator('#close-panel').click();
+ await p.goto(base+'/planeamento/capacidades?area=perfis');await p.locator('#matrix tbody tr').first().waitFor();await p.getByRole('button',{name:'Serrote Disco pav 1',exact:true}).click();await p.getByRole('button',{name:'Comparar com Excel'}).click();await p.waitForTimeout(600);assert.match(await p.locator('#panel-body').innerText(),/7:1035/);assert.match(await p.locator('#panel-body').innerText(),/12824|12.?824/);
+ await p.screenshot({path:'docs/capacidades-2026-09-22/comparacao-excel.png',fullPage:true});await p.locator('#close-panel').click();await p.screenshot({path:'docs/capacidades-2026-09-22/capacidades.png',fullPage:true});
+ await p.goto(base+'/planeamento/disponibilidade?area=cantoneiras');await p.locator('#matrix tbody tr').first().waitFor();await p.locator('#year').fill('2026');await p.locator('#week').fill('39');await p.getByRole('button',{name:'Consultar',exact:true}).click();await p.waitForTimeout(600);
+ assert.match(await p.locator('#totals').innerText(),/899,17 h/);assert.match(await p.locator('#totals').innerText(),/3609\/3609/);
+ await p.screenshot({path:'docs/capacidades-2026-09-22/disponibilidade.png',fullPage:true});
+ await p.getByRole('button',{name:'Guardar referência desta semana'}).click();await p.getByRole('button',{name:'Confirmar e guardar referência'}).waitFor();assert.match(await p.locator('#panel-body').innerText(),/4630 operações/);await p.getByRole('button',{name:'Confirmar e guardar referência'}).click();await p.waitForFunction(()=>document.getElementById('panel-title').textContent.startsWith('Cumprimento'),{timeout:30000});assert.match(await p.locator('#panel-body').innerText(),/Ausência de OCR não significa zero/);
+ await p.screenshot({path:'docs/capacidades-2026-09-22/cumprimento-ensaio.png',fullPage:true});await p.locator('#close-panel').click();
+ await p.getByRole('button',{name:'Configurar',exact:true}).click();await p.getByRole('button',{name:'Adicionar',exact:true}).click();await p.getByLabel('Nome',{exact:true}).fill('Recurso só no ensaio '+Date.now());await p.getByLabel('Nomes equivalentes').fill('cantoneiras:Ensaio isolado '+Date.now());await p.getByLabel('Operações suportadas').fill('119');await p.getByLabel('Horas por turno de referência').fill('7,5');await p.getByLabel('Confirmo a máquina').check();await p.getByRole('button',{name:'Guardar',exact:true}).click();await p.waitForFunction(()=>!document.getElementById('edit-panel').open);await p.locator('#panel-body').getByText(/Recurso só no ensaio/).first().waitFor();await p.locator('#close-panel').click();
+ for(const [label,width,zoom] of [['390',390,1],['200',1440,2]]){await p.setViewportSize({width,height:920});await p.evaluate(z=>document.body.style.zoom=z,zoom);assert(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2));await p.screenshot({path:'docs/capacidades-2026-09-22/disponibilidade-'+label+'.png',fullPage:true});await p.getByRole('button',{name:'Peddi 8',exact:true}).focus();await p.keyboard.press('Enter');await p.locator('#panel[open]').waitFor();await p.locator('#close-panel').click();}
+ assert.deepEqual(errors,[]);console.log('Cantoneiras, calendar conflict, source formulas, full W39 reconciliation, frozen reference, audited configuration, keyboard, 390 px and 200% passed.');await b.close();
+})().catch(e=>{console.error(e);process.exit(1)});

@@ -1,0 +1,32 @@
+{
+  "calendar_limit": "Sem horários confirmados, a medição não mede otimização de carga real.",
+  "code_files": [
+    "app/gantt/__init__.py",
+    "app/gantt/baseline.py",
+    "app/gantt/calendar.py",
+    "app/gantt/contracts.py",
+    "app/gantt/inputs.py",
+    "app/gantt/provenance.py",
+    "app/gantt/service.py",
+    "app/gantt/solver.py",
+    "app/gantt/validation.py",
+    "app/planning_calendars.py",
+    "app/planning_dates.py",
+    "app/planning_estimates.py"
+  ],
+  "code_sha256": "0f9661e5281befdcab46e087923293baa1a87eb96e5da7c291b0e3a28b4de5db",
+  "frozen_at": "2026-09-24T19:00:00+00:00",
+  "python_dependencies": {
+    "fastapi": "0.141.1",
+    "ortools": "9.15.6755",
+    "psycopg": "3.3.4",
+    "pytest": "9.1.1"
+  },
+  "snapshot_digest": "d23f675d7612f3f3beeb7ba843354de23080afdee932227d4792553855594c3b",
+  "source_references": {
+    "capacity_generation": 752,
+    "configuration_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "planning_generation": 749,
+    "sources_pending": false
+  }
+}

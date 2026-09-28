@@ -1,0 +1,51 @@
+{
+  "provenance": "postgres_read_only_2026-09-08; selected columns only; original typed source is NULL while original JSON source is preserved",
+  "snapshot": {
+    "snapshot_id": "mtg2_29b206f77e13ba4b",
+    "loaded_at": "2026-08-25T19:54:53.783920+00:00"
+  },
+  "rows": [
+    {
+      "plan_key": "mtg2_29b206f77e13ba4b:plan:126",
+      "snapshot_id": "mtg2_29b206f77e13ba4b",
+      "of": "OF256084",
+      "modelo": "CR1516A3536",
+      "perfil": "41x21x2.5",
+      "comp_mm": 2500,
+      "qtd_planeada": 21,
+      "quantity_remaining_source": null,
+      "qtd_restante": null,
+      "falta_valida": false,
+      "regra_calculo": "source:qtd_em_falta",
+      "raw_remaining": 0
+    },
+    {
+      "plan_key": "mtg2_29b206f77e13ba4b:plan:3676",
+      "snapshot_id": "mtg2_29b206f77e13ba4b",
+      "of": "OF262632",
+      "modelo": "CR1516A3536",
+      "perfil": "41x21x2.5",
+      "comp_mm": 2500,
+      "qtd_planeada": 4,
+      "quantity_remaining_source": null,
+      "qtd_restante": null,
+      "falta_valida": false,
+      "regra_calculo": "source:qtd_em_falta",
+      "raw_remaining": 0
+    },
+    {
+      "plan_key": "mtg2_29b206f77e13ba4b:plan:5537",
+      "snapshot_id": "mtg2_29b206f77e13ba4b",
+      "of": "OF264879",
+      "modelo": "CR1516A3536",
+      "perfil": "41x21x2.5",
+      "comp_mm": 2500,
+      "qtd_planeada": 20,
+      "quantity_remaining_source": null,
+      "qtd_restante": null,
+      "falta_valida": false,
+      "regra_calculo": "source:qtd_em_falta",
+      "raw_remaining": 11
+    }
+  ]
+}

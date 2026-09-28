@@ -1,0 +1,25 @@
+{
+  "operations": 1167,
+  "machines": [
+    "Serrote Disco pav 1",
+    "Serrote Fita Thomas IS639 Pav.1",
+    "Serrote MEBA IS381 Pav 3",
+    "Vanguard",
+    "Serrote Doall Pav.1"
+  ],
+  "forecasts": 778,
+  "forecasts_with_duration": 731,
+  "pending": 352,
+  "completed": 37,
+  "initial_bars": 398,
+  "week": "2026-09-21",
+  "source_references": {
+    "planning_generation": 781,
+    "capacity_generation": 784,
+    "configuration_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "sources_pending": false
+  },
+  "errors": [],
+  "bad": [],
+  "database_writes": 0
+}

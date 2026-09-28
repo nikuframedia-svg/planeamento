@@ -1,0 +1,136 @@
+{
+  "measurements": [
+    {
+      "capture_seconds": 0.5551,
+      "initial_seconds": 0.0012,
+      "operations": 1167,
+      "optimization_seconds": 0.0008,
+      "peak_rss_kb": 239748,
+      "run": 1,
+      "scheduled": 0,
+      "score": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "snapshot_digest": "d23f675d7612f3f3beeb7ba843354de23080afdee932227d4792553855594c3b",
+      "solver": {
+        "optimal": false,
+        "seconds": 0,
+        "status": "sem operações elegíveis"
+      },
+      "total_seconds": 0.5571
+    },
+    {
+      "capture_seconds": 0.478,
+      "initial_seconds": 0.0009,
+      "operations": 1167,
+      "optimization_seconds": 0.0007,
+      "peak_rss_kb": 245336,
+      "run": 2,
+      "scheduled": 0,
+      "score": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "snapshot_digest": "d23f675d7612f3f3beeb7ba843354de23080afdee932227d4792553855594c3b",
+      "solver": {
+        "optimal": false,
+        "seconds": 0,
+        "status": "sem operações elegíveis"
+      },
+      "total_seconds": 0.4796
+    },
+    {
+      "capture_seconds": 0.4943,
+      "initial_seconds": 0.0008,
+      "operations": 1167,
+      "optimization_seconds": 0.0007,
+      "peak_rss_kb": 245336,
+      "run": 3,
+      "scheduled": 0,
+      "score": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "snapshot_digest": "d23f675d7612f3f3beeb7ba843354de23080afdee932227d4792553855594c3b",
+      "solver": {
+        "optimal": false,
+        "seconds": 0,
+        "status": "sem operações elegíveis"
+      },
+      "total_seconds": 0.4958
+    },
+    {
+      "capture_seconds": 0.5941,
+      "initial_seconds": 0.0009,
+      "operations": 1167,
+      "optimization_seconds": 0.0008,
+      "peak_rss_kb": 245336,
+      "run": 4,
+      "scheduled": 0,
+      "score": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "snapshot_digest": "d23f675d7612f3f3beeb7ba843354de23080afdee932227d4792553855594c3b",
+      "solver": {
+        "optimal": false,
+        "seconds": 0,
+        "status": "sem operações elegíveis"
+      },
+      "total_seconds": 0.5958
+    },
+    {
+      "capture_seconds": 0.4709,
+      "initial_seconds": 0.0008,
+      "operations": 1167,
+      "optimization_seconds": 0.0007,
+      "peak_rss_kb": 245336,
+      "run": 5,
+      "scheduled": 0,
+      "score": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "snapshot_digest": "d23f675d7612f3f3beeb7ba843354de23080afdee932227d4792553855594c3b",
+      "solver": {
+        "optimal": false,
+        "seconds": 0,
+        "status": "sem operações elegíveis"
+      },
+      "total_seconds": 0.4724
+    }
+  ],
+  "median_capture_seconds": 0.4943,
+  "median_total_seconds": 0.4958
+}

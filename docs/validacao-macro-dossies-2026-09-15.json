@@ -1,0 +1,66 @@
+{
+  "validated_at": "2026-09-15",
+  "scope": "Cópia da macro real preparada com as 10 necessidades da conferência independente dos três PDFs.",
+  "reference": "tests/fixtures/dossier_reference_2026-09.json",
+  "source": {
+    "filename": "Met2_Plan_Perfis.xlsm",
+    "sha256_before_and_after": "aa2d59af81541c37165b4d611ed698dad97bcbc9b7cf74ca3db8ace7cf572968",
+    "unchanged": true
+  },
+  "output": {
+    "path": "data/dossiers/exports/Planeamento_validacao_10_necessidades_20260915.xlsm",
+    "sha256": "f04b05214b7bf3aa5f9945e401e7a633a9aeaa9c2c91dfa9103188e00c93f30d",
+    "added_rows": 2,
+    "updated_rows": 8,
+    "unchanged_rows": 0,
+    "changed_cells": 42,
+    "written_columns": [
+      "A",
+      "E",
+      "L",
+      "T",
+      "U",
+      "AF",
+      "AG",
+      "AH",
+      "AI",
+      "AL",
+      "AM",
+      "AO",
+      "AQ",
+      "AT"
+    ]
+  },
+  "checks": {
+    "checked_cells": 75,
+    "sections": [
+      "Tubo redondo",
+      "Varão redondo",
+      "Perfil U",
+      "Perfil H"
+    ],
+    "catalogue_examples": [
+      "UPN80x45",
+      "HEB320B"
+    ],
+    "changed_zip_members": [
+      "xl/workbook.xml",
+      "xl/worksheets/sheet1.xml"
+    ],
+    "vba_project_byte_identical": true,
+    "all_other_zip_members_byte_identical": true,
+    "only_allowlisted_columns_in_change_summary": true,
+    "angle_column_AN_written": false,
+    "second_generation_byte_identical": true,
+    "physical_identity_markers": true
+  },
+  "remaining_gate": "Abrir esta cópia no Excel Windows da instalação, recalcular com as funções/VBA disponíveis e conferir áreas/fórmulas. A validação Linux preserva essas fórmulas, mas não as executa.",
+  "follow_up": {
+    "checked_at": "2026-09-15T14:03:03+00:00",
+    "current_source_snapshot": "mtg2_bb7d779ecfc88284",
+    "current_source_sha256": "bb7d779ecfc88284b8d1bece6b8fe389e538194157f486a8b3601bcde9be9749",
+    "current_source_matches_import": true,
+    "artifact_status": "A cópia continua válida como ensaio estrutural do adaptador contra a origem aa2d59…, mas foi ultrapassada como proposta operacional quando a macro de origem mudou. Não deve ser usada para integrar o plano atual.",
+    "operational_export": "Não gerado: os três dossiês ativos estão em conferência e as linhas 6963–6965 estão fechadas no snapshot atual."
+  }
+}

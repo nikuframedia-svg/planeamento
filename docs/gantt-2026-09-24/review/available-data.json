@@ -1,0 +1,185 @@
+{
+  "checked_at": "2026-09-24T23:11:49.244531+00:00",
+  "database_writes": 0,
+  "snapshot": "mtg2_f6fb1ab305e92e22",
+  "planning_generation": 781,
+  "capacity_generation": 784,
+  "capacity_contract": "capacity-20260925-integral-v27",
+  "aggregates_pending": false,
+  "totals": {
+    "lines": 1139,
+    "machine_known": 914,
+    "cut_date_known": 1025,
+    "machine_and_cut_date": 801,
+    "positive_duration": 813,
+    "picking_known": 311,
+    "pending_machine_date_duration": 731
+  },
+  "machines": {
+    "Serrote Disco pav 1": {
+      "lines": 302,
+      "positive_duration": 273
+    },
+    "Vanguard": {
+      "lines": 228,
+      "positive_duration": 163
+    },
+    "Serrote MEBA IS381 Pav 3": {
+      "lines": 209,
+      "positive_duration": 202
+    },
+    "(sem máquina)": {
+      "lines": 225,
+      "positive_duration": 0
+    },
+    "Serrote Fita Thomas IS639 Pav.1": {
+      "lines": 125,
+      "positive_duration": 125
+    },
+    "Serrote Doall Pav.1": {
+      "lines": 50,
+      "positive_duration": 50
+    }
+  },
+  "local_configuration_counts": {},
+  "availability_2026": [
+    {
+      "excel_row": 97,
+      "year": 2026,
+      "week": 7,
+      "machine": "Vanguard",
+      "shifts": 10,
+      "hours_per_shift": 8,
+      "weekly_hours": 80
+    },
+    {
+      "excel_row": 98,
+      "year": 2026,
+      "week": 12,
+      "machine": "Serrote Disco pav 1",
+      "shifts": 5,
+      "hours_per_shift": 8,
+      "weekly_hours": 40
+    },
+    {
+      "excel_row": 99,
+      "year": 2026,
+      "week": 12,
+      "machine": "Serrote Fita Thomas IS639 Pav.1",
+      "shifts": 5,
+      "hours_per_shift": 8,
+      "weekly_hours": 40
+    },
+    {
+      "excel_row": 100,
+      "year": 2026,
+      "week": 12,
+      "machine": "Serrote MEBA IS381 Pav 3",
+      "shifts": 5,
+      "hours_per_shift": 8,
+      "weekly_hours": 40
+    },
+    {
+      "excel_row": 101,
+      "year": 2026,
+      "week": 39,
+      "machine": "Vanguard",
+      "shifts": 10,
+      "hours_per_shift": 8,
+      "weekly_hours": 80
+    },
+    {
+      "excel_row": 102,
+      "year": 2026,
+      "week": 39,
+      "machine": "Serrote Doall Pav.1",
+      "shifts": 1,
+      "hours_per_shift": 8,
+      "weekly_hours": 8
+    },
+    {
+      "excel_row": 103,
+      "year": 2026,
+      "week": 39,
+      "machine": "Vanguard",
+      "shifts": 2,
+      "hours_per_shift": 16,
+      "weekly_hours": 32
+    },
+    {
+      "excel_row": 104,
+      "year": 2026,
+      "week": 39,
+      "machine": "Serrote Disco pav 1",
+      "shifts": 1,
+      "hours_per_shift": 8,
+      "weekly_hours": 8
+    },
+    {
+      "excel_row": 105,
+      "year": 2026,
+      "week": 39,
+      "machine": "Serrote Fita Thomas IS639 Pav.1",
+      "shifts": 1,
+      "hours_per_shift": 8,
+      "weekly_hours": 8
+    },
+    {
+      "excel_row": 106,
+      "year": 2026,
+      "week": 39,
+      "machine": "Serrote MEBA IS381 Pav 3",
+      "shifts": 1,
+      "hours_per_shift": 10,
+      "weekly_hours": 10
+    }
+  ],
+  "balance_estimate_mismatches": [],
+  "future_examples": [
+    {
+      "of": "OF264436",
+      "line": 34592,
+      "machine": "Serrote Disco pav 1",
+      "cut_date": "2026-09-28",
+      "remaining": 2.0,
+      "hours": 0.04899551861493751,
+      "duration_origin": "Excel provisório"
+    },
+    {
+      "of": "OF264754",
+      "line": 34526,
+      "machine": "Serrote MEBA IS381 Pav 3",
+      "cut_date": "2026-10-23",
+      "remaining": 105.0,
+      "hours": 0.6164531891997369,
+      "duration_origin": "Histórico"
+    },
+    {
+      "of": "OF264754",
+      "line": 34527,
+      "machine": "Serrote MEBA IS381 Pav 3",
+      "cut_date": "2026-10-23",
+      "remaining": 105.0,
+      "hours": 1.4645513452335754,
+      "duration_origin": "Histórico"
+    },
+    {
+      "of": "OF264755",
+      "line": 34520,
+      "machine": "Serrote MEBA IS381 Pav 3",
+      "cut_date": "2026-10-23",
+      "remaining": 53.0,
+      "hours": 0.31116208597701006,
+      "duration_origin": "Histórico"
+    },
+    {
+      "of": "OF264755",
+      "line": 34521,
+      "machine": "Serrote MEBA IS381 Pav 3",
+      "cut_date": "2026-10-23",
+      "remaining": 53.0,
+      "hours": 0.7392497266417094,
+      "duration_origin": "Histórico"
+    }
+  ]
+}

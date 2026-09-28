@@ -1,0 +1,66 @@
+........................................................................ [ 73%]
+.........................F                                               [100%]
+=================================== FAILURES ===================================
+____________________________ test_workspace_browser ____________________________
+
+workspace = 'host=127.0.0.1 port=38597 dbname=dataresearchmtg user=postgres password=6d9ee51f82d8433eb025719659185ecd'
+tmp_path = PosixPath('/tmp/pytest-of-luis/pytest-13806/test_workspace_browser0')
+
+    def test_workspace_browser(workspace,tmp_path):
+        import os,socket,subprocess,time,urllib.request
+        projection.rebuild('perfis')
+        root=Path(__file__).parents[1];(root/'docs/raw-completa').mkdir(exist_ok=True)
+        with socket.socket() as s:s.bind(('127.0.0.1',0));port=s.getsockname()[1]
+        env={**os.environ,'MES_PG_DSN':os.environ['MES_PG_DSN'],'MES_DATA_DIR':str(tmp_path),'MES_DOSSIER_WORKER_DISABLED':'1','MES_PLANNING_NEEDS_ENABLED':'1','MES_PLANNING_RAW_ENABLED':'1','MES_RAW_WORKSPACE_ENABLED':'1'}
+        with (tmp_path/'web.log').open('w+') as log:
+            proc=subprocess.Popen([str(root/'.venv/bin/python'),'-m','uvicorn','app.web.planning_app:app','--host','127.0.0.1','--port',str(port)],env=env,stdout=log,stderr=log)
+            try:
+                for _ in range(80):
+                    try:urllib.request.urlopen(f'http://127.0.0.1:{port}/planeamento/raw');break
+                    except Exception:time.sleep(.2)
+                run=subprocess.run(['node','tests/raw_workspace_browser.cjs'],env={**env,'PLANNING_CHECK_BASE':f'http://127.0.0.1:{port}'},capture_output=True,text=True,timeout=120)
+>               log.flush();log.seek(0);assert run.returncode==0,run.stdout+run.stderr+'\n'+log.read()
+                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E               AssertionError: AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+E                 
+E                   assert.ok(fixed[2].x+fixed[2].w<=390)
+E                 
+E                     at /home/luis/projects/kanban-mes-mtg2/tests/raw_workspace_browser.cjs:5:367 {
+E                   generatedMessage: true,
+E                   code: 'ERR_ASSERTION',
+E                   actual: false,
+E                   expected: true,
+E                   operator: '==',
+E                   diff: 'simple'
+E                 }
+E                 
+E                 INFO:     Started server process [3185260]
+E                 INFO:     Waiting for application startup.
+E                 INFO:     Application startup complete.
+E                 INFO:     Uvicorn running on http://127.0.0.1:48775 (Press CTRL+C to quit)
+E                 INFO:     127.0.0.1:41970 - "GET /planeamento/raw HTTP/1.1" 200 OK
+E                 INFO:     127.0.0.1:41978 - "GET /planeamento/raw HTTP/1.1" 200 OK
+E                 INFO:     127.0.0.1:41996 - "GET /static/raw_workspace.js HTTP/1.1" 200 OK
+E                 INFO:     127.0.0.1:41992 - "GET /static/raw_workspace.css HTTP/1.1" 200 OK
+E                 INFO:     127.0.0.1:42006 - "GET /static/raw_panels.js HTTP/1.1" 200 OK
+E                 INFO:     127.0.0.1:42006 - "GET /planeamento/api/raw/colunas?area=perfis HTTP/1.1" 200 OK
+E                 INFO:     127.0.0.1:42006 - "GET /planeamento/api/raw/objects/view?area=perfis HTTP/1.1" 200 OK
+E                 INFO:     127.0.0.1:41996 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+E                 INFO:     127.0.0.1:42006 - "POST /planeamento/api/raw/consultas HTTP/1.1" 200 OK
+E                 INFO:     127.0.0.1:42006 - "POST /planeamento/api/raw/consultas HTTP/1.1" 200 OK
+E                 INFO:     127.0.0.1:42006 - "POST /planeamento/api/raw/objects/view HTTP/1.1" 200 OK
+E                 INFO:     127.0.0.1:42006 - "GET /planeamento/api/raw/objects/view?area=perfis HTTP/1.1" 200 OK
+E                 INFO:     127.0.0.1:42006 - "GET /planeamento/api/raw/colunas?area=perfis HTTP/1.1" 200 OK
+E                 INFO:     127.0.0.1:42006 - "POST /planeamento/api/raw/consultas HTTP/1.1" 200 OK
+E                 INFO:     127.0.0.1:42006 - "POST /planeamento/api/raw/consultas HTTP/1.1" 200 OK
+E                 INFO:     127.0.0.1:42006 - "POST /planeamento/api/raw/opcoes HTTP/1.1" 200 OK
+E                 INFO:     127.0.0.1:42006 - "POST /planeamento/api/raw/consultas HTTP/1.1" 200 OK
+E                 INFO:     127.0.0.1:42006 - "POST /planeamento/api/raw/consultas HTTP/1.1" 200 OK
+E                 
+E               assert 1 == 0
+E                +  where 1 = CompletedProcess(args=['node', 'tests/raw_workspace_browser.cjs'], returncode=1, stdout='', stderr="AssertionError [ER...ssage: true,\n  code: 'ERR_ASSERTION',\n  actual: false,\n  expected: true,\n  operator: '==',\n  diff: 'simple'\n}\n").returncode
+
+tests/test_raw_workspace.py:81: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_raw_workspace.py::test_workspace_browser - AssertionError: ...
+1 failed, 97 passed in 71.74s (0:01:11)

@@ -1,0 +1,224 @@
+{
+  "additional_fields": [
+    {
+      "dataset_id": "ds-2638099daddc474e",
+      "key": "codpie",
+      "populated": 67909,
+      "distinct_values": 45
+    },
+    {
+      "dataset_id": "ds-2638099daddc474e",
+      "key": "datupdobsdp",
+      "populated": 53280,
+      "distinct_values": 52399
+    },
+    {
+      "dataset_id": "ds-2638099daddc474e",
+      "key": "dificuldadeof",
+      "populated": 67404,
+      "distinct_values": 4
+    },
+    {
+      "dataset_id": "ds-2638099daddc474e",
+      "key": "elementopep",
+      "populated": 69635,
+      "distinct_values": 3661
+    },
+    {
+      "dataset_id": "ds-2638099daddc474e",
+      "key": "idof",
+      "populated": 70129,
+      "distinct_values": 1
+    },
+    {
+      "dataset_id": "ds-2638099daddc474e",
+      "key": "observacoesdp",
+      "populated": 47616,
+      "distinct_values": 1373
+    },
+    {
+      "dataset_id": "ds-2638099daddc474e",
+      "key": "observacoesintdp",
+      "populated": 5119,
+      "distinct_values": 2455
+    },
+    {
+      "dataset_id": "ds-2638099daddc474e",
+      "key": "percent",
+      "populated": 70129,
+      "distinct_values": 22
+    },
+    {
+      "dataset_id": "ds-2638099daddc474e",
+      "key": "satus",
+      "populated": 70129,
+      "distinct_values": 4
+    },
+    {
+      "dataset_id": "ds-2638099daddc474e",
+      "key": "semdataentregadl",
+      "populated": 62705,
+      "distinct_values": 53
+    },
+    {
+      "dataset_id": "ds-2638099daddc474e",
+      "key": "semdatafimprev",
+      "populated": 62813,
+      "distinct_values": 53
+    },
+    {
+      "dataset_id": "ds-met2-perfis",
+      "key": "codpie",
+      "populated": 12131,
+      "distinct_values": 20
+    },
+    {
+      "dataset_id": "ds-met2-perfis",
+      "key": "datupdobsdp",
+      "populated": 12204,
+      "distinct_values": 11987
+    },
+    {
+      "dataset_id": "ds-met2-perfis",
+      "key": "dificuldadeof",
+      "populated": 12362,
+      "distinct_values": 4
+    },
+    {
+      "dataset_id": "ds-met2-perfis",
+      "key": "elementopep",
+      "populated": 12327,
+      "distinct_values": 617
+    },
+    {
+      "dataset_id": "ds-met2-perfis",
+      "key": "idof",
+      "populated": 12362,
+      "distinct_values": 1
+    },
+    {
+      "dataset_id": "ds-met2-perfis",
+      "key": "observacoesdp",
+      "populated": 4769,
+      "distinct_values": 443
+    },
+    {
+      "dataset_id": "ds-met2-perfis",
+      "key": "observacoesintdp",
+      "populated": 0,
+      "distinct_values": 0
+    },
+    {
+      "dataset_id": "ds-met2-perfis",
+      "key": "percent",
+      "populated": 12362,
+      "distinct_values": 22
+    },
+    {
+      "dataset_id": "ds-met2-perfis",
+      "key": "satus",
+      "populated": 12362,
+      "distinct_values": 4
+    },
+    {
+      "dataset_id": "ds-met2-perfis",
+      "key": "semdataentregadl",
+      "populated": 11138,
+      "distinct_values": 53
+    },
+    {
+      "dataset_id": "ds-met2-perfis",
+      "key": "semdatafimprev",
+      "populated": 11245,
+      "distinct_values": 52
+    }
+  ],
+  "status_code_combinations": [
+    {
+      "status": "Em Aberto",
+      "extra_code": "00:00:00",
+      "n": 729
+    },
+    {
+      "status": "Em Produção",
+      "extra_code": "1900-01-04T00:00:00",
+      "n": 1107
+    },
+    {
+      "status": "Fechada",
+      "extra_code": "1900-01-01T00:00:00",
+      "n": 68262
+    },
+    {
+      "status": "Pronta",
+      "extra_code": "1900-01-03T00:00:00",
+      "n": 31
+    }
+  ],
+  "observation_examples": [
+    {
+      "production_order_no": "OF266212",
+      "obs_dp": "NÃO ENTROU EM PRODUÇÃO.",
+      "obs_internal": null,
+      "updated_obs_dp": "2026-09-14T15:47:31",
+      "production_week": null,
+      "delivery_week": null
+    },
+    {
+      "production_order_no": "OF266200",
+      "obs_dp": "NÃO ENTROU EM PRODUÇÃO.",
+      "obs_internal": null,
+      "updated_obs_dp": "2026-09-14T14:43:33",
+      "production_week": "1900-02-07T00:00:00",
+      "delivery_week": null
+    },
+    {
+      "production_order_no": "OF266199",
+      "obs_dp": "NÃO ENTROU EM PRODUÇÃO",
+      "obs_internal": null,
+      "updated_obs_dp": "2026-09-14T15:26:52",
+      "production_week": "1900-02-07T00:00:00",
+      "delivery_week": null
+    },
+    {
+      "production_order_no": "OF266196",
+      "obs_dp": "NÃO ENTROU EM PRODUÇÃO.",
+      "obs_internal": null,
+      "updated_obs_dp": "2026-09-14T15:27:17",
+      "production_week": "1900-02-07T00:00:00",
+      "delivery_week": null
+    },
+    {
+      "production_order_no": "OF266195",
+      "obs_dp": "NÃO ENTROU EM PRODUÇÃO",
+      "obs_internal": null,
+      "updated_obs_dp": "2026-09-11T15:40:08",
+      "production_week": null,
+      "delivery_week": null
+    },
+    {
+      "production_order_no": "OF266194",
+      "obs_dp": "NÃO ENTROU EM PRODUÇÃO",
+      "obs_internal": null,
+      "updated_obs_dp": "2026-09-14T15:28:22",
+      "production_week": "1900-02-07T00:00:00",
+      "delivery_week": null
+    },
+    {
+      "production_order_no": "OF266192",
+      "obs_dp": "NÃO ENTROU EM PRODUÇÃO",
+      "obs_internal": null,
+      "updated_obs_dp": "2026-09-14T15:30:59",
+      "production_week": "1900-02-07T00:00:00",
+      "delivery_week": null
+    },
+    {
+      "production_order_no": "OF266190",
+      "obs_dp": "NÃO ENTROU EM PRODUÇÃO",
+      "obs_internal": null,
+      "updated_obs_dp": "2026-09-14T15:27:49",
+      "production_week": "1900-02-07T00:00:00",
+      "delivery_week": null
+    }
+  ]
+}

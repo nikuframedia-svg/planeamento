@@ -1,0 +1,24 @@
+BEGIN
+SET
+ active_lines | basic_lines | meba_lines | meba_basic_lines | complete_cut_orders | their_lines | missing_grade_groups 
+--------------+-------------+------------+------------------+---------------------+-------------+----------------------
+         1083 |         388 |        117 |              116 |                 120 |         368 |                   23
+(1 row)
+
+ active_abocardar_lines | no_cut_remaining | abocardar_counter_present 
+------------------------+------------------+---------------------------
+                     41 |                3 |                         2
+(1 row)
+
+ excel_row | production_order_no | component_ref | length_mm | quantity_planned | cut_counter | abocardar_counter | quantity_remaining_source 
+-----------+---------------------+---------------+-----------+------------------+-------------+-------------------+---------------------------
+      5200 | OF264343            | CD04J001      |       250 |            60000 | 18696       |                   |                     41304
+      5571 | OF264759            | CI5021A4000   |      2100 |             1050 | 942         | 359               |                       108
+      5572 | OF264760            | CI5021A4000   |      3250 |              840 | 444         |                   |                       396
+      5573 | OF264760            | CI5021A4000   |      2600 |              840 | 840         | 209               |                         0
+      6682 | OF265528            | 2880          |      2880 |               72 | 60          |                   |                        12
+      6752 | OF265695            | 5096V001      |       2.9 |               15 |             |                   |                        15
+      6753 | OF265695            | 5096V002      |       2.9 |               15 |             |                   |                        15
+(7 rows)
+
+ROLLBACK

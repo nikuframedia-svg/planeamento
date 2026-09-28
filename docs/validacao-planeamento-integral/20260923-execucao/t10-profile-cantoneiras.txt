@@ -1,0 +1,58 @@
+         11178939 function calls (11178214 primitive calls) in 7.802 seconds
+
+   Ordered by: cumulative time
+   List reduced from 739 to 50 due to restriction <50>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.018    0.018    5.351    5.351 /home/luis/projects/kanban-mes-mtg2/app/raw/ocr_scope.py:62(publish)
+  340/304    3.724    0.011    3.842    0.013 /home/luis/projects/kanban-mes-mtg2/.venv/lib/python3.12/site-packages/psycopg/connection.py:476(wait)
+        1    0.027    0.027    3.531    3.531 /home/luis/projects/kanban-mes-mtg2/app/raw/projection.py:74(build_rows)
+  310/278    0.001    0.000    3.448    0.012 /home/luis/projects/kanban-mes-mtg2/.venv/lib/python3.12/site-packages/psycopg/cursor.py:100(execute)
+        1    0.004    0.004    1.721    1.721 /home/luis/projects/kanban-mes-mtg2/app/raw/source_scope.py:53(capture)
+        3    0.001    0.000    1.678    0.559 /home/luis/projects/kanban-mes-mtg2/app/planning_associations.py:204(evidence)
+        1    0.020    0.020    1.571    1.571 /home/luis/projects/kanban-mes-mtg2/app/raw/projection.py:227(enrich)
+        1    0.001    0.001    1.391    1.391 /home/luis/projects/kanban-mes-mtg2/app/raw/source_scope.py:12(macro_inputs)
+        3    0.002    0.001    1.311    0.437 /home/luis/projects/kanban-mes-mtg2/app/planning_hub.py:430(order_detail)
+     3945    0.055    0.000    0.885    0.000 /home/luis/projects/kanban-mes-mtg2/app/planning_production.py:15(operation_for_record)
+        3    0.007    0.002    0.878    0.293 /home/luis/projects/kanban-mes-mtg2/app/raw/projection.py:389(publish_delta)
+      119    0.062    0.001    0.856    0.007 /home/luis/projects/kanban-mes-mtg2/app/planning_production.py:84(attach_operation_evidence)
+   133379    0.355    0.000    0.848    0.000 /home/luis/projects/kanban-mes-mtg2/app/planning_production.py:51(operations_for_line)
+        1    0.025    0.025    0.833    0.833 /home/luis/projects/kanban-mes-mtg2/app/raw/productivity.py:216(apply_rows)
+      116    0.154    0.001    0.799    0.007 /home/luis/projects/kanban-mes-mtg2/app/planning_hub.py:34(_production_associations)
+    31072    0.026    0.000    0.590    0.000 /usr/lib/python3.12/json/__init__.py:183(dumps)
+    17352    0.012    0.000    0.584    0.000 /home/luis/projects/kanban-mes-mtg2/app/planning_needs.py:22(serial)
+    31072    0.023    0.000    0.558    0.000 /usr/lib/python3.12/json/encoder.py:183(encode)
+   398244    0.160    0.000    0.557    0.000 /home/luis/projects/kanban-mes-mtg2/app/planning_hub.py:30(_technical_key)
+    31072    0.493    0.000    0.526    0.000 /usr/lib/python3.12/json/encoder.py:205(iterencode)
+        1    0.016    0.016    0.488    0.488 /home/luis/projects/kanban-mes-mtg2/app/raw/productivity.py:136(__init__)
+        1    0.005    0.005    0.374    0.374 /home/luis/projects/kanban-mes-mtg2/app/raw/projection.py:205(source_facts)
+   428001    0.111    0.000    0.367    0.000 /usr/lib/python3.12/re/__init__.py:179(sub)
+        5    0.000    0.000    0.361    0.072 /home/luis/projects/kanban-mes-mtg2/app/planning_hub.py:216(_order_rows)
+        3    0.000    0.000    0.356    0.119 /home/luis/projects/kanban-mes-mtg2/.venv/lib/python3.12/site-packages/psycopg/cursor.py:120(executemany)
+  3480409    0.294    0.000    0.294    0.000 {method 'get' of 'dict' objects}
+    18471    0.010    0.000    0.290    0.000 /usr/lib/python3.12/json/__init__.py:299(loads)
+    18471    0.020    0.000    0.275    0.000 /usr/lib/python3.12/json/decoder.py:332(decode)
+    21695    0.090    0.000    0.271    0.000 /home/luis/projects/kanban-mes-mtg2/.venv/lib/python3.12/site-packages/psycopg/types/json.py:256(load)
+    11245    0.016    0.000    0.266    0.000 /home/luis/projects/kanban-mes-mtg2/app/planning_needs.py:26(digest)
+     6624    0.001    0.000    0.258    0.000 {built-in method builtins.next}
+       11    0.000    0.000    0.253    0.023 /usr/lib/python3.12/contextlib.py:141(__exit__)
+   400294    0.191    0.000    0.242    0.000 /home/luis/projects/kanban-mes-mtg2/app/planning_production.py:7(number)
+    18471    0.240    0.000    0.240    0.000 /usr/lib/python3.12/json/decoder.py:343(raw_decode)
+        6    0.000    0.000    0.228    0.038 /home/luis/projects/kanban-mes-mtg2/.venv/lib/python3.12/site-packages/psycopg/connection.py:455(_pipeline_nolock)
+        3    0.000    0.000    0.227    0.076 /home/luis/projects/kanban-mes-mtg2/.venv/lib/python3.12/site-packages/psycopg/_pipeline.py:65(__exit__)
+        1    0.005    0.005    0.226    0.226 /home/luis/projects/kanban-mes-mtg2/app/raw/ocr_scope.py:12(capture)
+     8673    0.010    0.000    0.203    0.000 /home/luis/projects/kanban-mes-mtg2/.venv/lib/python3.12/site-packages/psycopg/cursor.py:289(__next__)
+        1    0.003    0.003    0.179    0.179 /home/luis/projects/kanban-mes-mtg2/app/raw/projection.py:526(preserve_selection)
+    21695    0.178    0.000    0.178    0.000 {built-in method pydantic_core._pydantic_core.from_json}
+     1397    0.001    0.000    0.177    0.000 /home/luis/projects/kanban-mes-mtg2/app/raw/projection.py:13(serialized_digest)
+     1056    0.008    0.000    0.172    0.000 /home/luis/projects/kanban-mes-mtg2/app/raw/calculations.py:20(recalculate)
+   453168    0.105    0.000    0.156    0.000 /usr/lib/python3.12/re/__init__.py:280(_compile)
+        3    0.000    0.000    0.153    0.051 /home/luis/projects/kanban-mes-mtg2/app/planning_hub.py:417(_context_for_order)
+     1595    0.005    0.000    0.152    0.000 /home/luis/projects/kanban-mes-mtg2/app/raw/productivity.py:202(estimate)
+        1    0.000    0.000    0.145    0.145 /home/luis/projects/kanban-mes-mtg2/app/raw/workbooks.py:86(source)
+     1595    0.007    0.000    0.133    0.000 /home/luis/projects/kanban-mes-mtg2/app/raw/productivity.py:178(rate)
+     1056    0.063    0.000    0.124    0.000 /home/luis/projects/kanban-mes-mtg2/app/planning_calculations.py:131(calculate)
+   139862    0.044    0.000    0.117    0.000 {built-in method fromkeys}
+   428015    0.116    0.000    0.116    0.000 {method 'sub' of 're.Pattern' objects}
+
+

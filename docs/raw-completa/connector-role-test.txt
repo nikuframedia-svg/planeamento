@@ -1,0 +1,11 @@
+ can_write_production | can_change_preparation 
+----------------------+------------------------
+ f                    | f
+(1 row)
+
+SET
+ readable_versions 
+-------------------
+                 0
+(1 row)
+

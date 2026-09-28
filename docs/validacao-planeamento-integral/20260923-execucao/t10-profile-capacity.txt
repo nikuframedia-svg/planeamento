@@ -1,0 +1,58 @@
+         9141947 function calls (9141919 primitive calls) in 9.415 seconds
+
+   Ordered by: cumulative time
+   List reduced from 518 to 50 due to restriction <50>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.016    0.016    9.421    9.421 /home/luis/projects/kanban-mes-mtg2/app/raw/capacity.py:110(rebuild)
+        1    0.072    0.072    9.405    9.405 /home/luis/projects/kanban-mes-mtg2/app/raw/capacity_revision.py:332(rebuild)
+        1    0.130    0.130    5.680    5.680 /home/luis/projects/kanban-mes-mtg2/app/raw/capacity_revision.py:157(calculate)
+      213    3.463    0.016    3.987    0.019 /home/luis/projects/kanban-mes-mtg2/.venv/lib/python3.12/site-packages/psycopg/connection.py:476(wait)
+      181    0.000    0.000    3.158    0.017 /home/luis/projects/kanban-mes-mtg2/.venv/lib/python3.12/site-packages/psycopg/connection.py:277(execute)
+      181    0.000    0.000    3.156    0.017 /home/luis/projects/kanban-mes-mtg2/.venv/lib/python3.12/site-packages/psycopg/cursor.py:100(execute)
+        2    0.041    0.021    2.027    1.014 /home/luis/projects/kanban-mes-mtg2/app/raw/historical_estimates.py:16(recalculate)
+        8    0.016    0.002    1.689    0.211 /home/luis/projects/kanban-mes-mtg2/app/raw/projection.py:389(publish_delta)
+        1    0.032    0.032    1.504    1.504 /home/luis/projects/kanban-mes-mtg2/app/raw/capacity_revision.py:417(publish_planning_results)
+        1    0.188    0.188    1.425    1.425 /home/luis/projects/kanban-mes-mtg2/app/raw/productivity.py:216(apply_rows)
+    91448    0.641    0.000    1.357    0.000 /home/luis/projects/kanban-mes-mtg2/.venv/lib/python3.12/site-packages/psycopg/types/json.py:256(load)
+    22532    0.074    0.000    1.155    0.000 /home/luis/projects/kanban-mes-mtg2/app/raw/productivity.py:202(estimate)
+        1    0.040    0.040    1.036    1.036 /home/luis/projects/kanban-mes-mtg2/app/raw/capacity_scope.py:50(identify)
+        7    0.021    0.003    0.848    0.121 /home/luis/projects/kanban-mes-mtg2/.venv/lib/python3.12/site-packages/psycopg/cursor.py:274(fetchall)
+    22532    0.087    0.000    0.826    0.000 /home/luis/projects/kanban-mes-mtg2/app/raw/productivity.py:178(rate)
+    26157    0.020    0.000    0.802    0.000 /home/luis/projects/kanban-mes-mtg2/app/planning_needs.py:22(serial)
+    52250    0.049    0.000    0.767    0.000 /usr/lib/python3.12/json/__init__.py:183(dumps)
+    91448    0.709    0.000    0.709    0.000 {built-in method pydantic_core._pydantic_core.from_json}
+    52250    0.042    0.000    0.704    0.000 /usr/lib/python3.12/json/encoder.py:183(encode)
+        2    0.000    0.000    0.674    0.337 /home/luis/projects/kanban-mes-mtg2/.venv/lib/python3.12/site-packages/psycopg/cursor.py:120(executemany)
+    68798    0.059    0.000    0.660    0.000 /home/luis/projects/kanban-mes-mtg2/.venv/lib/python3.12/site-packages/psycopg/cursor.py:289(__next__)
+        6    0.016    0.003    0.647    0.108 /home/luis/projects/kanban-mes-mtg2/app/raw/capacity_scope.py:228(publish)
+    52250    0.643    0.000    0.644    0.000 /usr/lib/python3.12/json/encoder.py:205(iterencode)
+     2005    0.001    0.000    0.627    0.000 {built-in method builtins.next}
+        4    0.000    0.000    0.625    0.156 /usr/lib/python3.12/contextlib.py:141(__exit__)
+       12    0.002    0.000    0.592    0.049 /home/luis/projects/kanban-mes-mtg2/app/raw/capacity_scope.py:18(rows_at)
+    31784    0.088    0.000    0.561    0.000 /home/luis/projects/kanban-mes-mtg2/app/raw/historical_estimates.py:7(patch)
+    22702    0.034    0.000    0.505    0.000 /home/luis/projects/kanban-mes-mtg2/app/planning_needs.py:26(digest)
+        1    0.013    0.013    0.485    0.485 /home/luis/projects/kanban-mes-mtg2/app/raw/productivity.py:136(__init__)
+        4    0.000    0.000    0.481    0.120 /home/luis/projects/kanban-mes-mtg2/.venv/lib/python3.12/site-packages/psycopg/connection.py:455(_pipeline_nolock)
+        2    0.000    0.000    0.481    0.240 /home/luis/projects/kanban-mes-mtg2/.venv/lib/python3.12/site-packages/psycopg/_pipeline.py:65(__exit__)
+    87421    0.136    0.000    0.418    0.000 {method 'join' of 'str' objects}
+    26157    0.017    0.000    0.415    0.000 /usr/lib/python3.12/json/__init__.py:299(loads)
+    28151    0.007    0.000    0.404    0.000 /home/luis/projects/kanban-mes-mtg2/.venv/lib/python3.12/site-packages/psycopg/_cursor_base.py:195(_execute_gen)
+    26157    0.028    0.000    0.392    0.000 /usr/lib/python3.12/json/decoder.py:332(decode)
+    26157    0.342    0.000    0.342    0.000 /usr/lib/python3.12/json/decoder.py:343(raw_decode)
+     3391    0.003    0.000    0.284    0.000 /home/luis/projects/kanban-mes-mtg2/app/raw/projection.py:13(serialized_digest)
+    31516    0.251    0.000    0.267    0.000 /home/luis/projects/kanban-mes-mtg2/.venv/lib/python3.12/site-packages/psycopg/_cursor_base.py:275(_maybe_prepare_gen)
+  1971666    0.267    0.000    0.267    0.000 /home/luis/projects/kanban-mes-mtg2/app/raw/historical_estimates.py:10(<genexpr>)
+       29    0.150    0.005    0.236    0.008 /home/luis/projects/kanban-mes-mtg2/app/raw/productivity.py:28(historical)
+  2306490    0.229    0.000    0.229    0.000 {method 'get' of 'dict' objects}
+     3549    0.008    0.000    0.214    0.000 /home/luis/projects/kanban-mes-mtg2/.venv/lib/python3.12/site-packages/psycopg/_queries.py:94(dump)
+    24520    0.048    0.000    0.151    0.000 /home/luis/projects/kanban-mes-mtg2/app/raw/capacity.py:81(estimate_rule)
+        2    0.000    0.000    0.148    0.074 /home/luis/projects/kanban-mes-mtg2/app/raw/workbooks.py:86(source)
+        4    0.000    0.000    0.145    0.036 /home/luis/projects/kanban-mes-mtg2/.venv/lib/python3.12/site-packages/psycopg/cursor.py:312(copy)
+        2    0.000    0.000    0.144    0.072 /home/luis/projects/kanban-mes-mtg2/.venv/lib/python3.12/site-packages/psycopg/_copy.py:72(__exit__)
+        2    0.000    0.000    0.144    0.072 /home/luis/projects/kanban-mes-mtg2/.venv/lib/python3.12/site-packages/psycopg/_copy.py:131(finish)
+        2    0.000    0.000    0.144    0.072 /home/luis/projects/kanban-mes-mtg2/.venv/lib/python3.12/site-packages/psycopg/_copy.py:205(finish)
+      185    0.000    0.000    0.140    0.001 /home/luis/projects/kanban-mes-mtg2/.venv/lib/python3.12/site-packages/psycopg/_cursor_base.py:461(_convert_query)
+      185    0.000    0.000    0.140    0.001 /home/luis/projects/kanban-mes-mtg2/.venv/lib/python3.12/site-packages/psycopg/_queries.py:59(convert)
+
+

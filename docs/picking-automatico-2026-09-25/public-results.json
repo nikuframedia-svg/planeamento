@@ -1,0 +1,39 @@
+{
+  "base": "https://louise-pest-performed-atom.trycloudflare.com",
+  "checked_at": "2026-09-25T11:33:03.672Z",
+  "sections": [
+    "Dados da peça",
+    "Características de corte",
+    "Mais opções"
+  ],
+  "raw_generation": "1221",
+  "rows": [
+    {
+      "key": "macro:mtg2_f6fb1ab305e92e22:plan:6182",
+      "of": "OF265270",
+      "week": 34,
+      "date": "2026-08-17",
+      "year": null,
+      "origin": "Picking · folha"
+    },
+    {
+      "key": "macro:mtg2_f6fb1ab305e92e22:plan:6183",
+      "of": "OF265270",
+      "week": 34,
+      "date": "2026-08-17",
+      "year": null,
+      "origin": "Picking · folha"
+    },
+    {
+      "key": "macro:mtg2_f6fb1ab305e92e22:plan:6184",
+      "of": "OF265270",
+      "week": 34,
+      "date": "2026-08-17",
+      "year": null,
+      "origin": "Picking · folha"
+    }
+  ],
+  "errors": [],
+  "failed": [],
+  "database_writes": 0
+}

@@ -1,0 +1,48 @@
+{
+  "pages": [
+    {
+      "path": "/planeamento",
+      "status": 200
+    },
+    {
+      "path": "/planeamento/raw?area=perfis",
+      "status": 200
+    },
+    {
+      "path": "/planeamento/raw?area=cantoneiras",
+      "status": 200
+    },
+    {
+      "path": "/planeamento/manual?area=perfis",
+      "status": 200
+    },
+    {
+      "path": "/planeamento/manual?area=cantoneiras",
+      "status": 200
+    },
+    {
+      "path": "/planeamento/capacidades?area=perfis",
+      "status": 200
+    },
+    {
+      "path": "/planeamento/disponibilidade?area=cantoneiras",
+      "status": 200
+    },
+    {
+      "path": "/planeamento/dossies",
+      "status": 200
+    }
+  ],
+  "result": "passed",
+  "mode": "Standalone app; worker disabled; PostgreSQL transaction reads only; private staging document copy",
+  "perfis": {
+    "generation": "717",
+    "total": 1139,
+    "rows": 25
+  },
+  "cantoneiras": {
+    "generation": "718",
+    "total": 17743,
+    "rows": 25
+  }
+}

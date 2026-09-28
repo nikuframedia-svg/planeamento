@@ -1,0 +1,84 @@
+.............F...                                                        [100%]
+=================================== FAILURES ===================================
+_____________ test_formula_preview_sql_nulls_and_portuguese_export _____________
+
+workspace = 'host=127.0.0.1 port=44021 dbname=dataresearchmtg user=postgres password=f90d86e4ff024db2a1941dfeb29c84c5'
+
+    def test_formula_preview_sql_nulls_and_portuguese_export(workspace):
+        from app.raw import objects,exports
+        projection.rebuild('perfis')
+        p=objects.preview_formula({'area':'perfis','expression':'round([remaining] / 3, 2)'})
+        assert p['coverage']['total']>0
+        unknown=objects.preview_formula({'area':'perfis','expression':'[remaining] / 0'})
+        assert unknown['coverage']['known']==0
+>       condition=objects.preview_formula({'area':'perfis','expression':'if([remaining] > 0, [remaining], 0)'})
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_raw_workspace.py:175: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+app/raw/objects.py:114: in preview_formula
+    e=expressions.compile_ast(ast,fields,compiled.__getitem__)
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+node = {'op': 'if', 'args': [{'op': '>', 'args': [{'field': 'remaining'}, {'literal': 0.0}]}, {'field': 'remaining'}, {'literal': 0.0}]}
+fields = {'id': {'id': 'id', 'label': 'ID', 'group': 'identity', 'type': 'readonly', ...}, 'customer': {'id': 'customer', 'labe...ntity', 'type': 'readonly', ...}, 'ov': {'id': 'ov', 'label': 'OV', 'group': 'identity', 'type': 'readonly', ...}, ...}
+resolve = <built-in method __getitem__ of dict object at 0x790249b15e40>
+depth = 0, allow_aggregate = False
+
+    def compile_ast(node,fields,resolve=None,depth=0,allow_aggregate=False):
+        if depth>30 or not isinstance(node,dict):raise PlanningError('Expressão inválida ou demasiado profunda.')
+        if set(node)=={'field'}:
+            key=node['field']
+            if key not in fields:raise PlanningError('Campo inexistente: '+str(key))
+            if resolve:return resolve(key)
+            f=fields[key];kind=f['data_type'];unit=f.get('unit')
+            # Identifiers come solely from the server contract, never from expression text.
+            if not re.fullmatch('[a-zA-Z_][a-zA-Z_0-9]*',key):raise PlanningError('Identificador de campo inválido.')
+            value="c.values_json->>'"+key+"'"
+            sql=f"NULLIF({value},'')"
+            if kind=='number':sql=f'({sql})::numeric'
+            elif kind=='date':sql=f'({sql})::date'
+            elif kind=='boolean':sql=f"CASE WHEN {value} IN ('true','X') THEN true WHEN {value} IN ('false','-') THEN false ELSE NULL END"
+            return Expr(sql,[],kind,unit)
+        if set(node)=={'literal'}:
+            v=node['literal']
+            if v is None:return Expr('NULL',[],'null')
+            if type(v) not in (str,int,float,bool):raise PlanningError('Constante inválida.')
+            if isinstance(v,str) and len(v)>4000:raise PlanningError('Texto demasiado longo.')
+            kind='boolean' if type(v) is bool else 'number' if type(v) in (int,float) else 'text'
+            return Expr('%s::numeric' if kind=='number' else '%s',[v],kind)
+        if set(node)!={'op','args'} or node['op'] not in OPS|FUNCTIONS or not isinstance(node['args'],list):raise PlanningError('Operação não permitida.')
+        op=node['op'];args=[compile_ast(x,fields,resolve,depth+1,allow_aggregate) for x in node['args']]
+        expected={'if':3,'round':2,'floor':1,'ceil':1,'abs':1,'lower':1,'upper':1,'length':1,'year':1,'week':1,'date':1,'days':2,'sum':1,'count':1,'count_distinct':1,'average':1,'minimum':1,'maximum':1}
+        if op in OPS and len(args)!=2 or op in expected and len(args)!=expected[op] or not args:raise PlanningError('Número de argumentos inválido em '+op+'.')
+        params=[x for a in args for x in a.args];s=[a.sql for a in args];kind=args[0].kind;unit=args[0].unit;agg=any(a.aggregate for a in args)
+        aggregates={'sum':'sum','count':'count','count_distinct':'count','average':'avg','minimum':'min','maximum':'max'}
+        if op in aggregates:
+            if not allow_aggregate or agg:raise PlanningError('Agregação não permitida neste contexto.')
+            if op in ('sum','average') and kind!='number':raise PlanningError('A agregação exige números.')
+            return Expr(aggregates[op]+'('+('DISTINCT ' if op=='count_distinct' else '')+s[0]+')',params,'number' if op.startswith('count') else kind,'un.' if op.startswith('count') else unit,True)
+        if op in ('+','-','*','/'):
+            if any(a.kind not in ('number','null') for a in args):raise PlanningError('A operação aritmética exige números.')
+            if op in ('+','-') and args[0].unit!=args[1].unit:raise PlanningError('Unidades incompatíveis. Converte os valores antes de somar ou subtrair.')
+            if op=='*':
+                units=[a.unit for a in args if a.unit and a.unit!='un.']
+                unit='·'.join(units) if units else ('un.' if any(a.unit for a in args) else None)
+                unit={'mm·mm':'mm²','m·m':'m²'}.get(unit,unit)
+            if op=='/':unit=None if args[0].unit==args[1].unit else args[0].unit if not args[1].unit else (args[0].unit or '1')+'/'+args[1].unit
+            return Expr('('+s[0]+op+('NULLIF('+s[1]+',0)' if op=='/' else s[1])+')',params,'number',unit,agg)
+        if op in ('>','<','>=','<=','=','!='):
+            if not same(*args) and not (args[0].kind==args[1].kind=='number' and (not args[0].unit or not args[1].unit)) and all(a.kind!='null' for a in args):raise PlanningError('Comparação entre tipos ou unidades incompatíveis.')
+            return Expr('('+s[0]+op+s[1]+')',params,'boolean',None,agg)
+        if op in ('and','or'):
+            if any(a.kind!='boolean' for a in args):raise PlanningError('A condição exige valores lógicos.')
+            return Expr('('+(' '+op.upper()+' ').join(s)+')',params,'boolean',None,agg)
+        if op=='if':
+>           if args[0].kind!='boolean' or not same(args[1],args[2]) and all(a.kind!='null' for a in args[1:]):raise PlanningError('Condição ou resultados incompatíveis.')
+                                                                                                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           app.planning.PlanningError: Condição ou resultados incompatíveis.
+
+app/raw/expressions.py:120: PlanningError
+=========================== short test summary info ============================
+FAILED tests/test_raw_workspace.py::test_formula_preview_sql_nulls_and_portuguese_export
+1 failed, 16 passed in 31.83s

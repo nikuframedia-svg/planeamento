@@ -1,0 +1,202 @@
+{
+  "perfis": [
+    {
+      "cell": "Q2",
+      "field": "dificuldadeof",
+      "xml_type": null,
+      "raw_value": "0",
+      "openpyxl_value": "00:00:00"
+    },
+    {
+      "cell": "S2",
+      "field": "semdataentregadl",
+      "xml_type": null,
+      "raw_value": "8",
+      "openpyxl_value": "1900-01-08 00:00:00"
+    },
+    {
+      "cell": "U2",
+      "field": "semdatafimprev",
+      "xml_type": null,
+      "raw_value": "8",
+      "openpyxl_value": "1900-01-08 00:00:00"
+    },
+    {
+      "cell": "V2",
+      "field": "percent",
+      "xml_type": null,
+      "raw_value": "100",
+      "openpyxl_value": "1900-04-09 00:00:00"
+    },
+    {
+      "cell": "AC2",
+      "field": "codpie",
+      "xml_type": "s",
+      "raw_value": "320",
+      "openpyxl_value": "5.0"
+    },
+    {
+      "cell": "AG2",
+      "field": "satus",
+      "xml_type": null,
+      "raw_value": "1",
+      "openpyxl_value": "1900-01-01 00:00:00"
+    },
+    {
+      "cell": "AH2",
+      "field": "idof",
+      "xml_type": null,
+      "raw_value": "2.0250000249013293E+17",
+      "openpyxl_value": "#VALUE!"
+    },
+    {
+      "cell": "Q3",
+      "field": "dificuldadeof",
+      "xml_type": null,
+      "raw_value": "0",
+      "openpyxl_value": "00:00:00"
+    },
+    {
+      "cell": "S3",
+      "field": "semdataentregadl",
+      "xml_type": null,
+      "raw_value": "5",
+      "openpyxl_value": "1900-01-05 00:00:00"
+    },
+    {
+      "cell": "U3",
+      "field": "semdatafimprev",
+      "xml_type": null,
+      "raw_value": "5",
+      "openpyxl_value": "1900-01-05 00:00:00"
+    },
+    {
+      "cell": "V3",
+      "field": "percent",
+      "xml_type": null,
+      "raw_value": "100",
+      "openpyxl_value": "1900-04-09 00:00:00"
+    },
+    {
+      "cell": "AC3",
+      "field": "codpie",
+      "xml_type": "s",
+      "raw_value": "331",
+      "openpyxl_value": "1.3"
+    },
+    {
+      "cell": "AG3",
+      "field": "satus",
+      "xml_type": null,
+      "raw_value": "1",
+      "openpyxl_value": "1900-01-01 00:00:00"
+    },
+    {
+      "cell": "AH3",
+      "field": "idof",
+      "xml_type": null,
+      "raw_value": "2.0250000249013366E+17",
+      "openpyxl_value": "#VALUE!"
+    }
+  ],
+  "cantoneiras": [
+    {
+      "cell": "Q2",
+      "field": "dificuldadeof",
+      "xml_type": null,
+      "raw_value": null,
+      "openpyxl_value": "None"
+    },
+    {
+      "cell": "S2",
+      "field": "semdataentregadl",
+      "xml_type": null,
+      "raw_value": "3",
+      "openpyxl_value": "1900-01-03 00:00:00"
+    },
+    {
+      "cell": "U2",
+      "field": "semdatafimprev",
+      "xml_type": null,
+      "raw_value": "3",
+      "openpyxl_value": "1900-01-03 00:00:00"
+    },
+    {
+      "cell": "V2",
+      "field": "percent",
+      "xml_type": null,
+      "raw_value": "100",
+      "openpyxl_value": "1900-04-09 00:00:00"
+    },
+    {
+      "cell": "AC2",
+      "field": "codpie",
+      "xml_type": "s",
+      "raw_value": "44",
+      "openpyxl_value": "013"
+    },
+    {
+      "cell": "AG2",
+      "field": "satus",
+      "xml_type": null,
+      "raw_value": "1",
+      "openpyxl_value": "1900-01-01 00:00:00"
+    },
+    {
+      "cell": "AH2",
+      "field": "idof",
+      "xml_type": null,
+      "raw_value": "2.0140000017887437E+17",
+      "openpyxl_value": "#VALUE!"
+    },
+    {
+      "cell": "Q3",
+      "field": "dificuldadeof",
+      "xml_type": null,
+      "raw_value": null,
+      "openpyxl_value": "None"
+    },
+    {
+      "cell": "S3",
+      "field": "semdataentregadl",
+      "xml_type": null,
+      "raw_value": "3",
+      "openpyxl_value": "1900-01-03 00:00:00"
+    },
+    {
+      "cell": "U3",
+      "field": "semdatafimprev",
+      "xml_type": null,
+      "raw_value": "3",
+      "openpyxl_value": "1900-01-03 00:00:00"
+    },
+    {
+      "cell": "V3",
+      "field": "percent",
+      "xml_type": null,
+      "raw_value": "100",
+      "openpyxl_value": "1900-04-09 00:00:00"
+    },
+    {
+      "cell": "AC3",
+      "field": "codpie",
+      "xml_type": "s",
+      "raw_value": "44",
+      "openpyxl_value": "013"
+    },
+    {
+      "cell": "AG3",
+      "field": "satus",
+      "xml_type": null,
+      "raw_value": "1",
+      "openpyxl_value": "1900-01-01 00:00:00"
+    },
+    {
+      "cell": "AH3",
+      "field": "idof",
+      "xml_type": null,
+      "raw_value": "2.0140000017887501E+17",
+      "openpyxl_value": "#VALUE!"
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "OF264763": [
+    {
+      "of": "OF264763",
+      "cpis_status": "Em Produção",
+      "status_values": [
+        "Em Produção"
+      ],
+      "plan": {
+        "perfis": 3
+      },
+      "execution_complete": false
+    }
+  ],
+  "OF264760": [
+    {
+      "of": "OF264760",
+      "cpis_status": null,
+      "status_values": [
+        "Em Produção",
+        "Fechada"
+      ],
+      "plan": {
+        "perfis": 2
+      },
+      "execution_complete": true
+    }
+  ],
+  "OF265591": [
+    {
+      "of": "OF265591",
+      "cpis_status": "Em Produção",
+      "status_values": [
+        "Em Produção"
+      ],
+      "plan": {
+        "perfis": 3
+      },
+      "execution_complete": false
+    }
+  ]
+}

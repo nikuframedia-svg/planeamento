@@ -1,0 +1,34 @@
+{
+  "checked_at": "2026-09-24T23:50:13.485023+00:00",
+  "source_references": {
+    "planning_generation": 781,
+    "capacity_generation": 784,
+    "configuration_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "sources_pending": false
+  },
+  "files": {
+    "app/gantt/inputs.py": "271a31e0c4a01445c32d63869bdf2612cad3c1ee1cf88907831ca594c8b10b4f",
+    "app/gantt/source_plan.py": "a3427dcaf94dff1e0d654db6e94c4b2b58a7dcb377b7df635c941a76bdbd2050",
+    "app/gantt/service.py": "86253a1250074939535aaf9ca223ad172218755280275a8315f613697311b78c",
+    "app/web/static/gantt.js": "46d6feca52d3398fb06886d6336d4b101141edcb3a24711e608d9399a2da5288",
+    "app/web/static/gantt.css": "c1b33556f6725fd66d71123160cc9d1b247f6a7295f75b66678ba453227d6455",
+    "app/web/templates/gantt.html": "d1ce9d2e2661734c3fea13658a2825ed2b69e987d1ec992947f2b98ae6bf69cf",
+    "tests/test_gantt_source_plan.py": "c34c1881d438c1a28355e810a64974cf98ac7a96a799c87c19659a06b40ce472",
+    "tests/test_planning_gantt.py": "f437ef8ed4638447ad81ea5462f4efc292d83349bc514d8648036fa1f7304776",
+    "tests/planning_gantt_browser.cjs": "38a4b6890d840e86f8c81db92f66342cf171d93dd536eb196ca48f19d2975481"
+  },
+  "dependencies": {
+    "ortools": "9.15.6755",
+    "psycopg": "3.3.4",
+    "fastapi": "0.141.1"
+  },
+  "operations_http_seconds": [
+    1.119,
+    1.116,
+    1.071,
+    1.108,
+    1.096
+  ],
+  "benchmark_scope": "Read-only source plan endpoint; not a solver load benchmark",
+  "database_writes": 0
+}

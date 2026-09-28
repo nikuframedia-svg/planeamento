@@ -1,0 +1,20 @@
+{
+  "base": "https://louise-pest-performed-atom.trycloudflare.com",
+  "readOnly": true,
+  "of": "OF266236",
+  "groups": true,
+  "manualProfile": true,
+  "level1Count": 20,
+  "namedProfiles": true,
+  "pdf": {
+    "document": "78052ee6-1ad8-4ef6-b31b-e3aca97ab96c",
+    "piece": "302ecb2c-c5d8-4fad-a98a-9ee73d2368c3"
+  },
+  "cantoneiras": true,
+  "noName": true,
+  "mobile": true,
+  "zoomReflow": true,
+  "cpisBlocked": true,
+  "errors": [],
+  "writes": []
+}

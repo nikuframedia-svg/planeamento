@@ -1,0 +1,74 @@
+{
+  "documents": [
+    {
+      "status": "ready",
+      "n": 2
+    },
+    {
+      "status": "review",
+      "n": 3
+    }
+  ],
+  "pieces": [
+    {
+      "state": "blocked",
+      "n": 4
+    },
+    {
+      "state": "existing",
+      "n": 3
+    },
+    {
+      "state": "ready",
+      "n": 4
+    },
+    {
+      "state": "review",
+      "n": 1
+    }
+  ],
+  "needs": 7,
+  "of266229": [
+    {
+      "id": "78052ee6-1ad8-4ef6-b31b-e3aca97ab96c",
+      "filename": "OF266229.pdf",
+      "page_count": 2,
+      "status": "ready",
+      "production_order": "OF266229",
+      "issues_json": "[]",
+      "revision": 26
+    }
+  ],
+  "documents_summary": [
+    {
+      "filename": "OF260221.pdf",
+      "production_order": "OF260221",
+      "status": "review",
+      "pieces": 1
+    },
+    {
+      "filename": "OF263785.pdf",
+      "production_order": "OF263785",
+      "status": "review",
+      "pieces": 3
+    },
+    {
+      "filename": "OF265931.pdf",
+      "production_order": "OF265931",
+      "status": "ready",
+      "pieces": 2
+    },
+    {
+      "filename": "OF265941.pdf",
+      "production_order": "OF265941",
+      "status": "review",
+      "pieces": 5
+    },
+    {
+      "filename": "OF266229.pdf",
+      "production_order": "OF266229",
+      "status": "ready",
+      "pieces": 1
+    }
+  ]
+}

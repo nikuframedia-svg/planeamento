@@ -1,0 +1,1 @@
+Real-model proposal reopened: canonical browser confirmation, server result over 7391 rows, model provenance, JSON and standalone HTML rendering passed.

@@ -1,0 +1,59 @@
+{
+  "areas": {
+    "perfis": {
+      "source_file": "/home/luis/projects/DATARESEARCHMTG/Met2_Plan_Perfis.xlsm",
+      "file_matches_import": true,
+      "snapshot": "mtg2_9ed22bcb188e3cd1",
+      "rows": 7391,
+      "page_seconds": 0.07276762649416924,
+      "version": "11",
+      "current_sha256": "9ed22bcb188e3cd1af91bddf8350c29a632ea4ff98832e819a09a4859656d7a7",
+      "imported_sha256": "9ed22bcb188e3cd1af91bddf8350c29a632ea4ff98832e819a09a4859656d7a7"
+    },
+    "cantoneiras": {
+      "source_file": "/home/luis/projects/DATARESEARCHMTG/Met3_Plan_Cantoneiras.xlsm",
+      "file_matches_import": true,
+      "snapshot": "mtg_79ca6d60785198f2",
+      "rows": 75303,
+      "page_seconds": 0.2504375707358122,
+      "version": "15",
+      "current_sha256": "79ca6d60785198f2616a4c9794d677094648b53f02adc920080320c693542aaf",
+      "imported_sha256": "79ca6d60785198f2616a4c9794d677094648b53f02adc920080320c693542aaf"
+    }
+  },
+  "sources": [
+    {
+      "source": "cantoneiras",
+      "attempted_at": "2026-09-22T18:05:39.946450+00:00",
+      "confirmed_at": "2026-09-22T18:05:40.025810+00:00",
+      "error": null,
+      "available": true
+    },
+    {
+      "source": "capacity",
+      "attempted_at": "2026-09-22T18:05:40.071833+00:00",
+      "confirmed_at": "2026-09-22T18:05:49.605289+00:00",
+      "error": null,
+      "available": true
+    },
+    {
+      "source": "original",
+      "attempted_at": "2026-09-22T18:05:40.038257+00:00",
+      "confirmed_at": null,
+      "error": "Importador no PC sem publicação confirmada.",
+      "available": false
+    },
+    {
+      "source": "perfis",
+      "attempted_at": "2026-09-22T18:05:39.884037+00:00",
+      "confirmed_at": "2026-09-22T18:05:39.936946+00:00",
+      "error": null,
+      "available": true
+    }
+  ],
+  "operational_counts": {
+    "preparations": 0,
+    "production_rows": 2020,
+    "validated_sheets": 251
+  }
+}

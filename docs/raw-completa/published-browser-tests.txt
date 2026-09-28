@@ -1,0 +1,1 @@
+Published preview: both areas, source status, 315/298 case, fixed OF/OV/reference, 390 px and 200% verified; no writes to operational data.

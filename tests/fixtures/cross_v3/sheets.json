@@ -1,0 +1,807 @@
+[
+  {
+    "uid": "66409cab2812",
+    "template_name": "vanguard_kanban",
+    "created_at": "2026-08-19T22:30:58+00:00",
+    "source_filename": null,
+    "source_page": null,
+    "image_basename": "a2226e56ca6fc165_t_vanguard.png",
+    "image_sha256": "a2226e56ca6fc165e7516b55b4a2f9f79249eaea800aeef485ad525311d5b1b6",
+    "raw_extraction": {
+      "header": {
+        "operador": "Teste OCR Perfis",
+        "n_operador": "3480",
+        "setor_maquina": "VANGUARD",
+        "data": "20/08/2026",
+        "turno": "M"
+      },
+      "rows": [
+        {
+          "cliente": "CEGELEC",
+          "ov": "2509151",
+          "of": null,
+          "modelo": null,
+          "qtd": "4",
+          "qtd2": null,
+          "metros": null,
+          "duracao": null
+        },
+        {
+          "cliente": null,
+          "ov": null,
+          "of": "256000",
+          "modelo": "0528P002",
+          "qtd": null,
+          "qtd2": null,
+          "metros": "1.8",
+          "duracao": "0:45"
+        }
+      ],
+      "footer": {
+        "metros_produzidos": "76",
+        "horas_trabalhadas": "7.5"
+      }
+    },
+    "raw_sha256": "709f642c926dfc9a29392f8d437b10785d6c6e95b45acf0345244c19c01ee315",
+    "independent_human_edits": [],
+    "extracted_at": "2026-08-19T22:31:31+00:00",
+    "extraction_generation": 0,
+    "evidence_event_floor": 0
+  },
+  {
+    "uid": "6e8a0dd64add",
+    "template_name": "perfis_paragens",
+    "created_at": "2026-08-19T22:30:58+00:00",
+    "source_filename": null,
+    "source_page": null,
+    "image_basename": "59e929660edf03f5_t_paragens.png",
+    "image_sha256": "59e929660edf03f5dd6fe30a37fc607853d1f6340f6fae4e0c6644e6bd474bed",
+    "raw_extraction": {
+      "header": {
+        "operador": "Teste OCR Perfis",
+        "n_operador": "3480",
+        "setor_maquina": "SERROTE",
+        "data": "20/08/2026",
+        "turno": "X"
+      },
+      "rows": [
+        {
+          "motivo": "Falta de material",
+          "inicio": null,
+          "fim": null,
+          "duracao": null,
+          "resolvido": "SIM"
+        }
+      ],
+      "footer": {}
+    },
+    "raw_sha256": "565ba7ca5e1e1f11e30e3b33fb688b2cbd374e64b4b0bca76a80eee806ea4050",
+    "independent_human_edits": [],
+    "extracted_at": "2026-08-19T22:31:49+00:00",
+    "extraction_generation": 0,
+    "evidence_event_floor": 0
+  },
+  {
+    "uid": "755596f0d014",
+    "template_name": "serrote_kanban",
+    "created_at": "2026-08-19T22:30:58+00:00",
+    "source_filename": null,
+    "source_page": null,
+    "image_basename": "ff9c16ecfc0cf6b5_t_serrote.png",
+    "image_sha256": "ff9c16ecfc0cf6b5be730875d2812a4b91d42822cd3442d60af5c884df6d2993",
+    "raw_extraction": {
+      "header": {
+        "operador": "Teste OCR Perfis",
+        "n_operador": "3480",
+        "setor_maquina": "SERROTE",
+        "data": "20/08/2026",
+        "turno": "M"
+      },
+      "rows": [
+        {
+          "cliente": "CEGELEC",
+          "ov": "2509151",
+          "of": "256000",
+          "perfil": "60.3x2.9",
+          "qtd": "4",
+          "modelo": "0528P001"
+        },
+        {
+          "cliente": "\"",
+          "ov": "\"",
+          "of": "\"",
+          "perfil": "\"",
+          "qtd": "11",
+          "modelo": "1460P002"
+        },
+        {
+          "cliente": "\"",
+          "ov": "\"",
+          "of": "\"",
+          "perfil": "\"",
+          "qtd": "11",
+          "modelo": "1460P001"
+        }
+      ],
+      "footer": {
+        "horas_trabalhadas": "7.5"
+      }
+    },
+    "raw_sha256": "a71908335383b4327174e197ef4bcb3e4f0e43422bfcc7bcfc5da048c0f85ae7",
+    "independent_human_edits": [],
+    "extracted_at": "2026-08-19T22:31:21+00:00",
+    "extraction_generation": 0,
+    "evidence_event_floor": 0
+  },
+  {
+    "uid": "1fb333b28059",
+    "template_name": "serrote_kanban",
+    "created_at": "2026-08-20T08:06:29+00:00",
+    "source_filename": null,
+    "source_page": null,
+    "image_basename": "a0c28815000ff1cd_Xerox Scan_20082026080718_p2.png",
+    "image_sha256": "a0c28815000ff1cda3077ef7dbe0d084444660ebf748c4a89332f3fdedbdd6ed",
+    "raw_extraction": {
+      "header": {
+        "operador": "PAULO M",
+        "n_operador": "3067",
+        "setor_maquina": "SERROTE DISCO",
+        "data": "19-08-26",
+        "turno": null
+      },
+      "rows": [
+        {
+          "cliente": null,
+          "ov": null,
+          "of": "265180",
+          "perfil": "Ø20 x 455",
+          "qtd": "108",
+          "modelo": "CA1 A019"
+        },
+        {
+          "cliente": null,
+          "ov": null,
+          "of": "265180",
+          "perfil": "UPN65 x 3940",
+          "qtd": "4",
+          "modelo": "6647V009"
+        },
+        {
+          "cliente": null,
+          "ov": null,
+          "of": "265180",
+          "perfil": "UPN65 x 3518",
+          "qtd": "2",
+          "modelo": "CA43 17A4007"
+        },
+        {
+          "cliente": null,
+          "ov": null,
+          "of": "265180",
+          "perfil": "UPN50 x 1687",
+          "qtd": "2",
+          "modelo": null
+        },
+        {
+          "cliente": null,
+          "ov": null,
+          "of": "265180",
+          "perfil": "UPN50 x 1704",
+          "qtd": "2",
+          "modelo": null
+        },
+        {
+          "cliente": null,
+          "ov": null,
+          "of": "265180",
+          "perfil": "Ø26.9 x 3595",
+          "qtd": "2",
+          "modelo": null
+        },
+        {
+          "cliente": null,
+          "ov": null,
+          "of": "265180",
+          "perfil": "Ø33.7 x 3595",
+          "qtd": "2",
+          "modelo": null
+        },
+        {
+          "cliente": null,
+          "ov": null,
+          "of": "265180",
+          "perfil": "Ø88.9 x 3000",
+          "qtd": "3",
+          "modelo": null
+        },
+        {
+          "cliente": null,
+          "ov": null,
+          "of": "264441",
+          "perfil": "Ø42 x 625",
+          "qtd": "30",
+          "modelo": null
+        },
+        {
+          "cliente": null,
+          "ov": null,
+          "of": "265191",
+          "perfil": "Ø60 x 5830",
+          "qtd": "1",
+          "modelo": null
+        },
+        {
+          "cliente": "PAV3 EQ2",
+          "ov": null,
+          "of": null,
+          "perfil": "60 x 60 x 140",
+          "qtd": "84",
+          "modelo": null
+        },
+        {
+          "cliente": null,
+          "ov": null,
+          "of": "264640",
+          "perfil": "50 x 1100",
+          "qtd": "1",
+          "modelo": "5055 000"
+        }
+      ],
+      "footer": {
+        "horas_trabalhadas": null
+      }
+    },
+    "raw_sha256": "1d2bdfa68401448a62b3836a1fdcbb4e2376adf18841479b60afca6c0145d2ab",
+    "independent_human_edits": [
+      {
+        "id": 53,
+        "field_path": "rows[0].ov",
+        "old_value": null,
+        "new_value": "2606647",
+        "source": "human",
+        "edited_at": "2026-08-20T11:44:34+00:00"
+      },
+      {
+        "id": 55,
+        "field_path": "rows[0].cliente",
+        "old_value": null,
+        "new_value": "DSTELECOM",
+        "source": "human",
+        "edited_at": "2026-08-20T11:44:42+00:00"
+      },
+      {
+        "id": 56,
+        "field_path": "rows[3].modelo",
+        "old_value": null,
+        "new_value": "6647V010",
+        "source": "human",
+        "edited_at": "2026-08-20T11:50:42+00:00"
+      }
+    ],
+    "extracted_at": "2026-08-20T08:06:54+00:00",
+    "extraction_generation": 0,
+    "evidence_event_floor": 0
+  },
+  {
+    "uid": "2834c405ca66",
+    "template_name": "serrote_kanban",
+    "created_at": "2026-08-20T08:06:29+00:00",
+    "source_filename": null,
+    "source_page": null,
+    "image_basename": "791aab9ec6003abe_Xerox Scan_20082026080718_p3.png",
+    "image_sha256": "791aab9ec6003abeefa46176e0fba3acb185a65454f162556b68687dc9d2424f",
+    "raw_extraction": {
+      "header": {
+        "operador": "RAILON",
+        "n_operador": "3067",
+        "setor_maquina": "SERROTE DISCO",
+        "data": "19-08-26",
+        "turno": null
+      },
+      "rows": [
+        {
+          "cliente": null,
+          "ov": null,
+          "of": null,
+          "perfil": "CALHA 41x21x2500",
+          "qtd": "12",
+          "modelo": null
+        }
+      ],
+      "footer": {
+        "horas_trabalhadas": null
+      }
+    },
+    "raw_sha256": "91a00459eecb71ea09c24b1ef03aaad328c106f5e8636c61063b6699d8beb9ba",
+    "independent_human_edits": [],
+    "extracted_at": "2026-08-20T08:07:08+00:00",
+    "extraction_generation": 0,
+    "evidence_event_floor": 0
+  },
+  {
+    "uid": "e0759433fe1e",
+    "template_name": "vanguard_kanban",
+    "created_at": "2026-08-20T08:06:29+00:00",
+    "source_filename": null,
+    "source_page": null,
+    "image_basename": "53a058b70dc19f10_Xerox Scan_20082026080718_p1.png",
+    "image_sha256": "53a058b70dc19f106bb2e301a93abdd2f194bec2c335c512fd360d94102ac037",
+    "raw_extraction": {
+      "header": {
+        "operador": "Ricardo Meireles",
+        "n_operador": "1866",
+        "setor_maquina": "VANGUARD",
+        "data": "19/08/2026",
+        "turno": "M"
+      },
+      "rows": [
+        {
+          "cliente": "Vialsil",
+          "ov": null,
+          "of": "265396",
+          "modelo": "2615 V001",
+          "qtd": "60",
+          "qtd2": "210000",
+          "metros": null,
+          "duracao": "M26P0127"
+        },
+        {
+          "cliente": "Statnett",
+          "ov": null,
+          "of": "265126",
+          "modelo": "6482 b-1",
+          "qtd": "24",
+          "qtd2": "27600",
+          "metros": null,
+          "duracao": "M26P0235"
+        }
+      ],
+      "footer": {
+        "metros_produzidos": "238",
+        "horas_trabalhadas": "10"
+      }
+    },
+    "raw_sha256": "fd444ca266d1bc10fd07ae7c1eb709a949b411662a3a0f8dda67ad4c91cfc391",
+    "independent_human_edits": [],
+    "extracted_at": "2026-08-20T08:06:37+00:00",
+    "extraction_generation": 0,
+    "evidence_event_floor": 0
+  },
+  {
+    "uid": "10d7ff5011d8",
+    "template_name": "serrote_kanban",
+    "created_at": "2026-08-20T09:58:39+00:00",
+    "source_filename": null,
+    "source_page": null,
+    "image_basename": "b7eb496d3892b8a9_Xerox Scan_20082026105811_p1.png",
+    "image_sha256": "b7eb496d3892b8a9b43a7c0cbb015cd6bc56bb67fbcbf1d758c3e6dc03f47b60",
+    "raw_extraction": {
+      "header": {
+        "operador": "Manpreet",
+        "n_operador": "3082",
+        "setor_maquina": "DOALL PAV1",
+        "data": null,
+        "turno": null
+      },
+      "rows": [
+        {
+          "cliente": null,
+          "ov": null,
+          "of": "265528",
+          "perfil": "PL30x8x869",
+          "qtd": "1260",
+          "modelo": "2C1"
+        }
+      ],
+      "footer": {
+        "horas_trabalhadas": null
+      }
+    },
+    "raw_sha256": "8f56e641394dd31cd1d378a68b50474fdc5b9ad24483269500c5cffc69afcbaa",
+    "independent_human_edits": [],
+    "extracted_at": "2026-08-20T09:58:49+00:00",
+    "extraction_generation": 0,
+    "evidence_event_floor": 0
+  },
+  {
+    "uid": "0a699f2a94dc",
+    "template_name": "serrote_kanban",
+    "created_at": "2026-08-25T19:57:19+00:00",
+    "source_filename": "17-08-2026.PDF",
+    "source_page": 1,
+    "image_basename": "1c884b69a069dc3a_17-08-2026_p1.png",
+    "image_sha256": "1c884b69a069dc3af4cf190935ce88efdcc88f78101c5cb64e239ff5853838e8",
+    "raw_extraction": {
+      "_schema_version": 2,
+      "header": {
+        "operador": "Kul Tamomg",
+        "n_operador": "2952",
+        "setor_maquina": "SERROTE HEBA",
+        "data": null,
+        "turno": null
+      },
+      "rows": [
+        {
+          "cliente": null,
+          "ov": null,
+          "of": "264348",
+          "qtd": "4",
+          "tubo": "Q 193,7 x 10 x 9970",
+          "referencia": null
+        },
+        {
+          "cliente": null,
+          "ov": null,
+          "of": "264991",
+          "qtd": "15",
+          "tubo": "Q 193,7 x 10 x 672",
+          "referencia": null
+        }
+      ],
+      "footer": {
+        "horas_trabalhadas": null
+      }
+    },
+    "raw_sha256": "362d9c85e47f892ad691cb5c78129f933e60d69418ec4bea27bf62aa6b5d8d27",
+    "independent_human_edits": [],
+    "extracted_at": "2026-08-25T20:05:58+00:00",
+    "extraction_generation": 0,
+    "evidence_event_floor": 0
+  },
+  {
+    "uid": "580ab6abb6e9",
+    "template_name": "vanguard_kanban",
+    "created_at": "2026-08-25T19:57:19+00:00",
+    "source_filename": "14-08-2026.PDF",
+    "source_page": 1,
+    "image_basename": "dbe81cd795b54a4d_14-08-2026_p1.png",
+    "image_sha256": "dbe81cd795b54a4d10e8772f0d9f2e09d53db1b35a0b492fc7d373ba7c26d990",
+    "raw_extraction": {
+      "_schema_version": 2,
+      "header": {
+        "operador": "Diogo campos",
+        "n_operador": "3977",
+        "setor_maquina": "VANGUARD",
+        "data": "14/08/2026",
+        "turno": null
+      },
+      "rows": [
+        {
+          "cliente": null,
+          "ov": null,
+          "of": "265424",
+          "modelo": "2C12",
+          "qtd": "30",
+          "qtd_total_mm": "126 900",
+          "ultima_coluna": null
+        },
+        {
+          "cliente": null,
+          "ov": null,
+          "of": "264186",
+          "modelo": "M222-502",
+          "qtd": "1",
+          "qtd_total_mm": "8049",
+          "ultima_coluna": null
+        }
+      ],
+      "footer": {
+        "metros_produzidos": null,
+        "horas_trabalhadas": "8h"
+      },
+      "layout": {
+        "ultima_coluna": "duracao"
+      }
+    },
+    "raw_sha256": "d9a8a802c8842018b31bc7e24e74d31efe9e0fd20ff0e17dd1aedbcb5785d451",
+    "independent_human_edits": [],
+    "extracted_at": "2026-08-25T20:00:53+00:00",
+    "extraction_generation": 0,
+    "evidence_event_floor": 0
+  },
+  {
+    "uid": "6d535b704bb0",
+    "template_name": "serrote_kanban",
+    "created_at": "2026-08-25T19:57:19+00:00",
+    "source_filename": "18-08-2026.PDF",
+    "source_page": 1,
+    "image_basename": "4129002013b41a3b_18-08-2026_p1.png",
+    "image_sha256": "4129002013b41a3bf2173e19dbe668cae97ab99b2157022957b6549ebcdf90d6",
+    "raw_extraction": {
+      "_schema_version": 2,
+      "header": {
+        "operador": "PAULO M",
+        "n_operador": "3067",
+        "setor_maquina": "SERROTE",
+        "data": "18-08-26",
+        "turno": "M"
+      },
+      "rows": [
+        {
+          "cliente": null,
+          "ov": null,
+          "of": null,
+          "qtd": null,
+          "tubo": "CANTON. 30x30x3900",
+          "referencia": "BA1225A4011"
+        }
+      ],
+      "footer": {
+        "horas_trabalhadas": null
+      }
+    },
+    "raw_sha256": "62ca8b90174b971fed9f723d33b8bb2141d3d933e30c925b02722b72aa39b85d",
+    "independent_human_edits": [],
+    "extracted_at": "2026-08-25T20:06:54+00:00",
+    "extraction_generation": 0,
+    "evidence_event_floor": 0
+  },
+  {
+    "uid": "cf06a7a9286f",
+    "template_name": "vanguard_kanban",
+    "created_at": "2026-08-25T19:57:19+00:00",
+    "source_filename": "14-08-2026.PDF",
+    "source_page": 2,
+    "image_basename": "44c8bb77e610a0a9_14-08-2026_p2.png",
+    "image_sha256": "44c8bb77e610a0a9ae9f9c6df796e226ca8c2f50d2a9479a9f293bd15df1496e",
+    "raw_extraction": {
+      "_schema_version": 2,
+      "header": {
+        "operador": "Paulo Fernandes",
+        "n_operador": "965",
+        "setor_maquina": "VANGUARD",
+        "data": "14-08-2026",
+        "turno": null
+      },
+      "rows": [
+        {
+          "cliente": "TENNET",
+          "ov": null,
+          "of": "264186",
+          "modelo": "M222-502",
+          "qtd": "1",
+          "qtd_total_mm": "8049",
+          "ultima_coluna": null
+        },
+        {
+          "cliente": "RTE",
+          "ov": null,
+          "of": "264332",
+          "modelo": "2035-V-107",
+          "qtd": "3",
+          "qtd_total_mm": "18000",
+          "ultima_coluna": null
+        },
+        {
+          "cliente": "Vial Sil",
+          "ov": null,
+          "of": "265396",
+          "modelo": "2615 V002",
+          "qtd": "9",
+          "qtd_total_mm": "35100",
+          "ultima_coluna": null
+        },
+        {
+          "cliente": null,
+          "ov": null,
+          "of": "265396",
+          "modelo": "2615 V001",
+          "qtd": "33",
+          "qtd_total_mm": "115.500",
+          "ultima_coluna": null
+        }
+      ],
+      "footer": {
+        "metros_produzidos": "176,649",
+        "horas_trabalhadas": "11,5"
+      },
+      "layout": {
+        "ultima_coluna": "duracao"
+      }
+    },
+    "raw_sha256": "a872bf3a18fe4eba6e30975da6ae6948f2639071ca4270d07eb15785316dfc7c",
+    "independent_human_edits": [],
+    "extracted_at": "2026-08-25T20:01:27+00:00",
+    "extraction_generation": 0,
+    "evidence_event_floor": 0
+  },
+  {
+    "uid": "cf5652489c6d",
+    "template_name": "serrote_kanban",
+    "created_at": "2026-08-25T19:57:19+00:00",
+    "source_filename": "14-08-2026.PDF",
+    "source_page": 4,
+    "image_basename": "e210d04ebb7e0790_14-08-2026_p4.png",
+    "image_sha256": "e210d04ebb7e0790faba7b730144c25e6492e47c9aa81ddadd6c6f8be8750279",
+    "raw_extraction": {
+      "_schema_version": 2,
+      "header": {
+        "operador": "Paulo M",
+        "n_operador": "3067",
+        "setor_maquina": "SERROTE Disco PAV1",
+        "data": "14-08-26",
+        "turno": "M"
+      },
+      "rows": [
+        {
+          "cliente": null,
+          "ov": null,
+          "of": "265180",
+          "qtd": "1",
+          "tubo": "Ø12 x 230",
+          "referencia": "CA2397A4001"
+        },
+        {
+          "cliente": null,
+          "ov": null,
+          "of": "265180",
+          "qtd": "2",
+          "tubo": "Ø18 x 78",
+          "referencia": "PA0107A4300"
+        },
+        {
+          "cliente": null,
+          "ov": null,
+          "of": "265180",
+          "qtd": "2",
+          "tubo": "Ø12 x 117 INOX",
+          "referencia": "PA0107A4301"
+        },
+        {
+          "cliente": null,
+          "ov": null,
+          "of": "265180",
+          "qtd": "1",
+          "tubo": "Ø48 x 235",
+          "referencia": "CA6319A4127"
+        },
+        {
+          "cliente": null,
+          "ov": null,
+          "of": "265180",
+          "qtd": "1",
+          "tubo": "Ø48 x 500",
+          "referencia": "CA6319A4128"
+        },
+        {
+          "cliente": null,
+          "ov": null,
+          "of": "265180",
+          "qtd": "1",
+          "tubo": "Ø76 x 1000",
+          "referencia": "6647V013"
+        },
+        {
+          "cliente": null,
+          "ov": null,
+          "of": "265180",
+          "qtd": "1",
+          "tubo": "Ø14 x 380",
+          "referencia": "CA4317A4014"
+        },
+        {
+          "cliente": null,
+          "ov": null,
+          "of": "265180",
+          "qtd": "18",
+          "tubo": "Ø14.5 x 305",
+          "referencia": "CA1396A4500"
+        },
+        {
+          "cliente": null,
+          "ov": null,
+          "of": "265180",
+          "qtd": "18",
+          "tubo": "Ø14.5 x 145",
+          "referencia": "CA2098A4500"
+        },
+        {
+          "cliente": null,
+          "ov": null,
+          "of": "264984",
+          "qtd": "116",
+          "tubo": "Ø60 x 1654",
+          "referencia": "CI7712A4026"
+        },
+        {
+          "cliente": null,
+          "ov": null,
+          "of": "ANNUMAL",
+          "qtd": null,
+          "tubo": null,
+          "referencia": "LIMPEZAS"
+        }
+      ],
+      "footer": {
+        "horas_trabalhadas": null
+      }
+    },
+    "raw_sha256": "25373ddd2c99fe6408911cf7acdf7f11205ef9c15a751aaf3244e24476fd5180",
+    "independent_human_edits": [],
+    "extracted_at": "2026-08-25T20:05:24+00:00",
+    "extraction_generation": 0,
+    "evidence_event_floor": 0
+  },
+  {
+    "uid": "fb898aa06d2c",
+    "template_name": "serrote_kanban",
+    "created_at": "2026-08-25T19:57:19+00:00",
+    "source_filename": "14-08-2026.PDF",
+    "source_page": 3,
+    "image_basename": "cd53d7eb6ff0f0b6_14-08-2026_p3.png",
+    "image_sha256": "cd53d7eb6ff0f0b6c25d87e85c4a2958705bf2d96e947e6395fd0c688bc2e5b3",
+    "raw_extraction": {
+      "_schema_version": 2,
+      "header": {
+        "operador": "Américo Silva",
+        "n_operador": "189",
+        "setor_maquina": "SERROTE MEBA PAV. 3",
+        "data": "14/8/2026",
+        "turno": "M"
+      },
+      "rows": [
+        {
+          "cliente": null,
+          "ov": null,
+          "of": null,
+          "qtd": null,
+          "tubo": "ø 159 x 6,3 x 9991 mm",
+          "referencia": "2003 V1"
+        },
+        {
+          "cliente": null,
+          "ov": null,
+          "of": null,
+          "qtd": null,
+          "tubo": "& 193,7 x 10 x 9970",
+          "referencia": "2003 V 107"
+        }
+      ],
+      "footer": {
+        "horas_trabalhadas": null
+      }
+    },
+    "raw_sha256": "6f9ea7bca14db8536c76d1dbdb2089063242031088b922e2e1f0faf827b5bcbf",
+    "independent_human_edits": [],
+    "extracted_at": "2026-08-25T20:01:54+00:00",
+    "extraction_generation": 0,
+    "evidence_event_floor": 0
+  },
+  {
+    "uid": "faab390cdfb2",
+    "template_name": "serrote_kanban",
+    "created_at": "2026-08-25T19:57:20+00:00",
+    "source_filename": "18-08-2026.PDF",
+    "source_page": 2,
+    "image_basename": "fbb59702582d5e6e_18-08-2026_p2.png",
+    "image_sha256": "fbb59702582d5e6eeb5ded17b01e9f69c18dee2760b9046af7024144c922f524",
+    "raw_extraction": {
+      "_schema_version": 2,
+      "header": {
+        "operador": "Manpreet Ram",
+        "n_operador": "3082",
+        "setor_maquina": "SERROTE Fita PAV. 1",
+        "data": "15-8-2026",
+        "turno": null
+      },
+      "rows": [
+        {
+          "cliente": null,
+          "ov": null,
+          "of": null,
+          "qtd": null,
+          "tubo": null,
+          "referencia": null
+        }
+      ],
+      "footer": {
+        "horas_trabalhadas": null
+      }
+    },
+    "raw_sha256": "3c331f222299b44aa50f55698614eb6d4645609f676944f909d76d2dd9ba5318",
+    "independent_human_edits": [],
+    "extracted_at": "2026-08-25T20:07:42+00:00",
+    "extraction_generation": 0,
+    "evidence_event_floor": 0
+  }
+]

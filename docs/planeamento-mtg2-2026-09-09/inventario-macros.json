@@ -1,0 +1,542 @@
+[
+  {
+    "workbook": "Exp.chapaMTG3.xlsm",
+    "module": "EsteLivro.cls",
+    "stream": "VBA/EsteLivro",
+    "lines": 8,
+    "procedures": [],
+    "potential_secret_lines": []
+  },
+  {
+    "workbook": "Exp.chapaMTG3.xlsm",
+    "module": "Folha1.cls",
+    "stream": "VBA/Folha1",
+    "lines": 8,
+    "procedures": [],
+    "potential_secret_lines": []
+  },
+  {
+    "workbook": "Exp.chapaMTG3.xlsm",
+    "module": "Folha2.cls",
+    "stream": "VBA/Folha2",
+    "lines": 8,
+    "procedures": [],
+    "potential_secret_lines": []
+  },
+  {
+    "workbook": "Exp.chapaMTG3.xlsm",
+    "module": "Folha3.cls",
+    "stream": "VBA/Folha3",
+    "lines": 8,
+    "procedures": [],
+    "potential_secret_lines": []
+  },
+  {
+    "workbook": "Exp.chapaMTG3.xlsm",
+    "module": "Folha4.cls",
+    "stream": "VBA/Folha4",
+    "lines": 8,
+    "procedures": [],
+    "potential_secret_lines": []
+  },
+  {
+    "workbook": "Exp.chapaMTG3.xlsm",
+    "module": "Folha5.cls",
+    "stream": "VBA/Folha5",
+    "lines": 8,
+    "procedures": [],
+    "potential_secret_lines": []
+  },
+  {
+    "workbook": "Exp.chapaMTG3.xlsm",
+    "module": "Folha6.cls",
+    "stream": "VBA/Folha6",
+    "lines": 8,
+    "procedures": [],
+    "potential_secret_lines": []
+  },
+  {
+    "workbook": "Exp.chapaMTG3.xlsm",
+    "module": "Folha7.cls",
+    "stream": "VBA/Folha7",
+    "lines": 8,
+    "procedures": [],
+    "potential_secret_lines": []
+  },
+  {
+    "workbook": "Exp.chapaMTG3.xlsm",
+    "module": "Folha11.cls",
+    "stream": "VBA/Folha11",
+    "lines": 8,
+    "procedures": [],
+    "potential_secret_lines": []
+  },
+  {
+    "workbook": "Exp.chapaMTG3.xlsm",
+    "module": "Folha8.cls",
+    "stream": "VBA/Folha8",
+    "lines": 8,
+    "procedures": [],
+    "potential_secret_lines": []
+  },
+  {
+    "workbook": "Exp.chapaMTG3.xlsm",
+    "module": "Folha9.cls",
+    "stream": "VBA/Folha9",
+    "lines": 8,
+    "procedures": [],
+    "potential_secret_lines": []
+  },
+  {
+    "workbook": "Exp.chapaMTG3.xlsm",
+    "module": "Folha10.cls",
+    "stream": "VBA/Folha10",
+    "lines": 8,
+    "procedures": [],
+    "potential_secret_lines": []
+  },
+  {
+    "workbook": "Exp.chapaMTG3.xlsm",
+    "module": "Gráfico1.cls",
+    "stream": "VBA/Gráfico1",
+    "lines": 8,
+    "procedures": [],
+    "potential_secret_lines": []
+  },
+  {
+    "workbook": "Exp.chapaMTG3.xlsm",
+    "module": "Module1.bas",
+    "stream": "VBA/Module1",
+    "lines": 286,
+    "procedures": [
+      "MostrarDiagnostico",
+      "ArquivarEApagarFechadas"
+    ],
+    "potential_secret_lines": []
+  },
+  {
+    "workbook": "Met2_Plan_Perfis.xlsm",
+    "module": "Module1.bas",
+    "stream": "VBA/Module1",
+    "lines": 12,
+    "procedures": [
+      "Limpar"
+    ],
+    "potential_secret_lines": []
+  },
+  {
+    "workbook": "Met2_Plan_Perfis.xlsm",
+    "module": "EsteLivro.cls",
+    "stream": "VBA/EsteLivro",
+    "lines": 17,
+    "procedures": [],
+    "potential_secret_lines": []
+  },
+  {
+    "workbook": "Met2_Plan_Perfis.xlsm",
+    "module": "Folha1.cls",
+    "stream": "VBA/Folha1",
+    "lines": 8,
+    "procedures": [],
+    "potential_secret_lines": []
+  },
+  {
+    "workbook": "Met2_Plan_Perfis.xlsm",
+    "module": "Folha2.cls",
+    "stream": "VBA/Folha2",
+    "lines": 8,
+    "procedures": [],
+    "potential_secret_lines": []
+  },
+  {
+    "workbook": "Met2_Plan_Perfis.xlsm",
+    "module": "Folha12.cls",
+    "stream": "VBA/Folha12",
+    "lines": 8,
+    "procedures": [],
+    "potential_secret_lines": []
+  },
+  {
+    "workbook": "Met2_Plan_Perfis.xlsm",
+    "module": "Module2.bas",
+    "stream": "VBA/Module2",
+    "lines": 23,
+    "procedures": [
+      "Pintar"
+    ],
+    "potential_secret_lines": []
+  },
+  {
+    "workbook": "Met2_Plan_Perfis.xlsm",
+    "module": "Module3.bas",
+    "stream": "VBA/Module3",
+    "lines": 6,
+    "procedures": [
+      "MOSTRAR"
+    ],
+    "potential_secret_lines": []
+  },
+  {
+    "workbook": "Met2_Plan_Perfis.xlsm",
+    "module": "Module4.bas",
+    "stream": "VBA/Module4",
+    "lines": 29,
+    "procedures": [
+      "Visulizar"
+    ],
+    "potential_secret_lines": []
+  },
+  {
+    "workbook": "Met2_Plan_Perfis.xlsm",
+    "module": "Module5.bas",
+    "stream": "VBA/Module5",
+    "lines": 1,
+    "procedures": [],
+    "potential_secret_lines": []
+  },
+  {
+    "workbook": "Met2_Plan_Perfis.xlsm",
+    "module": "Module6.bas",
+    "stream": "VBA/Module6",
+    "lines": 68,
+    "procedures": [
+      "Registar_1",
+      "Armazem",
+      "Macro2"
+    ],
+    "potential_secret_lines": []
+  },
+  {
+    "workbook": "Met2_Plan_Perfis.xlsm",
+    "module": "Module10.bas",
+    "stream": "VBA/Module10",
+    "lines": 1,
+    "procedures": [],
+    "potential_secret_lines": []
+  },
+  {
+    "workbook": "Met2_Plan_Perfis.xlsm",
+    "module": "Module7.bas",
+    "stream": "VBA/Module7",
+    "lines": 95,
+    "procedures": [
+      "Botão55_Click",
+      "Impressao"
+    ],
+    "potential_secret_lines": []
+  },
+  {
+    "workbook": "Met2_Plan_Perfis.xlsm",
+    "module": "Module8.bas",
+    "stream": "VBA/Module8",
+    "lines": 282,
+    "procedures": [
+      "Botão60_Click"
+    ],
+    "potential_secret_lines": [
+      4,
+      279
+    ]
+  },
+  {
+    "workbook": "Met2_Plan_Perfis.xlsm",
+    "module": "Module9.bas",
+    "stream": "VBA/Module9",
+    "lines": 42,
+    "procedures": [
+      "Work_Days"
+    ],
+    "potential_secret_lines": []
+  },
+  {
+    "workbook": "Met2_Plan_Perfis.xlsm",
+    "module": "Module11.bas",
+    "stream": "VBA/Module11",
+    "lines": 65,
+    "procedures": [
+      "Planeamento_Vanguard",
+      "Planeamento"
+    ],
+    "potential_secret_lines": []
+  },
+  {
+    "workbook": "Met2_Plan_Perfis.xlsm",
+    "module": "Module12.bas",
+    "stream": "VBA/Module12",
+    "lines": 26,
+    "procedures": [
+      "Macro1"
+    ],
+    "potential_secret_lines": []
+  },
+  {
+    "workbook": "Met2_Plan_Perfis.xlsm",
+    "module": "Folha3.cls",
+    "stream": "VBA/Folha3",
+    "lines": 8,
+    "procedures": [],
+    "potential_secret_lines": []
+  },
+  {
+    "workbook": "Met2_Plan_Perfis.xlsm",
+    "module": "Folha5.cls",
+    "stream": "VBA/Folha5",
+    "lines": 8,
+    "procedures": [],
+    "potential_secret_lines": []
+  },
+  {
+    "workbook": "Met2_Plan_Perfis.xlsm",
+    "module": "Expedicao.bas",
+    "stream": "VBA/Expedicao",
+    "lines": 18,
+    "procedures": [
+      "Expedicao"
+    ],
+    "potential_secret_lines": []
+  },
+  {
+    "workbook": "Met2_Plan_Perfis.xlsm",
+    "module": "VeriForm.bas",
+    "stream": "VBA/VeriForm",
+    "lines": 89,
+    "procedures": [
+      "VeriForm",
+      "InseForm1",
+      "InseForm2",
+      "InseForm3"
+    ],
+    "potential_secret_lines": []
+  },
+  {
+    "workbook": "Met2_Plan_Perfis.xlsm",
+    "module": "FuncAreaPerf.bas",
+    "stream": "VBA/FuncAreaPerf",
+    "lines": 232,
+    "procedures": [
+      "AreaTuboRedondo",
+      "AreaTuboRetangular",
+      "AreaTuboQuadrado",
+      "AreaVaraoRedondo",
+      "AreaVaraoNervurado",
+      "AreaVaraoRetangular",
+      "AreaVaraoQuadrado",
+      "AreaBarra",
+      "AreaCalha",
+      "AreaCantoneira",
+      "AreaChapa"
+    ],
+    "potential_secret_lines": []
+  },
+  {
+    "workbook": "Met2_Plan_Perfis.xlsm",
+    "module": "Folha13.cls",
+    "stream": "VBA/Folha13",
+    "lines": 8,
+    "procedures": [],
+    "potential_secret_lines": []
+  },
+  {
+    "workbook": "Met2_Plan_Perfis.xlsm",
+    "module": "Folha14.cls",
+    "stream": "VBA/Folha14",
+    "lines": 8,
+    "procedures": [],
+    "potential_secret_lines": []
+  },
+  {
+    "workbook": "Met2_Plan_Perfis.xlsm",
+    "module": "HistPlan.bas",
+    "stream": "VBA/HistPlan",
+    "lines": 421,
+    "procedures": [
+      "AbrirSemana",
+      "FecharSemana"
+    ],
+    "potential_secret_lines": [
+      4,
+      185,
+      195,
+      416
+    ]
+  },
+  {
+    "workbook": "Met2_Plan_Perfis.xlsm",
+    "module": "ImpoColu.bas",
+    "stream": "VBA/ImpoColu",
+    "lines": 12,
+    "procedures": [
+      "ImpoColu"
+    ],
+    "potential_secret_lines": []
+  },
+  {
+    "workbook": "Met3_Plan_Cantoneiras.xlsm",
+    "module": "Module1.bas",
+    "stream": "VBA/Module1",
+    "lines": 37,
+    "procedures": [
+      "Registar",
+      "Limpar"
+    ],
+    "potential_secret_lines": []
+  },
+  {
+    "workbook": "Met3_Plan_Cantoneiras.xlsm",
+    "module": "EsteLivro.cls",
+    "stream": "VBA/EsteLivro",
+    "lines": 8,
+    "procedures": [],
+    "potential_secret_lines": []
+  },
+  {
+    "workbook": "Met3_Plan_Cantoneiras.xlsm",
+    "module": "Folha6.cls",
+    "stream": "VBA/Folha6",
+    "lines": 8,
+    "procedures": [],
+    "potential_secret_lines": []
+  },
+  {
+    "workbook": "Met3_Plan_Cantoneiras.xlsm",
+    "module": "Folha2.cls",
+    "stream": "VBA/Folha2",
+    "lines": 8,
+    "procedures": [],
+    "potential_secret_lines": []
+  },
+  {
+    "workbook": "Met3_Plan_Cantoneiras.xlsm",
+    "module": "Folha11.cls",
+    "stream": "VBA/Folha11",
+    "lines": 8,
+    "procedures": [],
+    "potential_secret_lines": []
+  },
+  {
+    "workbook": "Met3_Plan_Cantoneiras.xlsm",
+    "module": "Folha3.cls",
+    "stream": "VBA/Folha3",
+    "lines": 8,
+    "procedures": [],
+    "potential_secret_lines": []
+  },
+  {
+    "workbook": "Met3_Plan_Cantoneiras.xlsm",
+    "module": "Folha1.cls",
+    "stream": "VBA/Folha1",
+    "lines": 8,
+    "procedures": [],
+    "potential_secret_lines": []
+  },
+  {
+    "workbook": "Met3_Plan_Cantoneiras.xlsm",
+    "module": "Folha4.cls",
+    "stream": "VBA/Folha4",
+    "lines": 8,
+    "procedures": [],
+    "potential_secret_lines": []
+  },
+  {
+    "workbook": "Met3_Plan_Cantoneiras.xlsm",
+    "module": "Folha5.cls",
+    "stream": "VBA/Folha5",
+    "lines": 8,
+    "procedures": [],
+    "potential_secret_lines": []
+  },
+  {
+    "workbook": "Met3_Plan_Cantoneiras.xlsm",
+    "module": "Module2.bas",
+    "stream": "VBA/Module2",
+    "lines": 61,
+    "procedures": [
+      "Registo_Kanban",
+      "Plan_Prod"
+    ],
+    "potential_secret_lines": []
+  },
+  {
+    "workbook": "Met3_Plan_Cantoneiras.xlsm",
+    "module": "Folha7.cls",
+    "stream": "VBA/Folha7",
+    "lines": 8,
+    "procedures": [],
+    "potential_secret_lines": []
+  },
+  {
+    "workbook": "Met3_Plan_Cantoneiras.xlsm",
+    "module": "Folha8.cls",
+    "stream": "VBA/Folha8",
+    "lines": 8,
+    "procedures": [],
+    "potential_secret_lines": []
+  },
+  {
+    "workbook": "plan_chapa.xlsm",
+    "module": "EsteLivro.cls",
+    "stream": "VBA/EsteLivro",
+    "lines": 8,
+    "procedures": [],
+    "potential_secret_lines": []
+  },
+  {
+    "workbook": "plan_chapa.xlsm",
+    "module": "Folha2.cls",
+    "stream": "VBA/Folha2",
+    "lines": 8,
+    "procedures": [],
+    "potential_secret_lines": []
+  },
+  {
+    "workbook": "plan_chapa.xlsm",
+    "module": "Folha6.cls",
+    "stream": "VBA/Folha6",
+    "lines": 8,
+    "procedures": [],
+    "potential_secret_lines": []
+  },
+  {
+    "workbook": "plan_chapa.xlsm",
+    "module": "Module1.bas",
+    "stream": "VBA/Module1",
+    "lines": 286,
+    "procedures": [
+      "MostrarDiagnostico",
+      "ArquivarEApagarFechadas"
+    ],
+    "potential_secret_lines": []
+  },
+  {
+    "workbook": "plan_chapa.xlsm",
+    "module": "Folha3.cls",
+    "stream": "VBA/Folha3",
+    "lines": 8,
+    "procedures": [],
+    "potential_secret_lines": []
+  },
+  {
+    "workbook": "plan_chapa.xlsm",
+    "module": "Folha4.cls",
+    "stream": "VBA/Folha4",
+    "lines": 8,
+    "procedures": [],
+    "potential_secret_lines": []
+  },
+  {
+    "workbook": "plan_chapa.xlsm",
+    "module": "Folha5.cls",
+    "stream": "VBA/Folha5",
+    "lines": 8,
+    "procedures": [],
+    "potential_secret_lines": []
+  },
+  {
+    "workbook": "plan_chapa.xlsm",
+    "module": "Folha7.cls",
+    "stream": "VBA/Folha7",
+    "lines": 8,
+    "procedures": [],
+    "potential_secret_lines": []
+  }
+]

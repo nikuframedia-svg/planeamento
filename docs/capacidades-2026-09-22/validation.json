@@ -1,0 +1,422 @@
+{
+  "sources": {
+    "sources": [
+      {
+        "area": "perfis",
+        "snapshot": {
+          "snapshot_id": "mtg2_bf1cd6a25986791e",
+          "source_filename": "Met2_Plan_Perfis.xlsm",
+          "loaded_at": "2026-09-22T21:05:52.901980+00:00"
+        },
+        "imported": {
+          "source_sha256": "bf1cd6a25986791e431160d812afa1de5e2e52e9013a9f989745033fe1fa61fc",
+          "loaded_at": "2026-09-22T21:05:52.901980+00:00"
+        },
+        "drive": {
+          "area": "perfis",
+          "attempted_at": "2026-09-22T21:44:19.098724+00:00",
+          "checked_at": "2026-09-22T21:44:28.116574+00:00",
+          "remote_sha256": "bf1cd6a25986791e431160d812afa1de5e2e52e9013a9f989745033fe1fa61fc",
+          "remote_modified_at": "2026-09-22T16:27:12.893000+00:00",
+          "remote_filename": "Met2_Plan_Perfis.xlsm",
+          "error": null
+        },
+        "generation": {
+          "id": 21,
+          "created_at": "2026-09-22T21:46:33.907667+00:00"
+        },
+        "newer_available": false
+      },
+      {
+        "area": "cantoneiras",
+        "snapshot": {
+          "snapshot_id": "mtg_79ca6d60785198f2",
+          "source_filename": "Met3_Plan_Cantoneiras.xlsm",
+          "loaded_at": "2026-09-22T12:18:55.511390+00:00"
+        },
+        "imported": {
+          "source_sha256": "79ca6d60785198f2616a4c9794d677094648b53f02adc920080320c693542aaf",
+          "loaded_at": "2026-09-22T12:18:55.511390+00:00"
+        },
+        "drive": {
+          "area": "cantoneiras",
+          "attempted_at": "2026-09-22T21:44:19.098724+00:00",
+          "checked_at": "2026-09-22T21:44:28.116574+00:00",
+          "remote_sha256": "79ca6d60785198f2616a4c9794d677094648b53f02adc920080320c693542aaf",
+          "remote_modified_at": "2026-09-22T07:36:17.401000+00:00",
+          "remote_filename": "Met3_Plan_Cantoneiras.xlsm",
+          "error": null
+        },
+        "generation": {
+          "id": 25,
+          "created_at": "2026-09-22T21:46:41.699195+00:00"
+        },
+        "newer_available": false
+      }
+    ],
+    "notice": "Consultar a base não atualiza o Excel nem confirma uma consulta direta ao CPIS."
+  },
+  "metrics": {
+    "perfis": {
+      "generation": "21",
+      "source_current": true,
+      "raw_rows": 7413,
+      "logical_rows": 7413,
+      "page_ms": 103.2,
+      "filter_sort_ms": 104.0
+    },
+    "cantoneiras": {
+      "generation": "25",
+      "source_current": true,
+      "raw_rows": 75303,
+      "logical_rows": 75303,
+      "page_ms": 224.5,
+      "filter_sort_ms": 686.3
+    }
+  },
+  "examples": {
+    "DLR777": {
+      "of": "OF250015",
+      "ov": "OV2408825",
+      "component_ref": "DLR777",
+      "material_description": "L45X45X4 S355J0 EN10025",
+      "length_mm": 737.0,
+      "operation": "119",
+      "operation_detail": "0"
+    }
+  },
+  "cantoneiras_w39": {
+    "totals": {
+      "primary_operations": 3609,
+      "additional_operations": 1021,
+      "reference_known": 3609,
+      "reference_hours": 899.1698598412698
+    },
+    "machines": [
+      {
+        "machine": "Ficep Rapid 20T -1",
+        "hours": 112.49153333333334,
+        "operations": 821
+      },
+      {
+        "machine": "Ficep Rapid 20T -2",
+        "hours": 124.81435555555555,
+        "operations": 845
+      },
+      {
+        "machine": "Ficep Rapid 25T",
+        "hours": 92.53791428571428,
+        "operations": 282
+      },
+      {
+        "machine": "Ficep XP T4",
+        "hours": 248.05712333333332,
+        "operations": 598
+      },
+      {
+        "machine": "Ficep XP T6",
+        "hours": 138.07169166666665,
+        "operations": 349
+      },
+      {
+        "machine": "Peddi 6",
+        "hours": 28.4752,
+        "operations": 29
+      },
+      {
+        "machine": "Peddi 8",
+        "hours": 154.72204166666666,
+        "operations": 685
+      },
+      {
+        "machine": "Por definir",
+        "hours": null,
+        "operations": 1021
+      }
+    ]
+  },
+  "vanguard": {
+    "values": {
+      "week": 39,
+      "year": 2026,
+      "metres": 0,
+      "weight": 0,
+      "machine": "Vanguard",
+      "quantity": 0,
+      "area_load": 0,
+      "occupancy": null,
+      "bucket_key": "perfis:Vanguard|2026|39",
+      "free_hours": null,
+      "draft_hours": 0,
+      "lines_total": 0,
+      "machine_key": "perfis:Vanguard",
+      "macro_hours": null,
+      "actual_hours": 8.0,
+      "pending_area": 0,
+      "unknown_load": 0,
+      "capacity_free": null,
+      "draft_unknown": 0,
+      "planned_hours": 0,
+      "capacity_total": null,
+      "pending_metres": 0,
+      "available_hours": null,
+      "reference_hours": 0,
+      "pending_quantity": 0,
+      "reference_shifts": null,
+      "equivalent_shifts": null,
+      "reference_available_hours": null,
+      "reference_hours_per_shift": null
+    },
+    "calendars": [
+      {
+        "cells": {
+          "A": {
+            "cell": "A101",
+            "kind": "value",
+            "value": 100,
+            "formula": null
+          },
+          "B": {
+            "cell": "B101",
+            "kind": "value",
+            "value": 39,
+            "formula": null
+          },
+          "C": {
+            "cell": "C101",
+            "kind": "value",
+            "value": 2026,
+            "formula": null
+          },
+          "D": {
+            "cell": "D101",
+            "kind": "value",
+            "value": "Vanguard",
+            "formula": null
+          },
+          "E": {
+            "cell": "E101",
+            "kind": "formula",
+            "value": "392026Vanguard",
+            "formula": "_xlfn.CONCAT(PlanDisponibilidadeSemanal[[#This Row],[Semana]], PlanDisponibilidadeSemanal[[#This Row],[Ano]], PlanDisponibilidadeSemanal[[#This Row],[Máquina]])"
+          },
+          "F": {
+            "cell": "F101",
+            "kind": "value",
+            "value": 10,
+            "formula": null
+          },
+          "G": {
+            "cell": "G101",
+            "kind": "value",
+            "value": 8,
+            "formula": null
+          },
+          "H": {
+            "cell": "H101",
+            "kind": "formula",
+            "value": 80,
+            "formula": " PlanDisponibilidadeSemanal[[#This Row],[Horas Disponíneis por Turno]] * PlanDisponibilidadeSemanal[[#This Row],[Nº de Turnos]]"
+          },
+          "I": {
+            "cell": "I101",
+            "kind": "formula",
+            "value": 0,
+            "formula": " IF( PlanDisponibilidadeSemanal[[#This Row],[Semana]] = \"\", \"\", SUMIFS(Planeamento!$AZ$7:$AZ$10952, Planeamento!$AV$7:$AV$10952,\"=\" & PlanDisponibilidadeSemanal[[#This Row],[Semana]], Planeamento!$AW$7:$AW$10952,\"=\" & PlanDisponibilidadeSemanal[[#This Row],[Ano]], Planeamento!$AQ$7:$AQ$10952,\"=\" & PlanDisponibilidadeSemanal[[#This Row],[Máquina]]) )"
+          },
+          "J": {
+            "cell": "J101",
+            "kind": "formula",
+            "value": 80,
+            "formula": " IF(PlanDisponibilidadeSemanal[[#This Row],[Horas Disponíveis]] = \"\", \"\", PlanDisponibilidadeSemanal[[#This Row],[Horas Disponíveis]] - PlanDisponibilidadeSemanal[[#This Row],[Previsão Horas Consumidas]] )"
+          },
+          "K": {
+            "cell": "K101",
+            "kind": "formula",
+            "value": 0,
+            "formula": " IF(PlanDisponibilidadeSemanal[[#This Row],[Horas Disponíveis]] = \"\", \"\", PlanDisponibilidadeSemanal[[#This Row],[Previsão Horas Consumidas]] / PlanDisponibilidadeSemanal[[#This Row],[Horas Disponíveis]] )"
+          },
+          "L": {
+            "cell": "L101",
+            "kind": "formula",
+            "value": 736000,
+            "formula": " IF(PlanDisponibilidadeSemanal[[#This Row],[Máquina]] = \"\", \"\",PlanDisponibilidadeSemanal[[#This Row],[Previsão Horas Não Consumidas]] * _xlfn.XLOOKUP(PlanDisponibilidadeSemanal[[#This Row],[Máquina]],CapacidadeMáquinas[Máquina],CapacidadeMáquinas[Capa. Específica de Corte 11/11/2024]))"
+          },
+          "M": {
+            "cell": "M101",
+            "kind": "formula",
+            "value": 0,
+            "formula": " IF( PlanDisponibilidadeSemanal[[#This Row],[Semana]] = \"\", \"\", SUMIFS(Planeamento!$AY$7:$AY$10952, Planeamento!$AV$7:$AV$10952,\"=\" & PlanDisponibilidadeSemanal[[#This Row],[Semana]], Planeamento!$AW$7:$AW$10952,\"=\" & PlanDisponibilidadeSemanal[[#This Row],[Ano]], Planeamento!$AQ$7:$AQ$10952,\"=\" & PlanDisponibilidadeSemanal[[#This Row],[Máquina]]) )"
+          },
+          "N": {
+            "cell": "N101",
+            "kind": "formula",
+            "value": 0,
+            "formula": " IF( PlanDisponibilidadeSemanal[[#This Row],[Semana]] = \"\", \"\", SUMPRODUCT( IF( Planeamento!$AV$7:$AV$10960 = PlanDisponibilidadeSemanal[[#This Row],[Semana]],IF(Planeamento!$AW$7:$AW$10960 = PlanDisponibilidadeSemanal[[#This Row],[Ano]], IF(Planeamento!$AQ$7:$AQ$10960 = PlanDisponibilidadeSemanal[[#This Row],[Máquina]], Planeamento!$AM$7:$AM$10960 * Planeamento!$AS$7:$AS$10960 )))))"
+          },
+          "O": {
+            "cell": "O101",
+            "kind": "formula",
+            "value": 39,
+            "formula": " IF( PlanDisponibilidadeSemanal[[#This Row],[Semana]] = \"\", \"\", _xlfn.ISOWEEKNUM(TODAY()) )"
+          },
+          "P": {
+            "cell": "P101",
+            "kind": "formula",
+            "value": 2026,
+            "formula": " IF( PlanDisponibilidadeSemanal[[#This Row],[Ano]] = \"\", \"\", YEAR(TODAY()) )"
+          },
+          "W": {
+            "cell": "W101",
+            "kind": "formula",
+            "value": 736000,
+            "formula": " IF(PlanDisponibilidadeSemanal[[#This Row],[Máquina]] = \"\", \"\",PlanDisponibilidadeSemanal[[#This Row],[Horas Disponíveis]] * _xlfn.XLOOKUP(PlanDisponibilidadeSemanal[[#This Row],[Máquina]],CapacidadeMáquinas[Máquina],CapacidadeMáquinas[Capa. Específica de Corte 11/11/2024]))"
+          },
+          "X": {
+            "cell": "X101",
+            "kind": "formula",
+            "value": 0,
+            "formula": " IF( PlanDisponibilidadeSemanal[[#This Row],[Semana]] = \"\", \"\", SUMIFS(Planeamento!$DB$7:$DB$10952, Planeamento!$AV$7:$AV$10952,\"=\" & PlanDisponibilidadeSemanal[[#This Row],[Semana]], Planeamento!$AW$7:$AW$10952,\"=\" & PlanDisponibilidadeSemanal[[#This Row],[Ano]], Planeamento!$AQ$7:$AQ$10952,\"=\" & PlanDisponibilidadeSemanal[[#This Row],[Máquina]]) / 1000 )"
+          }
+        },
+        "hours": 80.0,
+        "shifts": 10.0,
+        "source": {
+          "row": 101,
+          "file": "Met2_Plan_Perfis.xlsm",
+          "sheet": "PlanDisponibilidadeSemanal",
+          "snapshot": "mtg2_bf1cd6a25986791e"
+        },
+        "hours_per_shift": 8.0
+      },
+      {
+        "cells": {
+          "A": {
+            "cell": "A103",
+            "kind": "value",
+            "value": 102,
+            "formula": null
+          },
+          "B": {
+            "cell": "B103",
+            "kind": "value",
+            "value": 39,
+            "formula": null
+          },
+          "C": {
+            "cell": "C103",
+            "kind": "value",
+            "value": 2026,
+            "formula": null
+          },
+          "D": {
+            "cell": "D103",
+            "kind": "value",
+            "value": "Vanguard",
+            "formula": null
+          },
+          "E": {
+            "cell": "E103",
+            "kind": "formula",
+            "value": "392026Vanguard",
+            "formula": "_xlfn.CONCAT(PlanDisponibilidadeSemanal[[#This Row],[Semana]], PlanDisponibilidadeSemanal[[#This Row],[Ano]], PlanDisponibilidadeSemanal[[#This Row],[Máquina]])"
+          },
+          "F": {
+            "cell": "F103",
+            "kind": "value",
+            "value": 2,
+            "formula": null
+          },
+          "G": {
+            "cell": "G103",
+            "kind": "value",
+            "value": 16,
+            "formula": null
+          },
+          "H": {
+            "cell": "H103",
+            "kind": "formula",
+            "value": 32,
+            "formula": " PlanDisponibilidadeSemanal[[#This Row],[Horas Disponíneis por Turno]] * PlanDisponibilidadeSemanal[[#This Row],[Nº de Turnos]]"
+          },
+          "I": {
+            "cell": "I103",
+            "kind": "formula",
+            "value": 0,
+            "formula": " IF( PlanDisponibilidadeSemanal[[#This Row],[Semana]] = \"\", \"\", SUMIFS(Planeamento!$AZ$7:$AZ$10952, Planeamento!$AV$7:$AV$10952,\"=\" & PlanDisponibilidadeSemanal[[#This Row],[Semana]], Planeamento!$AW$7:$AW$10952,\"=\" & PlanDisponibilidadeSemanal[[#This Row],[Ano]], Planeamento!$AQ$7:$AQ$10952,\"=\" & PlanDisponibilidadeSemanal[[#This Row],[Máquina]]) )"
+          },
+          "J": {
+            "cell": "J103",
+            "kind": "formula",
+            "value": 32,
+            "formula": " IF(PlanDisponibilidadeSemanal[[#This Row],[Horas Disponíveis]] = \"\", \"\", PlanDisponibilidadeSemanal[[#This Row],[Horas Disponíveis]] - PlanDisponibilidadeSemanal[[#This Row],[Previsão Horas Consumidas]] )"
+          },
+          "K": {
+            "cell": "K103",
+            "kind": "formula",
+            "value": 0,
+            "formula": " IF(PlanDisponibilidadeSemanal[[#This Row],[Horas Disponíveis]] = \"\", \"\", PlanDisponibilidadeSemanal[[#This Row],[Previsão Horas Consumidas]] / PlanDisponibilidadeSemanal[[#This Row],[Horas Disponíveis]] )"
+          },
+          "L": {
+            "cell": "L103",
+            "kind": "formula",
+            "value": 294400,
+            "formula": " IF(PlanDisponibilidadeSemanal[[#This Row],[Máquina]] = \"\", \"\",PlanDisponibilidadeSemanal[[#This Row],[Previsão Horas Não Consumidas]] * _xlfn.XLOOKUP(PlanDisponibilidadeSemanal[[#This Row],[Máquina]],CapacidadeMáquinas[Máquina],CapacidadeMáquinas[Capa. Específica de Corte 11/11/2024]))"
+          },
+          "M": {
+            "cell": "M103",
+            "kind": "formula",
+            "value": 0,
+            "formula": " IF( PlanDisponibilidadeSemanal[[#This Row],[Semana]] = \"\", \"\", SUMIFS(Planeamento!$AY$7:$AY$10952, Planeamento!$AV$7:$AV$10952,\"=\" & PlanDisponibilidadeSemanal[[#This Row],[Semana]], Planeamento!$AW$7:$AW$10952,\"=\" & PlanDisponibilidadeSemanal[[#This Row],[Ano]], Planeamento!$AQ$7:$AQ$10952,\"=\" & PlanDisponibilidadeSemanal[[#This Row],[Máquina]]) )"
+          },
+          "N": {
+            "cell": "N103",
+            "kind": "formula",
+            "value": 0,
+            "formula": " IF( PlanDisponibilidadeSemanal[[#This Row],[Semana]] = \"\", \"\", SUMPRODUCT( IF( Planeamento!$AV$7:$AV$10960 = PlanDisponibilidadeSemanal[[#This Row],[Semana]],IF(Planeamento!$AW$7:$AW$10960 = PlanDisponibilidadeSemanal[[#This Row],[Ano]], IF(Planeamento!$AQ$7:$AQ$10960 = PlanDisponibilidadeSemanal[[#This Row],[Máquina]], Planeamento!$AM$7:$AM$10960 * Planeamento!$AS$7:$AS$10960 )))))"
+          },
+          "O": {
+            "cell": "O103",
+            "kind": "formula",
+            "value": 39,
+            "formula": " IF( PlanDisponibilidadeSemanal[[#This Row],[Semana]] = \"\", \"\", _xlfn.ISOWEEKNUM(TODAY()) )"
+          },
+          "P": {
+            "cell": "P103",
+            "kind": "formula",
+            "value": 2026,
+            "formula": " IF( PlanDisponibilidadeSemanal[[#This Row],[Ano]] = \"\", \"\", YEAR(TODAY()) )"
+          },
+          "W": {
+            "cell": "W103",
+            "kind": "formula",
+            "value": 294400,
+            "formula": " IF(PlanDisponibilidadeSemanal[[#This Row],[Máquina]] = \"\", \"\",PlanDisponibilidadeSemanal[[#This Row],[Horas Disponíveis]] * _xlfn.XLOOKUP(PlanDisponibilidadeSemanal[[#This Row],[Máquina]],CapacidadeMáquinas[Máquina],CapacidadeMáquinas[Capa. Específica de Corte 11/11/2024]))"
+          },
+          "X": {
+            "cell": "X103",
+            "kind": "formula",
+            "value": 0,
+            "formula": " IF( PlanDisponibilidadeSemanal[[#This Row],[Semana]] = \"\", \"\", SUMIFS(Planeamento!$DB$7:$DB$10952, Planeamento!$AV$7:$AV$10952,\"=\" & PlanDisponibilidadeSemanal[[#This Row],[Semana]], Planeamento!$AW$7:$AW$10952,\"=\" & PlanDisponibilidadeSemanal[[#This Row],[Ano]], Planeamento!$AQ$7:$AQ$10952,\"=\" & PlanDisponibilidadeSemanal[[#This Row],[Máquina]]) / 1000 )"
+          }
+        },
+        "hours": 32.0,
+        "shifts": 2.0,
+        "source": {
+          "row": 103,
+          "file": "Met2_Plan_Perfis.xlsm",
+          "sheet": "PlanDisponibilidadeSemanal",
+          "snapshot": "mtg2_bf1cd6a25986791e"
+        },
+        "hours_per_shift": 16.0
+      }
+    ],
+    "warnings": [
+      "Calendário duplicado: escolher uma origem ou registar a disponibilidade correta.",
+      "Disponibilidade por confirmar."
+    ]
+  },
+  "perfis_capacity_rows_after_1035": 1757,
+  "cpis_direct": false,
+  "perfis_sha256_after_reads": "bf1cd6a25986791e431160d812afa1de5e2e52e9013a9f989745033fe1fa61fc"
+}

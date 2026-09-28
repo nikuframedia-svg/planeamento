@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="pt">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Gantt de Perfis · Planeamento</title>
+  <link rel="stylesheet" href="/static/planning_typography.css">
+  <link rel="stylesheet" href="/static/gantt.css">
+  <script src="/static/gantt.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/planeamento/raw">RAW <span>Planeamento</span></a>
+    <nav aria-label="Planeamento"><a href="/planeamento/raw">Tabela</a><a href="/planeamento/capacidades">Capacidades</a><a href="/planeamento/disponibilidade">Disponibilidade</a><a aria-current="page" href="/planeamento/gantt">Gantt · Perfis</a></nav>
+  </header>
+  <main>
+    <section class="hero">
+      <div><p class="eyebrow">PERFIS · CORTE E ABOCARDAR</p><h1>Plano de produção</h1><p class="lead">Máquinas, previsões e carga do planeamento existente. Gera uma sequência ao minuto para os recursos com horários definidos.</p></div>
+      <div class="hero-actions"><button id="refresh">Atualizar fontes</button><button id="generate" class="primary">Gerar proposta</button><button id="accept">Aceitar plano</button></div>
+    </section>
+    <div id="notice" role="status" aria-live="polite"></div>
+    <section class="controls" aria-label="Cenário">
+      <label>Cenário<select id="scenario"><option value="">Novo cenário</option></select></label>
+      <label>Nome<input id="scenario-name" value="Plano de Perfis" maxlength="160"></label>
+      <label>Horizonte<select id="horizon"><option value="4">4 semanas</option><option value="8">8 semanas</option><option value="12" selected>12 semanas</option><option value="16">16 semanas</option></select></label>
+      <button id="save">Guardar cenário</button>
+      <span id="source-state" class="source-state">A carregar fontes…</span>
+      <span id="accepted-state" class="source-state" hidden></span>
+    </section>
+    <section class="summary" id="summary" aria-label="Cobertura"></section>
+    <section class="schedule" aria-labelledby="schedule-title">
+      <div class="section-head"><div><p class="eyebrow">PERFIS POR MÁQUINA</p><h2 id="schedule-title">Previsões e execução</h2></div><div class="section-actions"><label>Escala<select id="scale"><option value="day">Dia</option><option value="week">Semana</option></select></label><label>Vista<select id="compare"><option value="source" selected>Planeamento existente</option><option value="proposal">Proposta</option><option value="accepted">Plano aceite</option></select></label></div></div>
+      <p class="hint" id="schedule-hint">A carregar o planeamento existente…</p>
+      <div class="legend"><span><i class="legend-bar"></i>Execução futura</span><span><i class="legend-picking"></i>Picking</span><span><i class="legend-forecast"></i>Previsão da operação</span><span><i class="legend-cpis"></i>Marcos CPIS</span></div>
+      <div id="source-controls" class="source-controls">
+        <label>Semana de referência<select id="source-week"></select></label>
+        <label>Máquina<select id="source-machine-filter"><option value="">Todas as máquinas</option></select></label><button id="source-today">Semana atual</button><span id="source-range" class="hint"></span>
+      </div>
+      <div id="weekly-capacity" class="weekly-capacity"></div>
+      <div class="timeline" id="timeline" tabindex="0" aria-label="Gantt de Perfis"></div>
+    </section>
+    <section class="lower">
+      <div class="panel"><div class="section-head"><div><p class="eyebrow">ATENÇÃO</p><h2>Pendências e operações</h2></div><label>Pesquisar<input id="search" type="search" placeholder="OF, referência, máquina…"></label></div><div id="pending-count" class="hint"></div><div id="operations" class="operations"></div></div>
+      <aside class="panel" aria-labelledby="edit-title"><p class="eyebrow">AJUSTAR</p><h2 id="edit-title">Prioridade e fixação</h2><p class="hint">Seleciona uma operação na lista ou numa barra. A fixação usa hora de Lisboa e obriga a nova proposta.</p><div id="selected-detail" class="selected-detail" aria-live="polite"></div><form id="edit-form"><label>Operação<input id="selected-key" readonly required></label><label>OF<input id="selected-of" readonly></label><label>Ano de Picking confirmado para a OF<input id="picking-year" type="number" min="2000" max="2200" placeholder="Vazio: hipótese de 2026"></label><label>Prazo de Picking corrigido para a OF<input id="picking-deadline" type="datetime-local" step="60"></label><label>Máquina<select id="pin-resource"><option value="">Sem fixação</option></select></label><label>Início fixo<input id="pin-start" type="datetime-local" step="60"></label><label class="check"><input id="urgent" type="checkbox"> Urgência manual</label><div class="form-actions"><button type="button" id="clear-pin">Retirar fixação</button><button class="primary">Aplicar ajuste</button></div></form><p class="hint">Para editar saldos, operações ou máquinas, abre a <a href="/planeamento/raw">tabela</a>. Para horários, abre a <a href="/planeamento/disponibilidade">disponibilidade</a>. Um evento Kanban sem operação confirmada exige revisão na origem.</p></aside>
+    </section>
+  </main>
+</body>
+</html>

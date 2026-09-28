@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="pt"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Registar uma peça · Planeamento</title><link rel="stylesheet" href="/static/need_editor.css?v={{ version }}"><script src="/static/need_editor.js?v={{ version }}" defer></script><link rel="stylesheet" href="/static/planning_typography.css">
+</head>
+<body>
+<header class="top"><a href="/planeamento">← Ordens de fabrico</a><details class="nav-menu"><summary>Consultas</summary><nav><a href="/planeamento/dossies">PDFs guardados</a><a href="/planeamento/ocr-original">OCR original</a></nav></details></header>
+<main>
+<div class="heading"><h1 id="title">Registo de planeamento</h1><p id="next-step">Cria uma ordem e preenche os dados da peça.</p></div>
+<nav class="entry-modes" aria-label="Modo de registo"><a id="manual-link" href="/planeamento/manual" aria-current="page">Preencher manualmente</a><a id="pdf-link" href="/planeamento/dossies">Carregar PDF</a></nav>
+<div id="status" role="status"></div><div id="error" role="alert" hidden></div>
+<section id="origin" class="section">
+<div class="actions"><button id="new-local-order" type="button">Nova OF e OV</button><button id="existing-order" type="button">Procurar OF existente</button></div>
+<div id="new-order-fields" class="fields">
+<div><label for="local-of">OF</label><input id="local-of" placeholder="Número da nova OF" inputmode="numeric"></div>
+<div><label for="local-ov">OV</label><input id="local-ov"></div>
+<div><label for="local-customer">Cliente</label><input id="local-customer"></div>
+<div><label for="local-designation">Descrição da obra</label><input id="local-designation"></div>
+<div><label for="local-delivery_date">Data de entrega · registo manual</label><input id="local-delivery_date" type="date"></div>
+<p class="help">Dados locais de planeamento. A origem manual fica identificada.</p>
+</div>
+<div class="order-heading"><div id="context"></div><button id="change-order" type="button" class="quiet" hidden>Alterar OF</button></div>
+<form id="search" hidden><label for="query">Procurar ordem de fabrico</label><p class="help">Pesquisa por OF, OV, cliente ou referência.</p><div class="search"><input id="query" type="search" placeholder="OF ou OV"><button>Pesquisar</button></div><div id="orders"></div></form>
+<details id="order-details" hidden><summary>Ver dados da ordem</summary><div id="order-facts"></div></details>
+</section>
+<section id="pdf-conflict" class="section attention" hidden><h2>O PDF pertence a outra OF</h2><p id="pdf-conflict-text"></p><button id="use-pdf-order" type="button">Usar OF do PDF</button><button id="keep-selected-order" type="button">Voltar à OF selecionada</button></section>
+<section id="duplicates" class="section attention" hidden><h2>Esta peça pode já estar registada</h2><p>Escolhe a peça correspondente. As quantidades não serão somadas.</p><div id="candidates"></div><label for="identity-reason">Motivo da escolha</label><input id="identity-reason"><details><summary>É uma peça adicional</summary><label for="distinct-variant">O que distingue esta peça?</label><input id="distinct-variant"><button id="distinct" type="button">Registar como peça adicional</button></details></section>
+<form id="preparation" hidden novalidate>
+<section class="section"><h2>Características de corte</h2><div id="cut-fields" class="fields"></div></section>
+<section id="more-options" class="section"><h2>Mais opções</h2><div id="extra-fields" class="fields"></div><div class="forecast"><strong>Previsão de requisição de material</strong><p id="material-forecast">Calculada ao guardar</p><p class="help">7 dias corridos após a primeira ficha guardada desta OF. É uma previsão; não envia uma requisição.</p><p id="historical-request" class="help" hidden></p></div></section>
+<section class="section"><h2>Dados da peça</h2><div class="area-row"><label for="area">Área de trabalho</label><select id="area"><option value="">Escolhe a área de trabalho</option><option value="perfis">Perfis</option><option value="cantoneiras">Cantoneiras</option></select><span id="error-area" class="field-error"></span></div>
+<p id="area-help" class="help">Escolhe a área para ver os tipos de perfil e as operações disponíveis.</p>
+<div id="catalog-fields" hidden><div class="reference-tools"><button id="references-open" type="button" class="quiet">Procurar peça desta OF</button></div><div id="piece-fields" class="fields"></div></div></section>
+<div id="work-sections" hidden>
+<section class="section"><h2>Trabalho a preparar</h2><div id="operation-fields" class="fields"></div><p id="quantity-summary" class="help"></p><p id="quantity-notice" class="attention" hidden></p></section>
+<div class="secondary-actions"><button id="evidence-open" type="button" class="quiet">Ver produção registada</button><button id="conference-open" type="button" class="quiet" hidden>Confirmar quantidade em falta</button><button id="history-open" type="button" class="quiet">Ver origem e alterações</button><button id="drawing-open" type="button" class="quiet" hidden>Ver desenho</button></div>
+<section class="section" id="calculation-preview"><h2>Pré-visualização dos cálculos</h2><p id="preview-status" role="status">Preenche a OF e os dados da peça para calcular.</p><div id="preview-summary" class="fields"></div><details><summary>Todos os resultados calculados e origens</summary><div id="preview-results"></div></details></section>
+<section class="section save-section"><h2>Guardar</h2><div class="actions"><button name="draft" class="primary" type="submit">Guardar rascunho</button><button name="ready" type="submit">Concluir preparação</button></div><p id="ready-reason" class="help"></p></section>
+</div></form>
+<div id="after-save" class="after-save" hidden><button id="another-piece" type="button">Adicionar outra peça desta OF</button><button id="next-piece" type="button" hidden>Abrir peça seguinte do PDF</button></div>
+</main>
+<dialog id="references-dialog"><h2>Peças desta OF</h2><label for="reference-query">Procurar referência, perfil ou comprimento</label><input id="reference-query" type="search"><div id="references"></div><button data-close type="button">Fechar</button></dialog>
+<dialog id="evidence-dialog"><h2>Produção registada</h2><label for="evidence-operation">Operação a consultar</label><select id="evidence-operation"></select><p id="evidence-help">Guarda o rascunho para consultar as quantidades desta peça.</p><div id="evidence"></div><button id="evidence-conference" type="button" hidden>Confirmar quantidade em falta desta operação</button><button id="production-open" type="button">Ver registos e resolver associações</button><button data-close type="button">Fechar</button></dialog>
+<dialog id="drawing-dialog"><h2>Desenho da peça</h2><div id="drawing-content"></div><button data-close type="button">Fechar</button></dialog>
+<dialog id="history-dialog"><h2>Origem e alterações</h2><div id="sources"></div><label for="history-field">Campo</label><select id="history-field"><option value="">Todos os campos</option></select><div id="history-content"></div><button data-close type="button">Fechar</button></dialog>
+<dialog id="conference-dialog"><form id="conference-form"><h2>Confirmar quantidade em falta</h2><div id="conference-values"></div><label>Quantidade total confirmada<input name="accepted_required" inputmode="numeric" required></label><label>Quantidade em falta confirmada<input name="accepted_remaining" inputmode="numeric" required></label><label>Motivo da confirmação<textarea name="reason" required></textarea></label><p class="dialog-error" role="alert"></p><button>Guardar confirmação</button><button data-close type="button">Cancelar</button></form></dialog>
+<dialog id="leave-dialog"><h2>Tens alterações por guardar</h2><p>Guarda o rascunho antes de continuar ou descarta estas alterações.</p><p id="leave-error" role="alert"></p><div class="actions"><button id="leave-save" type="button" class="primary">Guardar e continuar</button><button id="leave-discard" type="button">Descartar alterações</button><button id="leave-cancel" type="button">Continuar a editar</button></div></dialog>
+<dialog id="production-dialog"><h2>Produção por associar</h2><p>As decisões são guardadas no planeamento. As folhas validadas permanecem preservadas.</p><label>Associações<select id="production-filter"><option value="pending">Por associar ou rever</option><option value="associated">Associadas</option><option value="unrelated">Sem correspondência</option><option value="all">Todas</option></select></label><label>Motivo<select id="production-reason"><option value="">Todos</option><option value="piece">Peça por identificar</option><option value="ambiguous">Várias peças possíveis</option><option value="geometry">Geometria incompleta</option><option value="operation">Operação por confirmar</option><option value="expansion">Expansão histórica incompleta</option></select></label><label><input type="checkbox" id="production-unknown"> Incluir registos com OF por identificar; a associação exige conferência da folha.</label><div id="production-content"></div><button id="production-prev">Anterior</button><button id="production-next">Seguinte</button><button data-close type="button">Fechar</button></dialog>
+
+<script type="application/json" id="field-contract">{{ field_contract|tojson }}</script>
+</body></html>

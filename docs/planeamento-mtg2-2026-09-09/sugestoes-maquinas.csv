@@ -1,0 +1,123 @@
+﻿linha_excel,of,referencia,perfil,comprimento_mm,saldo_corte,maquina_sugerida,of_precedentes,origem,autorizada
+2120,OF260755,M80-619,250x250x28,3772,4,Vanguard,17,maquina_indicada_em_linhas_fechadas,False
+2121,OF260755,M80-1,40x40,230,40,Serrote Fita Thomas IS639 Pav.1,3,maquina_indicada_em_linhas_fechadas,False
+2122,OF260755,M80-2,40x40,160,40,Serrote Fita Thomas IS639 Pav.1,3,maquina_indicada_em_linhas_fechadas,False
+4438,OF263314,ET0107A4002,20,240,24,Serrote Disco pav 1,4,maquina_indicada_em_linhas_fechadas,False
+4676,OF263756,1234T120,UPN80x45,480,105,Vanguard,10,maquina_indicada_em_linhas_fechadas,False
+4677,OF263756,1234T121,UPN80x45,346,105,Vanguard,10,maquina_indicada_em_linhas_fechadas,False
+4678,OF263756,1234T122,UPN80x45,500,105,Vanguard,10,maquina_indicada_em_linhas_fechadas,False
+4690,OF263779,1234T120,UPN80x45,480,210,Vanguard,10,maquina_indicada_em_linhas_fechadas,False
+4691,OF263779,1234T121,UPN80x45,346,210,Vanguard,10,maquina_indicada_em_linhas_fechadas,False
+4692,OF263779,1234T122,UPN80x45,500,210,Vanguard,10,maquina_indicada_em_linhas_fechadas,False
+4693,OF263781,1234T120,UPN80x45,480,96,Vanguard,10,maquina_indicada_em_linhas_fechadas,False
+4694,OF263781,1234T121,UPN80x45,346,96,Vanguard,10,maquina_indicada_em_linhas_fechadas,False
+4695,OF263781,1234T122,UPN80x45,500,96,Vanguard,10,maquina_indicada_em_linhas_fechadas,False
+4696,OF263783,1234T120,UPN80x45,480,33,Vanguard,10,maquina_indicada_em_linhas_fechadas,False
+4697,OF263783,1234T121,UPN80x45,346,33,Vanguard,10,maquina_indicada_em_linhas_fechadas,False
+4698,OF263783,1234T122,UPN80x45,500,33,Vanguard,10,maquina_indicada_em_linhas_fechadas,False
+4896,OF264051,5877T98,UPN180x70,2000,1,Vanguard,10,maquina_indicada_em_linhas_fechadas,False
+4989,OF264154,A31S502,250x250x26,5992,1,Vanguard,13,maquina_indicada_em_linhas_fechadas,False
+5004,OF264171,E147621,250x250x28,5152,2,Vanguard,17,maquina_indicada_em_linhas_fechadas,False
+5005,OF264171,E147622,250x250x28,5152,2,Vanguard,17,maquina_indicada_em_linhas_fechadas,False
+5006,OF264171,E147623,250x250x28,5152,2,Vanguard,17,maquina_indicada_em_linhas_fechadas,False
+5007,OF264171,E147624,250x250x28,5152,2,Vanguard,17,maquina_indicada_em_linhas_fechadas,False
+5028,OF264186,M221-467,200x200x26,1430,4,Vanguard,15,maquina_indicada_em_linhas_fechadas,False
+5033,OF264186,M223-581,250x250x28,1560,4,Vanguard,17,maquina_indicada_em_linhas_fechadas,False
+5034,OF264186,M223-583,250x250x28,1490,4,Vanguard,17,maquina_indicada_em_linhas_fechadas,False
+5037,OF264186,M209-301,250x250x26,8150,2,Vanguard,13,maquina_indicada_em_linhas_fechadas,False
+5038,OF264186,M209-302,250x250x26,8150,2,Vanguard,13,maquina_indicada_em_linhas_fechadas,False
+5058,OF264198,M230-868,250x250x28,1350,4,Vanguard,17,maquina_indicada_em_linhas_fechadas,False
+5063,OF264204,M003-105,UPN140x60,667,2,Vanguard,13,maquina_indicada_em_linhas_fechadas,False
+5064,OF264204,M003-106,UPN140x60,641,2,Vanguard,13,maquina_indicada_em_linhas_fechadas,False
+5065,OF264204,M004-255,UPN140x60,640,2,Vanguard,13,maquina_indicada_em_linhas_fechadas,False
+5066,OF264204,M004-256,UPN140x60,612,2,Vanguard,13,maquina_indicada_em_linhas_fechadas,False
+5067,OF264204,M005-405,UPN140x60,704,2,Vanguard,13,maquina_indicada_em_linhas_fechadas,False
+5068,OF264204,M005-406,UPN140x60,659,2,Vanguard,13,maquina_indicada_em_linhas_fechadas,False
+5073,OF264204,M005-403,UPN180x70,2462,2,Vanguard,10,maquina_indicada_em_linhas_fechadas,False
+5074,OF264204,M005-404,UPN180x70,2414,2,Vanguard,10,maquina_indicada_em_linhas_fechadas,False
+5134,OF264293,M335-427,200x200x26,870,8,Vanguard,15,maquina_indicada_em_linhas_fechadas,False
+5518,OF264743,XZ644005,250x250x24,1460,4,Vanguard,3,maquina_indicada_em_linhas_fechadas,False
+5519,OF264743,XZ644006,250x250x24,1460,4,Vanguard,3,maquina_indicada_em_linhas_fechadas,False
+5522,OF264743,XZ666005,250x250x24,1290,1,Vanguard,3,maquina_indicada_em_linhas_fechadas,False
+5523,OF264743,XZ666006,250x250x24,1290,4,Vanguard,3,maquina_indicada_em_linhas_fechadas,False
+5524,OF264743,XZ492039,250x250x26,385,2,Vanguard,13,maquina_indicada_em_linhas_fechadas,False
+5525,OF264743,XZ492040,250x250x26,385,2,Vanguard,13,maquina_indicada_em_linhas_fechadas,False
+5526,OF264743,XZ492041,250x250x26,385,2,Vanguard,13,maquina_indicada_em_linhas_fechadas,False
+5527,OF264743,XZ492042,250x250x26,385,2,Vanguard,13,maquina_indicada_em_linhas_fechadas,False
+5725,OF264952,3926P001,60x2.9,3150,2,Serrote Fita Thomas IS639 Pav.1,27,maquina_indicada_em_linhas_fechadas,False
+6249,OF265360,ZE-2201,250x250x28,5868,4,Vanguard,17,maquina_indicada_em_linhas_fechadas,False
+6256,OF265362,ZE-1501,250x250x28,3104,4,Vanguard,17,maquina_indicada_em_linhas_fechadas,False
+6257,OF265362,ZE-1502,250x250x28,3142,4,Vanguard,17,maquina_indicada_em_linhas_fechadas,False
+6258,OF265362,ZE-1810,250x250x28,3506,4,Vanguard,17,maquina_indicada_em_linhas_fechadas,False
+6259,OF265362,ZE-1814,250x250x28,5868,4,Vanguard,17,maquina_indicada_em_linhas_fechadas,False
+6260,OF265362,ZE-2634,250x250x28,6911,1,Vanguard,17,maquina_indicada_em_linhas_fechadas,False
+6508,OF265509,XZ211501,200x200x26,10058,2,Vanguard,15,maquina_indicada_em_linhas_fechadas,False
+6509,OF265509,XZ211502,200x200x26,10058,2,Vanguard,15,maquina_indicada_em_linhas_fechadas,False
+6510,OF265509,XZ251007,200x200x26,6300,2,Vanguard,15,maquina_indicada_em_linhas_fechadas,False
+6511,OF265509,XZ262003,200x200x26,870,2,Vanguard,15,maquina_indicada_em_linhas_fechadas,False
+6512,OF265509,XZ262004,200x200x26,870,2,Vanguard,15,maquina_indicada_em_linhas_fechadas,False
+6513,OF265509,XZ343005,200x200x26,710,4,Vanguard,15,maquina_indicada_em_linhas_fechadas,False
+6514,OF265509,XZ343006,200x200x26,710,4,Vanguard,15,maquina_indicada_em_linhas_fechadas,False
+6518,OF265509,XZ354005,250x250x24,1290,8,Vanguard,3,maquina_indicada_em_linhas_fechadas,False
+6519,OF265509,XZ354038,250x250x24,1290,8,Vanguard,3,maquina_indicada_em_linhas_fechadas,False
+6520,OF265509,XZ365005,250x250x24,1290,8,Vanguard,3,maquina_indicada_em_linhas_fechadas,False
+6521,OF265509,XZ365024,250x250x24,1290,8,Vanguard,3,maquina_indicada_em_linhas_fechadas,False
+6526,OF265509,XZ262039,250x250x26,350,4,Vanguard,13,maquina_indicada_em_linhas_fechadas,False
+6527,OF265509,XZ262040,250x250x26,350,4,Vanguard,13,maquina_indicada_em_linhas_fechadas,False
+6528,OF265509,XZ262001,250x250x35,8698,2,Vanguard,15,maquina_indicada_em_linhas_fechadas,False
+6529,OF265509,XZ262002,250x250x35,8698,2,Vanguard,15,maquina_indicada_em_linhas_fechadas,False
+6530,OF265509,XZ354001,250x250x35,7001,2,Vanguard,15,maquina_indicada_em_linhas_fechadas,False
+6531,OF265509,XZ354002,250x250x35,7001,2,Vanguard,15,maquina_indicada_em_linhas_fechadas,False
+6532,OF265509,XZ354003,250x250x35,7001,2,Vanguard,15,maquina_indicada_em_linhas_fechadas,False
+6533,OF265509,XZ354004,250x250x35,7001,2,Vanguard,15,maquina_indicada_em_linhas_fechadas,False
+6534,OF265509,XZ365001,250x250x35,5990,2,Vanguard,15,maquina_indicada_em_linhas_fechadas,False
+6535,OF265509,XZ365002,250x250x35,5990,2,Vanguard,15,maquina_indicada_em_linhas_fechadas,False
+6536,OF265509,XZ365003,250x250x35,5990,2,Vanguard,15,maquina_indicada_em_linhas_fechadas,False
+6537,OF265509,XZ365004,250x250x35,5990,2,Vanguard,15,maquina_indicada_em_linhas_fechadas,False
+6538,OF265509,XZ376001,250x250x35,5056,2,Vanguard,15,maquina_indicada_em_linhas_fechadas,False
+6539,OF265509,XZ376002,250x250x35,5056,2,Vanguard,15,maquina_indicada_em_linhas_fechadas,False
+6540,OF265509,XZ376003,250x250x35,5056,2,Vanguard,15,maquina_indicada_em_linhas_fechadas,False
+6541,OF265509,XZ376004,250x250x35,5056,2,Vanguard,15,maquina_indicada_em_linhas_fechadas,False
+6542,OF265509,XZ387001,250x250x35,8475,2,Vanguard,15,maquina_indicada_em_linhas_fechadas,False
+6543,OF265509,XZ387002,250x250x35,8475,1,Vanguard,15,maquina_indicada_em_linhas_fechadas,False
+6544,OF265509,XZ387003,250x250x35,8475,2,Vanguard,15,maquina_indicada_em_linhas_fechadas,False
+6545,OF265509,XZ387004,250x250x35,8475,2,Vanguard,15,maquina_indicada_em_linhas_fechadas,False
+6546,OF265509,XZ398001,250x250x35,9701,2,Vanguard,15,maquina_indicada_em_linhas_fechadas,False
+6547,OF265509,XZ398002,250x250x35,9701,2,Vanguard,15,maquina_indicada_em_linhas_fechadas,False
+6548,OF265509,XZ398003,250x250x35,9701,2,Vanguard,15,maquina_indicada_em_linhas_fechadas,False
+6549,OF265509,XZ398004,250x250x35,9701,2,Vanguard,15,maquina_indicada_em_linhas_fechadas,False
+6803,OF265632,CR0912A4004,UPN140x60,2000,1,Vanguard,21,maquina_indicada_em_linhas_fechadas,False
+6812,OF265760,CA4317A4009,26.9x2.3,3595,4,Serrote Disco pav 1,8,maquina_indicada_em_linhas_fechadas,False
+6820,OF265760,PA2312A4026,18x2,78,5,Serrote Disco pav 1,18,maquina_indicada_em_linhas_fechadas,False
+6821,OF265760,PA0107A4301,12,117,5,Serrote Disco pav 1,14,maquina_indicada_em_linhas_fechadas,False
+6830,OF265447,ZG4001S2,250x250x35,2720,4,Vanguard,15,maquina_indicada_em_linhas_fechadas,False
+6845,OF265511,6309U001,133x4,2400,313,Serrote MEBA IS381 Pav 3,3,maquina_indicada_em_linhas_fechadas,False
+6846,OF265511,6309U002,150x4,400,313,Serrote MEBA IS381 Pav 3,3,maquina_indicada_em_linhas_fechadas,False
+6889,OF265876,CS0412A4001,18,1000,32,Serrote Disco pav 1,11,maquina_indicada_em_linhas_fechadas,False
+6894,OF265850,CA1012A4003,16x16,40,24,Serrote Disco pav 1,16,maquina_indicada_em_linhas_fechadas,False
+6896,OF265850,CA1012A4029,21.3x2.6,22,1,Serrote Disco pav 1,12,maquina_indicada_em_linhas_fechadas,False
+6906,OF265763,0641S008,76x4,150,50,Serrote Fita Thomas IS639 Pav.1,7,maquina_indicada_em_linhas_fechadas,False
+6907,OF265765,0641S008,76x4,150,20,Serrote Fita Thomas IS639 Pav.1,7,maquina_indicada_em_linhas_fechadas,False
+6908,OF265764,0641S008,76x4,150,30,Serrote Fita Thomas IS639 Pav.1,7,maquina_indicada_em_linhas_fechadas,False
+6942,OF265728,CI3920A4002,88.9x3,2616,80,Serrote MEBA IS381 Pav 3,8,maquina_indicada_em_linhas_fechadas,False
+6946,OF265793,6309U001,133x4,2400,90,Serrote MEBA IS381 Pav 3,3,maquina_indicada_em_linhas_fechadas,False
+6947,OF265793,6309U002,150x4,400,90,Serrote MEBA IS381 Pav 3,3,maquina_indicada_em_linhas_fechadas,False
+6948,OF265793,B708S001,76x2.9,3450,160,Serrote MEBA IS381 Pav 3,3,maquina_indicada_em_linhas_fechadas,False
+6963,OF263785,1234T120,UPN80x45,480,36,Vanguard,10,maquina_indicada_em_linhas_fechadas,False
+6964,OF263785,1234T121,UPN80x45,346,36,Vanguard,10,maquina_indicada_em_linhas_fechadas,False
+6965,OF263785,1234T122,UPN80x45,500,36,Vanguard,10,maquina_indicada_em_linhas_fechadas,False
+6968,OF265924,5877T1103,UPN80x45,2000,10,Vanguard,10,maquina_indicada_em_linhas_fechadas,False
+6969,OF265924,5877T1104,UPN80x45,2000,10,Vanguard,10,maquina_indicada_em_linhas_fechadas,False
+6970,OF265924,5877T1106,UPN80x45,1860,10,Vanguard,10,maquina_indicada_em_linhas_fechadas,False
+6971,OF265924,5877T1107,UPN80x45,780,10,Vanguard,10,maquina_indicada_em_linhas_fechadas,False
+6972,OF265924,5877T12,UPN80x45,2000,10,Vanguard,10,maquina_indicada_em_linhas_fechadas,False
+6973,OF265924,5877T1204,UPN80x45,2000,10,Vanguard,10,maquina_indicada_em_linhas_fechadas,False
+6974,OF265924,5877T1205,UPN80x45,2000,10,Vanguard,10,maquina_indicada_em_linhas_fechadas,False
+6975,OF265924,5877T1207,UPN80x45,2000,5,Vanguard,10,maquina_indicada_em_linhas_fechadas,False
+6976,OF265924,5877T1209,UPN80x45,1860,10,Vanguard,10,maquina_indicada_em_linhas_fechadas,False
+6977,OF265924,5877T1228,UPN80x45,780,5,Vanguard,10,maquina_indicada_em_linhas_fechadas,False
+6978,OF265924,5877T13,UPN80x45,2000,10,Vanguard,10,maquina_indicada_em_linhas_fechadas,False
+6979,OF265924,5877T18,UPN80x45,1860,10,Vanguard,10,maquina_indicada_em_linhas_fechadas,False
+6980,OF265924,5877T34,UPN80x45,2000,10,Vanguard,10,maquina_indicada_em_linhas_fechadas,False
+6981,OF265924,5877T39,UPN80x45,2000,5,Vanguard,10,maquina_indicada_em_linhas_fechadas,False
+6982,OF265924,5877T98,UPN80x45,1720,20,Vanguard,10,maquina_indicada_em_linhas_fechadas,False

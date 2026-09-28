@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="pt">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Dossiês de fabrico · Planeamento MTG2</title>
+  <link rel="stylesheet" href="/static/dossiers.css?v={{ version }}">
+  <script src="/static/dossiers.js?v={{ version }}" defer></script>
+<link rel="stylesheet" href="/static/planning_typography.css">
+</head>
+<body>
+  <header class="app-header">
+    <a class="brand" href="/planeamento">METALOGALVA <span>MTG2 / Planeamento</span></a>
+    <nav aria-label="Planeamento">
+      <a id="manual-entry" class="nav-tab" href="/planeamento/manual">Preencher manualmente</a><button id="tab-documents" class="nav-tab" aria-current="page">Carregar PDF</button>
+      <button id="tab-needs" class="nav-tab">Linhas preparadas</button>
+      <button id="open-model" class="model-button"><span id="model-dot" class="status-dot"></span>Configuração</button>
+    </nav>
+  </header>
+  <main>
+    <div class="title-row">
+      <div><h1>Carregar PDF</h1>
+        <p class="intro">Carrega o PDF e abre o formulário de cada peça para confirmar os dados.</p></div>
+      <button id="process-waiting" class="button secondary" hidden>Processar PDFs pendentes</button>
+    </div>
+    <p id="selected-order" class="intro" hidden></p>
+    <div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
+    <div id="alert" class="notice error" role="alert" hidden></div>
+    <div id="inbox-status" class="notice" role="status" hidden></div>
+    <section id="documents-view" aria-label="Dossiês de fabrico">
+      <div id="drop-zone" class="drop-zone">
+        <div class="file-symbol" aria-hidden="true">PDF<span>OF</span></div>
+        <div><h2>Adicionar PDFs de fabrico</h2><p>Arrasta os ficheiros para aqui. Até 80 MB e 250 páginas por PDF.</p>
+          <p id="upload-progress" role="status" hidden></p></div>
+        <label class="button primary upload-label" for="pdf-files">Selecionar PDFs<input id="pdf-files" type="file" accept="application/pdf,.pdf" multiple></label>
+      </div>
+      <div class="workspace">
+        <aside class="inbox" aria-label="Lista de dossiês">
+          <div class="panel-heading"><h2>Dossiês</h2><span id="document-count" class="count">0</span></div>
+          <div id="document-list"><p class="empty-copy">A carregar os dossiês…</p></div>
+          <p class="inbox-note">O mesmo PDF é reconhecido quando volta a ser carregado.</p>
+        </aside>
+        <section class="document-workspace" aria-label="Dossiê selecionado">
+          <div id="empty-selection" class="empty-selection">
+            <div class="empty-sheet" aria-hidden="true"><span>DESENHO</span><i></i><i></i><i></i><b>VANGUARD / SERROTE</b></div>
+            <h2>Começa pelo dossiê da OF.</h2>
+            <p>As referências, quantidades e dimensões serão lidas dos desenhos e associadas ao CPIS.</p>
+            <p class="muted">Podes carregar os ficheiros antes de configurar a API.</p>
+          </div>
+          <div id="document-detail" hidden>
+            <header class="document-header">
+              <div><p id="document-filename" class="eyebrow"></p><h2 id="document-title"></h2><p id="document-customer" class="muted"></p></div>
+              <div class="actions"><a id="original-pdf" class="button secondary" target="_blank" rel="noopener">Abrir PDF original</a><button id="retry-document" class="button secondary" hidden>Retomar leitura</button><button id="refresh-context" class="button secondary" hidden>Atualizar dados do plano</button></div>
+            </header>
+            <section id="document-summary" class="document-summary" aria-label="Resultado e próximo passo" aria-live="polite"></section>
+            <details id="processing-details" class="processing-details">
+              <summary>Detalhes da leitura e do plano</summary>
+              <div id="document-metadata" class="document-metadata"></div>
+              <div id="workflow" class="workflow" aria-label="Progresso do dossiê"></div>
+              <div id="document-issues" class="document-issues" hidden></div>
+            </details>
+            <div id="reading-layout" class="reading-layout">
+              <section class="piece-panel" aria-label="Peças encontradas">
+                <div class="panel-heading"><div><h3>Peças encontradas <span id="piece-count" class="count">0</span></h3><p class="field-help">Dados para preparar o corte.</p></div><button id="toggle-source" class="button secondary" type="button" aria-controls="source-panel" aria-expanded="false">Ver desenho</button></div>
+                <div id="reading-state" class="reading-state"></div>
+                <div id="piece-table" class="table-scroll"></div>
+                <div id="export-actions" class="export-actions" hidden>
+                  <button id="export-macro" class="button primary">Descarregar macro preenchida</button><button id="export-csv" class="button secondary">CSV das linhas</button>
+                  <p>É gerada uma cópia da macro. Abre-a no Excel para recalcular as fórmulas.</p>
+                </div>
+                <details id="evidence-details" class="evidence-details" hidden><summary>Origem dos dados da peça</summary><div id="piece-evidence" class="piece-evidence" hidden></div></details>
+              </section>
+              <section id="source-panel" class="source-panel" aria-label="Página de origem" hidden>
+                <div class="panel-heading"><h3>Desenho da peça</h3><div class="page-control"><button id="previous-page" aria-label="Página anterior">‹</button><label>Página <input id="page-number" type="number" min="1" value="1" aria-label="Número da página"></label><span id="page-total"></span><button id="next-page" aria-label="Página seguinte">›</button></div></div>
+                <div class="page-view"><a id="page-full" target="_blank" rel="noopener" title="Abrir página em tamanho completo"><img id="page-image" alt="Página do dossiê selecionado"></a></div>
+                <div class="source-caption"><span>Clica na imagem para ampliar.</span><button id="reread-current-page" class="row-action" type="button">Reler esta página</button></div>
+              </section>
+            </div>
+          </div>
+        </section>
+      </div>
+    </section>
+    <section id="needs-view" class="needs-view" hidden>
+      <div class="panel-heading"><div><h2>Linhas preparadas</h2><p class="muted">Necessidades conferidas e sem duplicação entre dossiês.</p></div><button id="export-all" class="button primary">Descarregar macro preenchida</button></div>
+      <div id="needs-table" class="table-scroll"></div>
+    </section>
+  </main>
+  <footer>Preparação de necessidades · CPIS da última importação disponível <a href="/planeamento/manual">Preencher manualmente</a></footer>
+
+  <dialog id="model-dialog" aria-labelledby="model-title">
+    <form id="model-form">
+      <div class="dialog-heading"><div><p class="eyebrow">Configuração única</p><h2 id="model-title">Ligação ao modelo</h2></div><button type="button" class="close-dialog" aria-label="Fechar configuração">×</button></div>
+      <p>Indica uma API de um modelo com visão. Os PDFs guardados podem ser processados depois de estabeleceres a ligação.</p>
+      <div id="model-managed" class="notice" hidden>A ligação está definida no ambiente do servidor.</div>
+      <label>Endereço base da API<input id="model-url" name="base_url" type="url" placeholder="https://api.exemplo.com/v1" required autocomplete="off"></label>
+      <div class="form-grid"><label>Modelo<input id="model-name" name="model" placeholder="Identificador do modelo de visão" required autocomplete="off"></label>
+        <label>Formato da API<select id="model-format" name="api_format"><option value="chat_completions">Chat Completions (compatível)</option><option value="responses">Responses</option><option value="bedrock_converse">Amazon Bedrock (Converse)</option></select></label></div>
+      <label id="model-reasoning-label">Raciocínio<select id="model-reasoning" name="reasoning_effort"><option value="">Predefinido do modelo</option><option value="low">Baixo · low</option><option value="medium">Médio · medium</option><option value="high">Alto · high</option><option value="xhigh">Muito alto · xhigh</option><option value="max">Máximo · max</option></select><span class="field-help">Usa um nível suportado pelo modelo. Níveis mais altos podem demorar mais tempo.</span></label>
+      <label>Chave da API<input id="model-key" name="api_key" type="password" placeholder="Cola aqui a chave" autocomplete="new-password"></label>
+      <p id="key-status" class="field-help">A chave é guardada apenas no servidor.</p>
+      <label id="admin-code-label" hidden>Código de acesso à configuração<input id="admin-code" type="password" autocomplete="off"><span class="field-help">Usa o código administrativo definido no servidor ou abre a aplicação neste computador.</span></label>
+      <p id="model-result" class="dialog-result" role="status" hidden></p>
+      <div class="dialog-actions"><button id="test-model" type="button" class="button secondary">Testar leitura de imagem</button><button id="save-model" class="button primary" type="submit">Guardar ligação</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="review-dialog" class="wide-dialog" aria-labelledby="review-title">
+    <form id="review-form">
+      <div class="dialog-heading"><div><p class="eyebrow" id="review-context"></p><h2 id="review-title">Conferir linha</h2></div><button type="button" class="close-dialog" aria-label="Fechar conferência">×</button></div>
+      <div id="review-issues" class="review-issues"></div>
+      <details id="resolution-details" class="resolution-details"><summary>Ver dados do PDF, plano e catálogo</summary><div id="material-resolution" class="resolution-card" hidden></div></details>
+      <label>Grupo de máquina<select id="review-machine-group"><option value="Por atribuir">Por atribuir</option><option value="Serrote">Serrote</option><option value="Vanguard">Vanguard</option></select><span class="field-help">Quando o documento e a linha correspondente do plano não resolvem o grupo, escolhe-o aqui.</span></label>
+      <div id="review-fields"></div>
+      <input id="use-pdf" type="checkbox" hidden>
+      <label id="confirm-chamfer-label" class="checkbox" hidden><input id="confirm-chamfer" type="checkbox">Confirmei que esta indicação corresponde à operação Chanf. da macro.</label>
+      <label id="replace-label" class="checkbox" hidden><input id="replace-revision" type="checkbox">Esta revisão substitui a versão preparada anteriormente.</label>
+      <p id="review-result" class="dialog-result" role="status" hidden></p>
+      <div class="dialog-actions"><button type="button" class="button secondary close-dialog">Cancelar</button><button class="button primary" type="submit">Guardar alterações</button></div>
+      <button id="exclude-piece" type="button" class="text-action">Excluir esta linha da preparação</button>
+      <button id="reread-piece" type="button" class="text-action">Reler este desenho</button>
+    </form>
+  </dialog>
+
+  <dialog id="machine-dialog" aria-labelledby="machine-title">
+    <form id="machine-form">
+      <div class="dialog-heading"><div><p class="eyebrow" id="machine-context"></p><h2 id="machine-title">Onde vai ser cortada esta peça?</h2></div><button type="button" class="close-dialog" aria-label="Fechar escolha de máquina">×</button></div>
+      <p id="machine-piece-summary" class="machine-piece-summary"></p>
+      <p>Não foi encontrada uma máquina atribuída a esta peça. Escolhe o destino de corte.</p>
+      <fieldset class="machine-options"><legend>Destino de corte</legend>
+        <label><input type="radio" name="machine_group" value="Serrote" required><span><strong>Serrote</strong><small>O serrote concreto pode ser definido depois.</small></span></label>
+        <label><input type="radio" name="machine_group" value="Vanguard" required><span><strong>Vanguard</strong><small>Encaminhar a peça para a Vanguard.</small></span></label>
+      </fieldset>
+      <p id="machine-result" class="dialog-result" role="status" hidden></p>
+      <div class="dialog-actions"><button type="button" class="button secondary close-dialog">Decidir depois</button><button class="button primary" type="submit">Guardar escolha</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="export-dialog" class="wide-dialog" aria-labelledby="export-title">
+    <form id="export-confirm-form">
+      <div class="dialog-heading"><div><p class="eyebrow">Alterações propostas</p><h2 id="export-title">Conferir a cópia da macro</h2></div><button type="button" class="close-dialog" aria-label="Fechar">×</button></div>
+      <p id="export-summary"></p>
+      <div id="export-change-table" class="table-scroll export-preview"></div>
+      <p class="field-help">A cópia conserva VBA e fórmulas. Depois de descarregar, abre-a no Excel para recalcular e validar os resultados.</p>
+      <p id="export-result" class="dialog-result" role="status" hidden></p>
+      <div class="dialog-actions"><button type="button" class="button secondary close-dialog">Cancelar</button><button id="confirm-export" class="button primary" type="submit">Descarregar cópia</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="document-dialog" aria-labelledby="doc-review-title">
+    <form id="document-review-form">
+      <div class="dialog-heading"><h2 id="doc-review-title">Conferir dossiê</h2><button type="button" class="close-dialog" aria-label="Fechar conferência">×</button></div>
+      <label>OF do documento<input id="review-of" required placeholder="OF265941" autocomplete="off"></label>
+      <div id="document-review-checks"></div>
+      <p id="document-result" class="dialog-result" role="status" hidden></p>
+      <div class="dialog-actions"><button class="button primary" type="submit">Guardar conferência</button></div>
+      <button id="restart-reading" class="text-action" type="button">Ler novamente o PDF desde o início</button>
+    </form>
+  </dialog>
+  <noscript><p class="notice error">Ativa o JavaScript para carregar e conferir os dossiês nesta aplicação.</p></noscript>
+</body>
+</html>

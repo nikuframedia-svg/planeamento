@@ -1,0 +1,56 @@
+{
+  "mode": "dry-run",
+  "loader_version": "dataresearchmtg-met2-loader-v3",
+  "source": "/tmp/raw-capacity-Met2_Plan_Perfis.xlsm",
+  "source_sha256": "bf1cd6a25986791e431160d812afa1de5e2e52e9013a9f989745033fe1fa61fc",
+  "snapshot_id": "mtg2_bf1cd6a25986791e",
+  "workbook_sheets": 9,
+  "plan_production_rows": 7413,
+  "profile_quality": {
+    "rows": 7413,
+    "populated": 7413,
+    "missing": 0,
+    "fully_dimensioned": 7400,
+    "incomplete_dimension": 13,
+    "unknown_material_type": 0,
+    "material_type_missing": 0,
+    "sources": {
+      "material_type_fallback": 1,
+      "structured": 7412
+    },
+    "material_types": {
+      "Barra": 34,
+      "Calha": 147,
+      "Cantoneira": 594,
+      "Chapa": 35,
+      "Perfil H": 223,
+      "Perfil I": 188,
+      "Perfil T": 27,
+      "Perfil U": 814,
+      "Perfil UB": 2,
+      "Perfil UC": 1,
+      "Tubo quadrado": 615,
+      "Tubo redondo": 3405,
+      "Tubo retangular": 156,
+      "Varão nervurado": 9,
+      "Varão quadrado": 195,
+      "Varão redondo": 864,
+      "Varão retangular": 3,
+      "Varão roscado": 101
+    }
+  },
+  "remaining_quality": {
+    "known": 7412,
+    "negative": 167,
+    "missing": 1
+  },
+  "checks": {
+    "plan_count_matches_profile_rows": true,
+    "profile_nonempty": true,
+    "material_type_allowlist": true,
+    "structured_primary": true,
+    "single_incomplete_fallback": true
+  },
+  "checks_passed": 5,
+  "checks_total": 5
+}

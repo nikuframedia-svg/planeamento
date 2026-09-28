@@ -1,0 +1,18 @@
+{
+  "observed_at_utc": "2026-09-22T17:21:56.235066+00:00",
+  "cpis_tcp": "TimeoutError",
+  "original_http_health": {
+    "status": "ok",
+    "engine_version": "v30_R259",
+    "git_sha": "5f6ab6f",
+    "python": "3.12.10",
+    "pid": 7628
+  },
+  "original_central": {
+    "state": "not_configured",
+    "instances": [],
+    "last_attempt": null,
+    "included_in_planning_balances": false
+  },
+  "pc_bridge": "HTTP forwards and central PostgreSQL forward only; no remote shell configured."
+}

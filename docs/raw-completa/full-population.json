@@ -1,0 +1,37 @@
+{
+  "perfis": {
+    "generation": 7,
+    "build_seconds": 0.02707434445619583,
+    "rows": 7391,
+    "page": {
+      "seconds": 0.06686756387352943,
+      "total": 7391
+    },
+    "search": {
+      "seconds": 0.0492515042424202,
+      "total": 0
+    },
+    "filter": {
+      "seconds": 0.06394165940582752,
+      "total": 1787
+    }
+  },
+  "cantoneiras": {
+    "generation": 11,
+    "build_seconds": 0.0419909842312336,
+    "rows": 75303,
+    "page": {
+      "seconds": 0.14952469989657402,
+      "total": 75303
+    },
+    "search": {
+      "seconds": 0.17427082918584347,
+      "total": 0
+    },
+    "filter": {
+      "seconds": 0.30474526062607765,
+      "total": 17757
+    }
+  },
+  "capacity_seconds": 7.296558314934373
+}

@@ -1,0 +1,1570 @@
+
+
+MODULE Module1.bas
+Attribute VB_Name = "Module1"
+Sub Limpar()
+Attribute Limpar.VB_ProcData.VB_Invoke_Func = " \n14"
+'
+' Limpar Macro
+'
+
+'
+    Columns("B:AJ").Select
+    Selection.EntireColumn.Hidden = False
+    Range("G22").Select
+End Sub
+
+
+MODULE EsteLivro.cls
+Attribute VB_Name = "EsteLivro"
+Attribute VB_Base = "0{00020819-0000-0000-C000-000000000046}"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = True
+Attribute VB_TemplateDerived = False
+Attribute VB_Customizable = True
+'Private Sub Workbook_Open()
+
+'    ActiveWorkbook.Connections("Consulta - TAB_DIN_COLUNAS").Refresh
+    
+'    Worksheets("TabDinPlaneamento").PivotTables("Tabela Dinâmica1").RefreshTable
+    
+'    Worksheets("TabDinPlaneamentoAboc").PivotTables("Tabela Dinâmica2").RefreshTable
+    
+'End Sub
+
+
+MODULE Folha1.cls
+Attribute VB_Name = "Folha1"
+Attribute VB_Base = "0{00020820-0000-0000-C000-000000000046}"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = True
+Attribute VB_TemplateDerived = False
+Attribute VB_Customizable = True
+
+
+MODULE Folha2.cls
+Attribute VB_Name = "Folha2"
+Attribute VB_Base = "0{00020820-0000-0000-C000-000000000046}"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = True
+Attribute VB_TemplateDerived = False
+Attribute VB_Customizable = True
+
+
+MODULE Folha12.cls
+Attribute VB_Name = "Folha12"
+Attribute VB_Base = "0{00020820-0000-0000-C000-000000000046}"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = True
+Attribute VB_TemplateDerived = False
+Attribute VB_Customizable = True
+
+
+MODULE Module2.bas
+Attribute VB_Name = "Module2"
+Sub Pintar()
+Attribute Pintar.VB_ProcData.VB_Invoke_Func = " \n14"
+'Pintar
+            ActiveSheet.Range("B8").Select
+            proximatemcor = True
+            linha = 8
+            Do Until IsEmpty(ActiveCell)
+                If ActiveCell.EntireRow.Hidden Then
+                Else
+                    If proximatemcor = True Then
+                        ActiveSheet.Range("D" & linha & ":AK" & linha).Interior.Color = RGB(170, 170, 170)
+                        proximatemcor = False
+                    Else
+                        ActiveSheet.Range("D" & linha & ":AK" & linha).Interior.Color = RGB(255, 255, 255)
+                        proximatemcor = True
+                    End If
+                End If
+                linha = linha + 1
+                ActiveCell.Offset(1, 0).Select
+            Loop
+
+End Sub
+
+
+MODULE Module3.bas
+Attribute VB_Name = "Module3"
+Sub MOSTRAR()
+Columns("A:DB").Select
+    Selection.EntireColumn.Hidden = False
+
+End Sub
+
+
+MODULE Module4.bas
+Attribute VB_Name = "Module4"
+Sub Visulizar()
+Attribute Visulizar.VB_ProcData.VB_Invoke_Func = " \n14"
+'
+' Visulizar Macro
+'
+
+'
+    Columns("A:B").Select
+    Range("B1").Activate
+    Selection.EntireColumn.Hidden = True
+    Columns("D:E").Select
+    Selection.EntireColumn.Hidden = True
+    Columns("J:J").Select
+    Selection.EntireColumn.Hidden = True
+    ActiveWindow.ScrollColumn = 1
+    ActiveWindow.ScrollColumn = 4
+    ActiveWindow.ScrollColumn = 7
+    ActiveWindow.ScrollColumn = 12
+    ActiveWindow.ScrollColumn = 13
+    ActiveWindow.ScrollColumn = 17
+    ActiveWindow.ScrollColumn = 16
+    ActiveWindow.ScrollColumn = 13
+    ActiveWindow.ScrollColumn = 12
+    ActiveWindow.ScrollColumn = 11
+    ActiveWindow.ScrollColumn = 9
+    ActiveWindow.ScrollColumn = 8
+    ActiveWindow.ScrollColumn = 9
+End Sub
+
+
+MODULE Module5.bas
+Attribute VB_Name = "Module5"
+
+
+MODULE Module6.bas
+Attribute VB_Name = "Module6"
+Sub Registar_1()
+Attribute Registar_1.VB_ProcData.VB_Invoke_Func = " \n14"
+'
+' Registar_1 Macro
+'
+
+'
+    Columns("B:D").Select
+    Selection.EntireColumn.Hidden = True
+    Columns("F:H").Select
+    Selection.EntireColumn.Hidden = True
+    Columns("J:K").Select
+    Selection.EntireColumn.Hidden = True
+    Columns("M:S").Select
+    Selection.EntireColumn.Hidden = True
+    Columns("V:AE").Select
+    Selection.EntireColumn.Hidden = True
+    Columns("AQ:BI").Select
+    Selection.EntireColumn.Hidden = True
+    ActiveWindow.ScrollColumn = 40
+    ActiveWindow.ScrollColumn = 22
+    ActiveWindow.ScrollColumn = 21
+    ActiveWindow.ScrollColumn = 20
+    ActiveWindow.ScrollColumn = 18
+    ActiveWindow.ScrollColumn = 16
+    ActiveWindow.ScrollColumn = 13
+    ActiveWindow.ScrollColumn = 10
+    ActiveWindow.ScrollColumn = 7
+    ActiveWindow.ScrollColumn = 5
+    ActiveWindow.ScrollColumn = 1
+    
+    Range("E7").Select
+    Selection.End(xlDown).Select
+End Sub
+
+Sub Armazem()
+
+    Columns("A:F").Select
+    Selection.EntireColumn.Hidden = True
+    Columns("J").Select
+    Selection.EntireColumn.Hidden = True
+    Columns("W:AA").Select
+    Selection.EntireColumn.Hidden = True
+    Columns("AC:AG").Select
+    Selection.EntireColumn.Hidden = True
+    Columns("AI:AP").Select
+    Selection.EntireColumn.Hidden = True
+    Columns("AU:BI").Select
+    Selection.EntireColumn.Hidden = True
+    Columns("BL:CM").Select
+    Selection.EntireColumn.Hidden = True
+    Columns("CO:CZ").Select
+    Selection.EntireColumn.Hidden = True
+    
+End Sub
+
+Sub Macro2()
+Attribute Macro2.VB_ProcData.VB_Invoke_Func = " \n14"
+'
+' Macro2 Macro
+'
+
+'
+    Range("E7").Select
+    Selection.End(xlDown).Select
+    
+End Sub
+
+
+MODULE Module10.bas
+Attribute VB_Name = "Module10"
+
+
+MODULE Module7.bas
+Attribute VB_Name = "Module7"
+Sub Botão55_Click()
+
+x = InputBox("Equipa")
+
+If x <> "" Then
+
+'Limpar Filtros
+With ActiveSheet
+    If .FilterMode Then
+        .ShowAllData
+    End If
+End With
+
+
+'Mostrar todas as colunas
+Columns("A:CE").Select
+Selection.EntireColumn.Hidden = False
+
+'Contar número de registos totais
+nregistostotal = 0
+Sheets("Planeamento").Range("E7").Select
+Do Until IsEmpty(ActiveCell)
+    nregistostotal = nregistostotal + 1
+    ActiveCell.Offset(1, 0).Select
+Loop
+
+
+    Sheets("Planeamento").Range("A6:AU" & nregistostotal).AutoFilter Field:=28, Criteria1:=" "
+
+    Sheets("Planeamento").Range("A6:AU" & nregistostotal).AutoFilter Field:=31, Criteria1:=x
+
+    Range("A7:AU" & nregistostotal).Sort key1:=Range("H67"), _
+        order1:=xlAscending
+
+
+Columns("A:AV").Select
+    Selection.EntireColumn.Hidden = False
+
+Columns("A:B").Select
+    Selection.EntireColumn.Hidden = True
+    Columns("D:E").Select
+    Selection.EntireColumn.Hidden = True
+    Columns("K:K").Select
+    Selection.EntireColumn.Hidden = True
+    Columns("T:T").Select
+    Selection.EntireColumn.Hidden = True
+    Columns("U:V").Select
+    Selection.EntireColumn.Hidden = True
+    Columns("W:AD").Select
+    Selection.EntireColumn.Hidden = True
+    Columns("AG:ax").Select
+    Selection.EntireColumn.Hidden = True
+     Columns("Az:bc").Select
+    Selection.EntireColumn.Hidden = True
+    Columns("l:n").Select
+    Selection.EntireColumn.Hidden = True
+    Columns("Af:Af").Select
+    Selection.EntireColumn.Hidden = True
+     Columns("Ax:ax").Select
+    Selection.EntireColumn.Hidden = True
+    Columns("Az:bf").Select
+    Selection.EntireColumn.Hidden = True
+     Columns("o:r").Select
+    Selection.EntireColumn.Hidden = True
+    Application.Dialogs(xlDialogPrint).Show
+    
+    Else
+    
+    
+    
+    MsgBox ("Introduzir Equipa")
+    
+    End If
+    
+End Sub
+
+
+Sub Impressao()
+
+MOSTRAR
+
+Columns("J").Select
+Selection.EntireColumn.Hidden = True
+
+Columns("T:U").Select
+Selection.EntireColumn.Hidden = True
+
+Columns("W:X").Select
+Selection.EntireColumn.Hidden = True
+
+Columns("Z:BI").Select
+Selection.EntireColumn.Hidden = True
+
+End Sub
+
+
+MODULE Module8.bas
+Attribute VB_Name = "Module8"
+Sub Botão60_Click()
+
+    y = InputBox("Password")
+
+    If y = "plan" Then
+
+  
+
+
+Workbooks("Met2_Plan_Perfis").Worksheets("Planeamento").Activate
+
+Columns.EntireColumn.Hidden = False
+Rows.EntireRow.Hidden = False
+
+'Limpar Filtros
+With ActiveSheet
+    If .FilterMode Then
+        .ShowAllData
+    End If
+End With
+
+'Contar número de registos totais
+nregistostotal = 0
+Sheets("Planeamento").Range("e7").Select
+Do Until IsEmpty(ActiveCell)
+    nregistostotal = nregistostotal + 1
+    ActiveCell.Offset(1, 0).Select
+Loop
+
+
+
+
+'Filtrar
+Sheets("Planeamento").Range("A2:CS" & nregistostotal).AutoFilter Field:=50, Criteria1:="="
+
+
+
+'Contar os filtrados
+nregistosfiltrados = 0
+nregistossemfiltro = 0
+Sheets("Planeamento").Range("e7").Select
+Do Until IsEmpty(ActiveCell)
+    nregistossemfiltro = nregistossemfiltro + 1
+    If ActiveCell.EntireRow.Hidden Then
+    Else
+    If nregistosfiltrados = 0 Then
+        primeiroregisto = nregistossemfiltro
+    End If
+    ultimoregisto = nregistossemfiltro
+    nregistosfiltrados = nregistosfiltrados + 1
+    End If
+    ActiveCell.Offset(1, 0).Select
+Loop
+
+If primeiroregisto = Null Or primeiroregisto = 0 Or IsNull(primeiroregisto) Then
+MsgBox "Não há registos para actulizar"
+Exit Sub
+End If
+
+Workbooks.Open ("G:\usr\dpm\dp\3_Planeamento\Plan_Cort.Trans_Perfis\Armazem Chapa.xlsx")
+Workbooks("Armazem Chapa").Worksheets("Perfis").Activate
+
+Columns.EntireColumn.Hidden = False
+Rows.EntireRow.Hidden = False
+
+'Limpar Filtros
+With ActiveSheet
+    If .FilterMode Then
+        .ShowAllData
+    End If
+End With
+
+'Contar número de registos totais2
+nregistostotal = 0
+Sheets("Perfis").Range("e1").Select
+Do Until IsEmpty(ActiveCell)
+    nregistostota2 = nregistostota2 + 1
+    ActiveCell.Offset(1, 0).Select
+Loop
+
+Workbooks("Met2_Plan_Perfis").Worksheets("Planeamento").Activate
+
+'copiar
+Sheets("Planeamento").Range("g" & primeiroregisto + 6 & ":h" & ultimoregisto + 6).Copy
+
+
+'Colar
+
+Workbooks("Armazem Chapa").Worksheets("Perfis").Activate
+Sheets("perfis").Range("d" & nregistostota2 + 1 & ":e" & nregistostota2 + 1).PasteSpecial xlValues
+
+
+
+Workbooks("Met2_Plan_Perfis").Worksheets("Planeamento").Activate
+
+'copiar2
+Sheets("Planeamento").Range("c" & primeiroregisto + 6 & ":c" & ultimoregisto + 6).Copy
+
+
+'Colar2
+Workbooks("Armazem Chapa").Worksheets("Perfis").Activate
+Sheets("perfis").Range("b" & nregistostota2 + 1 & ":b" & nregistostota2 + 1).PasteSpecial xlValues
+
+
+
+Workbooks("Met2_Plan_Perfis").Worksheets("Planeamento").Activate
+
+'copiar3
+Sheets("Planeamento").Range("o" & primeiroregisto + 6 & ":q" & ultimoregisto + 6).Copy
+
+Workbooks("Met2_Plan_Perfis").Worksheets("Planeamento").Activate
+
+'Colar3
+Workbooks("Armazem Chapa").Worksheets("Perfis").Activate
+Sheets("perfis").Range("j" & nregistostota2 + 1 & ":l" & nregistostota2 + 1).PasteSpecial xlValues
+
+
+
+
+Workbooks("Met2_Plan_Perfis").Worksheets("Planeamento").Activate
+'copiar4
+Sheets("Planeamento").Range("s" & primeiroregisto + 6 & ":s" & ultimoregisto + 6).Copy
+
+Workbooks("Met2_Plan_Perfis").Worksheets("Planeamento").Activate
+
+'Colar4
+
+Workbooks("Armazem Chapa").Worksheets("Perfis").Activate
+Sheets("perfis").Range("m" & nregistostota2 + 1 & ":m" & nregistostota2 + 1).PasteSpecial xlValues
+
+
+Workbooks("Met2_Plan_Perfis").Worksheets("Planeamento").Activate
+
+'copiar5
+Sheets("Planeamento").Range("AE" & primeiroregisto + 6 & ":ae" & ultimoregisto + 6).Copy
+
+'Colar5
+Workbooks("Armazem Chapa").Worksheets("Perfis").Activate
+Sheets("perfis").Range("r" & nregistostota2 + 1 & ":r" & nregistostota2 + 1).PasteSpecial xlValues
+
+
+Workbooks("Met2_Plan_Perfis").Worksheets("Planeamento").Activate
+
+'copiar6
+Sheets("Planeamento").Range("m" & primeiroregisto + 6 & ":m" & ultimoregisto + 6).Copy
+
+
+'Colar6
+Workbooks("Armazem Chapa").Worksheets("Perfis").Activate
+Sheets("perfis").Range("h" & nregistostota2 + 1 & ":h" & nregistostota2 + 1).PasteSpecial xlValues
+
+
+Workbooks("Met2_Plan_Perfis").Worksheets("Planeamento").Activate
+'copiar7
+Sheets("Planeamento").Range("ay" & primeiroregisto + 6 & ":ay" & ultimoregisto + 6).Copy
+
+
+'Colar7
+Workbooks("Armazem Chapa").Worksheets("Perfis").Activate
+Sheets("perfis").Range("i" & nregistostota2 + 1 & ":i" & nregistostota2 + 1).PasteSpecial xlValues
+
+
+Workbooks("Met2_Plan_Perfis").Worksheets("Planeamento").Activate
+
+'copiar8
+Sheets("Planeamento").Range("be" & primeiroregisto + 6 & ":be" & ultimoregisto + 6).Copy
+
+
+'Colar8
+Workbooks("Armazem Chapa").Worksheets("Perfis").Activate
+Sheets("perfis").Range("g" & nregistostota2 + 1 & ":g" & nregistostota2 + 1).PasteSpecial xlValues
+
+Workbooks("Met2_Plan_Perfis").Worksheets("Planeamento").Activate
+'copiar9
+Sheets("Planeamento").Range("F" & primeiroregisto + 6 & ":F" & ultimoregisto + 6).Copy
+
+
+'Colar9
+Workbooks("Armazem Chapa").Worksheets("Perfis").Activate
+Sheets("perfis").Range("c" & nregistostota2 + 1 & ":c" & nregistostota2 + 1).PasteSpecial xlValues
+Workbooks("Met2_Plan_Perfis").Worksheets("Planeamento").Activate
+'copiar9
+Sheets("Planeamento").Range("AN" & primeiroregisto + 6 & ":AO" & ultimoregisto + 6).Copy
+
+
+'Colar9
+Workbooks("Armazem Chapa").Worksheets("Perfis").Activate
+Sheets("perfis").Range("o" & nregistostota2 + 1 & ":p" & nregistostota2 + 1).PasteSpecial xlValues
+
+Workbooks("Met2_Plan_Perfis").Worksheets("Planeamento").Activate
+'copiar10
+Sheets("Planeamento").Range("bf" & primeiroregisto + 6 & ":bf" & ultimoregisto + 6).Copy
+
+'Colar10
+Workbooks("Armazem Chapa").Worksheets("Perfis").Activate
+Sheets("perfis").Range("q" & nregistostota2 + 1 & ":q" & nregistostota2 + 1).PasteSpecial xlValues
+
+
+Workbooks("Met2_Plan_Perfis").Worksheets("Planeamento").Activate
+
+'copiar11
+Sheets("Planeamento").Range("Am" & primeiroregisto + 6 & ":am" & ultimoregisto + 6).Copy
+
+'Colar11
+Workbooks("Armazem Chapa").Worksheets("Perfis").Activate
+Sheets("perfis").Range("n" & nregistostota2 + 1 & ":n" & nregistostota2 + 1).PasteSpecial xlValues
+
+
+Workbooks("Met2_Plan_Perfis").Worksheets("Planeamento").Activate
+
+
+'copiar12
+Sheets("Planeamento").Range("Aq" & primeiroregisto + 6 & ":aq" & ultimoregisto + 6).Copy
+
+'Colar12
+Workbooks("Armazem Chapa").Worksheets("Perfis").Activate
+Sheets("perfis").Range("s" & nregistostota2 + 1 & ":s" & nregistostota2 + 1).PasteSpecial xlValues
+
+
+
+
+
+
+nregistostotal = 0
+Sheets("perfis").Range("d1").Select
+Do Until IsEmpty(ActiveCell)
+    nregistostotal = nregistostotal + 1
+    ActiveCell.Offset(1, 0).Select
+Loop
+
+
+nregistostotal2 = 0
+Sheets("perfis").Range("f1").Select
+Do Until IsEmpty(ActiveCell)
+    nregistostotal2 = nregistostotal2 + 1
+    ActiveCell.Offset(1, 0).Select
+Loop
+
+
+
+
+
+Sheets("perfis").Range("f" & nregistostotal2 + 1 & ":f" & nregistostotal) = Date
+
+Columns("b:c").Select
+    Selection.EntireColumn.Hidden = True
+
+Columns("r:s").Select
+    Selection.EntireColumn.Hidden = True
+
+x = "X"
+'Fechar o Planeamento
+Workbooks("Met2_Plan_Perfis").Worksheets("Planeamento").Activate
+Sheets("Planeamento").Range("e7").Select
+i = 0
+
+Do Until IsEmpty(ActiveCell)
+    
+    i = i + 1
+    If ActiveCell.EntireRow.Hidden Then
+    Else
+    ActiveSheet.Range("ax" & i + 6).Value = x
+    
+    End If
+    ActiveCell.Offset(1, 0).Select
+    
+Loop
+
+
+
+'ActiveWorkbook.Close True
+
+
+    
+
+Else
+
+    MsgBox ("A password está errada.")
+End If
+
+End Sub
+
+
+MODULE Module9.bas
+Attribute VB_Name = "Module9"
+Public Function Work_Days(BegDate As Variant, EndDate As Variant) As Integer
+
+ Dim WholeWeeks As Variant
+ Dim DateCnt As Variant
+ Dim EndDays As Integer
+
+ On Error GoTo Err_Work_Days
+
+ BegDate = DateValue(BegDate)
+ EndDate = DateValue(EndDate)
+ WholeWeeks = DateDiff("w", BegDate, EndDate)
+ DateCnt = DateAdd("ww", WholeWeeks, BegDate)
+ EndDays = 0
+
+ Do While DateCnt <= EndDate
+ If Format(DateCnt, "ddd") <> "Sun" And _
+ Format(DateCnt, "ddd") <> "Sat" Then
+ EndDays = EndDays + 1
+ End If
+ DateCnt = DateAdd("d", 1, DateCnt)
+ Loop
+
+ Work_Days = WholeWeeks * 5 + EndDays
+
+Exit Function
+
+Err_Work_Days:
+
+ ' If either BegDate or EndDate is Null, return a zero
+ ' to indicate that no workdays passed between the two dates.
+
+ If Err.Number = 94 Then
+ Work_Days = 0
+ Exit Function
+ Else
+' If some other error occurs, provide a message.
+ MsgBox "Error"
+ End If
+
+End Function
+
+
+
+MODULE Module11.bas
+Attribute VB_Name = "Module11"
+Sub Planeamento_Vanguard()
+Attribute Planeamento_Vanguard.VB_ProcData.VB_Invoke_Func = " \n14"
+'
+' Planeamento_Vanguard Macro
+'
+
+'
+    Columns("A:F").Select
+    Selection.EntireColumn.Hidden = True
+    Columns("J:J").Select
+    Selection.EntireColumn.Hidden = True
+    Columns("T:U").Select
+    Selection.EntireColumn.Hidden = True
+    Columns("W:X").Select
+    Selection.EntireColumn.Hidden = True
+    Columns("Z:AA").Select
+    Selection.EntireColumn.Hidden = True
+    Columns("AG:AL").Select
+    Selection.EntireColumn.Hidden = True
+    Columns("AP:AY").Select
+    Selection.EntireColumn.Hidden = True
+    Columns("BB:BC").Select
+    Selection.EntireColumn.Hidden = True
+    ActiveWindow.ScrollColumn = 29
+    ActiveWindow.ScrollColumn = 26
+    ActiveWindow.ScrollColumn = 23
+    ActiveWindow.ScrollColumn = 21
+    ActiveWindow.ScrollColumn = 19
+    ActiveWindow.ScrollColumn = 18
+    ActiveWindow.ScrollColumn = 17
+    ActiveWindow.ScrollColumn = 16
+    ActiveWindow.ScrollColumn = 14
+    ActiveWindow.ScrollColumn = 13
+    ActiveWindow.ScrollColumn = 11
+    ActiveWindow.ScrollColumn = 8
+    ActiveWindow.ScrollColumn = 7
+End Sub
+
+Sub Planeamento()
+
+    Columns("B").Select
+    Selection.EntireColumn.Hidden = True
+    Columns("D:F").Select
+    Selection.EntireColumn.Hidden = True
+    Columns("J").Select
+    Selection.EntireColumn.Hidden = True
+    Columns("R").Select
+    Selection.EntireColumn.Hidden = True
+    Columns("T:U").Select
+    Selection.EntireColumn.Hidden = True
+    Columns("W:X").Select
+    Selection.EntireColumn.Hidden = True
+    Columns("Z:AA").Select
+    Selection.EntireColumn.Hidden = True
+    Columns("AC:AP").Select
+    Selection.EntireColumn.Hidden = True
+    Columns("AW:BI").Select
+    Selection.EntireColumn.Hidden = True
+    Columns("BK:CI").Select
+    Selection.EntireColumn.Hidden = True
+    Columns("CK:CM").Select
+    Selection.EntireColumn.Hidden = True
+    
+End Sub
+
+
+MODULE Module12.bas
+Attribute VB_Name = "Module12"
+Sub Macro1()
+Attribute Macro1.VB_ProcData.VB_Invoke_Func = " \n14"
+'
+' Macro1 Macro
+'
+
+'
+    Columns("A:BQ").Select
+    Selection.EntireColumn.Hidden = False
+    Columns("A:B").Select
+    Range("B1").Activate
+    Selection.EntireColumn.Hidden = True
+    Columns("D:E").Select
+    Selection.EntireColumn.Hidden = True
+    Columns("L:R").Select
+    Selection.EntireColumn.Hidden = True
+    Columns("T:AA").Select
+    Selection.EntireColumn.Hidden = True
+    Columns("AD:BA").Select
+    Selection.EntireColumn.Hidden = True
+    Columns("BC:BF").Select
+    Selection.EntireColumn.Hidden = True
+    Columns("BG:BG").Select
+    Selection.EntireColumn.Hidden = True
+End Sub
+
+
+MODULE Folha3.cls
+Attribute VB_Name = "Folha3"
+Attribute VB_Base = "0{00020820-0000-0000-C000-000000000046}"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = True
+Attribute VB_TemplateDerived = False
+Attribute VB_Customizable = True
+
+
+MODULE Folha5.cls
+Attribute VB_Name = "Folha5"
+Attribute VB_Base = "0{00020820-0000-0000-C000-000000000046}"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = True
+Attribute VB_TemplateDerived = False
+Attribute VB_Customizable = True
+
+
+MODULE Expedicao.bas
+Attribute VB_Name = "Expedicao"
+Sub Expedicao()
+
+    Sheets("Planeamento").Columns("A:DC").Hidden = True
+    
+    Sheets("Planeamento").Columns("C").Hidden = False
+    
+    Sheets("Planeamento").Columns("H").Hidden = False
+    
+    Sheets("Planeamento").Columns("L:Q").Hidden = False
+
+    Sheets("Planeamento").Columns("V").Hidden = False
+    
+    'Sheets("Planeamento").Columns("BJ:BK").Hidden = False
+
+    Sheets("Planeamento").Columns("CO:CZ").Hidden = False
+    
+End Sub
+
+
+MODULE VeriForm.bas
+Attribute VB_Name = "VeriForm"
+Sub VeriForm()
+
+    Workbooks("Met2_Plan_Perfis").Sheets("Planeamento").Activate
+    
+    ActiveSheet.Range("O16299").Copy
+
+    ActiveSheet.Range("H7").Select
+    
+    Do Until IsEmpty(ActiveCell)
+    
+        ActiveCell.Offset(0, 7).Select
+        
+        If ActiveCell.HasFormula = True Then
+        
+            'ActiveSheet.Paste
+            ActiveCell.Interior.Color = vbGreen
+            
+        End If
+        
+        ActiveCell.Offset(1, -7).Select
+    
+    Loop
+
+End Sub
+
+Sub InseForm1()
+
+    Workbooks("Met2_Plan_Perfis").Sheets("Planeamento").Activate
+    
+    ActiveSheet.Range("CG7").Copy
+    
+    ActiveSheet.Range("CG7:CG18223").Select
+    
+    ActiveSheet.Paste
+    
+    Workbooks("Met2_Plan_Perfis").Sheets("Planeamento").Activate
+    
+    ActiveSheet.Range("CH7").Copy
+    
+    ActiveSheet.Range("CH7:CH18223").Select
+    
+    ActiveSheet.Paste
+
+End Sub
+
+Sub InseForm2()
+
+    Workbooks("Met2_Plan_Perfis").Sheets("Planeamento").Activate
+    
+    ActiveSheet.Range("F9").Copy
+    
+    ActiveSheet.Range("F7:F18223").Select
+    
+    ActiveSheet.Paste
+    
+
+End Sub
+
+
+Sub InseForm3()
+
+    Workbooks("Met2_Plan_Perfis").Sheets("Planeamento").Activate
+    
+    ActiveSheet.Range("C7").Copy
+    
+    ActiveSheet.Range("C7:C18223").Select
+    
+    ActiveSheet.Paste
+    
+    
+    Workbooks("Met2_Plan_Perfis").Sheets("Planeamento").Activate
+    
+    ActiveSheet.Range("D7").Copy
+    
+    ActiveSheet.Range("D7:D18223").Select
+    
+    ActiveSheet.Paste
+
+    
+    Workbooks("Met2_Plan_Perfis").Sheets("Planeamento").Activate
+    
+    ActiveSheet.Range("G7").Copy
+    
+    ActiveSheet.Range("G7:G18223").Select
+    
+    ActiveSheet.Paste
+
+End Sub
+
+
+MODULE FuncAreaPerf.bas
+Attribute VB_Name = "FuncAreaPerf"
+Function AreaTuboRedondo(De, tw)
+
+'    If Unidade = "Métrico (mm)" Then
+'
+'        AreaTuboRedondo = 0.25 * WorksheetFunction.Pi() * (De * De - (De - tw) * (De - tw))
+'
+'    ElseIf Unidade = "Imperial (in)" Then
+'
+'        De = 25.4 * De
+'
+'        tw = 25.4 * tw
+'
+'        AreaTuboRedondo = 0.25 * WorksheetFunction.Pi() * (De * De - (De - tw) * (De - tw))
+'
+'    End If
+    
+    AreaTuboRedondo = 0.25 * WorksheetFunction.Pi() * (De * De - (De - 2 * tw) * (De - 2 * tw))
+    
+End Function
+
+
+Function AreaTuboRetangular(we, he, tw)
+
+'    If Unidade = "Métrico (mm)" Then
+'
+'        AreaTuboRetangular = we * he - (we - tw) * (he - tw)
+'
+'    ElseIf Unidade = "Imperial (in)" Then
+'
+'        we = 25.4 * we
+'
+'        he = 25.4 * he
+'
+'        tw = 25.4 * tw
+'
+'        AreaTuboRetangular = we * he - (we - tw) * (he - tw)
+'
+'    End If
+    
+    AreaTuboRetangular = we * he - (we - 2 * tw) * (he - 2 * tw)
+    
+End Function
+
+
+Function AreaTuboQuadrado(we, tw)
+
+'    If Unidade = "Métrico (mm)" Then
+'
+'        AreaTuboQuadrado = we * we - (we - tw) * (we - tw)
+'
+'    ElseIf Unidade = "Imperial (in)" Then
+'
+'        we = 25.4 * we
+'
+'        tw = 25.4 * tw
+'
+'        AreaTuboQuadrado = we * we - (we - tw) * (we - tw)
+'
+'    End If
+    
+    AreaTuboQuadrado = we * we - (we - 2 * tw) * (we - 2 * tw)
+    
+End Function
+
+
+Function AreaVaraoRedondo(De)
+
+'    If Unidade = "Métrico (mm)" Then
+'
+'        AreaVaraoRedondo = 0.25 * WorksheetFunction.Pi() * (De * De)
+'
+'    ElseIf Unidade = "Imperial (in)" Then
+'
+'        De = 25.4 * De
+'
+'        AreaVaraoRedondo = 0.25 * WorksheetFunction.Pi() * (De * De)
+'
+'    End If
+    
+    AreaVaraoRedondo = 0.25 * WorksheetFunction.Pi() * (De * De)
+    
+End Function
+
+Function AreaVaraoNervurado(De)
+
+'    If Unidade = "Métrico (mm)" Then
+'
+'        AreaVaraoRedondo = 0.25 * WorksheetFunction.Pi() * (De * De)
+'
+'    ElseIf Unidade = "Imperial (in)" Then
+'
+'        De = 25.4 * De
+'
+'        AreaVaraoRedondo = 0.25 * WorksheetFunction.Pi() * (De * De)
+'
+'    End If
+    
+    AreaVaraoNervurado = 0.25 * WorksheetFunction.Pi() * (De * De)
+    
+End Function
+
+
+Function AreaVaraoRetangular(we, he)
+
+'    If Unidade = "Métrico (mm)" Then
+'
+'        AreaVaraoRetangular = we * he
+'
+'    ElseIf Unidade = "Imperial (in)" Then
+'
+'        we = 25.4 * we
+'
+'        he = 25.4 * we
+'
+'        AreaVaraoRetangular = we * he
+'
+'    End If
+    
+    AreaVaraoRetangular = we * he
+    
+End Function
+
+
+Function AreaVaraoQuadrado(we)
+
+'    If Unidade = "Métrico (mm)" Then
+'
+'        AreaVaraoQuadrado = we * we
+'
+'    ElseIf Unidade = "Imperial (in)" Then
+'
+'        we = 25.4 * we
+'
+'        AreaVaraoQuadrado = we * we
+'
+'    End If
+    
+    AreaVaraoQuadrado = we * we
+    
+End Function
+
+
+Function AreaBarra(we, he)
+
+'    If Unidade = "Métrico (mm)" Then
+'
+'        AreaBarra = we * he
+'
+'    ElseIf Unidade = "Imperial (in)" Then
+'
+'        we = 25.4 * we
+'
+'        he = 25.4 * he
+'
+'        AreaBarra = we * he
+'
+'    End If
+    
+    AreaBarra = we * he
+    
+End Function
+
+
+Function AreaCalha(we, he, tw)
+
+'    If Unidade = "Métrico (mm)" Then
+'
+'        AreaCalha = he * th + 2 * we * tw - 2 * th * tw
+'
+'    ElseIf Unidade = "Imperial (in)" Then
+'
+'        we = 25.4 * we
+'
+'        he = 25.4 * he
+'
+'        tw = 25.4 * tw
+'
+'        th = 25.4 * th
+'
+'        AreaCalha = he * th + 2 * we * tw - 2 * th * tw
+'
+'    End If
+    
+    AreaCalha = he * tw + 2 * we * tw - 2 * tw * tw
+    
+End Function
+
+Function AreaCantoneira(we, he, tw)
+
+'    If Unidade = "Métrico (mm)" Then
+'
+'        AreaCantoneira = he * th + we * tw - th * tw
+'
+'    ElseIf Unidade = "Imperial (in)" Then
+'
+'        we = 25.4 * we
+'
+'        he = 25.4 * he
+'
+'        tw = 25.4 * tw
+'
+'        th = 25.4 * th
+'
+'        AreaCantoneira = he * th + we * tw - th * tw
+'
+'    End If
+    
+    AreaCantoneira = he * tw + we * tw - tw * tw
+    
+End Function
+
+Function AreaChapa(we, tw)
+
+'    If Unidade = "Métrico (mm)" Then
+'
+'        AreaChapa = we * tw
+'
+'    ElseIf Unidade = "Imperial (in)" Then
+'
+'        we = 25.4 * we
+'
+'        tw = 25.4 * tw
+'
+'        AreaChapa = we * tw
+'
+'    End If
+    
+    AreaChapa = we * tw
+    
+End Function
+
+
+
+MODULE Folha13.cls
+Attribute VB_Name = "Folha13"
+Attribute VB_Base = "0{00020820-0000-0000-C000-000000000046}"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = True
+Attribute VB_TemplateDerived = False
+Attribute VB_Customizable = True
+
+
+MODULE Folha14.cls
+Attribute VB_Name = "Folha14"
+Attribute VB_Base = "0{00020820-0000-0000-C000-000000000046}"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = True
+Attribute VB_TemplateDerived = False
+Attribute VB_Customizable = True
+
+
+MODULE HistPlan.bas
+Attribute VB_Name = "HistPlan"
+Sub AbrirSemana()
+
+    x = InputBox("Password")
+
+    If x = "plan" Then
+
+        '1. Abre Planeamento
+        
+        Workbooks("Met2_Plan_Perfis").Sheets("Planeamento").Activate
+        
+        '2. Cria Matriz de Dados
+        
+        Dim matr_dado As Variant
+        
+        
+        '3. Ajustar Folha de Planeamento
+
+        Columns.EntireColumn.Hidden = False
+        Rows.EntireRow.Hidden = False
+        
+        With ActiveSheet
+            If .FilterMode Then
+                .ShowAllData
+            End If
+        End With
+        
+        'Worksheets("Planeamento").Range("BD7:BE200000").ClearContents
+        
+        '4. Filtrar Datas Previstas
+        
+        Worksheets("Planeamento").Range("A7:CS200000" & nregistostotal).AutoFilter Field:=44, Criteria1:="<>" & ""
+        
+        '5. Percorrer Dados Planeados
+        
+        Worksheets("Planeamento").Range("A6").Select
+        
+        ActiveCell.End(xlDown).Select
+        
+        ulti_linh_filt = Split(ActiveCell.Address, "$")(2)
+        
+        ntot_linh_filt = Worksheets("Planeamento").Range("AR7:" & "AR" & CStr(ulti_linh_filt)).SpecialCells(xlCellTypeVisible).Count
+        
+        '6. Redimensiona e adiciona valores a Matriz de Dados
+        
+        ReDim matr_dado(ntot_linh_filt, 12)
+        
+        Worksheets("Planeamento").Range("A7").Select
+
+        nlinhasnovas = 1
+
+        Do Until IsEmpty(ActiveCell)
+
+            If ActiveCell.EntireRow.Hidden Then
+
+            Else
+                
+                '6.1. Reabre semanas fechadas
+                If ActiveCell.Offset(0, 57).Value = "X" And ActiveCell.Offset(0, 58).Value = "X" Then
+                
+                    ActiveCell.Offset(0, 57).ClearContents
+                    ActiveCell.Offset(0, 58).ClearContents
+                    
+                    '6.1.1. Adiciona os valores de ID
+                    matr_dado(nlinhasnovas, 1) = ActiveCell.Value
+                    '6.1.2. Adiciona os valores das Linhas do Planeamento
+                    matr_dado(nlinhasnovas, 2) = Split(ActiveCell.Address, "$")(2)
+                    '6.1.3. Adiciona valores de Semana Prevista
+                    matr_dado(nlinhasnovas, 3) = ActiveCell.Offset(0, 47).Value
+                    '6.1.4. Adiciona valores de Ano Previsto
+                    matr_dado(nlinhasnovas, 4) = ActiveCell.Offset(0, 48).Value
+                    '6.1.5. Adiciona valores de Area Secao de Corte Prevista
+                    matr_dado(nlinhasnovas, 5) = ActiveCell.Offset(0, 50).Value
+                    '6.1.6. Adiciona valores de Area Secao de Corte Abertura
+                    matr_dado(nlinhasnovas, 6) = ActiveCell.Offset(0, 56).Value
+                    '6.1.7. Adiciona valores de Ref. OF Semana Maquina
+                    matr_dado(nlinhasnovas, 7) = ActiveCell.Offset(0, 52).Value
+                    '6.1.8. Adiciona valores de Semana Aberta
+                    matr_dado(nlinhasnovas, 8) = "X"
+                    '6.1.9. Adiciona valores de Maquina
+                    matr_dado(nlinhasnovas, 9) = ActiveCell.Offset(0, 42).Value
+                    
+                    '6.1.10. Marca abertura da semana
+                    ActiveCell.Offset(0, 57).Value = "X"
+                
+                    nlinhasnovas = nlinhasnovas + 1
+                       
+                '6.2. Pula registo de semanas já abertas
+                ElseIf ActiveCell.Offset(0, 57).Value = "X" Then
+
+                '6.3. Regista novas semanas
+                Else
+                
+                    '6.3.1. Adiciona os valores de ID
+                    matr_dado(nlinhasnovas, 1) = ActiveCell.Value
+                    '6.3.2. Adiciona os valores das Linhas do Planeamento
+                    matr_dado(nlinhasnovas, 2) = Split(ActiveCell.Address, "$")(2)
+                    '6.3.3. Adiciona valores de Semana Prevista
+                    matr_dado(nlinhasnovas, 3) = ActiveCell.Offset(0, 47).Value
+                    '6.3.4. Adiciona valores de Ano Previsto
+                    matr_dado(nlinhasnovas, 4) = ActiveCell.Offset(0, 48).Value
+                    '6.3.5. Adiciona valores de Area Secao de Corte Prevista
+                    matr_dado(nlinhasnovas, 5) = ActiveCell.Offset(0, 50).Value
+                    '6.3.6. Adiciona valores de Area Secao de Corte Abertura
+                    matr_dado(nlinhasnovas, 6) = ActiveCell.Offset(0, 56).Value
+                    '6.3.7. Adiciona valores de Ref. OF Semana Maquina
+                    matr_dado(nlinhasnovas, 7) = ActiveCell.Offset(0, 52).Value
+                    '6.3.8. Adiciona valores de Semana Aberta
+                    matr_dado(nlinhasnovas, 8) = "X"
+                    '6.3.9. Adiciona valores de Maquina
+                    matr_dado(nlinhasnovas, 9) = ActiveCell.Offset(0, 42).Value
+                    
+                    '6.3.10. Marca abertura da semana
+                    ActiveCell.Offset(0, 57).Value = "X"
+                
+                    nlinhasnovas = nlinhasnovas + 1
+
+                End If
+
+            End If
+            
+            ActiveCell.Offset(1, 0).Select
+
+        Loop
+        
+        MsgBox (CStr(nlinhasnovas - 1) & " novas linhas abertas!")
+        
+        '7. Abre Historico de Planeamento
+
+        Workbooks.Open ("I:\usr\dpm\dp\3_Planeamento\Plan_Cort.Trans_Perfis\Historico_Plan_Perfis.xlsx")
+        Workbooks("Historico_Plan_Perfis.xlsx").Worksheets("HistPerfis").Activate
+
+        '8. Percorre linhas preenchidas no Historico de Planeamento
+
+        Worksheets("HistPerfis").Range("A1").Select
+
+        nlinhas_hist = -1
+
+        Do Until IsEmpty(ActiveCell)
+
+            nlinhas_hist = nlinhas_hist + 1
+            ActiveCell.Offset(1, 0).Select
+
+        Loop
+
+        MsgBox (CStr(nlinhas_hist) & " linhas já registadas no histórico!")
+
+        '9. Adiciona valores importados do Planeamento
+
+        For i = 1 To UBound(matr_dado, 1)
+
+            '9.1. Adiciona valores de ID
+            ActiveCell.Value = matr_dado(i, 1)
+            '9.2. Adiciona valores das Linhas do Planeamento
+            ActiveCell.Offset(0, 1).Value = matr_dado(i, 2)
+            '9.3. Adiciona valores de Semana Prevista
+            ActiveCell.Offset(0, 2).Value = matr_dado(i, 3)
+            '9.4. Adiciona valores de Ano Previsto
+            ActiveCell.Offset(0, 3).Value = matr_dado(i, 4)
+            '9.5. Adiciona valores de Area Secao de Corte Prevista
+            ActiveCell.Offset(0, 4).Value = matr_dado(i, 5)
+            '9.6. Adiciona valores de Area Secao de Corte Abertura
+            ActiveCell.Offset(0, 5).Value = matr_dado(i, 6)
+            '9.7. Adiciona valores de Ref. OF Semana Maquina
+            ActiveCell.Offset(0, 10).Value = matr_dado(i, 7)
+            '9.8. Adiciona valores de Semana Aberta
+            ActiveCell.Offset(0, 13).Value = matr_dado(i, 8)
+            '9.9. Adiciona valores de Maquina
+            ActiveCell.Offset(0, 15).Value = matr_dado(i, 9)
+
+            ActiveCell.Offset(1, 0).Select
+
+        Next
+    
+        
+        '10. Fecha o Histórico
+        
+        MsgBox ("Registo de semanas abertas no histórico concluído!")
+        
+        Workbooks("Historico_Plan_Perfis.xlsx").Worksheets("HistPerfis").Activate
+        ActiveWorkbook.Close True
+        
+    Else
+    
+        MsgBox ("A password está errada.")
+        
+    End If
+
+
+End Sub
+
+
+Sub FecharSemana()
+
+    x = InputBox("Password")
+
+    If x = "plan" Then
+    
+    '1. Abre Planeamento
+        
+        Workbooks("Met2_Plan_Perfis").Sheets("Planeamento").Activate
+        
+        '2. Cria Matriz de Dados
+        
+        Dim matr_dado As Variant
+        
+        
+        '3. Ajustar Folha de Planeamento
+
+        Columns.EntireColumn.Hidden = False
+        Rows.EntireRow.Hidden = False
+        
+        With ActiveSheet
+            If .FilterMode Then
+                .ShowAllData
+            End If
+        End With
+        
+        'Worksheets("Planeamento").Range("BD7:BE200000").ClearContents
+        
+        '4. Filtrar Datas Previstas
+        
+        Worksheets("Planeamento").Range("A7:CS200000" & nregistostotal).AutoFilter Field:=44, Criteria1:="<>" & ""
+        
+        '5. Percorrer Dados Planeados
+        
+        Worksheets("Planeamento").Range("A6").Select
+        
+        ActiveCell.End(xlDown).Select
+        
+        ulti_linh_filt = Split(ActiveCell.Address, "$")(2)
+        
+        ntot_linh_filt = Worksheets("Planeamento").Range("AR7:" & "AR" & CStr(ulti_linh_filt)).SpecialCells(xlCellTypeVisible).Count
+        
+        '6. Redimensiona e adiciona valores a Matriz de Dados
+        
+        ReDim matr_dado(ntot_linh_filt, 8)
+        
+        Worksheets("Planeamento").Range("A7").Select
+
+        nlinhasfechadas = 1
+        
+        Do Until IsEmpty(ActiveCell)
+
+            If ActiveCell.EntireRow.Hidden Then
+
+            Else
+                
+                '6.1. Fecha semanas abertas com data atual maior que a prevista
+                
+                If ActiveCell.Offset(0, 57).Value = "X" And ActiveCell.Offset(0, 58).Value <> "X" And ActiveCell.Offset(0, 53).Value > ActiveCell.Offset(0, 43).Value Then
+    
+                    '6.1.1. Adiciona os valores de ID
+                    matr_dado(nlinhasfechadas, 1) = ActiveCell.Value
+                    '6.1.2. Adiciona os valores das Linhas do Planeamento
+                    matr_dado(nlinhasfechadas, 2) = Split(ActiveCell.Address, "$")(2)
+                    '6.1.3. Adiciona valores de Semana Atual
+                    matr_dado(nlinhasfechadas, 3) = ActiveCell.Offset(0, 54).Value
+                    '6.1.4. Adiciona valores de Ano Atual
+                    matr_dado(nlinhasfechadas, 4) = ActiveCell.Offset(0, 55).Value
+                    '6.1.5. Adiciona valores de Area Secao de Corte Fechamento
+                    matr_dado(nlinhasfechadas, 5) = ActiveCell.Offset(0, 56).Value
+                    '6.1.6. Adiciona valores de Semana Fechada
+                    matr_dado(nlinhasfechadas, 6) = "X"
+                    
+                    '6.1.6. Marca fechamento da semana
+                    ActiveCell.Offset(0, 58).Value = "X"
+                
+                    nlinhasfechadas = nlinhasfechadas + 1
+                    
+                End If
+    
+            End If
+            
+            ActiveCell.Offset(1, 0).Select
+
+        Loop
+        
+        MsgBox (CStr(nlinhasfechadas - 1) & " novas linhas fechadas!")
+        
+        '7. Abre Historico de Planeamento
+
+        Workbooks.Open ("I:\usr\dpm\dp\3_Planeamento\Plan_Cort.Trans_Perfis\Historico_Plan_Perfis.xlsx")
+        Workbooks("Historico_Plan_Perfis.xlsx").Worksheets("HistPerfis").Activate
+
+        '8. Percorre linhas preenchidas no Historico de Planeamento e atualiza linhas fechadas
+
+        Worksheets("HistPerfis").Range("A2").Select
+
+        nlinhas_hist = 1
+
+        Do Until IsEmpty(ActiveCell)
+            
+            For i = 1 To UBound(matr_dado, 1)
+            
+                '8.1. Verifica a equivalencia dos IDs
+            
+                If ActiveCell.Value = matr_dado(i, 1) Then
+                
+                    '8.1.1. Adiciona valores de Area Secao de Corte Fechamento
+                    ActiveCell.Offset(0, 6).Value = matr_dado(i, 5)
+                    
+                    '8.1.2. Adiciona valores da Semana de Fechamento
+                    ActiveCell.Offset(0, 11).Value = matr_dado(i, 3)
+                    
+                    '8.1.3. Adiciona valores do Ano de Fechamento
+                    ActiveCell.Offset(0, 12).Value = matr_dado(i, 4)
+                    
+                    '8.1.4. Calcula valores Area de Corte Efetiva
+                    
+                    On Error Resume Next
+                    ActiveCell.Offset(0, 7).Value = ActiveCell.Offset(0, 6).Value - ActiveCell.Offset(0, 5).Value
+                    
+                    '8.1.5. Calcula valores Area de Corte Planeda e Nao Planeada
+                    
+                    On Error Resume Next
+                    If ActiveCell.Offset(0, 7).Value >= ActiveCell.Offset(0, 4).Value Then
+                    
+                        On Error Resume Next
+                        ActiveCell.Offset(0, 9).Value = ActiveCell.Offset(0, 4).Value
+                    
+                        On Error Resume Next
+                        ActiveCell.Offset(0, 8).Value = ActiveCell.Offset(0, 7).Value - ActiveCell.Offset(0, 4).Value
+                        
+                        '8.1.5.1. Destaca linhas cumpridas
+                        
+                        matr_dado(i, 7) = ""
+                        
+                    Else
+                    
+                        On Error Resume Next
+                        ActiveCell.Offset(0, 9).Value = ActiveCell.Offset(0, 7).Value
+                        
+                        ActiveCell.Offset(0, 8).Value = 0
+                        
+                        '8.1.5.2. Destaca linhas nao cumpridas
+                        
+                        matr_dado(i, 7) = "X"
+                        
+                    End If
+                    
+                    '8.1.6. Adiciona valores de Semana Fechada
+                    ActiveCell.Offset(0, 14).Value = matr_dado(i, 6)
+                    
+                    '8.1.7. Calcula taxa de cumprimento
+                    
+                    On Error Resume Next
+                    ActiveCell.Offset(0, 16).Value = ActiveCell.Offset(0, 9).Value / ActiveCell.Offset(0, 4).Value
+                    matr_dado(i, 8) = ActiveCell.Offset(0, 16).Value
+                    
+                End If
+            
+            Next
+            
+            nlinhas_hist = nlinhas_hist + 1
+            
+            ActiveCell.Offset(1, 0).Select
+
+        Loop
+        
+        '9. Fecha o Histórico
+        
+        MsgBox ("Registo de semanas fechadas no histórico concluído!")
+        
+        Workbooks("Historico_Plan_Perfis.xlsx").Worksheets("HistPerfis").Activate
+        ActiveWorkbook.Close True
+        
+        '10. Reabre o Planeamento
+        
+        Workbooks("Met2_Plan_Perfis.xlsm").Worksheets("Planeamento").Activate
+        
+        '11. Busca linhas cumpridas
+        
+        Worksheets("Planeamento").Range("A7").Select
+        
+        Do Until IsEmpty(ActiveCell)
+
+            If ActiveCell.EntireRow.Hidden Then
+
+            Else
+                
+                If ActiveCell.Offset(0, 57).Value = "X" And ActiveCell.Offset(0, 58).Value = "X" Then
+                    
+                    For i = 1 To UBound(matr_dado, 1)
+                    
+                        If matr_dado(i, 1) = ActiveCell.Value Then
+                        
+                            ActiveCell.Offset(0, 59).Value = matr_dado(i, 8)
+                            
+                            If matr_dado(i, 7) <> "X" Then
+                                                
+                                'ActiveCell.Offset(0, 43).ClearContents
+                            
+                                'ActiveCell.Offset(0, 43).Value = "Feito"
+                            
+                            End If
+                            
+                        End If
+                    
+                    Next
+                    
+                End If
+    
+            End If
+            
+            ActiveCell.Offset(1, 0).Select
+
+        Loop
+        
+        MsgBox ("Taxas de cumprimento atualizadas!")
+        
+        MsgBox ("Rotina finalizada.")
+    
+    Else
+    
+        MsgBox ("A password está errada.")
+    
+    End If
+
+End Sub
+
+
+
+MODULE ImpoColu.bas
+Attribute VB_Name = "ImpoColu"
+Sub ImpoColu()
+
+    'ActiveWorkbook.Connections("Consulta - TAB_DIN_COLUNAS").Refresh
+    
+    'ActiveWorkbook.Connections("Consulta - PLANEAMENTO").Refresh
+    
+    Worksheets("TabDinPlaneamento").PivotTables("Tabela Dinâmica1").RefreshTable
+    
+    Worksheets("TabDinPlaneamentoAboc").PivotTables("Tabela Dinâmica2").RefreshTable
+    
+End Sub

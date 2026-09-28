@@ -1,0 +1,11 @@
+{
+  "raw_connectors/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "raw_connectors/cpis_sync.py": "94572f79d70a98c29e4e04ff5a5e1128c2d1a45b1d19e22c5967f7f37145e8c9",
+  "raw_connectors/original_ocr.py": "94f963af8dbbfb29b65e3e4af112b9a8a3156cccca0ffbe269b3c61f9c2e4e43",
+  "raw_connectors/connection_settings.py": "efe3a9d82ecd476374fb206593842f75dbec289a6f0c30709dc4bb3ff9e99350",
+  "start.ps1": "07f6901c42d5e18d561ea0f7cbc02e4fe54d5bcdf70bf62cbd2b3f84920ca5c3",
+  "cpis.env.example": "0a9cbe75e546159e3c751e698168150b4c8b693fd5cd2d78c48dca6fab351caa",
+  "register.ps1": "95ed5bd634c6e7dd248a0d26c921540a70b46608d03a4a6793669e8a6d6fe41e",
+  "original.env.example": "cea9062caa2a75b140fc2d623fb316ae8065d9de473cf5782d7ebafc5b3d7722",
+  "diagnose_cpis_readonly.ps1": "faa935f2d2f037104b681ffdd0f5c94e815101f8b3c54f308703164851bf073c"
+}

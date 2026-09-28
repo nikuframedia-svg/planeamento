@@ -1,0 +1,18 @@
+[Unit]
+Description=RAW planning query generations and confirmed analyses
+After=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/luis/projects/planeamento
+EnvironmentFile=/home/luis/projects/planeamento/.env
+Environment=PYTHONUNBUFFERED=1
+# Metadata only; preserves the existing twice-daily import schedule.
+Environment=MES_RAW_DRIVE_CHECK=1
+ExecStart=/home/luis/projects/planeamento/.venv/bin/python -m app.raw.worker
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+
+[Install]
+WantedBy=default.target

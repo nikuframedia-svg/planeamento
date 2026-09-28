@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="pt">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Planeamento · Perfis e cantoneiras</title>
+  <link rel="stylesheet" href="/static/planning.css?v={{ version }}">
+  <script src="/static/planning.js?v={{ version }}" defer></script>
+<link rel="stylesheet" href="/static/planning_typography.css">
+</head>
+<body>
+  <header class="app-head">
+    <a class="brand" href="/planeamento">METALOGAL<span>Planeamento</span></a>
+    <nav aria-label="Área de trabalho">
+      <button type="button" id="new-record" aria-current="page">Nova ficha</button>
+      <button type="button" id="show-records">Registos</button>
+    </nav>
+  </header>
+  <main>
+    <div class="heading"><div><h1>Perfis e cantoneiras</h1><p>Preparação das necessidades de produção</p></div>
+      <label class="area-choice" for="area">Área<select id="area"><option value="perfis">Perfis · MTG2</option><option value="cantoneiras">Cantoneiras · MTG3</option></select></label>
+    </div>
+    <div id="connection" class="source-status" role="status">A ligar ao planeamento…</div>
+    <div id="message" role="status" aria-live="polite" hidden></div>
+    <div id="error" role="alert" hidden></div>
+
+    <section id="editor" aria-label="Ficha de planeamento">
+      <section class="origin-section">
+        <div class="section-heading"><h2>OF e referência</h2><button type="button" id="change-order" class="quiet" hidden>Escolher outra OF</button></div>
+        <form id="search-form" role="search"><label for="query">Pesquisar OF, cliente, designação ou referência</label><div class="search-row"><input id="query" type="search" placeholder="Ex.: 265760, cliente ou designação da obra" autocomplete="off"><button type="submit">Pesquisar</button></div></form>
+        <div id="orders" class="order-results" aria-label="OF abertas na importação CPIS"></div>
+        <div id="selected-order" hidden>
+          <dl class="order-context"><div><dt>OF / OV</dt><dd id="order-numbers"></dd></div><div><dt>Cliente</dt><dd id="order-customer"></dd></div><div class="wide"><dt>Designação da obra</dt><dd id="order-designation"></dd></div><div><dt>Estado CPIS</dt><dd id="order-status"></dd></div><div><dt>Fim previsto da Produção</dt><dd id="order-finish"></dd></div><div><dt>Data de entrega</dt><dd id="order-delivery"></dd></div></dl>
+          <label for="reference">Referência e linha do ficheiro</label><select id="reference"></select>
+          <button type="button" id="new-reference" class="quiet">Adicionar referência nova</button>
+          <div id="source-line" class="source-line"></div>
+        </div>
+      </section>
+
+      <form id="record-form" hidden>
+        <div class="work-layout">
+          <div class="main-fields">
+            <section class="form-section">
+              <div class="section-heading"><h2>Material e geometria</h2><span id="record-label">Nova ficha</span></div>
+              <div class="fields">
+                <label>Referência<input name="component_ref" required maxlength="160"></label>
+                <label>Discriminador / variante<input name="identity_discriminator" maxlength="160" placeholder="Quando a referência não distingue a peça"></label>
+                <label>Tipo de material<select name="material_type" required><option value="">Seleciona o material</option></select></label>
+                <label class="wide">Designação do material<input name="material_description" maxlength="1000"></label>
+                <label>Perfil<input name="profile" list="profile-options" maxlength="200"></label>
+                <label>Qualidade<input name="grade" placeholder="Ex.: S275JR" maxlength="100"></label>
+                <label class="check wide"><input name="custom_profile" type="checkbox">Perfil especial / definido por dimensões</label>
+              </div>
+              <details id="geometry"><summary>Dimensões do perfil e do corte</summary><div class="fields dimensions">
+                <label data-dimension="diameter">Diâmetro exterior (mm)<input name="outer_diameter_mm" inputmode="decimal"></label>
+                <label data-dimension="width">Largura / lado (mm)<input name="width_mm" inputmode="decimal"></label>
+                <label data-dimension="height">Altura (mm)<input name="height_mm" inputmode="decimal"></label>
+                <label data-dimension="thickness">Espessura (mm)<input name="thickness_mm" inputmode="decimal"></label>
+                <label data-dimension="length">Comprimento (mm)<input name="length_mm" inputmode="decimal"></label>
+                <label data-dimension="angle">Ângulo (graus)<input name="angle_deg" inputmode="decimal"></label>
+              </div></details>
+            </section>
+
+            <section class="form-section">
+              <div class="section-heading"><h2>Operações e destino</h2></div>
+              <div class="fields">
+                <label>Operação desta ficha<select name="operation"><option value="corte">Corte</option><option value="abocardar">Abocardar</option></select></label>
+                <label>Operação do catálogo<select name="operation_detail"><option value="">Sem operação adicional</option></select></label>
+                <label>Máquina<select name="machine"><option value="">Por definir</option></select></label>
+                <label>Aborc. · abocardar<input name="abocardar" list="operation-marks" maxlength="40" placeholder="Indicação do ficheiro"></label>
+                <label>Chanf. · chanfro<input name="chanfro" list="operation-marks" maxlength="40" placeholder="Indicação do ficheiro"></label>
+                <label>Ponteira<input name="ponteira" list="operation-marks" maxlength="40"></label>
+                <label>Outras operações<input name="other_operations" maxlength="500"></label>
+                <label>Equipa<select name="team"><option value="">Por definir</option></select></label>
+                <label>Pavilhão<input name="pavilion" maxlength="80"></label>
+              </div>
+            </section>
+
+            <section class="form-section">
+              <div class="section-heading"><h2>Previsões e capacidade</h2><span>Previsões informadas</span></div>
+              <div class="fields">
+                <label>Previsão de Data Corte<input name="cut_date" type="date"></label>
+                <label>Data prevista de execução<input name="expected_date" type="date"></label>
+                <label>Picking · semana necessária<input name="picking_week" type="number" min="1" max="53" step="1"></label>
+                <label>Ano do Picking<input name="picking_year" type="number" min="2000" max="2100" step="1" placeholder="Confirmar ano"></label>
+                <label>Semana prevista para finalizar<input name="finish_week" type="number" min="1" max="53" step="1"></label>
+                <label>Ano previsto para finalizar<input name="finish_year" type="number" min="2000" max="2100" step="1"></label>
+                <label class="wide">Capacidade disponível da máquina nessa semana (h)<input name="weekly_capacity_hours" inputmode="decimal"></label>
+              </div>
+            </section>
+
+            <section class="form-section">
+              <div class="section-heading"><h2>Matéria-prima</h2></div>
+              <div class="fields">
+                <label>Data de requisição de material<input name="material_request_date" type="date"></label>
+                <label>Data prevista de material<input name="material_available_date" type="date"></label>
+                <label class="wide">N.º de lote / referência de material<input name="material_lot" maxlength="160"></label>
+              </div>
+            </section>
+
+            <section class="form-section">
+              <label>Observações<textarea name="notes" rows="3" maxlength="4000"></textarea></label>
+            </section>
+          </div>
+
+          <aside class="quantities" aria-label="Quantidades e gravação">
+            <h2>Quantidades</h2>
+            <label>Quantidade necessária (un.)<input name="quantity_required" type="number" min="1" step="1" required></label>
+            <label>Quantidade a planear (un.)<input name="quantity_to_plan" type="number" min="0" step="1"></label>
+            <label>Realizado na macro (un.)<input name="quantity_completed" type="number" min="0" step="1" readonly></label>
+            <p class="field-note">Valor de consulta da origem. As divergências são conferidas na página da OF.</p>
+            <div class="completion"><span id="completion">—</span><span>realizado nesta operação</span></div>
+            <progress id="completion-progress" max="100" value="0" aria-label="Percentagem realizada nesta operação"></progress>
+            <dl class="source-balances"><div><dt>Saldo no ficheiro</dt><dd id="source-remaining">—</dd></div><div><dt>CPIS · fim previsto da Produção</dt><dd id="source-cpis">—</dd></div></dl>
+            <p id="source-notice" class="field-note" hidden></p>
+            <label>Responsável pelo registo<input id="actor" required maxlength="120" autocomplete="name"></label>
+            <button type="submit" id="save-record" data-status="draft" formnovalidate>Guardar rascunho</button>
+            <button type="submit" id="ready-record" data-status="ready" class="primary">Marcar como preparada</button>
+            <p class="field-note">A ficha fica guardada na base de dados, com a origem e o histórico de revisões.</p>
+            <button type="button" id="refresh-source" class="quiet" hidden>Atualizar ligação ao ficheiro</button>
+            <div id="versions" class="versions" hidden></div>
+          </aside>
+        </div>
+      </form>
+    </section>
+
+    <section id="history" hidden>
+      <div class="section-heading"><h2>Registos guardados</h2><button type="button" id="reload-records" class="quiet">Atualizar</button></div>
+      <div id="records"></div>
+    </section>
+  </main>
+  <datalist id="profile-options"></datalist>
+  <datalist id="operation-marks"><option value="X"></option><option value="-"></option></datalist>
+  <footer>Planeamento · cada fonte apresenta a sua origem e última confirmação conhecida.</footer>
+</body>
+</html>

@@ -1,0 +1,18 @@
+[Unit]
+Description=Read-only original OCR SQLite publisher for planning
+After=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/luis/projects/planeamento
+# Set the verified active SQLite path, a persistent instance UUID and the
+# restricted ocr_original_importer connection in this private environment file.
+EnvironmentFile=%h/.config/kanban-planning/original-ocr.env
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/home/luis/projects/planeamento/.venv/bin/python -m app.original_ocr --watch
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=15
+
+[Install]
+WantedBy=default.target

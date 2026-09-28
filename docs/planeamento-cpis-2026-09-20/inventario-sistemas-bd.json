@@ -1,0 +1,552 @@
+{
+  "observed": {
+    "database": "dataresearchmtg",
+    "observed_at": "2026-09-20 21:10:32.132486+00:00"
+  },
+  "snapshots": [
+    {
+      "dataset_id": "ds-2638099daddc474e",
+      "snapshot_id": "mtg_da883132feefabc2",
+      "source_filename": "Met3_Plan_Cantoneiras.xlsm",
+      "loaded_at": "2026-09-20 17:16:20.966495+00:00",
+      "retained_versions": 5
+    },
+    {
+      "dataset_id": "ds-chapa-expedition",
+      "snapshot_id": "chapa_expedition_a1bba8c951eb76b6",
+      "source_filename": "Exp.chapaMTG3.xlsm",
+      "loaded_at": "2026-08-05 07:44:15.241030+00:00",
+      "retained_versions": 1
+    },
+    {
+      "dataset_id": "ds-chapa-master",
+      "snapshot_id": "chapa_master_ab41e9221ca5d71d",
+      "source_filename": "listaofs_mtg3.xlsx",
+      "loaded_at": "2026-08-05 07:44:15.240648+00:00",
+      "retained_versions": 1
+    },
+    {
+      "dataset_id": "ds-chapa-plan",
+      "snapshot_id": "chapa_plan_3adb538417ce9c3c",
+      "source_filename": "plan_chapa.xlsm",
+      "loaded_at": "2026-08-05 07:44:15.240862+00:00",
+      "retained_versions": 1
+    },
+    {
+      "dataset_id": "ds-colaboradores",
+      "snapshot_id": "colab_2d29d51063a939e8",
+      "source_filename": "ListaColaboradores.xlsx",
+      "loaded_at": "2026-08-09 15:49:45.330639+00:00",
+      "retained_versions": 1
+    },
+    {
+      "dataset_id": "ds-met2-perfis",
+      "snapshot_id": "mtg2_756950d5721977a8",
+      "source_filename": "Met2_Plan_Perfis.xlsm",
+      "loaded_at": "2026-09-20 17:16:04.563012+00:00",
+      "retained_versions": 5
+    },
+    {
+      "dataset_id": "ds-mtg2-producao",
+      "snapshot_id": "mtg2prod_5a875211345b1543",
+      "source_filename": "Kanbans_Producao_NOVO.xlsx",
+      "loaded_at": "2026-08-21 11:18:52.040785+00:00",
+      "retained_versions": 1
+    }
+  ],
+  "tables": [
+    {
+      "table_schema": "audit_mtg",
+      "table_name": "chapa_batches",
+      "total_all_versions": 1
+    },
+    {
+      "table_schema": "audit_mtg",
+      "table_name": "chapa_validation_results",
+      "total_all_versions": 11
+    },
+    {
+      "table_schema": "audit_mtg",
+      "table_name": "snapshots",
+      "total_all_versions": 15
+    },
+    {
+      "table_schema": "audit_mtg",
+      "table_name": "validation_results",
+      "total_all_versions": 158
+    },
+    {
+      "table_schema": "core_mtg",
+      "table_name": "chapa_components",
+      "total_all_versions": 174188
+    },
+    {
+      "table_schema": "core_mtg",
+      "table_name": "customers",
+      "total_all_versions": 2007,
+      "latest_by_dataset": [
+        {
+          "dataset_id": "ds-2638099daddc474e",
+          "records": 98
+        },
+        {
+          "dataset_id": "ds-met2-perfis",
+          "records": 305
+        }
+      ]
+    },
+    {
+      "table_schema": "core_mtg",
+      "table_name": "employees",
+      "total_all_versions": 720,
+      "latest_by_dataset": [
+        {
+          "dataset_id": "ds-colaboradores",
+          "records": 720
+        }
+      ]
+    },
+    {
+      "table_schema": "core_mtg",
+      "table_name": "machines",
+      "total_all_versions": 115,
+      "latest_by_dataset": [
+        {
+          "dataset_id": "ds-2638099daddc474e",
+          "records": 13
+        },
+        {
+          "dataset_id": "ds-met2-perfis",
+          "records": 10
+        }
+      ]
+    },
+    {
+      "table_schema": "core_mtg",
+      "table_name": "production_lines",
+      "total_all_versions": 408163,
+      "latest_by_dataset": [
+        {
+          "dataset_id": "ds-2638099daddc474e",
+          "records": 75192
+        },
+        {
+          "dataset_id": "ds-met2-perfis",
+          "records": 7199
+        }
+      ]
+    },
+    {
+      "table_schema": "core_mtg",
+      "table_name": "production_orders",
+      "total_all_versions": 16907,
+      "latest_by_dataset": [
+        {
+          "dataset_id": "ds-2638099daddc474e",
+          "records": 1384
+        },
+        {
+          "dataset_id": "ds-met2-perfis",
+          "records": 2035
+        }
+      ]
+    },
+    {
+      "table_schema": "core_mtg",
+      "table_name": "sales_orders",
+      "total_all_versions": 8601,
+      "latest_by_dataset": [
+        {
+          "dataset_id": "ds-2638099daddc474e",
+          "records": 473
+        },
+        {
+          "dataset_id": "ds-met2-perfis",
+          "records": 1263
+        }
+      ]
+    },
+    {
+      "table_schema": "cpis_mtg",
+      "table_name": "orders",
+      "total_all_versions": 0
+    },
+    {
+      "table_schema": "cpis_mtg",
+      "table_name": "sync_attempts",
+      "total_all_versions": 1
+    },
+    {
+      "table_schema": "cpis_mtg",
+      "table_name": "versions",
+      "total_all_versions": 0
+    },
+    {
+      "table_schema": "mes_kanban",
+      "table_name": "production_record_plan_refs",
+      "total_all_versions": 49
+    },
+    {
+      "table_schema": "mes_kanban",
+      "table_name": "production_records",
+      "total_all_versions": 1108
+    },
+    {
+      "table_schema": "mes_kanban",
+      "table_name": "stoppage_records",
+      "total_all_versions": 2
+    },
+    {
+      "table_schema": "mes_kanban",
+      "table_name": "validated_sheets",
+      "total_all_versions": 151
+    },
+    {
+      "table_schema": "planning_mtg",
+      "table_name": "output_proposals",
+      "total_all_versions": 0
+    },
+    {
+      "table_schema": "planning_mtg",
+      "table_name": "reconciliations",
+      "total_all_versions": 0
+    },
+    {
+      "table_schema": "planning_mtg",
+      "table_name": "record_versions",
+      "total_all_versions": 0
+    },
+    {
+      "table_schema": "planning_mtg",
+      "table_name": "records",
+      "total_all_versions": 0
+    },
+    {
+      "table_schema": "raw_mtg",
+      "table_name": "chapa_auxiliary_rows",
+      "total_all_versions": 146692,
+      "latest_by_dataset": [
+        {
+          "dataset_id": "ds-chapa-expedition",
+          "records": 77679
+        },
+        {
+          "dataset_id": "ds-chapa-plan",
+          "records": 69013
+        }
+      ]
+    },
+    {
+      "table_schema": "raw_mtg",
+      "table_name": "chapa_expedition_rows",
+      "total_all_versions": 21229,
+      "latest_by_dataset": [
+        {
+          "dataset_id": "ds-chapa-expedition",
+          "records": 21229
+        }
+      ]
+    },
+    {
+      "table_schema": "raw_mtg",
+      "table_name": "chapa_kanban_daily_rows",
+      "total_all_versions": 20618,
+      "latest_by_dataset": [
+        {
+          "dataset_id": "ds-chapa-plan",
+          "records": 20618
+        }
+      ]
+    },
+    {
+      "table_schema": "raw_mtg",
+      "table_name": "chapa_master_rows",
+      "total_all_versions": 170094,
+      "latest_by_dataset": [
+        {
+          "dataset_id": "ds-chapa-master",
+          "records": 170094
+        }
+      ]
+    },
+    {
+      "table_schema": "raw_mtg",
+      "table_name": "chapa_nesting_rows",
+      "total_all_versions": 11684,
+      "latest_by_dataset": [
+        {
+          "dataset_id": "ds-chapa-plan",
+          "records": 11684
+        }
+      ]
+    },
+    {
+      "table_schema": "raw_mtg",
+      "table_name": "chapa_plan_rows",
+      "total_all_versions": 20903,
+      "latest_by_dataset": [
+        {
+          "dataset_id": "ds-chapa-plan",
+          "records": 20903
+        }
+      ]
+    },
+    {
+      "table_schema": "raw_mtg",
+      "table_name": "cpis_rows",
+      "total_all_versions": 411810,
+      "latest_by_dataset": [
+        {
+          "dataset_id": "ds-2638099daddc474e",
+          "records": 70129
+        },
+        {
+          "dataset_id": "ds-met2-perfis",
+          "records": 12362
+        }
+      ]
+    },
+    {
+      "table_schema": "raw_mtg",
+      "table_name": "machine_rows",
+      "total_all_versions": 145,
+      "latest_by_dataset": [
+        {
+          "dataset_id": "ds-2638099daddc474e",
+          "records": 19
+        },
+        {
+          "dataset_id": "ds-met2-perfis",
+          "records": 10
+        }
+      ]
+    },
+    {
+      "table_schema": "raw_mtg",
+      "table_name": "mtg2_horas_paragens_rows",
+      "total_all_versions": 9,
+      "latest_by_dataset": [
+        {
+          "dataset_id": "ds-mtg2-producao",
+          "records": 9
+        }
+      ]
+    },
+    {
+      "table_schema": "raw_mtg",
+      "table_name": "mtg2_producao_rows",
+      "total_all_versions": 27,
+      "latest_by_dataset": [
+        {
+          "dataset_id": "ds-mtg2-producao",
+          "records": 27
+        }
+      ]
+    },
+    {
+      "table_schema": "raw_mtg",
+      "table_name": "other_sheet_rows",
+      "total_all_versions": 89732,
+      "latest_by_dataset": [
+        {
+          "dataset_id": "ds-2638099daddc474e",
+          "records": 16652
+        },
+        {
+          "dataset_id": "ds-met2-perfis",
+          "records": 1472
+        }
+      ]
+    },
+    {
+      "table_schema": "raw_mtg",
+      "table_name": "plan_production_rows",
+      "total_all_versions": 408163,
+      "latest_by_dataset": [
+        {
+          "dataset_id": "ds-2638099daddc474e",
+          "records": 75192
+        },
+        {
+          "dataset_id": "ds-met2-perfis",
+          "records": 7199
+        }
+      ]
+    },
+    {
+      "table_schema": "raw_mtg",
+      "table_name": "workbook_sheets",
+      "total_all_versions": 100,
+      "latest_by_dataset": [
+        {
+          "dataset_id": "ds-2638099daddc474e",
+          "records": 9
+        },
+        {
+          "dataset_id": "ds-chapa-expedition",
+          "records": 11
+        },
+        {
+          "dataset_id": "ds-chapa-master",
+          "records": 2
+        },
+        {
+          "dataset_id": "ds-chapa-plan",
+          "records": 6
+        },
+        {
+          "dataset_id": "ds-met2-perfis",
+          "records": 8
+        }
+      ]
+    }
+  ],
+  "ocr_sheets": [
+    {
+      "source_app": "kanban-mes",
+      "family": "cantoneiras",
+      "template_name": "cantoneiras_kanban",
+      "sheets": 73,
+      "first_date": "2026-08-26",
+      "latest_date": "2026-09-17",
+      "last_validation": "2026-09-18 14:27:15.175888+00:00"
+    },
+    {
+      "source_app": "kanban-mes",
+      "family": "cantoneiras",
+      "template_name": "cantoneiras_paragens",
+      "sheets": 1,
+      "first_date": "2026-08-06",
+      "latest_date": "2026-08-06",
+      "last_validation": "2026-08-07 09:56:02.603419+00:00"
+    },
+    {
+      "source_app": "kanban-mes-mtg2",
+      "family": "perfis",
+      "template_name": "serrote_kanban",
+      "sheets": 3,
+      "first_date": "2026-09-03",
+      "latest_date": "2026-09-03",
+      "last_validation": "2026-09-04 13:31:13.122908+00:00"
+    },
+    {
+      "source_app": "kanban-mes-mtg2",
+      "family": "perfis",
+      "template_name": "tpl999_kanban",
+      "sheets": 57,
+      "first_date": "2026-08-26",
+      "latest_date": "2026-09-17",
+      "last_validation": "2026-09-18 07:48:25.268292+00:00"
+    },
+    {
+      "source_app": "kanban-mes-mtg2",
+      "family": "perfis",
+      "template_name": "vanguard_kanban",
+      "sheets": 17,
+      "first_date": "2026-08-19",
+      "latest_date": "2026-09-17",
+      "last_validation": "2026-09-18 07:27:05.304154+00:00"
+    }
+  ],
+  "ocr_production": [
+    {
+      "source_app": "kanban-mes",
+      "family": "cantoneiras",
+      "records": 727,
+      "production_sheets": 73,
+      "distinct_of": 64,
+      "first_production": "2026-08-26",
+      "latest_production": "2026-09-17",
+      "last_validation": "2026-09-18 14:27:15.175888+00:00"
+    },
+    {
+      "source_app": "kanban-mes-mtg2",
+      "family": "perfis",
+      "records": 381,
+      "production_sheets": 77,
+      "distinct_of": 73,
+      "first_production": "2026-08-19",
+      "latest_production": "2026-09-17",
+      "last_validation": "2026-09-18 07:48:25.268292+00:00"
+    }
+  ],
+  "ocr_stoppages": [
+    {
+      "source_app": "kanban-mes",
+      "records": 2,
+      "sheets": 1,
+      "latest_event": "2026-08-06",
+      "last_validation": "2026-08-07 09:56:02.603419+00:00"
+    }
+  ],
+  "chapa_batch": {
+    "batch_id": "chapa_c340b8b3004dec25",
+    "master_snapshot_id": "chapa_master_ab41e9221ca5d71d",
+    "plan_snapshot_id": "chapa_plan_3adb538417ce9c3c",
+    "expedition_snapshot_id": "chapa_expedition_a1bba8c951eb76b6",
+    "loader_version": "dataresearchmtg-chapa-loader-v1",
+    "loaded_at": "2026-08-05 07:44:15.241132+00:00"
+  },
+  "mtg2_producao_rows_period": [
+    {
+      "dataset_id": "ds-mtg2-producao",
+      "first_event": "2026-04-15",
+      "last_event": "2026-04-17"
+    }
+  ],
+  "mtg2_horas_paragens_rows_period": [
+    {
+      "dataset_id": "ds-mtg2-producao",
+      "first_event": "2026-03-25",
+      "last_event": "2026-04-14"
+    }
+  ],
+  "chapa_kanban_daily_rows_period": [
+    {
+      "dataset_id": "ds-chapa-plan",
+      "first_event": "2025-01-02 00:00:00",
+      "last_event": "2026-07-15 00:00:00"
+    }
+  ],
+  "chapa_nesting_rows_period": [
+    {
+      "dataset_id": "ds-chapa-plan",
+      "first_event": "2024-02-06 00:00:00",
+      "last_event": "2029-09-22 00:00:00"
+    }
+  ],
+  "cpis_sync": [
+    {
+      "success": false,
+      "attempts": 1,
+      "last_attempt": "2026-09-20 17:21:49.553922+00:00"
+    }
+  ],
+  "employees_source": [
+    {
+      "source_filename": "ListaColaboradores.xlsx",
+      "dataset_id": "ds-colaboradores"
+    }
+  ],
+  "pdf_sqlite_separate": {
+    "path": "/home/luis/projects/kanban-mes-mtg2/data/dossiers/dossiers.db",
+    "counts": {
+      "documents": 5,
+      "pieces": 12,
+      "needs": 7,
+      "events": 57,
+      "exports": 0,
+      "export_proposals": 0
+    },
+    "document_statuses": [
+      [
+        "ready",
+        2
+      ],
+      [
+        "review",
+        3
+      ]
+    ]
+  }
+}

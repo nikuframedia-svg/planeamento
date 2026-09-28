@@ -1,0 +1,202 @@
+{
+  "perfis_operation_states": [
+    {
+      "mark": "-",
+      "n": 7120,
+      "closed": 5471,
+      "cut_remaining_zero": 5320,
+      "aboc_present": 134,
+      "cut_present": 5488
+    },
+    {
+      "mark": "X",
+      "n": 79,
+      "closed": 31,
+      "cut_remaining_zero": 39,
+      "aboc_present": 38,
+      "cut_present": 45
+    }
+  ],
+  "missing_cpis_orders": [
+    {
+      "snapshot_id": "mtg_da883132feefabc2",
+      "production_order_no": "OF260825",
+      "lines": 535
+    },
+    {
+      "snapshot_id": "mtg_da883132feefabc2",
+      "production_order_no": "OF262609",
+      "lines": 373
+    },
+    {
+      "snapshot_id": "mtg_da883132feefabc2",
+      "production_order_no": "OF262137",
+      "lines": 309
+    },
+    {
+      "snapshot_id": "mtg_da883132feefabc2",
+      "production_order_no": "OF262136",
+      "lines": 278
+    },
+    {
+      "snapshot_id": "mtg_da883132feefabc2",
+      "production_order_no": "OF265285",
+      "lines": 247
+    },
+    {
+      "snapshot_id": "mtg_da883132feefabc2",
+      "production_order_no": "OF262804",
+      "lines": 247
+    },
+    {
+      "snapshot_id": "mtg_da883132feefabc2",
+      "production_order_no": "OF260032",
+      "lines": 241
+    },
+    {
+      "snapshot_id": "mtg_da883132feefabc2",
+      "production_order_no": "OF260031",
+      "lines": 239
+    },
+    {
+      "snapshot_id": "mtg_da883132feefabc2",
+      "production_order_no": "OF262138",
+      "lines": 235
+    },
+    {
+      "snapshot_id": "mtg_da883132feefabc2",
+      "production_order_no": "OF260030",
+      "lines": 235
+    },
+    {
+      "snapshot_id": "mtg_da883132feefabc2",
+      "production_order_no": "OF262139",
+      "lines": 198
+    },
+    {
+      "snapshot_id": "mtg_da883132feefabc2",
+      "production_order_no": "OF261461",
+      "lines": 187
+    }
+  ],
+  "perf_operations_example": [
+    {
+      "excel_row": 6876,
+      "production_order_no": "OF265591",
+      "component_ref": "CI5618A4001",
+      "quantity_planned": "20",
+      "quantity_remaining_source": "0",
+      "closed_x": false,
+      "cut": "20",
+      "aboc": null,
+      "aboc_needed": "X"
+    },
+    {
+      "excel_row": 6863,
+      "production_order_no": "OF265587",
+      "component_ref": "CI5618A4001",
+      "quantity_planned": "100",
+      "quantity_remaining_source": "0",
+      "closed_x": false,
+      "cut": "100",
+      "aboc": null,
+      "aboc_needed": "X"
+    },
+    {
+      "excel_row": 6871,
+      "production_order_no": "OF265585",
+      "component_ref": "CI5618A4001",
+      "quantity_planned": "30",
+      "quantity_remaining_source": "0",
+      "closed_x": false,
+      "cut": "30",
+      "aboc": null,
+      "aboc_needed": "X"
+    },
+    {
+      "excel_row": 5608,
+      "production_order_no": "OF264845",
+      "component_ref": "CI7018A4001",
+      "quantity_planned": "20",
+      "quantity_remaining_source": "0",
+      "closed_x": false,
+      "cut": "20",
+      "aboc": null,
+      "aboc_needed": "X"
+    },
+    {
+      "excel_row": 5580,
+      "production_order_no": "OF264763",
+      "component_ref": "CI5121A4030",
+      "quantity_planned": "315",
+      "quantity_remaining_source": "0",
+      "closed_x": false,
+      "cut": "315",
+      "aboc": "298",
+      "aboc_needed": "X"
+    },
+    {
+      "excel_row": 5573,
+      "production_order_no": "OF264760",
+      "component_ref": "CI5021A4000",
+      "quantity_planned": "840",
+      "quantity_remaining_source": "0",
+      "closed_x": false,
+      "cut": "840",
+      "aboc": "572",
+      "aboc_needed": "X"
+    },
+    {
+      "excel_row": 5426,
+      "production_order_no": "OF264652",
+      "component_ref": "6053V001",
+      "quantity_planned": "5",
+      "quantity_remaining_source": "0",
+      "closed_x": true,
+      "cut": "5",
+      "aboc": "5",
+      "aboc_needed": "X"
+    },
+    {
+      "excel_row": 5423,
+      "production_order_no": "OF264651",
+      "component_ref": "6309U001",
+      "quantity_planned": "50",
+      "quantity_remaining_source": "0",
+      "closed_x": false,
+      "cut": "50",
+      "aboc": null,
+      "aboc_needed": "X"
+    },
+    {
+      "excel_row": 4929,
+      "production_order_no": "OF264122",
+      "component_ref": "B704T001",
+      "quantity_planned": "1",
+      "quantity_remaining_source": "0",
+      "closed_x": true,
+      "cut": "1",
+      "aboc": "1",
+      "aboc_needed": "X"
+    },
+    {
+      "excel_row": 4930,
+      "production_order_no": "OF264122",
+      "component_ref": "B704T001",
+      "quantity_planned": "1",
+      "quantity_remaining_source": "0",
+      "closed_x": true,
+      "cut": "1",
+      "aboc": "1",
+      "aboc_needed": "X"
+    }
+  ],
+  "machine_columns": [
+    {
+      "lines": 7199,
+      "canonical_machine": 0,
+      "raw_machine": 5742,
+      "alt_machine": 0
+    }
+  ]
+}

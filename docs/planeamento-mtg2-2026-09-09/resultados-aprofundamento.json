@@ -1,0 +1,1969 @@
+{
+  "snapshot": "mtg2_d92027db24c68fee",
+  "snapshot_anterior": "mtg2_04272ec2df94d0b9",
+  "data_referencia": "2026-09-09",
+  "escrita_nas_fontes": false,
+  "sha256_extratos": {
+    "plan": "351ba92a7b9228bcb318c047d1b45ecfc5047c4a3206b155a2a9abf288c8a1c2",
+    "plan_previous": "d322713be56c61f6271a0b1adea91f59e20958f3eec7161a9f04c423116f8242",
+    "aux": "297249c7c023e621e1959d5d90a3e5c7f90b7fd5dc82d5c3a7020738e40d5ecb",
+    "production": "a0172d4ee03435ee016f73bdf4b2b365a3656c37bda454a0ea7cb40ad9f3b40a",
+    "snapshots": "a875bc6dfde4046a7295b3eb7f2fb8eb85078d81cb7c1d9466922bef0ed363a4",
+    "factory_sheets": "a6f23dc7a20861d12ae414575185c8efa57c3d320873dbec505fc3895092575a"
+  },
+  "universos": {
+    "linhas_fonte": 6993,
+    "saldo_positivo_nao_fechadas": 1597,
+    "linhas_of_ativas": 1083,
+    "of_ativas_com_saldo_corte": 271,
+    "pecas_saldo_corte_of_ativas": 86197,
+    "linhas_campos_basicos": 388,
+    "of_com_alguma_linha_basica": 127,
+    "of_todas_linhas_corte_basicas": 120,
+    "linhas_dessas_of": 368,
+    "sem_maquina": 431,
+    "sem_qualidade": 280,
+    "sem_area_positiva": 46,
+    "sem_entrega": 8,
+    "linhas_com_data_material": 0,
+    "linhas_com_lote": 0,
+    "nota": "Campos básicos não comprovam stock, calendário, tempos ou elegibilidade."
+  },
+  "qualidade": {
+    "grupos_of_tipo_perfil": 23,
+    "grupos": [
+      {
+        "of": "OF265424",
+        "tipo": "Perfil I",
+        "perfil": "IPE330",
+        "linhas": 93,
+        "quantidade_por_cortar": 706,
+        "linhas_excel": "6407 6408 6409 6410 6411 6412 6413 6414 6415 6416 6417 6418 6419 6420 6421 6422 6352 6356 6357 6358 6359 6360 6361 6362 6363 6364 6365 6366 6367 6368 6369 6370 6371 6372 6373 6374 6375 6376 6377 6378 6379 6380 6381 6382 6383 6384 6385 6386 6387 6389 6390 6391 6392 6394 6395 6396 6397 6399 6400 6401 6402 6403 6404 6405 6406 6423 6424 6425 6426 6427 6428 6429 6430 6431 6432 6433 6434 6435 6436 6437 6438 6439 6440 6441 6442 6443 6444 6445 6446 6447 6448 6449 6450",
+        "qualidade_confirmada": ""
+      },
+      {
+        "of": "OF265528",
+        "tipo": "Tubo quadrado",
+        "perfil": "50x50x3",
+        "linhas": 78,
+        "quantidade_por_cortar": 1047,
+        "linhas_excel": "6554 6557 6559 6560 6571 6572 6573 6575 6576 6578 6579 6580 6581 6582 6583 6584 6585 6586 6587 6588 6589 6590 6591 6592 6593 6594 6595 6596 6597 6598 6599 6601 6602 6603 6604 6606 6607 6609 6610 6611 6612 6614 6615 6616 6617 6618 6619 6620 6621 6622 6623 6624 6625 6638 6639 6662 6665 6666 6670 6671 6672 6673 6674 6675 6676 6680 6681 6682 6683 6684 6685 6686 6687 6688 6689 6690 6691 6692",
+        "qualidade_confirmada": ""
+      },
+      {
+        "of": "OF265004",
+        "tipo": "Tubo quadrado",
+        "perfil": "50x50x3",
+        "linhas": 50,
+        "quantidade_por_cortar": 585,
+        "linhas_excel": "5838 5839 5842 5847 5855 5857 5860 5861 5862 5864 5865 5867 5869 5872 5873 5874 5880 5881 5882 5885 5886 5887 5888 5889 5890 5891 5892 5893 5894 5896 5897 5899 5900 5902 5904 5911 5912 5914 5917 5919 5920 5923 5927 5928 5929 5930 5931 5934 5939 5940",
+        "qualidade_confirmada": ""
+      },
+      {
+        "of": "OF265424",
+        "tipo": "Perfil H",
+        "perfil": "HEA240",
+        "linhas": 24,
+        "quantidade_por_cortar": 65,
+        "linhas_excel": "6327 6328 6329 6330 6331 6333 6334 6335 6336 6337 6338 6339 6340 6341 6342 6343 6344 6345 6346 6347 6348 6349 6350 6351",
+        "qualidade_confirmada": ""
+      },
+      {
+        "of": "OF264051",
+        "tipo": "Calha",
+        "perfil": "40x22x2",
+        "linhas": 9,
+        "quantidade_por_cortar": 196,
+        "linhas_excel": "4898 4899 4900 4901 4902 4903 4904 4905 4906",
+        "qualidade_confirmada": ""
+      },
+      {
+        "of": "OF265924",
+        "tipo": "Calha",
+        "perfil": "40x22x2",
+        "linhas": 9,
+        "quantidade_por_cortar": 860,
+        "linhas_excel": "6983 6984 6985 6986 6987 6988 6989 6990 6991",
+        "qualidade_confirmada": ""
+      },
+      {
+        "of": "OF264250",
+        "tipo": "Calha",
+        "perfil": "20x10x1",
+        "linhas": 1,
+        "quantidade_por_cortar": 6,
+        "linhas_excel": "5103",
+        "qualidade_confirmada": ""
+      },
+      {
+        "of": "OF264280",
+        "tipo": "Calha",
+        "perfil": "20x10x1",
+        "linhas": 1,
+        "quantidade_por_cortar": 6,
+        "linhas_excel": "5127",
+        "qualidade_confirmada": ""
+      },
+      {
+        "of": "OF264415",
+        "tipo": "Calha",
+        "perfil": "20x10x1",
+        "linhas": 1,
+        "quantidade_por_cortar": 500,
+        "linhas_excel": "5236",
+        "qualidade_confirmada": ""
+      },
+      {
+        "of": "OF264669",
+        "tipo": "Calha",
+        "perfil": "20x10x1",
+        "linhas": 1,
+        "quantidade_por_cortar": 50,
+        "linhas_excel": "5432",
+        "qualidade_confirmada": ""
+      },
+      {
+        "of": "OF264689",
+        "tipo": "Calha",
+        "perfil": "20x10x1",
+        "linhas": 1,
+        "quantidade_por_cortar": 500,
+        "linhas_excel": "5442",
+        "qualidade_confirmada": ""
+      },
+      {
+        "of": "OF264691",
+        "tipo": "Calha",
+        "perfil": "20x10x1",
+        "linhas": 1,
+        "quantidade_por_cortar": 200,
+        "linhas_excel": "5445",
+        "qualidade_confirmada": ""
+      },
+      {
+        "of": "OF265061",
+        "tipo": "Calha",
+        "perfil": "20x10x1",
+        "linhas": 1,
+        "quantidade_por_cortar": 16,
+        "linhas_excel": "6009",
+        "qualidade_confirmada": ""
+      },
+      {
+        "of": "OF265062",
+        "tipo": "Calha",
+        "perfil": "20x10x1",
+        "linhas": 1,
+        "quantidade_por_cortar": 15,
+        "linhas_excel": "6010",
+        "qualidade_confirmada": ""
+      },
+      {
+        "of": "OF265105",
+        "tipo": "Calha",
+        "perfil": "20x10x1",
+        "linhas": 1,
+        "quantidade_por_cortar": 8,
+        "linhas_excel": "6016",
+        "qualidade_confirmada": ""
+      },
+      {
+        "of": "OF265506",
+        "tipo": "Calha",
+        "perfil": "20x10x1",
+        "linhas": 1,
+        "quantidade_por_cortar": 750,
+        "linhas_excel": "6505",
+        "qualidade_confirmada": ""
+      },
+      {
+        "of": "OF265528",
+        "tipo": "Barra",
+        "perfil": "30x8",
+        "linhas": 1,
+        "quantidade_por_cortar": 8212,
+        "linhas_excel": "6693",
+        "qualidade_confirmada": ""
+      },
+      {
+        "of": "OF265693",
+        "tipo": "Perfil U",
+        "perfil": "UPN280x95",
+        "linhas": 1,
+        "quantidade_por_cortar": 1,
+        "linhas_excel": "6740",
+        "qualidade_confirmada": ""
+      },
+      {
+        "of": "OF265676",
+        "tipo": "Calha",
+        "perfil": "20x10x1",
+        "linhas": 1,
+        "quantidade_por_cortar": 13,
+        "linhas_excel": "6834",
+        "qualidade_confirmada": ""
+      },
+      {
+        "of": "OF265650",
+        "tipo": "Calha",
+        "perfil": "20x10x1",
+        "linhas": 1,
+        "quantidade_por_cortar": 60,
+        "linhas_excel": "6836",
+        "qualidade_confirmada": ""
+      },
+      {
+        "of": "OF265688",
+        "tipo": "Calha",
+        "perfil": "20x10x1",
+        "linhas": 1,
+        "quantidade_por_cortar": 1,
+        "linhas_excel": "6858",
+        "qualidade_confirmada": ""
+      },
+      {
+        "of": "OF265689",
+        "tipo": "Calha",
+        "perfil": "20x8x0.75",
+        "linhas": 1,
+        "quantidade_por_cortar": 100,
+        "linhas_excel": "6910",
+        "qualidade_confirmada": ""
+      },
+      {
+        "of": "OF265649",
+        "tipo": "Calha",
+        "perfil": "20x10x1",
+        "linhas": 1,
+        "quantidade_por_cortar": 1,
+        "linhas_excel": "6918",
+        "qualidade_confirmada": ""
+      }
+    ]
+  },
+  "validacao_geometria_com_AH": {
+    "catalogo": 1298,
+    "recalculadas": 5684,
+    "coincidem": 5684,
+    "entradas_insuficientes": 11
+  },
+  "N_diferente_AH": [
+    {
+      "linha_excel": 43,
+      "of": "OF255063",
+      "referencia": "5504T602",
+      "perfil": "25x25",
+      "comprimento_mm": 1460,
+      "saldo_corte": 62,
+      "N": 62,
+      "AH": 130
+    },
+    {
+      "linha_excel": 519,
+      "of": "OF256508",
+      "referencia": "0641S001",
+      "perfil": "88.9x3.25",
+      "comprimento_mm": 1278,
+      "saldo_corte": 0,
+      "N": 175,
+      "AH": 400
+    },
+    {
+      "linha_excel": 568,
+      "of": "OF256591",
+      "referencia": "CS0310A4013",
+      "perfil": "20",
+      "comprimento_mm": 1000,
+      "saldo_corte": 0,
+      "N": 0,
+      "AH": 40
+    },
+    {
+      "linha_excel": 1369,
+      "of": "OF257538",
+      "referencia": "CI7812A4002",
+      "perfil": "76.1x3.25",
+      "comprimento_mm": 125,
+      "saldo_corte": 0,
+      "N": 200,
+      "AH": 700
+    },
+    {
+      "linha_excel": 2702,
+      "of": "OF261521",
+      "referencia": "1283V004",
+      "perfil": "90x40x3",
+      "comprimento_mm": 170,
+      "saldo_corte": 0,
+      "N": 472,
+      "AH": 608
+    },
+    {
+      "linha_excel": 4347,
+      "of": "OF263257",
+      "referencia": "R6",
+      "perfil": "35",
+      "comprimento_mm": 538,
+      "saldo_corte": 0,
+      "N": 40,
+      "AH": 1
+    },
+    {
+      "linha_excel": 4348,
+      "of": "OF263257",
+      "referencia": "TU2",
+      "perfil": "60.3x3.25",
+      "comprimento_mm": 6790,
+      "saldo_corte": 0,
+      "N": 20,
+      "AH": 1
+    },
+    {
+      "linha_excel": 4435,
+      "of": "OF263313",
+      "referencia": "1107V300",
+      "perfil": "T50x50",
+      "comprimento_mm": 120,
+      "saldo_corte": 0,
+      "N": 0,
+      "AH": 260
+    },
+    {
+      "linha_excel": 4538,
+      "of": "OF263328",
+      "referencia": "1234T120",
+      "perfil": "UPN80x45",
+      "comprimento_mm": 480,
+      "saldo_corte": 0,
+      "N": 0,
+      "AH": 315
+    },
+    {
+      "linha_excel": 4539,
+      "of": "OF263328",
+      "referencia": "1234T121",
+      "perfil": "UPN80x45",
+      "comprimento_mm": 346,
+      "saldo_corte": 0,
+      "N": 0,
+      "AH": 315
+    },
+    {
+      "linha_excel": 4540,
+      "of": "OF263328",
+      "referencia": "1234T122",
+      "perfil": "UPN80x45",
+      "comprimento_mm": 500,
+      "saldo_corte": 0,
+      "N": 0,
+      "AH": 315
+    },
+    {
+      "linha_excel": 4613,
+      "of": "OF263414",
+      "referencia": "CI1506A4J01",
+      "perfil": "168.3x3",
+      "comprimento_mm": 8000,
+      "saldo_corte": 0,
+      "N": 0,
+      "AH": 2
+    }
+  ],
+  "angulos_fora_360": [
+    {
+      "linha_excel": 6752,
+      "of": "OF265695",
+      "referencia": "5096V001",
+      "perfil": "60.3",
+      "comprimento_mm": 2.9,
+      "saldo_corte": 15,
+      "angulo": 1404
+    },
+    {
+      "linha_excel": 6753,
+      "of": "OF265695",
+      "referencia": "5096V002",
+      "perfil": "60.3",
+      "comprimento_mm": 2.9,
+      "saldo_corte": 15,
+      "angulo": 674
+    }
+  ],
+  "area_zero_propostas": [
+    {
+      "linha_excel": 5769,
+      "of": "OF264968",
+      "referencia": "GGH30-1",
+      "perfil": "HEB300",
+      "comprimento_mm": 7625,
+      "saldo_corte": 4,
+      "nome_catalogo_proposto": "HEB300B",
+      "area_unitaria_proposta_mm2": 14900,
+      "confirmado": false
+    },
+    {
+      "linha_excel": 5771,
+      "of": "OF264968",
+      "referencia": "GGH30-3",
+      "perfil": "HEB300",
+      "comprimento_mm": 1827,
+      "saldo_corte": 4,
+      "nome_catalogo_proposto": "HEB300B",
+      "area_unitaria_proposta_mm2": 14900,
+      "confirmado": false
+    },
+    {
+      "linha_excel": 6250,
+      "of": "OF265360",
+      "referencia": "ZE-616",
+      "perfil": "UKT305x152x49",
+      "comprimento_mm": 1324,
+      "saldo_corte": 2,
+      "nome_catalogo_proposto": null,
+      "area_unitaria_proposta_mm2": null,
+      "confirmado": false
+    },
+    {
+      "linha_excel": 6251,
+      "of": "OF265360",
+      "referencia": "ZE-688",
+      "perfil": "UKT305x152x49",
+      "comprimento_mm": 1304,
+      "saldo_corte": 2,
+      "nome_catalogo_proposto": null,
+      "area_unitaria_proposta_mm2": null,
+      "confirmado": false
+    },
+    {
+      "linha_excel": 6252,
+      "of": "OF265360",
+      "referencia": "ZE-700",
+      "perfil": "UKT305x152x49",
+      "comprimento_mm": 1277,
+      "saldo_corte": 2,
+      "nome_catalogo_proposto": null,
+      "area_unitaria_proposta_mm2": null,
+      "confirmado": false
+    },
+    {
+      "linha_excel": 6253,
+      "of": "OF265360",
+      "referencia": "ZE-794",
+      "perfil": "UKT305x152x49",
+      "comprimento_mm": 1278,
+      "saldo_corte": 2,
+      "nome_catalogo_proposto": null,
+      "area_unitaria_proposta_mm2": null,
+      "confirmado": false
+    },
+    {
+      "linha_excel": 6254,
+      "of": "OF265360",
+      "referencia": "ZE-869",
+      "perfil": "UKT305x152x49",
+      "comprimento_mm": 1277,
+      "saldo_corte": 2,
+      "nome_catalogo_proposto": null,
+      "area_unitaria_proposta_mm2": null,
+      "confirmado": false
+    },
+    {
+      "linha_excel": 6255,
+      "of": "OF265360",
+      "referencia": "ZE-869",
+      "perfil": "UKT305x152x49",
+      "comprimento_mm": 1280,
+      "saldo_corte": 2,
+      "nome_catalogo_proposto": null,
+      "area_unitaria_proposta_mm2": null,
+      "confirmado": false
+    },
+    {
+      "linha_excel": 6261,
+      "of": "OF265367",
+      "referencia": "CI7712A4006",
+      "perfil": "UPN65",
+      "comprimento_mm": 1500,
+      "saldo_corte": 1,
+      "nome_catalogo_proposto": "UPN65x42",
+      "area_unitaria_proposta_mm2": 902.9999999999999,
+      "confirmado": false
+    },
+    {
+      "linha_excel": 6292,
+      "of": "OF265404",
+      "referencia": "CA4117A4001",
+      "perfil": "UPN100",
+      "comprimento_mm": 80,
+      "saldo_corte": 7,
+      "nome_catalogo_proposto": "UPN100x50",
+      "area_unitaria_proposta_mm2": 1350,
+      "confirmado": false
+    },
+    {
+      "linha_excel": 6297,
+      "of": "OF265412",
+      "referencia": "GGH30-1",
+      "perfil": "HEB300",
+      "comprimento_mm": 7031,
+      "saldo_corte": 4,
+      "nome_catalogo_proposto": "HEB300B",
+      "area_unitaria_proposta_mm2": 14900,
+      "confirmado": false
+    },
+    {
+      "linha_excel": 6298,
+      "of": "OF265412",
+      "referencia": "GGH30-2",
+      "perfil": "HEB300",
+      "comprimento_mm": 1827,
+      "saldo_corte": 4,
+      "nome_catalogo_proposto": "HEB300B",
+      "area_unitaria_proposta_mm2": 14900,
+      "confirmado": false
+    },
+    {
+      "linha_excel": 6323,
+      "of": "OF265420",
+      "referencia": "6265N004",
+      "perfil": "UPN65",
+      "comprimento_mm": 3286,
+      "saldo_corte": 2,
+      "nome_catalogo_proposto": "UPN65x42",
+      "area_unitaria_proposta_mm2": 902.9999999999999,
+      "confirmado": false
+    },
+    {
+      "linha_excel": 6327,
+      "of": "OF265424",
+      "referencia": "2CH1",
+      "perfil": "HEA240",
+      "comprimento_mm": 4780,
+      "saldo_corte": 1,
+      "nome_catalogo_proposto": "HEA240A",
+      "area_unitaria_proposta_mm2": 7680,
+      "confirmado": false
+    },
+    {
+      "linha_excel": 6328,
+      "of": "OF265424",
+      "referencia": "2CH2",
+      "perfil": "HEA240",
+      "comprimento_mm": 4830,
+      "saldo_corte": 1,
+      "nome_catalogo_proposto": "HEA240A",
+      "area_unitaria_proposta_mm2": 7680,
+      "confirmado": false
+    },
+    {
+      "linha_excel": 6329,
+      "of": "OF265424",
+      "referencia": "2CH3",
+      "perfil": "HEA240",
+      "comprimento_mm": 4780,
+      "saldo_corte": 1,
+      "nome_catalogo_proposto": "HEA240A",
+      "area_unitaria_proposta_mm2": 7680,
+      "confirmado": false
+    },
+    {
+      "linha_excel": 6330,
+      "of": "OF265424",
+      "referencia": "2CH4",
+      "perfil": "HEA240",
+      "comprimento_mm": 4780,
+      "saldo_corte": 1,
+      "nome_catalogo_proposto": "HEA240A",
+      "area_unitaria_proposta_mm2": 7680,
+      "confirmado": false
+    },
+    {
+      "linha_excel": 6331,
+      "of": "OF265424",
+      "referencia": "2CH5",
+      "perfil": "HEA240",
+      "comprimento_mm": 4780,
+      "saldo_corte": 2,
+      "nome_catalogo_proposto": "HEA240A",
+      "area_unitaria_proposta_mm2": 7680,
+      "confirmado": false
+    },
+    {
+      "linha_excel": 6333,
+      "of": "OF265424",
+      "referencia": "2CH7",
+      "perfil": "HEA240",
+      "comprimento_mm": 4780,
+      "saldo_corte": 40,
+      "nome_catalogo_proposto": "HEA240A",
+      "area_unitaria_proposta_mm2": 7680,
+      "confirmado": false
+    },
+    {
+      "linha_excel": 6334,
+      "of": "OF265424",
+      "referencia": "2CH10",
+      "perfil": "HEA240",
+      "comprimento_mm": 4730,
+      "saldo_corte": 2,
+      "nome_catalogo_proposto": "HEA240A",
+      "area_unitaria_proposta_mm2": 7680,
+      "confirmado": false
+    },
+    {
+      "linha_excel": 6335,
+      "of": "OF265424",
+      "referencia": "2CH11",
+      "perfil": "HEA240",
+      "comprimento_mm": 4680,
+      "saldo_corte": 1,
+      "nome_catalogo_proposto": "HEA240A",
+      "area_unitaria_proposta_mm2": 7680,
+      "confirmado": false
+    },
+    {
+      "linha_excel": 6336,
+      "of": "OF265424",
+      "referencia": "2CH12",
+      "perfil": "HEA240",
+      "comprimento_mm": 4630,
+      "saldo_corte": 1,
+      "nome_catalogo_proposto": "HEA240A",
+      "area_unitaria_proposta_mm2": 7680,
+      "confirmado": false
+    },
+    {
+      "linha_excel": 6337,
+      "of": "OF265424",
+      "referencia": "2CH13",
+      "perfil": "HEA240",
+      "comprimento_mm": 4580,
+      "saldo_corte": 1,
+      "nome_catalogo_proposto": "HEA240A",
+      "area_unitaria_proposta_mm2": 7680,
+      "confirmado": false
+    },
+    {
+      "linha_excel": 6338,
+      "of": "OF265424",
+      "referencia": "2CH14",
+      "perfil": "HEA240",
+      "comprimento_mm": 4780,
+      "saldo_corte": 1,
+      "nome_catalogo_proposto": "HEA240A",
+      "area_unitaria_proposta_mm2": 7680,
+      "confirmado": false
+    },
+    {
+      "linha_excel": 6339,
+      "of": "OF265424",
+      "referencia": "2CH15",
+      "perfil": "HEA240",
+      "comprimento_mm": 4830,
+      "saldo_corte": 1,
+      "nome_catalogo_proposto": "HEA240A",
+      "area_unitaria_proposta_mm2": 7680,
+      "confirmado": false
+    },
+    {
+      "linha_excel": 6340,
+      "of": "OF265424",
+      "referencia": "2CH16",
+      "perfil": "HEA240",
+      "comprimento_mm": 4930,
+      "saldo_corte": 1,
+      "nome_catalogo_proposto": "HEA240A",
+      "area_unitaria_proposta_mm2": 7680,
+      "confirmado": false
+    },
+    {
+      "linha_excel": 6341,
+      "of": "OF265424",
+      "referencia": "2CH17",
+      "perfil": "HEA240",
+      "comprimento_mm": 5030,
+      "saldo_corte": 1,
+      "nome_catalogo_proposto": "HEA240A",
+      "area_unitaria_proposta_mm2": 7680,
+      "confirmado": false
+    },
+    {
+      "linha_excel": 6342,
+      "of": "OF265424",
+      "referencia": "2CH18",
+      "perfil": "HEA240",
+      "comprimento_mm": 5130,
+      "saldo_corte": 1,
+      "nome_catalogo_proposto": "HEA240A",
+      "area_unitaria_proposta_mm2": 7680,
+      "confirmado": false
+    },
+    {
+      "linha_excel": 6343,
+      "of": "OF265424",
+      "referencia": "2CH19",
+      "perfil": "HEA240",
+      "comprimento_mm": 5280,
+      "saldo_corte": 1,
+      "nome_catalogo_proposto": "HEA240A",
+      "area_unitaria_proposta_mm2": 7680,
+      "confirmado": false
+    },
+    {
+      "linha_excel": 6344,
+      "of": "OF265424",
+      "referencia": "2CH20",
+      "perfil": "HEA240",
+      "comprimento_mm": 4730,
+      "saldo_corte": 1,
+      "nome_catalogo_proposto": "HEA240A",
+      "area_unitaria_proposta_mm2": 7680,
+      "confirmado": false
+    },
+    {
+      "linha_excel": 6345,
+      "of": "OF265424",
+      "referencia": "2CH21",
+      "perfil": "HEA240",
+      "comprimento_mm": 4880,
+      "saldo_corte": 1,
+      "nome_catalogo_proposto": "HEA240A",
+      "area_unitaria_proposta_mm2": 7680,
+      "confirmado": false
+    },
+    {
+      "linha_excel": 6346,
+      "of": "OF265424",
+      "referencia": "2CH22",
+      "perfil": "HEA240",
+      "comprimento_mm": 5080,
+      "saldo_corte": 1,
+      "nome_catalogo_proposto": "HEA240A",
+      "area_unitaria_proposta_mm2": 7680,
+      "confirmado": false
+    },
+    {
+      "linha_excel": 6347,
+      "of": "OF265424",
+      "referencia": "2CH23",
+      "perfil": "HEA240",
+      "comprimento_mm": 5330,
+      "saldo_corte": 1,
+      "nome_catalogo_proposto": "HEA240A",
+      "area_unitaria_proposta_mm2": 7680,
+      "confirmado": false
+    },
+    {
+      "linha_excel": 6348,
+      "of": "OF265424",
+      "referencia": "2CH24",
+      "perfil": "HEA240",
+      "comprimento_mm": 5580,
+      "saldo_corte": 1,
+      "nome_catalogo_proposto": "HEA240A",
+      "area_unitaria_proposta_mm2": 7680,
+      "confirmado": false
+    },
+    {
+      "linha_excel": 6349,
+      "of": "OF265424",
+      "referencia": "2CH25",
+      "perfil": "HEA240",
+      "comprimento_mm": 5880,
+      "saldo_corte": 1,
+      "nome_catalogo_proposto": "HEA240A",
+      "area_unitaria_proposta_mm2": 7680,
+      "confirmado": false
+    },
+    {
+      "linha_excel": 6350,
+      "of": "OF265424",
+      "referencia": "2CH26",
+      "perfil": "HEA240",
+      "comprimento_mm": 6080,
+      "saldo_corte": 1,
+      "nome_catalogo_proposto": "HEA240A",
+      "area_unitaria_proposta_mm2": 7680,
+      "confirmado": false
+    },
+    {
+      "linha_excel": 6351,
+      "of": "OF265424",
+      "referencia": "2CH27",
+      "perfil": "HEA240",
+      "comprimento_mm": 6380,
+      "saldo_corte": 1,
+      "nome_catalogo_proposto": "HEA240A",
+      "area_unitaria_proposta_mm2": 7680,
+      "confirmado": false
+    },
+    {
+      "linha_excel": 6486,
+      "of": "OF265479",
+      "referencia": "CA1012A4001",
+      "perfil": "UPN100",
+      "comprimento_mm": 60,
+      "saldo_corte": 53,
+      "nome_catalogo_proposto": "UPN100x50",
+      "area_unitaria_proposta_mm2": 1350,
+      "confirmado": false
+    },
+    {
+      "linha_excel": 6489,
+      "of": "OF265487",
+      "referencia": "CA2219A4213",
+      "perfil": "UPN80",
+      "comprimento_mm": 88,
+      "saldo_corte": 1,
+      "nome_catalogo_proposto": "UPN80x45",
+      "area_unitaria_proposta_mm2": 1100,
+      "confirmado": false
+    },
+    {
+      "linha_excel": 6490,
+      "of": "OF265487",
+      "referencia": "CA2219A4214",
+      "perfil": "UPN80",
+      "comprimento_mm": 107,
+      "saldo_corte": 1,
+      "nome_catalogo_proposto": "UPN80x45",
+      "area_unitaria_proposta_mm2": 1100,
+      "confirmado": false
+    },
+    {
+      "linha_excel": 6491,
+      "of": "OF265487",
+      "referencia": "CA2219A4215",
+      "perfil": "UPN80",
+      "comprimento_mm": 126,
+      "saldo_corte": 1,
+      "nome_catalogo_proposto": "UPN80x45",
+      "area_unitaria_proposta_mm2": 1100,
+      "confirmado": false
+    },
+    {
+      "linha_excel": 6492,
+      "of": "OF265487",
+      "referencia": "CA2219A4216",
+      "perfil": "UPN80",
+      "comprimento_mm": 144,
+      "saldo_corte": 1,
+      "nome_catalogo_proposto": "UPN80x45",
+      "area_unitaria_proposta_mm2": 1100,
+      "confirmado": false
+    },
+    {
+      "linha_excel": 6493,
+      "of": "OF265487",
+      "referencia": "CA2219A4217",
+      "perfil": "UPN80",
+      "comprimento_mm": 163,
+      "saldo_corte": 1,
+      "nome_catalogo_proposto": "UPN80x45",
+      "area_unitaria_proposta_mm2": 1100,
+      "confirmado": false
+    },
+    {
+      "linha_excel": 6494,
+      "of": "OF265487",
+      "referencia": "CA2219A4218",
+      "perfil": "UPN80",
+      "comprimento_mm": 182,
+      "saldo_corte": 1,
+      "nome_catalogo_proposto": "UPN80x45",
+      "area_unitaria_proposta_mm2": 1100,
+      "confirmado": false
+    },
+    {
+      "linha_excel": 6495,
+      "of": "OF265487",
+      "referencia": "CA2219A4219",
+      "perfil": "UPN80",
+      "comprimento_mm": 201,
+      "saldo_corte": 1,
+      "nome_catalogo_proposto": "UPN80x45",
+      "area_unitaria_proposta_mm2": 1100,
+      "confirmado": false
+    },
+    {
+      "linha_excel": 6496,
+      "of": "OF265487",
+      "referencia": "CA2219A4220",
+      "perfil": "UPN80",
+      "comprimento_mm": 220,
+      "saldo_corte": 1,
+      "nome_catalogo_proposto": "UPN80x45",
+      "area_unitaria_proposta_mm2": 1100,
+      "confirmado": false
+    }
+  ],
+  "sugestoes_maquinas": {
+    "linhas": 122,
+    "criterio": "Mesmo tipo, perfil e qualidade conhecida; uma única máquina em pelo menos três OF fechadas. Não valida dimensões máximas, comprimento, ângulo ou dispositivo de aperto."
+  },
+  "abocardar": [
+    {
+      "linha_excel": 5561,
+      "of": "OF264754",
+      "referencia": "CI5221A4006",
+      "perfil": "114x3.2",
+      "comprimento_mm": 1600,
+      "saldo_corte": 105,
+      "quantidade": 105.0,
+      "contador_corte": null,
+      "contador_abocardar": null,
+      "saldo_abocardar_se_contador_valido": null,
+      "ja_cortado_nao_abocardado_se_contadores_validos": null
+    },
+    {
+      "linha_excel": 5563,
+      "of": "OF264755",
+      "referencia": "CI5221A4006",
+      "perfil": "114x3.2",
+      "comprimento_mm": 1600,
+      "saldo_corte": 53,
+      "quantidade": 53.0,
+      "contador_corte": null,
+      "contador_abocardar": null,
+      "saldo_abocardar_se_contador_valido": null,
+      "ja_cortado_nao_abocardado_se_contadores_validos": null
+    },
+    {
+      "linha_excel": 5565,
+      "of": "OF264756",
+      "referencia": "CI5021A4000",
+      "perfil": "114x3.2",
+      "comprimento_mm": 1600,
+      "saldo_corte": 368,
+      "quantidade": 368.0,
+      "contador_corte": null,
+      "contador_abocardar": null,
+      "saldo_abocardar_se_contador_valido": null,
+      "ja_cortado_nao_abocardado_se_contadores_validos": null
+    },
+    {
+      "linha_excel": 5567,
+      "of": "OF264757",
+      "referencia": "CI5221A4006",
+      "perfil": "114x3.2",
+      "comprimento_mm": 2100,
+      "saldo_corte": 105,
+      "quantidade": 105.0,
+      "contador_corte": null,
+      "contador_abocardar": null,
+      "saldo_abocardar_se_contador_valido": null,
+      "ja_cortado_nao_abocardado_se_contadores_validos": null
+    },
+    {
+      "linha_excel": 5569,
+      "of": "OF264758",
+      "referencia": "CI5021A4000",
+      "perfil": "114x3.2",
+      "comprimento_mm": 2100,
+      "saldo_corte": 840,
+      "quantidade": 840.0,
+      "contador_corte": null,
+      "contador_abocardar": null,
+      "saldo_abocardar_se_contador_valido": null,
+      "ja_cortado_nao_abocardado_se_contadores_validos": null
+    },
+    {
+      "linha_excel": 5571,
+      "of": "OF264759",
+      "referencia": "CI5021A4000",
+      "perfil": "114x3.2",
+      "comprimento_mm": 2100,
+      "saldo_corte": 108,
+      "quantidade": 1050.0,
+      "contador_corte": 942.0,
+      "contador_abocardar": 359.0,
+      "saldo_abocardar_se_contador_valido": 691.0,
+      "ja_cortado_nao_abocardado_se_contadores_validos": 583.0
+    },
+    {
+      "linha_excel": 5573,
+      "of": "OF264760",
+      "referencia": "CI5021A4000",
+      "perfil": "114x3.2",
+      "comprimento_mm": 2600,
+      "saldo_corte": 0,
+      "quantidade": 840.0,
+      "contador_corte": 840.0,
+      "contador_abocardar": 209.0,
+      "saldo_abocardar_se_contador_valido": 631.0,
+      "ja_cortado_nao_abocardado_se_contadores_validos": 631.0
+    },
+    {
+      "linha_excel": 5575,
+      "of": "OF264761",
+      "referencia": "CI5621A3005",
+      "perfil": "89x3",
+      "comprimento_mm": 2050,
+      "saldo_corte": 53,
+      "quantidade": 53.0,
+      "contador_corte": null,
+      "contador_abocardar": null,
+      "saldo_abocardar_se_contador_valido": null,
+      "ja_cortado_nao_abocardado_se_contadores_validos": null
+    },
+    {
+      "linha_excel": 5576,
+      "of": "OF264761",
+      "referencia": "CI5621A3005",
+      "perfil": "114x3.2",
+      "comprimento_mm": 2300,
+      "saldo_corte": 53,
+      "quantidade": 53.0,
+      "contador_corte": null,
+      "contador_abocardar": null,
+      "saldo_abocardar_se_contador_valido": null,
+      "ja_cortado_nao_abocardado_se_contadores_validos": null
+    },
+    {
+      "linha_excel": 5578,
+      "of": "OF264762",
+      "referencia": "CI3422A4005",
+      "perfil": "89x3.2",
+      "comprimento_mm": 2850,
+      "saldo_corte": 105,
+      "quantidade": 105.0,
+      "contador_corte": null,
+      "contador_abocardar": null,
+      "saldo_abocardar_se_contador_valido": null,
+      "ja_cortado_nao_abocardado_se_contadores_validos": null
+    },
+    {
+      "linha_excel": 5579,
+      "of": "OF264762",
+      "referencia": "CI3422A4005",
+      "perfil": "133x3.6",
+      "comprimento_mm": 3400,
+      "saldo_corte": 105,
+      "quantidade": 105.0,
+      "contador_corte": null,
+      "contador_abocardar": null,
+      "saldo_abocardar_se_contador_valido": null,
+      "ja_cortado_nao_abocardado_se_contadores_validos": null
+    },
+    {
+      "linha_excel": 5580,
+      "of": "OF264763",
+      "referencia": "CI5121A4030",
+      "perfil": "133x3",
+      "comprimento_mm": 400,
+      "saldo_corte": 315,
+      "quantidade": 315.0,
+      "contador_corte": null,
+      "contador_abocardar": null,
+      "saldo_abocardar_se_contador_valido": null,
+      "ja_cortado_nao_abocardado_se_contadores_validos": null
+    },
+    {
+      "linha_excel": 5582,
+      "of": "OF264763",
+      "referencia": "CI5121A4000",
+      "perfil": "114x3.2",
+      "comprimento_mm": 2600,
+      "saldo_corte": 315,
+      "quantidade": 315.0,
+      "contador_corte": null,
+      "contador_abocardar": null,
+      "saldo_abocardar_se_contador_valido": null,
+      "ja_cortado_nao_abocardado_se_contadores_validos": null
+    },
+    {
+      "linha_excel": 5589,
+      "of": "OF264774",
+      "referencia": "CI5421A3004",
+      "perfil": "89x3",
+      "comprimento_mm": 2050,
+      "saldo_corte": 840,
+      "quantidade": 840.0,
+      "contador_corte": null,
+      "contador_abocardar": null,
+      "saldo_abocardar_se_contador_valido": null,
+      "ja_cortado_nao_abocardado_se_contadores_validos": null
+    },
+    {
+      "linha_excel": 5590,
+      "of": "OF264774",
+      "referencia": "CI5421A3004",
+      "perfil": "114x3.2",
+      "comprimento_mm": 2300,
+      "saldo_corte": 840,
+      "quantidade": 840.0,
+      "contador_corte": null,
+      "contador_abocardar": null,
+      "saldo_abocardar_se_contador_valido": null,
+      "ja_cortado_nao_abocardado_se_contadores_validos": null
+    },
+    {
+      "linha_excel": 5608,
+      "of": "OF264845",
+      "referencia": "CI7018A4001",
+      "perfil": "101x3",
+      "comprimento_mm": 3050,
+      "saldo_corte": 0,
+      "quantidade": 20.0,
+      "contador_corte": 20.0,
+      "contador_abocardar": null,
+      "saldo_abocardar_se_contador_valido": null,
+      "ja_cortado_nao_abocardado_se_contadores_validos": null
+    },
+    {
+      "linha_excel": 5609,
+      "of": "OF264845",
+      "referencia": "CI7018A4001",
+      "perfil": "133x3",
+      "comprimento_mm": 3000,
+      "saldo_corte": 0,
+      "quantidade": 20.0,
+      "contador_corte": 40.0,
+      "contador_abocardar": null,
+      "saldo_abocardar_se_contador_valido": null,
+      "ja_cortado_nao_abocardado_se_contadores_validos": null
+    },
+    {
+      "linha_excel": 6478,
+      "of": "OF265465",
+      "referencia": "7067V002",
+      "perfil": "140x3",
+      "comprimento_mm": 1200,
+      "saldo_corte": 1,
+      "quantidade": 1.0,
+      "contador_corte": null,
+      "contador_abocardar": null,
+      "saldo_abocardar_se_contador_valido": null,
+      "ja_cortado_nao_abocardado_se_contadores_validos": null
+    },
+    {
+      "linha_excel": 6842,
+      "of": "OF265710",
+      "referencia": "6568J004",
+      "perfil": "89x3",
+      "comprimento_mm": 1450,
+      "saldo_corte": 100,
+      "quantidade": 100.0,
+      "contador_corte": null,
+      "contador_abocardar": null,
+      "saldo_abocardar_se_contador_valido": null,
+      "ja_cortado_nao_abocardado_se_contadores_validos": null
+    },
+    {
+      "linha_excel": 6843,
+      "of": "OF265710",
+      "referencia": "6568J004",
+      "perfil": "139.7x3",
+      "comprimento_mm": 2200,
+      "saldo_corte": 100,
+      "quantidade": 100.0,
+      "contador_corte": null,
+      "contador_abocardar": null,
+      "saldo_abocardar_se_contador_valido": null,
+      "ja_cortado_nao_abocardado_se_contadores_validos": null
+    },
+    {
+      "linha_excel": 6845,
+      "of": "OF265511",
+      "referencia": "6309U001",
+      "perfil": "133x4",
+      "comprimento_mm": 2400,
+      "saldo_corte": 313,
+      "quantidade": 313.0,
+      "contador_corte": null,
+      "contador_abocardar": null,
+      "saldo_abocardar_se_contador_valido": null,
+      "ja_cortado_nao_abocardado_se_contadores_validos": null
+    },
+    {
+      "linha_excel": 6846,
+      "of": "OF265511",
+      "referencia": "6309U002",
+      "perfil": "150x4",
+      "comprimento_mm": 400,
+      "saldo_corte": 313,
+      "quantidade": 313.0,
+      "contador_corte": null,
+      "contador_abocardar": null,
+      "saldo_abocardar_se_contador_valido": null,
+      "ja_cortado_nao_abocardado_se_contadores_validos": null
+    },
+    {
+      "linha_excel": 6860,
+      "of": "OF265583",
+      "referencia": "CI6518A4001",
+      "perfil": "89x2.6",
+      "comprimento_mm": 1650,
+      "saldo_corte": 100,
+      "quantidade": 100.0,
+      "contador_corte": null,
+      "contador_abocardar": null,
+      "saldo_abocardar_se_contador_valido": null,
+      "ja_cortado_nao_abocardado_se_contadores_validos": null
+    },
+    {
+      "linha_excel": 6861,
+      "of": "OF265583",
+      "referencia": "CI6518A4001",
+      "perfil": "114x3",
+      "comprimento_mm": 2400,
+      "saldo_corte": 100,
+      "quantidade": 100.0,
+      "contador_corte": null,
+      "contador_abocardar": null,
+      "saldo_abocardar_se_contador_valido": null,
+      "ja_cortado_nao_abocardado_se_contadores_validos": null
+    },
+    {
+      "linha_excel": 6863,
+      "of": "OF265587",
+      "referencia": "CI5618A4001",
+      "perfil": "114x3",
+      "comprimento_mm": 2000,
+      "saldo_corte": 100,
+      "quantidade": 100.0,
+      "contador_corte": null,
+      "contador_abocardar": null,
+      "saldo_abocardar_se_contador_valido": null,
+      "ja_cortado_nao_abocardado_se_contadores_validos": null
+    },
+    {
+      "linha_excel": 6865,
+      "of": "OF265590",
+      "referencia": "CI5618A4001",
+      "perfil": "114x3",
+      "comprimento_mm": 1700,
+      "saldo_corte": 30,
+      "quantidade": 30.0,
+      "contador_corte": null,
+      "contador_abocardar": null,
+      "saldo_abocardar_se_contador_valido": null,
+      "ja_cortado_nao_abocardado_se_contadores_validos": null
+    },
+    {
+      "linha_excel": 6867,
+      "of": "OF265589",
+      "referencia": "CI5118A4001",
+      "perfil": "108x3",
+      "comprimento_mm": 1700,
+      "saldo_corte": 25,
+      "quantidade": 25.0,
+      "contador_corte": null,
+      "contador_abocardar": null,
+      "saldo_abocardar_se_contador_valido": null,
+      "ja_cortado_nao_abocardado_se_contadores_validos": null
+    },
+    {
+      "linha_excel": 6869,
+      "of": "OF265588",
+      "referencia": "CI5118A4001",
+      "perfil": "108x3",
+      "comprimento_mm": 1700,
+      "saldo_corte": 25,
+      "quantidade": 25.0,
+      "contador_corte": null,
+      "contador_abocardar": null,
+      "saldo_abocardar_se_contador_valido": null,
+      "ja_cortado_nao_abocardado_se_contadores_validos": null
+    },
+    {
+      "linha_excel": 6871,
+      "of": "OF265585",
+      "referencia": "CI5618A4001",
+      "perfil": "114x3",
+      "comprimento_mm": 1700,
+      "saldo_corte": 30,
+      "quantidade": 30.0,
+      "contador_corte": null,
+      "contador_abocardar": null,
+      "saldo_abocardar_se_contador_valido": null,
+      "ja_cortado_nao_abocardado_se_contadores_validos": null
+    },
+    {
+      "linha_excel": 6873,
+      "of": "OF265584",
+      "referencia": "CI5118A4001",
+      "perfil": "108x3",
+      "comprimento_mm": 2000,
+      "saldo_corte": 40,
+      "quantidade": 40.0,
+      "contador_corte": null,
+      "contador_abocardar": null,
+      "saldo_abocardar_se_contador_valido": null,
+      "ja_cortado_nao_abocardado_se_contadores_validos": null
+    },
+    {
+      "linha_excel": 6876,
+      "of": "OF265591",
+      "referencia": "CI5618A4001",
+      "perfil": "114x3",
+      "comprimento_mm": 2000,
+      "saldo_corte": 20,
+      "quantidade": 20.0,
+      "contador_corte": null,
+      "contador_abocardar": null,
+      "saldo_abocardar_se_contador_valido": null,
+      "ja_cortado_nao_abocardado_se_contadores_validos": null
+    },
+    {
+      "linha_excel": 6909,
+      "of": "OF265691",
+      "referencia": "3344V001",
+      "perfil": "177.8x6",
+      "comprimento_mm": 400,
+      "saldo_corte": 10,
+      "quantidade": 10.0,
+      "contador_corte": null,
+      "contador_abocardar": null,
+      "saldo_abocardar_se_contador_valido": null,
+      "ja_cortado_nao_abocardado_se_contadores_validos": null
+    },
+    {
+      "linha_excel": 6915,
+      "of": "OF265722",
+      "referencia": "9731Q001",
+      "perfil": "168x4.5",
+      "comprimento_mm": 1540,
+      "saldo_corte": 30,
+      "quantidade": 30.0,
+      "contador_corte": null,
+      "contador_abocardar": null,
+      "saldo_abocardar_se_contador_valido": null,
+      "ja_cortado_nao_abocardado_se_contadores_validos": null
+    },
+    {
+      "linha_excel": 6921,
+      "of": "OF265717",
+      "referencia": "6996V001",
+      "perfil": "168x5",
+      "comprimento_mm": 2650,
+      "saldo_corte": 30,
+      "quantidade": 30.0,
+      "contador_corte": null,
+      "contador_abocardar": null,
+      "saldo_abocardar_se_contador_valido": null,
+      "ja_cortado_nao_abocardado_se_contadores_validos": null
+    },
+    {
+      "linha_excel": 6925,
+      "of": "OF265757",
+      "referencia": "7012V004",
+      "perfil": "89x2.9",
+      "comprimento_mm": 2050,
+      "saldo_corte": 50,
+      "quantidade": 50.0,
+      "contador_corte": null,
+      "contador_abocardar": null,
+      "saldo_abocardar_se_contador_valido": null,
+      "ja_cortado_nao_abocardado_se_contadores_validos": null
+    },
+    {
+      "linha_excel": 6926,
+      "of": "OF265757",
+      "referencia": "7012V004",
+      "perfil": "114.3x3.2",
+      "comprimento_mm": 3300,
+      "saldo_corte": 50,
+      "quantidade": 50.0,
+      "contador_corte": null,
+      "contador_abocardar": null,
+      "saldo_abocardar_se_contador_valido": null,
+      "ja_cortado_nao_abocardado_se_contadores_validos": null
+    },
+    {
+      "linha_excel": 6927,
+      "of": "OF265757",
+      "referencia": "7012V005",
+      "perfil": "133x4",
+      "comprimento_mm": 400,
+      "saldo_corte": 50,
+      "quantidade": 50.0,
+      "contador_corte": null,
+      "contador_abocardar": null,
+      "saldo_abocardar_se_contador_valido": null,
+      "ja_cortado_nao_abocardado_se_contadores_validos": null
+    },
+    {
+      "linha_excel": 6941,
+      "of": "OF265728",
+      "referencia": "CI3920A4001",
+      "perfil": "140x3",
+      "comprimento_mm": 1134,
+      "saldo_corte": 80,
+      "quantidade": 80.0,
+      "contador_corte": null,
+      "contador_abocardar": null,
+      "saldo_abocardar_se_contador_valido": null,
+      "ja_cortado_nao_abocardado_se_contadores_validos": null
+    },
+    {
+      "linha_excel": 6946,
+      "of": "OF265793",
+      "referencia": "6309U001",
+      "perfil": "133x4",
+      "comprimento_mm": 2400,
+      "saldo_corte": 90,
+      "quantidade": 90.0,
+      "contador_corte": null,
+      "contador_abocardar": null,
+      "saldo_abocardar_se_contador_valido": null,
+      "ja_cortado_nao_abocardado_se_contadores_validos": null
+    },
+    {
+      "linha_excel": 6947,
+      "of": "OF265793",
+      "referencia": "6309U002",
+      "perfil": "150x4",
+      "comprimento_mm": 400,
+      "saldo_corte": 90,
+      "quantidade": 90.0,
+      "contador_corte": null,
+      "contador_abocardar": null,
+      "saldo_abocardar_se_contador_valido": null,
+      "ja_cortado_nao_abocardado_se_contadores_validos": null
+    },
+    {
+      "linha_excel": 6949,
+      "of": "OF265793",
+      "referencia": "B708S001",
+      "perfil": "108x3.2",
+      "comprimento_mm": 1600,
+      "saldo_corte": 160,
+      "quantidade": 160.0,
+      "contador_corte": null,
+      "contador_abocardar": null,
+      "saldo_abocardar_se_contador_valido": null,
+      "ja_cortado_nao_abocardado_se_contadores_validos": null
+    }
+  ],
+  "alteracoes_snapshots": {
+    "contagens": {
+      "identidade_estavel": 6989,
+      "linhas_ids_ambiguos": 4,
+      "alterado_quantity_remaining_source": 33,
+      "alterado_closed_x": 25
+    },
+    "linhas": [
+      {
+        "linha_excel": 5125,
+        "of": "OF264280",
+        "referencia": "3573V001",
+        "perfil": "88.9x6.3",
+        "comprimento_mm": 4200,
+        "saldo_corte": 0,
+        "saldo_fonte_anterior": 6,
+        "saldo_fonte_atual": 0
+      },
+      {
+        "linha_excel": 5572,
+        "of": "OF264760",
+        "referencia": "CI5021A4000",
+        "perfil": "76x2.6",
+        "comprimento_mm": 3250,
+        "saldo_corte": 396,
+        "saldo_fonte_anterior": 840,
+        "saldo_fonte_atual": 396
+      },
+      {
+        "linha_excel": 5573,
+        "of": "OF264760",
+        "referencia": "CI5021A4000",
+        "perfil": "114x3.2",
+        "comprimento_mm": 2600,
+        "saldo_corte": 0,
+        "saldo_fonte_anterior": 156,
+        "saldo_fonte_atual": 0
+      },
+      {
+        "linha_excel": 5609,
+        "of": "OF264845",
+        "referencia": "CI7018A4001",
+        "perfil": "133x3",
+        "comprimento_mm": 3000,
+        "saldo_corte": 0,
+        "saldo_fonte_anterior": 0,
+        "saldo_fonte_atual": -20
+      },
+      {
+        "linha_excel": 5655,
+        "of": "OF264908",
+        "referencia": "4799V1CI2",
+        "perfil": "IPE330",
+        "comprimento_mm": 4330,
+        "saldo_corte": 0,
+        "saldo_fonte_anterior": 2,
+        "saldo_fonte_atual": 0
+      },
+      {
+        "linha_excel": 5659,
+        "of": "OF264908",
+        "referencia": "4799V1CI6",
+        "perfil": "IPE330",
+        "comprimento_mm": 4330,
+        "saldo_corte": 0,
+        "saldo_fonte_anterior": 1,
+        "saldo_fonte_atual": 0
+      },
+      {
+        "linha_excel": 5663,
+        "of": "OF264908",
+        "referencia": "4799V1CI10",
+        "perfil": "IPE330",
+        "comprimento_mm": 4530,
+        "saldo_corte": 0,
+        "saldo_fonte_anterior": 1,
+        "saldo_fonte_atual": 0
+      },
+      {
+        "linha_excel": 5665,
+        "of": "OF264908",
+        "referencia": "4799V1CI12",
+        "perfil": "IPE330",
+        "comprimento_mm": 4280,
+        "saldo_corte": 0,
+        "saldo_fonte_anterior": 1,
+        "saldo_fonte_atual": 0
+      },
+      {
+        "linha_excel": 5677,
+        "of": "OF264908",
+        "referencia": "4799V1CI24",
+        "perfil": "IPE330",
+        "comprimento_mm": 4580,
+        "saldo_corte": 0,
+        "saldo_fonte_anterior": 1,
+        "saldo_fonte_atual": 0
+      },
+      {
+        "linha_excel": 5678,
+        "of": "OF264908",
+        "referencia": "4799V1CI25",
+        "perfil": "IPE330",
+        "comprimento_mm": 4530,
+        "saldo_corte": 0,
+        "saldo_fonte_anterior": 1,
+        "saldo_fonte_atual": 0
+      },
+      {
+        "linha_excel": 5685,
+        "of": "OF264908",
+        "referencia": "4799V1CI32",
+        "perfil": "IPE330",
+        "comprimento_mm": 4330,
+        "saldo_corte": 0,
+        "saldo_fonte_anterior": 2,
+        "saldo_fonte_atual": 0
+      },
+      {
+        "linha_excel": 6359,
+        "of": "OF265424",
+        "referencia": "2CI8",
+        "perfil": "IPE330",
+        "comprimento_mm": 4280,
+        "saldo_corte": 16,
+        "saldo_fonte_anterior": 82,
+        "saldo_fonte_atual": 16
+      },
+      {
+        "linha_excel": 6649,
+        "of": "OF265528",
+        "referencia": "2673",
+        "perfil": "50x50x3",
+        "comprimento_mm": 2673,
+        "saldo_corte": 0,
+        "saldo_fonte_anterior": 3,
+        "saldo_fonte_atual": 0
+      },
+      {
+        "linha_excel": 6650,
+        "of": "OF265528",
+        "referencia": "2687",
+        "perfil": "50x50x3",
+        "comprimento_mm": 2687,
+        "saldo_corte": 0,
+        "saldo_fonte_anterior": 3,
+        "saldo_fonte_atual": 0
+      },
+      {
+        "linha_excel": 6651,
+        "of": "OF265528",
+        "referencia": "2692",
+        "perfil": "50x50x3",
+        "comprimento_mm": 2692,
+        "saldo_corte": 0,
+        "saldo_fonte_anterior": 6,
+        "saldo_fonte_atual": 0
+      },
+      {
+        "linha_excel": 6652,
+        "of": "OF265528",
+        "referencia": "2701",
+        "perfil": "50x50x3",
+        "comprimento_mm": 2701,
+        "saldo_corte": 0,
+        "saldo_fonte_anterior": 3,
+        "saldo_fonte_atual": 0
+      },
+      {
+        "linha_excel": 6653,
+        "of": "OF265528",
+        "referencia": "2730",
+        "perfil": "50x50x3",
+        "comprimento_mm": 2730,
+        "saldo_corte": 0,
+        "saldo_fonte_anterior": 3,
+        "saldo_fonte_atual": 0
+      },
+      {
+        "linha_excel": 6654,
+        "of": "OF265528",
+        "referencia": "2744",
+        "perfil": "50x50x3",
+        "comprimento_mm": 2744,
+        "saldo_corte": 0,
+        "saldo_fonte_anterior": 3,
+        "saldo_fonte_atual": 0
+      },
+      {
+        "linha_excel": 6655,
+        "of": "OF265528",
+        "referencia": "2749",
+        "perfil": "50x50x3",
+        "comprimento_mm": 2749,
+        "saldo_corte": 0,
+        "saldo_fonte_anterior": 6,
+        "saldo_fonte_atual": 0
+      },
+      {
+        "linha_excel": 6656,
+        "of": "OF265528",
+        "referencia": "2753",
+        "perfil": "50x50x3",
+        "comprimento_mm": 2753,
+        "saldo_corte": 0,
+        "saldo_fonte_anterior": 6,
+        "saldo_fonte_atual": 0
+      },
+      {
+        "linha_excel": 6657,
+        "of": "OF265528",
+        "referencia": "2758",
+        "perfil": "50x50x3",
+        "comprimento_mm": 2758,
+        "saldo_corte": 0,
+        "saldo_fonte_anterior": 18,
+        "saldo_fonte_atual": 0
+      },
+      {
+        "linha_excel": 6658,
+        "of": "OF265528",
+        "referencia": "2767",
+        "perfil": "50x50x3",
+        "comprimento_mm": 2767,
+        "saldo_corte": 0,
+        "saldo_fonte_anterior": 12,
+        "saldo_fonte_atual": 0
+      },
+      {
+        "linha_excel": 6659,
+        "of": "OF265528",
+        "referencia": "2772",
+        "perfil": "50x50x3",
+        "comprimento_mm": 2772,
+        "saldo_corte": 0,
+        "saldo_fonte_anterior": 3,
+        "saldo_fonte_atual": 0
+      },
+      {
+        "linha_excel": 6660,
+        "of": "OF265528",
+        "referencia": "2777",
+        "perfil": "50x50x3",
+        "comprimento_mm": 2777,
+        "saldo_corte": 0,
+        "saldo_fonte_anterior": 12,
+        "saldo_fonte_atual": 0
+      },
+      {
+        "linha_excel": 6661,
+        "of": "OF265528",
+        "referencia": "2782",
+        "perfil": "50x50x3",
+        "comprimento_mm": 2782,
+        "saldo_corte": 0,
+        "saldo_fonte_anterior": 9,
+        "saldo_fonte_atual": 0
+      },
+      {
+        "linha_excel": 6662,
+        "of": "OF265528",
+        "referencia": "2786",
+        "perfil": "50x50x3",
+        "comprimento_mm": 2786,
+        "saldo_corte": 30,
+        "saldo_fonte_anterior": 54,
+        "saldo_fonte_atual": 30
+      },
+      {
+        "linha_excel": 6663,
+        "of": "OF265528",
+        "referencia": "2791",
+        "perfil": "50x50x3",
+        "comprimento_mm": 2791,
+        "saldo_corte": 0,
+        "saldo_fonte_anterior": 12,
+        "saldo_fonte_atual": 0
+      },
+      {
+        "linha_excel": 6665,
+        "of": "OF265528",
+        "referencia": "2805",
+        "perfil": "50x50x3",
+        "comprimento_mm": 2805,
+        "saldo_corte": 3,
+        "saldo_fonte_anterior": 12,
+        "saldo_fonte_atual": 3
+      },
+      {
+        "linha_excel": 6666,
+        "of": "OF265528",
+        "referencia": "2810",
+        "perfil": "50x50x3",
+        "comprimento_mm": 2810,
+        "saldo_corte": 6,
+        "saldo_fonte_anterior": 9,
+        "saldo_fonte_atual": 6
+      },
+      {
+        "linha_excel": 6667,
+        "of": "OF265528",
+        "referencia": "2814",
+        "perfil": "50x50x3",
+        "comprimento_mm": 2814,
+        "saldo_corte": 0,
+        "saldo_fonte_anterior": 9,
+        "saldo_fonte_atual": -6
+      },
+      {
+        "linha_excel": 6668,
+        "of": "OF265528",
+        "referencia": "2819",
+        "perfil": "50x50x3",
+        "comprimento_mm": 2819,
+        "saldo_corte": 0,
+        "saldo_fonte_anterior": 18,
+        "saldo_fonte_atual": -6
+      },
+      {
+        "linha_excel": 6669,
+        "of": "OF265528",
+        "referencia": "2824",
+        "perfil": "50x50x3",
+        "comprimento_mm": 2824,
+        "saldo_corte": 0,
+        "saldo_fonte_anterior": 39,
+        "saldo_fonte_atual": 0
+      },
+      {
+        "linha_excel": 6744,
+        "of": "OF265799",
+        "referencia": "BA1225A4001",
+        "perfil": "80x60x3",
+        "comprimento_mm": 4000,
+        "saldo_corte": 19,
+        "saldo_fonte_anterior": 20,
+        "saldo_fonte_atual": 19
+      }
+    ],
+    "nota": "Data da alteração do ficheiro não é data física de produção."
+  },
+  "producao": {
+    "registos": 128,
+    "folhas": 23,
+    "contagens": {
+      "candidatos_por_of_referencia_1": 103,
+      "snapshot_origem_nao_retido": 3,
+      "snapshot_origem_retido": 125,
+      "linha_mesmo_numero_mesma_identidade": 125,
+      "candidatos_por_of_referencia_2": 16,
+      "candidatos_por_of_referencia_3": 9
+    },
+    "maquina_atual_vs_registo": [
+      {
+        "maquina_corte_fonte": "Vanguard",
+        "maquina_registada": "Vanguard",
+        "registos": 30
+      },
+      {
+        "maquina_corte_fonte": "Serrote MEBA IS381 Pav 3",
+        "maquina_registada": "Serrote MEBA IS381 Pav 3",
+        "registos": 21
+      },
+      {
+        "maquina_corte_fonte": "Serrote Doall Pav.1",
+        "maquina_registada": "Serrote Fita Thomas IS639 Pav.1",
+        "registos": 15
+      },
+      {
+        "maquina_corte_fonte": "Serrote Doall Pav.1",
+        "maquina_registada": "Serrote Doall Pav.1",
+        "registos": 43
+      },
+      {
+        "maquina_corte_fonte": "Serrote MEBA IS381 Pav 3",
+        "maquina_registada": "Abocardar",
+        "registos": 7
+      },
+      {
+        "maquina_corte_fonte": "Serrote Fita Thomas IS639 Pav.1",
+        "maquina_registada": "Serrote MEBA IS381 Pav 3",
+        "registos": 3
+      },
+      {
+        "maquina_corte_fonte": "Vanguard",
+        "maquina_registada": "Serrote MEBA IS381 Pav 3",
+        "registos": 6
+      }
+    ]
+  },
+  "folhas_com_horas": [
+    {
+      "folha": "e0759433fe1e",
+      "data": "2026-08-19",
+      "maquina": "VANGUARD",
+      "horas_uma_vez_por_folha": [
+        10
+      ],
+      "linhas": 2,
+      "linhas_sem_area_valida": 1,
+      "horas_modelo_vanguard_9200": null,
+      "nota": "Horas de folha; não são tempos medidos por referência."
+    },
+    {
+      "folha": "efbbbf845c31",
+      "data": "2026-08-27",
+      "maquina": "Vanguard",
+      "horas_uma_vez_por_folha": [
+        10
+      ],
+      "linhas": 4,
+      "linhas_sem_area_valida": 0,
+      "horas_modelo_vanguard_9200": 33.28804347826087,
+      "nota": "Horas de folha; não são tempos medidos por referência."
+    },
+    {
+      "folha": "4e8e561173db",
+      "data": "2026-09-03",
+      "maquina": "Vanguard",
+      "horas_uma_vez_por_folha": [
+        8
+      ],
+      "linhas": 5,
+      "linhas_sem_area_valida": 1,
+      "horas_modelo_vanguard_9200": null,
+      "nota": "Horas de folha; não são tempos medidos por referência."
+    }
+  ],
+  "folhas_backup_por_estado": {
+    "validated": 23,
+    "error": 5,
+    "in_review": 21
+  },
+  "carga_teorica": {
+    "ativas_com_maquina_e_area": [
+      {
+        "maquina": "Vanguard",
+        "linhas": 127,
+        "horas": 695.0740217391304,
+        "linhas_acima_8h": 12,
+        "maior_linha_horas": 213.9945652173913,
+        "horas_entrega_ate_18_set": 692.9680434782608,
+        "horas_se_velocidade_metade": 1390.148043478261,
+        "horas_se_velocidade_dobro": 347.5370108695652
+      },
+      {
+        "maquina": "Serrote MEBA IS381 Pav 3",
+        "linhas": 117,
+        "horas": 187.46420093798935,
+        "linhas_acima_8h": 7,
+        "maior_linha_horas": 19.483212490748596,
+        "horas_entrega_ate_18_set": 49.2296902338129,
+        "horas_se_velocidade_metade": 374.9284018759787,
+        "horas_se_velocidade_dobro": 93.73210046899467
+      },
+      {
+        "maquina": "Serrote Fita Thomas IS639 Pav.1",
+        "linhas": 55,
+        "horas": 20.38540647580539,
+        "linhas_acima_8h": 0,
+        "maior_linha_horas": 2.4227565382430214,
+        "horas_entrega_ate_18_set": 20.38540647580539,
+        "horas_se_velocidade_metade": 40.77081295161078,
+        "horas_se_velocidade_dobro": 10.192703237902695
+      },
+      {
+        "maquina": "Serrote Disco pav 1",
+        "linhas": 188,
+        "horas": 624.6592197742675,
+        "linhas_acima_8h": 4,
+        "maior_linha_horas": 463.8003742981909,
+        "horas_entrega_ate_18_set": 37.329656052514586,
+        "horas_se_velocidade_metade": 1249.318439548535,
+        "horas_se_velocidade_dobro": 312.32960988713376
+      },
+      {
+        "maquina": "Serrote Doall Pav.1",
+        "linhas": 125,
+        "horas": 130.23239645985316,
+        "linhas_acima_8h": 2,
+        "maior_linha_horas": 90.14476181764127,
+        "horas_entrega_ate_18_set": 130.23239645985316,
+        "horas_se_velocidade_metade": 260.4647929197063,
+        "horas_se_velocidade_dobro": 65.11619822992658
+      }
+    ],
+    "campos_basicos": [
+      {
+        "maquina": "Vanguard",
+        "linhas": 34,
+        "horas": 215.45445652173913,
+        "linhas_acima_8h": 4,
+        "maior_linha_horas": 91.98913043478261,
+        "horas_entrega_ate_18_set": 213.34847826086957,
+        "horas_se_velocidade_metade": 430.90891304347826,
+        "horas_se_velocidade_dobro": 107.72722826086957
+      },
+      {
+        "maquina": "Serrote MEBA IS381 Pav 3",
+        "linhas": 116,
+        "horas": 187.4582039364901,
+        "linhas_acima_8h": 7,
+        "maior_linha_horas": 19.483212490748596,
+        "horas_entrega_ate_18_set": 49.22369323231365,
+        "horas_se_velocidade_metade": 374.9164078729802,
+        "horas_se_velocidade_dobro": 93.72910196824505
+      },
+      {
+        "maquina": "Serrote Fita Thomas IS639 Pav.1",
+        "linhas": 54,
+        "horas": 20.255522289205107,
+        "linhas_acima_8h": 0,
+        "maior_linha_horas": 2.4227565382430214,
+        "horas_entrega_ate_18_set": 20.255522289205107,
+        "horas_se_velocidade_metade": 40.511044578410214,
+        "horas_se_velocidade_dobro": 10.127761144602554
+      },
+      {
+        "maquina": "Serrote Disco pav 1",
+        "linhas": 184,
+        "horas": 623.7633994373991,
+        "linhas_acima_8h": 4,
+        "maior_linha_horas": 463.8003742981909,
+        "horas_entrega_ate_18_set": 37.213623613338044,
+        "horas_se_velocidade_metade": 1247.5267988747983,
+        "horas_se_velocidade_dobro": 311.88169971869956
+      }
+    ]
+  },
+  "carga_teorica_nota": "Capacidades 11/11/2024 e fator Thomas do Excel. Sem preparação, stock, turnos ou tempos medidos. Cenários de velocidade não são intervalos de confiança."
+}

@@ -1,0 +1,27 @@
+/* Planning only: loaded by its own templates, never by the MES review pages. */
+:root, body, body * {
+  font-family: Calibri, Carlito, "Liberation Sans", Arial, sans-serif !important;
+  font-size: 11pt !important;
+}
+:root { --row: 28px; }
+body { line-height: 1.25; }
+button, select { min-height: 28px; padding: 3px 7px; }
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), textarea {
+  min-height: 28px; padding: 4px 7px;
+}
+th, td { padding: 3px 6px; }
+.section { padding: 12px; margin: 10px 0; }
+.section > h2 { margin-bottom: 10px; padding-bottom: 6px; }
+.fields { gap: 10px 16px; }
+.toolbar, .subbar, .pager { padding-top: 4px; padding-bottom: 4px; gap: 5px; }
+.actions, .secondary-actions { margin-top: 10px; gap: 7px; }
+.horizontal-control {
+  display: flex; gap: 8px; align-items: center; padding: 3px 10px;
+  flex-shrink: 0; background: #f3f7f8; border-block: 1px solid #d5e0e3;
+}
+.horizontal-control input { flex: 1; min-width: 40px; width: 100%; accent-color: #216d7a; }
+.horizontal-control button { flex-shrink: 0; }
+@media (max-width: 600px) {
+  .horizontal-control { gap: 4px; padding-inline: 4px; }
+  .horizontal-control label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+}

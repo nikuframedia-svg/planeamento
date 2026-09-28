@@ -1,0 +1,88 @@
+{
+  "verified_at": "2026-09-14T11:33:45.903083+00:00",
+  "document": "OF263785.pdf",
+  "inventory_pages": 75,
+  "status": "review",
+  "progress": 100,
+  "reading_error": null,
+  "rows": [
+    {
+      "reference": "1234.T.120",
+      "source_page": 32,
+      "quantity": 36,
+      "length_mm": 480,
+      "profile": "UPN80",
+      "grade": "S355J2",
+      "matched_excel_row": 6963,
+      "state": "review",
+      "issues": [
+        {
+          "code": "different_profile",
+          "message": "Perfil difere do planeamento: PDF UPN80; plano UPN80x45.",
+          "field": "profile",
+          "blocking": false
+        }
+      ],
+      "reviewed_fields": []
+    },
+    {
+      "reference": "1234.T.121",
+      "source_page": 33,
+      "quantity": 36,
+      "length_mm": 346,
+      "profile": "UPN80",
+      "grade": "S355J2",
+      "matched_excel_row": 6964,
+      "state": "review",
+      "issues": [
+        {
+          "code": "different_profile",
+          "message": "Perfil difere do planeamento: PDF UPN80; plano UPN80x45.",
+          "field": "profile",
+          "blocking": false
+        },
+        {
+          "code": "different_chanfro",
+          "message": "Chanfrar difere do planeamento: PDF X; plano -.",
+          "field": "chanfro",
+          "blocking": false
+        }
+      ],
+      "reviewed_fields": [
+        "notes",
+        "operations"
+      ]
+    },
+    {
+      "reference": "1234.T.122",
+      "source_page": 34,
+      "quantity": 36,
+      "length_mm": 500,
+      "profile": "UPN80",
+      "grade": "S355J2",
+      "matched_excel_row": 6965,
+      "state": "review",
+      "issues": [
+        {
+          "code": "different_profile",
+          "message": "Perfil difere do planeamento: PDF UPN80; plano UPN80x45.",
+          "field": "profile",
+          "blocking": false
+        },
+        {
+          "code": "different_material_type",
+          "message": "Tipo de material difere do planeamento: PDF Perfil UPN; plano Perfil U.",
+          "field": "material_type",
+          "blocking": false
+        }
+      ],
+      "reviewed_fields": []
+    }
+  ],
+  "source_macro_sha256": "aa2d59af81541c37165b4d611ed698dad97bcbc9b7cf74ca3db8ace7cf572968",
+  "source_macro_unchanged": true,
+  "export_blocked_pending_review": true,
+  "original_reading_preserved_in_history": true,
+  "manual_transcription_correction": "Página 33: 98° corrigido para 68° nas notas/operações; ângulo de máquina permaneceu null. Alteração registada por Codex no histórico.",
+  "scope": "Um dossier real completo; as diferenças face ao planeamento aguardam conferência. A leitura completa não é uma garantia estatística de precisão."
+}

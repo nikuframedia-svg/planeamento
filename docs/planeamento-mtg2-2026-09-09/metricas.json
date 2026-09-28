@@ -1,0 +1,271 @@
+{
+  "audit_date": "2026-09-09",
+  "snapshot_id": "mtg2_d92027db24c68fee",
+  "source_sha256": "d92027db24c68fee35fcecdd9b2bf9b29f18d67fccf4bb248d1074686ee9fb96",
+  "scope": {
+    "remote_files": 131,
+    "remote_bytes": 727306837,
+    "pdfs": 26,
+    "pdf_pages_total": 541,
+    "mtg2_pdf_pages_visually_read": 7
+  },
+  "plan_total_rows": 6993,
+  "cpis_rows": 12243,
+  "core_backlog": {
+    "rows": 1608,
+    "pieces": 162703
+  },
+  "cut_backlog": {
+    "rows": 1597,
+    "production_orders": 609,
+    "pieces": 97955,
+    "metres": 82001.554,
+    "missing_machine": 588,
+    "missing_grade": 311,
+    "zero_area": 57,
+    "missing_delivery_date": 27,
+    "scenario_candidates": 712,
+    "scenario_candidate_orders": 332,
+    "grade_known_groups": 314,
+    "cross_order_groups": 146,
+    "rows_in_cross_order_groups": 1045,
+    "due_buckets": {
+      "before_2026_09_09": 950,
+      "missing": 27,
+      "after_2026_09_23": 375,
+      "2026_09_09_to_2026_09_23": 245
+    }
+  },
+  "active_cpis_candidate_backlog": {
+    "rows": 1083,
+    "production_orders": 271,
+    "pieces": 86197,
+    "metres": 73757.8225,
+    "missing_machine": 431,
+    "missing_grade": 280,
+    "zero_area": 46,
+    "missing_delivery_date": 8,
+    "scenario_candidates": 388,
+    "scenario_candidate_orders": 127,
+    "grade_known_groups": 226,
+    "cross_order_groups": 98,
+    "rows_in_cross_order_groups": 623,
+    "due_buckets": {
+      "before_2026_09_09": 456,
+      "after_2026_09_23": 375,
+      "2026_09_09_to_2026_09_23": 244,
+      "missing": 8
+    }
+  },
+  "cpis_partition": [
+    {
+      "status": "Em Produção",
+      "rows": 1082,
+      "orders": 270,
+      "pieces": 86195
+    },
+    {
+      "status": "Em Aberto",
+      "rows": 1,
+      "orders": 1,
+      "pieces": 2
+    },
+    {
+      "status": "Fechada",
+      "rows": 495,
+      "orders": 329,
+      "pieces": 11257
+    },
+    {
+      "status": null,
+      "rows": 19,
+      "orders": 9,
+      "pieces": 501
+    }
+  ],
+  "profile_quality": {
+    "fully_dimensioned": 6983,
+    "incomplete": 10
+  },
+  "source_machine_populated_in_cut_backlog": 1009,
+  "typed_machine_populated_in_cut_backlog": 0,
+  "quantity_quality": {
+    "unknown": 1,
+    "negative_source": 157
+  },
+  "open_abocardar_flag": 49,
+  "open_abocardar_flag_with_zero_cut_remaining": 9,
+  "availability_years": {
+    "2025": 95,
+    "2026": 6
+  },
+  "availability_latest_2026_week": 12,
+  "historical_profile_records": {
+    "rows": 13442,
+    "from": "2025-01-12",
+    "to": "2026-08-18",
+    "qty_unit_populated": 0,
+    "qty_m_populated": 13441
+  },
+  "mes_mtg2": {
+    "rows": 128,
+    "sheets": 23,
+    "first_production_date": "2026-08-19",
+    "last_production_date": "2026-09-03",
+    "sheets_with_hours": 3,
+    "hours_unique_sheets": 28,
+    "hours_summed_at_row_level_incorrect": 100,
+    "factory_sheet_status": {
+      "validated": 23,
+      "error": 5,
+      "in_review": 21
+    }
+  },
+  "source_id_distinct": 6991,
+  "load_scenarios": [
+    {
+      "cohort": "canonical_cut_backlog",
+      "machine": "Sem máquina",
+      "rows": 588,
+      "rows_with_positive_cached_area": 581,
+      "historical_rate_mm2_h": null,
+      "scenario_area_mm2": 23124131.0966,
+      "scenario_hours_no_setup": null
+    },
+    {
+      "cohort": "canonical_cut_backlog",
+      "machine": "Serrote Disco pav 1",
+      "rows": 385,
+      "rows_with_positive_cached_area": 373,
+      "historical_rate_mm2_h": 12824,
+      "scenario_area_mm2": 9643596.3872,
+      "scenario_hours_no_setup": 751.996
+    },
+    {
+      "cohort": "canonical_cut_backlog",
+      "machine": "Serrote Doall Pav.1",
+      "rows": 125,
+      "rows_with_positive_cached_area": 125,
+      "historical_rate_mm2_h": 21863.5,
+      "scenario_area_mm2": 2847336.0,
+      "scenario_hours_no_setup": 130.2324
+    },
+    {
+      "cohort": "canonical_cut_backlog",
+      "machine": "Serrote Fita Thomas IS639 Pav.1",
+      "rows": 173,
+      "rows_with_positive_cached_area": 173,
+      "historical_rate_mm2_h": 18478,
+      "scenario_area_mm2": 3601579.9322,
+      "scenario_hours_no_setup": 194.9118
+    },
+    {
+      "cohort": "canonical_cut_backlog",
+      "machine": "Serrote MEBA IS381 Pav 3",
+      "rows": 142,
+      "rows_with_positive_cached_area": 142,
+      "historical_rate_mm2_h": 48024,
+      "scenario_area_mm2": 9324262.2537,
+      "scenario_hours_no_setup": 194.1584
+    },
+    {
+      "cohort": "canonical_cut_backlog",
+      "machine": "Vanguard",
+      "rows": 184,
+      "rows_with_positive_cached_area": 146,
+      "historical_rate_mm2_h": 9200,
+      "scenario_area_mm2": 6829077.0,
+      "scenario_hours_no_setup": 742.291
+    },
+    {
+      "cohort": "cpis_active_candidate",
+      "machine": "Sem máquina",
+      "rows": 431,
+      "rows_with_positive_cached_area": 425,
+      "historical_rate_mm2_h": null,
+      "scenario_area_mm2": 21004393.5441,
+      "scenario_hours_no_setup": null
+    },
+    {
+      "cohort": "cpis_active_candidate",
+      "machine": "Serrote Disco pav 1",
+      "rows": 200,
+      "rows_with_positive_cached_area": 188,
+      "historical_rate_mm2_h": 12824,
+      "scenario_area_mm2": 8010629.8344,
+      "scenario_hours_no_setup": 624.6592
+    },
+    {
+      "cohort": "cpis_active_candidate",
+      "machine": "Serrote Doall Pav.1",
+      "rows": 125,
+      "rows_with_positive_cached_area": 125,
+      "historical_rate_mm2_h": 21863.5,
+      "scenario_area_mm2": 2847336.0,
+      "scenario_hours_no_setup": 130.2324
+    },
+    {
+      "cohort": "cpis_active_candidate",
+      "machine": "Serrote Fita Thomas IS639 Pav.1",
+      "rows": 55,
+      "rows_with_positive_cached_area": 55,
+      "historical_rate_mm2_h": 18478,
+      "scenario_area_mm2": 591178.1775,
+      "scenario_hours_no_setup": 31.9936
+    },
+    {
+      "cohort": "cpis_active_candidate",
+      "machine": "Serrote MEBA IS381 Pav 3",
+      "rows": 117,
+      "rows_with_positive_cached_area": 117,
+      "historical_rate_mm2_h": 48024,
+      "scenario_area_mm2": 9002780.7858,
+      "scenario_hours_no_setup": 187.4642
+    },
+    {
+      "cohort": "cpis_active_candidate",
+      "machine": "Vanguard",
+      "rows": 155,
+      "rows_with_positive_cached_area": 127,
+      "historical_rate_mm2_h": 9200,
+      "scenario_area_mm2": 6394681.0,
+      "scenario_hours_no_setup": 695.074
+    }
+  ],
+  "cutting_example": {
+    "of": "OF265008",
+    "rows": [
+      5980,
+      5983
+    ],
+    "references": [
+      "PA3SV43",
+      "PA3SV48"
+    ],
+    "lengths_mm": [
+      3003,
+      2724
+    ],
+    "quantities": [
+      15,
+      15
+    ],
+    "profile": "88.9x3",
+    "grade": "S355J0H",
+    "bar_mm_assumed": 6000,
+    "kerf_mm_per_piece_assumed": 3,
+    "trim_mm_assumed": 0,
+    "bars_separate": 23,
+    "bars_combined": 15,
+    "rest_per_combined_bar_mm": 267,
+    "scope": "duas referências; hipótese geométrica, sem prova de stock/reserva/viabilidade industrial"
+  },
+  "not_established": [
+    "stock disponível de perfis",
+    "calendário atual",
+    "matriz de elegibilidade física",
+    "tempos de setup/ciclo atuais",
+    "reconciliação de eventos já integrados no plano",
+    "lista de materiais completa e dependências de montagem"
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "passed": true,
+  "checks": [
+    "Resultado com 42 unidades e próxima ação explícita; detalhes recolhidos.",
+    "Destino não é escolhido automaticamente; seleção obrigatória.",
+    "Guardar destino funciona pela API real na cópia isolada, sem alterar campos ou confirmar toda a leitura.",
+    "Ver desenho abre na página 2 da peça.",
+    "OF fechada é consulta, sem pedido de decisão ou saída; editor apresenta dimensões efetivas do plano.",
+    "Editar um campo envia apenas esse campo; não regrava complementos do plano nem a máquina inalterada.",
+    "Sem transbordo horizontal a 390, 768, 1500 e 1920 px.",
+    "Leitura sem peças explica o resultado e oferece releitura, sem formulário de confirmação impossível.",
+    "Uma revisão concorrente devolve 409 no diálogo e conserva a decisão mais recente."
+  ],
+  "errors": [],
+  "verified_at": "2026-09-15T18:02:54.954Z",
+  "public_url": "https://louise-pest-performed-atom.trycloudflare.com/planeamento",
+  "public_status": 200,
+  "public_read_only": true,
+  "public_machine_group": "Por atribuir",
+  "python_tests": {
+    "passed": 7,
+    "deselected": 102
+  },
+  "javascript_syntax": "passed"
+}

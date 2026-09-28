@@ -1,0 +1,365 @@
+{
+  "at": "2026-09-24T15:52:11.801069+00:00",
+  "stage": "before",
+  "mode": "Read-only before/after proof of the Planning project relocation.",
+  "tables": {
+    "mes_kanban.validated_sheets": {
+      "n": 318,
+      "hash": "6c59c6013994458ec2ec234cd55e5971"
+    },
+    "mes_kanban.production_records": {
+      "n": 2660,
+      "hash": "e9733576bdafc5f79301abaf2d58bcb1"
+    },
+    "mes_kanban.production_record_plan_refs": {
+      "n": 1219,
+      "hash": "b0852844c61ef5c95e382757c5090d32"
+    },
+    "planning_mtg.needs": {
+      "n": 2,
+      "hash": "7799b1985a2858f1877134b7ca0121e4"
+    },
+    "planning_mtg.need_operations": {
+      "n": 2,
+      "hash": "2d6b5e7a1a8af50c580d59a4172c2841"
+    },
+    "planning_mtg.need_sources": {
+      "n": 2,
+      "hash": "3669efd11716db10339f204c76b7c6af"
+    },
+    "planning_mtg.need_events": {
+      "n": 10,
+      "hash": "11be73a9931148537607d3945c382544"
+    },
+    "planning_mtg.field_state": {
+      "n": 44,
+      "hash": "18677513c841f0a282f6eeb060ff0f22"
+    },
+    "planning_mtg.records": {
+      "n": 2,
+      "hash": "355fe4d6b0323f28dd643da9ffa07c0d"
+    },
+    "planning_mtg.record_versions": {
+      "n": 2,
+      "hash": "806d837933f105a0aecfb2387eb6b006"
+    },
+    "planning_mtg.association_decisions": {
+      "n": 0,
+      "hash": null
+    },
+    "planning_mtg.original_association_decisions": {
+      "n": 0,
+      "hash": null
+    },
+    "planning_mtg.need_conferences": {
+      "n": 0,
+      "hash": null
+    },
+    "planning_mtg.need_commands": {
+      "n": 8,
+      "hash": "ef36ba092a9b256ec91e89c547512eac"
+    },
+    "planning_mtg.local_orders": {
+      "n": 0,
+      "hash": null
+    },
+    "planning_mtg.local_order_history": {
+      "n": 0,
+      "hash": null
+    },
+    "planning_mtg.raw_objects": {
+      "n": 1,
+      "hash": "cec288a5cfaa2aa027fbfc82880dc555"
+    },
+    "planning_mtg.raw_object_versions": {
+      "n": 1,
+      "hash": "4e4458ea6b8080f8e4e5f8ebbe9eaca1"
+    },
+    "planning_mtg.audit_outbox": {
+      "n": 0,
+      "hash": null
+    }
+  },
+  "populations": {
+    "planning:perfis": {
+      "generation": 717,
+      "n": 7414,
+      "hash": "00410e70af8431f240959f6284bf12c9"
+    },
+    "production:perfis": {
+      "generation": 709,
+      "n": 534,
+      "hash": "0837c9e98047706d9dda3381ec21c132"
+    },
+    "production_hours:perfis": {
+      "generation": 710,
+      "n": 113,
+      "hash": "594a5a336042152519a3c8c173039d88"
+    },
+    "orders:perfis": {
+      "generation": 715,
+      "n": 2131,
+      "hash": "2dd0eae0115525940cbdd95c79e7e834"
+    },
+    "capacity:perfis": {
+      "generation": 720,
+      "n": 135,
+      "hash": "196cb5efe206c6d0fb73b86a071593e3"
+    },
+    "capacity_items:perfis": {
+      "generation": 719,
+      "n": 1167,
+      "hash": "f24c70a05247cfe407be11f4a27db608"
+    },
+    "capacity_machines:perfis": {
+      "generation": 721,
+      "n": 12,
+      "hash": "9c0d953e8515d4bf77810fc5fe3a530a"
+    },
+    "planning:cantoneiras": {
+      "generation": 718,
+      "n": 76276,
+      "hash": "ade129bc0ba66d931cd196c87082bdd5"
+    },
+    "production:cantoneiras": {
+      "generation": 712,
+      "n": 3145,
+      "hash": "c94526fb3732ad59014d07b209d60a3c"
+    },
+    "production_hours:cantoneiras": {
+      "generation": 713,
+      "n": 205,
+      "hash": "bf3aaf87826787781ea9d2e7d0a6aa44"
+    },
+    "orders:cantoneiras": {
+      "generation": 716,
+      "n": 1424,
+      "hash": "8133f75b83c6ac56940ccefa7e82f7ad"
+    },
+    "capacity:cantoneiras": {
+      "generation": 723,
+      "n": 38,
+      "hash": "5a2ef965fba88ac2fe79e79723345a9e"
+    },
+    "capacity_items:cantoneiras": {
+      "generation": 722,
+      "n": 22144,
+      "hash": "05ce591f1b9fe254ccd834c7e0a4e02e"
+    },
+    "capacity_machines:cantoneiras": {
+      "generation": 724,
+      "n": 9,
+      "hash": "c3293f09f102cdc473b75013ec4eaf01"
+    }
+  },
+  "document_tables": {
+    "checkpoint_history": {
+      "rows": 178,
+      "hash": "8aad341a8edb32faaa68826df97ba87b53d56a5139e47a8076fae5c2d2545147"
+    },
+    "checkpoints": {
+      "rows": 132,
+      "hash": "990d0fd962b412b9a06c5881d07b8c941f24f39c5a053eb373f15c9229872ac7"
+    },
+    "documents": {
+      "rows": 5,
+      "hash": "2d5d18ac3cc769aa73befbc78ff0f48c84b926d6a1e5c1954633ab5b72d37ec0"
+    },
+    "events": {
+      "rows": 57,
+      "hash": "d4050840dd09f3367d3362d1606fc8412ef11381d4c8a3d33185e1b0cb4bf0bd"
+    },
+    "export_proposals": {
+      "rows": 0,
+      "hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "exports": {
+      "rows": 0,
+      "hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "inbox_files": {
+      "rows": 0,
+      "hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "model_attempts": {
+      "rows": 216,
+      "hash": "bfb288a117fc35ab6f466f0fc72f120e478635984ae346d2defb1c536430368c"
+    },
+    "need_identity_history": {
+      "rows": 2,
+      "hash": "009235cb7fd0f5b1131ce1297b209d337d4dd7b756447ce397bfb227312c904b"
+    },
+    "needs": {
+      "rows": 7,
+      "hash": "c1af2d237a0426b62361f30df9c30bdd9bd085af7239f67616bdd6d8c52e9d52"
+    },
+    "pieces": {
+      "rows": 12,
+      "hash": "faf1317ae0ec4226c006fa39d0e21e6eb07eec360a50a8fbe38d30704792365b"
+    },
+    "processing_runs": {
+      "rows": 25,
+      "hash": "8514644649cce35d74b4b528b75b17a3e8fd7574ed4a2a193aaab5ab81220d84"
+    },
+    "service_state": {
+      "rows": 1,
+      "hash": "59a33251ea1b0dd2311dd0f373518ad29494abf0bb26f3fcc48b064081058bc3"
+    }
+  },
+  "document_files": {
+    "backups/dossiers-before-flexible-reading-20260915-182542.db": {
+      "size": 1179648,
+      "sha256": "28d92ac8aedcbc04691184a21e929261f492d5e032fcbc33a72189304af65a2e"
+    },
+    "backups/dossiers-before-flexible-reading-20260915-182542.db-shm": {
+      "size": 32768,
+      "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+    },
+    "backups/dossiers-before-flexible-reading-20260915-182542.db-wal": {
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "backups/dossiers-before-validation-import-20260915-161949.db": {
+      "size": 253952,
+      "sha256": "f62ce09994cebab84fc34dfbe91442f4709107b1a328fc456d3f728c730db784"
+    },
+    "backups/dossiers-before-validation-import-20260915-161949.db-shm": {
+      "size": 32768,
+      "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+    },
+    "backups/dossiers-before-validation-import-20260915-161949.db-wal": {
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "backups/dossiers-prepublish-flexible-20260915-192405.db": {
+      "size": 1179648,
+      "sha256": "649db76ca6bde89cea61af86cd97cd0dba319aa039ac4d611ba048d44f4bb14c"
+    },
+    "backups/dossiers-prepublish-flexible-20260915-192405.db-shm": {
+      "size": 32768,
+      "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+    },
+    "backups/dossiers-prepublish-flexible-20260915-192405.db-wal": {
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "backups/dossiers-published-flexible-20260915-193933.db": {
+      "size": 2637824,
+      "sha256": "f932dae2bee773f53735e6f2e482948a3c337fecea918a81db28c892961e1ae5"
+    },
+    "backups/dossiers-published-flexible-20260915-193933.db-shm": {
+      "size": 32768,
+      "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+    },
+    "backups/dossiers-published-flexible-20260915-193933.db-wal": {
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "diagnostics/of263785-function-run-20260914.json": {
+      "size": 117439,
+      "sha256": "7fc5b6c1ddc7c0b1227bee3ceb71da6919167f5844247c8aabf37c2994b80273"
+    },
+    "diagnostics/of265941-baseline-20260915.json": {
+      "size": 2442,
+      "sha256": "e7754cbf44e3a50313536bc3cf2a6c0bde57488e6e3f1671675aff98467abaa8"
+    },
+    "diagnostics/of265941-page2-20260915.json": {
+      "size": 5742,
+      "sha256": "33dcfd2dae6a399fe5f13f3fda716318749770a5590d09ee56afc1f3e53a5d85"
+    },
+    "exports/Planeamento_OF265931_Grok46_20260914.xlsm": {
+      "size": 11130772,
+      "sha256": "69e6b8d2aad10337d6b2a7ca822ba90404b6b785ab6d7c29a824d1973f362cef"
+    },
+    "exports/Planeamento_validacao_10_necessidades_20260915.xlsm": {
+      "size": 11131312,
+      "sha256": "f04b05214b7bf3aa5f9945e401e7a633a9aeaa9c2c91dfa9103188e00c93f30d"
+    },
+    "files/00575c5b3cab9256e8707cc14721a62e4b2d974f8c8681929aa608d20c23bde1.pdf": {
+      "size": 328557,
+      "sha256": "00575c5b3cab9256e8707cc14721a62e4b2d974f8c8681929aa608d20c23bde1"
+    },
+    "files/187f9b570b6f7934a7a9d38c527a8e0f3eb0115cc937badb3c7b5fbef71bccd2.pdf": {
+      "size": 663981,
+      "sha256": "187f9b570b6f7934a7a9d38c527a8e0f3eb0115cc937badb3c7b5fbef71bccd2"
+    },
+    "files/28e10dca95e150b730b3f5b023a6b09f6af29429cfac2c9c19f92de60d154adf.pdf": {
+      "size": 7211435,
+      "sha256": "28e10dca95e150b730b3f5b023a6b09f6af29429cfac2c9c19f92de60d154adf"
+    },
+    "files/718e3075c1a5bbd46cd1772bd119e9ce6fba657dea45b75bb75ebfd8ff0b03f9.pdf": {
+      "size": 279235,
+      "sha256": "718e3075c1a5bbd46cd1772bd119e9ce6fba657dea45b75bb75ebfd8ff0b03f9"
+    },
+    "files/d158d57e5df049b9167d4c0cc4a36362edcf416bc9043e1b8b129088ec78fae1.pdf": {
+      "size": 3561080,
+      "sha256": "d158d57e5df049b9167d4c0cc4a36362edcf416bc9043e1b8b129088ec78fae1"
+    },
+    "model.json": {
+      "size": 339,
+      "sha256": "6d03570dd040d174ef75ab1c4c39f98a46da0775e4fde56893dea56aa225c5f2"
+    }
+  },
+  "services": {
+    "kanban-planning.service": {
+      "MainPID": "337092",
+      "WorkingDirectory": "/home/luis/projects/kanban-mes-mtg2",
+      "ActiveState": "active"
+    },
+    "kanban-raw-worker.service": {
+      "MainPID": "321307",
+      "WorkingDirectory": "/home/luis/projects/kanban-mes-mtg2",
+      "ActiveState": "active"
+    },
+    "kanban-mes.service": {
+      "MainPID": "1206893",
+      "WorkingDirectory": "/home/luis/projects/kanban-mes",
+      "ActiveState": "active"
+    },
+    "kanban-mes-mtg2.service": {
+      "MainPID": "2736938",
+      "WorkingDirectory": "/home/luis/projects/kanban-mes-mtg2",
+      "ActiveState": "active"
+    }
+  },
+  "failures": [
+    "production:perfis:pending",
+    "production_hours:perfis:pending",
+    "orders:perfis:pending",
+    "production:cantoneiras:pending",
+    "production_hours:cantoneiras:pending",
+    "orders:cantoneiras:pending"
+  ],
+  "worker": [
+    {
+      "source": "cantoneiras",
+      "attempted_at": "2026-09-24 15:52:11.674466+00:00",
+      "confirmed_at": "2026-09-24 15:52:11.775937+00:00",
+      "available": true,
+      "error": null
+    },
+    {
+      "source": "capacity",
+      "attempted_at": "2026-09-24 15:52:11.785865+00:00",
+      "confirmed_at": "2026-09-24 15:52:11.184196+00:00",
+      "available": true,
+      "error": null
+    },
+    {
+      "source": "documents",
+      "attempted_at": "2026-09-24 15:52:11.634931+00:00",
+      "confirmed_at": "2026-09-24 15:52:11.660225+00:00",
+      "available": true,
+      "error": null
+    },
+    {
+      "source": "perfis",
+      "attempted_at": "2026-09-24 15:52:11.674431+00:00",
+      "confirmed_at": "2026-09-24 15:52:11.736954+00:00",
+      "available": true,
+      "error": null
+    }
+  ],
+  "document_db_inode": 1881343,
+  "result": "failed"
+}

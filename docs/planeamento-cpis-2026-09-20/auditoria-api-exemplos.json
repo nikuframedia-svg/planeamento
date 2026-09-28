@@ -1,0 +1,119 @@
+{
+  "OF266229": {
+    "list": [
+      {
+        "of": "OF266229",
+        "area": "ambas",
+        "plan": {},
+        "cpis_status": "Em Aberto",
+        "status_values": [
+          "Em Aberto"
+        ],
+        "conflicts": [],
+        "execution_complete": false,
+        "production_records": 0
+      }
+    ],
+    "detail_context": {
+      "of": "OF266229",
+      "cpis_status": "Em Aberto",
+      "status_values": [
+        "Em Aberto"
+      ],
+      "conflicts": []
+    },
+    "plan_lines": 0,
+    "ocr_records": 0,
+    "pdfs": 1
+  },
+  "OF266198": {
+    "list": [
+      {
+        "of": "OF266198",
+        "area": "cantoneiras",
+        "plan": {
+          "cantoneiras": 3
+        },
+        "cpis_status": "Em Produção",
+        "status_values": [
+          "Em Produção"
+        ],
+        "conflicts": [],
+        "execution_complete": false,
+        "production_records": 0
+      }
+    ],
+    "detail_context": {
+      "of": "OF266198",
+      "cpis_status": null,
+      "status_values": [
+        "Pronta",
+        "Em Produção"
+      ],
+      "conflicts": [
+        "status"
+      ]
+    },
+    "plan_lines": 3,
+    "ocr_records": 0,
+    "pdfs": 0
+  },
+  "OF265182": {
+    "list": [
+      {
+        "of": "OF265182",
+        "area": "ambas",
+        "plan": {
+          "cantoneiras": 79
+        },
+        "cpis_status": "Em Produção",
+        "status_values": [
+          "Em Produção"
+        ],
+        "conflicts": [],
+        "execution_complete": false,
+        "production_records": 29
+      }
+    ],
+    "detail_context": {
+      "of": "OF265182",
+      "cpis_status": "Em Produção",
+      "status_values": [
+        "Em Produção"
+      ],
+      "conflicts": []
+    },
+    "plan_lines": 79,
+    "ocr_records": 29,
+    "pdfs": 0
+  },
+  "OF266068": {
+    "list": [
+      {
+        "of": "OF266068",
+        "area": "ambas",
+        "plan": {
+          "perfis": 5
+        },
+        "cpis_status": "Em Aberto",
+        "status_values": [
+          "Em Aberto"
+        ],
+        "conflicts": [],
+        "execution_complete": false,
+        "production_records": 0
+      }
+    ],
+    "detail_context": {
+      "of": "OF266068",
+      "cpis_status": "Em Aberto",
+      "status_values": [
+        "Em Aberto"
+      ],
+      "conflicts": []
+    },
+    "plan_lines": 5,
+    "ocr_records": 0,
+    "pdfs": 0
+  }
+}

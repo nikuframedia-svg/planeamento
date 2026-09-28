@@ -1,0 +1,154 @@
+{
+  "feasible_pin_rejected": {
+    "baseline_error": "Proposta inicial inválida: b: fixação sem colocação válida.",
+    "independent_feasible_schedule": {
+      "valid": true,
+      "errors": [],
+      "score": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        180
+      ],
+      "coverage": "complete"
+    }
+  },
+  "picking_of_lateness": {
+    "bars": {
+      "cut": {
+        "resource_id": "meba",
+        "start_minute": 0,
+        "end_minute": 60,
+        "segments": [
+          [
+            0,
+            60
+          ]
+        ],
+        "duration_minutes": 60,
+        "option_id": null,
+        "provisional": false
+      },
+      "boc": {
+        "resource_id": "boc",
+        "start_minute": 60,
+        "end_minute": 120,
+        "segments": [
+          [
+            60,
+            120
+          ]
+        ],
+        "duration_minutes": 60,
+        "option_id": null,
+        "provisional": false
+      }
+    },
+    "score": [
+      0,
+      60,
+      0,
+      0,
+      0,
+      0,
+      0,
+      120
+    ],
+    "expected_picking_lateness_minutes": 60,
+    "actual_picking_lateness_minutes": 0
+  },
+  "provisional_dependency": {
+    "cut_provisional": true,
+    "boc_provisional": false,
+    "validation": {
+      "valid": true,
+      "errors": [],
+      "score": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        120
+      ],
+      "coverage": "complete"
+    }
+  },
+  "obsolete_macro_balance_after_quantity_edit": {
+    "reconciled_remaining": null,
+    "planning_remaining": 40.0,
+    "balance_origin": "Saldo da macro provisório · Qtd em Falta",
+    "provisional": true,
+    "evidence": [
+      {
+        "field": "Qtd em Falta",
+        "snapshot": null,
+        "plan_key": "macro-line"
+      }
+    ],
+    "reasons": []
+  },
+  "manual_week": {
+    "shared_resolver": [
+      2026,
+      43,
+      "Decisão local"
+    ],
+    "gantt_state": "ready",
+    "gantt_deadline": "2026-09-22T23:00:00+00:00",
+    "gantt_reasons": [],
+    "milestones": {
+      "operation_forecast": "2026-09-22",
+      "cut_date": "2026-09-22",
+      "picking": null,
+      "picking_provisional": false,
+      "planned_start_date": null,
+      "planned_finish_date": null,
+      "delivery_date": null
+    }
+  },
+  "manual_conflict": {
+    "shared_resolver": [
+      null,
+      null,
+      "Data prevista e semana escolhida não coincidem."
+    ],
+    "gantt_state": "ready",
+    "gantt_deadline": "2026-09-22T23:00:00+00:00",
+    "gantt_reasons": [],
+    "milestones": {
+      "operation_forecast": "2026-09-22",
+      "cut_date": null,
+      "picking": null,
+      "picking_provisional": false,
+      "planned_start_date": null,
+      "planned_finish_date": null,
+      "delivery_date": null
+    }
+  },
+  "duplicate_keys": {
+    "input_count": 2,
+    "output_count": 1,
+    "validation": {
+      "valid": true,
+      "errors": [],
+      "score": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        60
+      ],
+      "coverage": "complete"
+    }
+  }
+}

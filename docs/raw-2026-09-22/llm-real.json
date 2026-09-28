@@ -1,0 +1,108 @@
+{
+  "id": "df63a1a2-daab-4d9b-9c60-e5f4dbf3cb01",
+  "title": "Agrupa a quantidade por cortar por máquina. Soma apenas os saldos conhecidos e identifica a cobertura dos valores desconhecidos. Apresenta um gráfico de barras.",
+  "status": "done",
+  "question": "Agrupa a quantidade por cortar por máquina. Soma apenas os saldos conhecidos e identifica a cobertura dos valores desconhecidos. Apresenta um gráfico de barras.",
+  "result": {
+    "query": {
+      "measure": "remaining",
+      "group_by": "machine",
+      "aggregate": "sum",
+      "filter_field": null,
+      "filter_value": null,
+      "compare_measure": null
+    },
+    "result": {
+      "rows": 7391,
+      "groups": [
+        {
+          "rows": 7,
+          "group": "Corte Tubo Laser",
+          "known": 7,
+          "value": 0.0,
+          "unknown": 0
+        },
+        {
+          "rows": 1601,
+          "group": "Por confirmar",
+          "known": 1601,
+          "value": 24600.0,
+          "unknown": 0
+        },
+        {
+          "rows": 2111,
+          "group": "Serrote Disco pav 1",
+          "known": 2111,
+          "value": 46802.0,
+          "unknown": 0
+        },
+        {
+          "rows": 227,
+          "group": "Serrote Doall Pav.1",
+          "known": 227,
+          "value": 9031.0,
+          "unknown": 0
+        },
+        {
+          "rows": 1582,
+          "group": "Serrote Fita Thomas IS639 Pav.1",
+          "known": 1581,
+          "value": 7439.0,
+          "unknown": 1
+        },
+        {
+          "rows": 674,
+          "group": "Serrote MEBA IS381 Pav 3",
+          "known": 674,
+          "value": 16207.0,
+          "unknown": 0
+        },
+        {
+          "rows": 1189,
+          "group": "Vanguard",
+          "known": 1189,
+          "value": 1503.0,
+          "unknown": 0
+        }
+      ],
+      "measure": "remaining",
+      "aggregate": "sum",
+      "compare_measure": null
+    },
+    "visual": {
+      "kind": "bar",
+      "title": "Quantidade restante por cortar agrupada por máquina",
+      "explanation": "Gráfico de barras da soma das quantidades restantes conhecidas por máquina (apenas saldos conhecidos). Corte Tubo Laser: 0 (7 conhecidos / 7 linhas); Por confirmar: 24600 (1601/1601); Serrote Disco pav 1: 46802 (2111/2111); Serrote Doall Pav.1: 9031 (227/227); Serrote Fita Thomas IS639 Pav.1: 7439 (1581 conhecidos / 1582 linhas, 1 desconhecido); Serrote MEBA IS381 Pav 3: 16207 (674/674); Vanguard: 1503 (1189/1189). Total de 7391 linhas processadas. Cobertura quase total, com um único valor desconhecido identificado.",
+      "limitations": [
+        "Apenas os saldos conhecidos foram somados; valores desconhecidos não foram interpretados como zero nem incluídos.",
+        "Um valor desconhecido na máquina Serrote Fita Thomas IS639 Pav.1 (cobertura 1581 de 1582).",
+        "Totais calculados pelo servidor; não se somaram macro e OCR.",
+        "Não se declarou qualquer OF concluída com base numa operação.",
+        "Apresentação em gráfico de barras conforme pedido, sem alterações operacionais propostas."
+      ]
+    },
+    "filters": {},
+    "sources": {
+      "version": "44861f521fe537e7b2d9d35c23b6dca4ae06054620baff2c4305fce50b3bf805",
+      "snapshot": {
+        "loaded_at": "2026-09-21T12:19:58.711075+00:00",
+        "snapshot_id": "mtg2_9ed22bcb188e3cd1",
+        "source_filename": "Met2_Plan_Perfis.xlsm"
+      },
+      "cpis_mode": "CPIS importado da macro — sem confirmação direta",
+      "cpis_version": "fallback:mtg2_9ed22bcb188e3cd1:mtg_0221b462085e3379",
+      "cpis_checked_at": null
+    },
+    "limitations": [
+      "Os acumulados da macro e os registos OCR são circuitos separados.",
+      "Valores desconhecidos não são produção zero."
+    ],
+    "schema_version": 1
+  },
+  "error": null,
+  "model": "xai.grok-4.6",
+  "parent_id": null,
+  "saved": false,
+  "created_at": "2026-09-21T22:27:51.409199+00:00",
+  "updated_at": "2026-09-21T22:28:41.608209+00:00"
+}

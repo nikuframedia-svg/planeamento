@@ -1,0 +1,15 @@
+{
+  "actual": {
+    "summary": "1167\nOperações no plano ativo\n37\nConcluídas · sem carga futura\n0\nCalendarizadas\n1130\nPendentes / fora do horizonte",
+    "milestones": 0,
+    "bars": 0,
+    "source_state": "Fontes publicadas atuais",
+    "accept_disabled": false
+  },
+  "simulated_stale_job": {
+    "source_state": "Fontes publicadas atuais",
+    "notice": "",
+    "accept_disabled": true
+  },
+  "page_errors": []
+}

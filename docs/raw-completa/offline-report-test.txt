@@ -1,0 +1,1 @@
+HTML autónomo: gráficos locais, pesquisa, mesmos resultados guardados e 7391 linhas de suporte; sem erros JavaScript.

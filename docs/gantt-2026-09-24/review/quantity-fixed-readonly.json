@@ -1,0 +1,13 @@
+{
+  "of": "OF264051",
+  "line": 33875,
+  "required_before": 2.0,
+  "original_required": 2.0,
+  "planning_remaining_before": 2.0,
+  "required_after_in_memory": 102,
+  "planning_remaining_after": null,
+  "reason_after": [
+    "Quantidade necessária alterada ou não comprovada na origem do saldo da macro."
+  ],
+  "database_writes": 0
+}

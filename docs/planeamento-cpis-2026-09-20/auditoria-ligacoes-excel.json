@@ -1,0 +1,88 @@
+{
+  "observed_at_utc": "2026-09-20T20:36:06.245311+00:00",
+  "workbooks": [
+    {
+      "file": "Met2_Plan_Perfis.xlsm",
+      "sha256": "756950d5721977a82b51dc319fcf37462da40f01daea35bf977e0c9858887914",
+      "connections": [
+        {
+          "command": "SELECT * FROM [Picking CPIS]",
+          "configuration": {},
+          "username_present": false,
+          "embedded_password_present": false
+        },
+        {
+          "command": "SELECT * FROM [Picking Planeamento]",
+          "configuration": {},
+          "username_present": false,
+          "embedded_password_present": false
+        },
+        {
+          "command": "SELECT * FROM \"cpis\".\"public\".\"ordensfabrico_listagem_excel_vw\" where cast(replace(of, 'OF', '') as int) > 250000",
+          "configuration": {
+            "DSN": "CPIS",
+            "SERVER": "10.200.10.30",
+            "PORT": "5432",
+            "DATABASE": "cpis",
+            "READONLY": "0",
+            "SSLMODE": "disable"
+          },
+          "username_present": true,
+          "embedded_password_present": false
+        }
+      ],
+      "power_query": [
+        {
+          "part": "Formulas/Section1.m",
+          "code": "section Section1;\r\n\r\nshared #\"Picking Planeamento\" = let\r\n    Origem = #\"Picking CPIS\"\r\nin\r\n    Origem;\r\n\r\nshared #\"Picking CPIS\" = let\n    Origem = Odbc.Query(\"dsn=cpis\", \"select * from mtg2.pickingprodcab_pesq_vw\"),\n    #\"Colunas com Nome Mudado\" = Table.RenameColumns(Origem,{{\"id\", \"ID\"}}),\n    #\"Colunas Reordenadas\" = Table.ReorderColumns(#\"Colunas com Nome Mudado\",{\"ID\", \"of\", \"semana\"}),\n    #\"Colunas com Nome Mudado1\" = Table.RenameColumns(#\"Colunas Reordenadas\",{{\"of\", \"OF\"}, {\"semana\", \"Semana\"}}),\n    #\"Texto Depois do Delimitador Extraído\" = Table.TransformColumns(#\"Colunas com Nome Mudado1\", {{\"OF\", each Text.AfterDelimiter(_, \"OF\"), type text}}),\n    #\"Tipo Alterado\" = Table.TransformColumnTypes(#\"Texto Depois do Delimitador Extraído\",{{\"OF\", type number}})\nin\n    #\"Tipo Alterado\";"
+        }
+      ],
+      "file_modified_metadata": "2026-09-18T07:40:40Z"
+    },
+    {
+      "file": "Met3_Plan_Cantoneiras.xlsm",
+      "sha256": "da883132feefabc247cb639260a2caed4d2fa256a5a81812af9222c7735b264f",
+      "connections": [
+        {
+          "command": "SELECT * FROM \"cpis\".\"public\".\"ordensfabrico_listagem_excel_vw\"",
+          "configuration": {
+            "DSN": "CPIS",
+            "SERVER": "10.200.10.30",
+            "PORT": "5432",
+            "DATABASE": "cpis",
+            "READONLY": "0",
+            "SSLMODE": "disable"
+          },
+          "username_present": true,
+          "embedded_password_present": false
+        }
+      ],
+      "power_query": [],
+      "file_modified_metadata": "2026-09-18T07:26:47Z"
+    }
+  ],
+  "network_test": {
+    "target": "10.200.10.30:5432",
+    "result": "TCP timeout after 6 seconds",
+    "authentication_reached": false,
+    "route": "via 188.40.230.1 dev enp5s0; no private CPIS route found"
+  },
+  "bridge": {
+    "factory_apps_reachable": {
+      "18100": "Windows kanban-mes",
+      "18101": "Windows kanban-mes-mtg2"
+    },
+    "forwards": [
+      "server:18080 -> PC:8080",
+      "server:18100 -> PC:8100",
+      "server:18101 -> PC:8101",
+      "PC:15432 -> server:5432"
+    ],
+    "cpis_forward": false
+  },
+  "vba_review": {
+    "database_password_found": false,
+    "perfis_workbook_open_refresh": "Workbook_Open code commented out; no active CPIS refresh found there",
+    "password_mentions": "InputBox / MsgBox prompts for workbook actions; no CPIS connection credential found"
+  }
+}

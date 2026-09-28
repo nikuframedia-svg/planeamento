@@ -1,0 +1,226 @@
+{
+  "id": "e1582abe-6cc9-40c3-afe7-f75f85ac9b11",
+  "model": "xai.grok-4.6",
+  "definition": {
+    "q": "",
+    "area": "perfis",
+    "kind": "analysis",
+    "title": "Quantidade por cortar por máquina",
+    "groups": [
+      {
+        "ast": {
+          "field": "machine"
+        },
+        "unit": null,
+        "data_type": "text"
+      }
+    ],
+    "visual": "bar",
+    "dataset": "planning",
+    "filters": [],
+    "metrics": [
+      {
+        "ast": {
+          "op": "sum",
+          "args": [
+            {
+              "field": "remaining"
+            }
+          ]
+        },
+        "name": "Quantidade por cortar",
+        "unit": "un.",
+        "data_type": "number",
+        "expression": "sum([remaining])"
+      },
+      {
+        "ast": {
+          "op": "count",
+          "args": [
+            {
+              "field": "remaining"
+            }
+          ]
+        },
+        "name": "Linhas com saldo conhecido",
+        "unit": "registos",
+        "data_type": "number",
+        "expression": "count([remaining])"
+      },
+      {
+        "ast": {
+          "op": "count",
+          "args": [
+            {
+              "field": "id"
+            }
+          ]
+        },
+        "name": "Linhas no planeamento",
+        "unit": "registos",
+        "data_type": "number",
+        "expression": "count([id])"
+      },
+      {
+        "ast": {
+          "op": "if",
+          "args": [
+            {
+              "op": "=",
+              "args": [
+                {
+                  "op": "count",
+                  "args": [
+                    {
+                      "field": "id"
+                    }
+                  ]
+                },
+                {
+                  "literal": 0
+                }
+              ]
+            },
+            {
+              "literal": 0
+            },
+            {
+              "op": "*",
+              "args": [
+                {
+                  "op": "/",
+                  "args": [
+                    {
+                      "op": "count",
+                      "args": [
+                        {
+                          "field": "remaining"
+                        }
+                      ]
+                    },
+                    {
+                      "op": "count",
+                      "args": [
+                        {
+                          "field": "id"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "literal": 100
+                }
+              ]
+            }
+          ]
+        },
+        "name": "Cobertura de saldo conhecido (%)",
+        "unit": null,
+        "data_type": "number",
+        "expression": "if(count([id]) = 0, 0, count([remaining]) / count([id]) * 100)"
+      }
+    ],
+    "group_by": [
+      "machine"
+    ],
+    "selected": null,
+    "automatic": true,
+    "confirmed": true,
+    "date_field": null,
+    "column_unit": null,
+    "explanation": "Soma apenas o saldo [remaining] (por cortar) no planeamento de perfis, agrupado por [machine]. Valores desconhecidos não entram na soma e não são tratados como zero. A cobertura compara as linhas com [remaining] conhecido com o total de linhas de cada máquina, incluindo linhas sem máquina atribuída. Usa só o saldo de planeamento; macro e OCR não são misturados. Sem distribuição temporal. Confirme se esta definição corresponde ao pedido.",
+    "clarification": null,
+    "proposal_model": "xai.grok-4.6",
+    "proposal_job_id": "eb4dda17-73f2-4a5c-a4d6-8d1be2687034",
+    "relative_period": "none",
+    "column_expression": null
+  },
+  "rows": 7391,
+  "groups": [
+    {
+      "g0": "Corte Tubo Laser",
+      "m0": 0,
+      "m1": 7,
+      "m2": 7,
+      "m3": 100,
+      "rows": 7,
+      "known0": 7,
+      "known1": 7,
+      "known2": 7,
+      "known3": 7
+    },
+    {
+      "g0": "Serrote Disco pav 1",
+      "m0": 46802,
+      "m1": 2111,
+      "m2": 2111,
+      "m3": 100,
+      "rows": 2111,
+      "known0": 2111,
+      "known1": 2111,
+      "known2": 2111,
+      "known3": 2111
+    },
+    {
+      "g0": "Serrote Doall Pav.1",
+      "m0": 9031,
+      "m1": 227,
+      "m2": 227,
+      "m3": 100,
+      "rows": 227,
+      "known0": 227,
+      "known1": 227,
+      "known2": 227,
+      "known3": 227
+    },
+    {
+      "g0": "Serrote Fita Thomas IS639 Pav.1",
+      "m0": 7439,
+      "m1": 1581,
+      "m2": 1582,
+      "m3": 0,
+      "rows": 1582,
+      "known0": 1581,
+      "known1": 1581,
+      "known2": 1582,
+      "known3": 1581
+    },
+    {
+      "g0": "Serrote MEBA IS381 Pav 3",
+      "m0": 16207,
+      "m1": 674,
+      "m2": 674,
+      "m3": 100,
+      "rows": 674,
+      "known0": 674,
+      "known1": 674,
+      "known2": 674,
+      "known3": 674
+    },
+    {
+      "g0": "Vanguard",
+      "m0": 1503,
+      "m1": 1189,
+      "m2": 1189,
+      "m3": 100,
+      "rows": 1189,
+      "known0": 1189,
+      "known1": 1189,
+      "known2": 1189,
+      "known3": 1189
+    },
+    {
+      "g0": null,
+      "m0": 24600,
+      "m1": 1601,
+      "m2": 1601,
+      "m3": 100,
+      "rows": 1601,
+      "known0": 1601,
+      "known1": 1601,
+      "known2": 1601,
+      "known3": 1601
+    }
+  ]
+}

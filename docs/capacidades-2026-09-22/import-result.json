@@ -1,0 +1,71 @@
+{
+  "database": "dataresearchmtg",
+  "container": "postgres",
+  "source": "/home/luis/projects/DATARESEARCHMTG/Met2_Plan_Perfis.xlsm",
+  "snapshot_id": "mtg2_bf1cd6a25986791e",
+  "source_sha256": "bf1cd6a25986791e431160d812afa1de5e2e52e9013a9f989745033fe1fa61fc",
+  "loader_version": "dataresearchmtg-met2-loader-v3",
+  "rows_streamed": {
+    "workbook_sheets": 9,
+    "plan_production_rows": 7413,
+    "cpis_rows": 12543,
+    "machine_rows": 10,
+    "other_sheet_rows": 1476
+  },
+  "profile_quality": {
+    "rows": 7413,
+    "populated": 7413,
+    "missing": 0,
+    "fully_dimensioned": 7400,
+    "incomplete_dimension": 13,
+    "unknown_material_type": 0,
+    "material_type_missing": 0,
+    "sources": {
+      "material_type_fallback": 1,
+      "structured": 7412
+    },
+    "material_types": {
+      "Barra": 34,
+      "Calha": 147,
+      "Cantoneira": 594,
+      "Chapa": 35,
+      "Perfil H": 223,
+      "Perfil I": 188,
+      "Perfil T": 27,
+      "Perfil U": 814,
+      "Perfil UB": 2,
+      "Perfil UC": 1,
+      "Tubo quadrado": 615,
+      "Tubo redondo": 3405,
+      "Tubo retangular": 156,
+      "Varão nervurado": 9,
+      "Varão quadrado": 195,
+      "Varão redondo": 864,
+      "Varão retangular": 3,
+      "Varão roscado": 101
+    }
+  },
+  "remaining_quality": {
+    "known": 7412,
+    "negative": 167,
+    "missing": 1
+  },
+  "database_summary": {
+    "sha256": "bf1cd6a25986791e431160d812afa1de5e2e52e9013a9f989745033fe1fa61fc",
+    "quality": {
+      "w29_lines": 0,
+      "snapshot_id": "mtg2_bf1cd6a25986791e",
+      "backlog_lines": 1818,
+      "raw_cpis_rows": 12543,
+      "raw_plan_rows": 7413,
+      "backlog_orders": 655,
+      "production_orders": 2071,
+      "backlog_orders_missing_cpis": 9,
+      "cpis_closed_orders_with_backlog": 381
+    },
+    "dataset_id": "ds-met2-perfis",
+    "snapshot_id": "mtg2_bf1cd6a25986791e",
+    "checks_total": 18,
+    "checks_passed": 18
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "date": "2026-09-09",
+  "geometry_reconstruction": {
+    "catalogue_profile": 1298,
+    "formula_reconstructed": 5684,
+    "matches_excel_cache": 5684,
+    "differs_from_cache": 0,
+    "missing_or_non_numeric_inputs": 11
+  },
+  "differences_sample": [],
+  "educational_schedule": [
+    {
+      "excel_row": 5387,
+      "of": "OF264576",
+      "reference": "5564V001",
+      "profile": "60x2.6",
+      "quantity": 42,
+      "cut_target": "2026-08-28T00:00:00",
+      "cpis_delivery": "2026-09-11T00:00:00",
+      "historic_model_minutes": 24.6,
+      "assumed_setup_minutes": 20
+    },
+    {
+      "excel_row": 5388,
+      "of": "OF264576",
+      "reference": "5564V002",
+      "profile": "108x3",
+      "quantity": 42,
+      "cut_target": "2026-08-28T00:00:00",
+      "cpis_delivery": "2026-09-11T00:00:00",
+      "historic_model_minutes": 51.93,
+      "assumed_setup_minutes": 20
+    },
+    {
+      "excel_row": 5572,
+      "of": "OF264760",
+      "reference": "CI5021A4000",
+      "profile": "76x2.6",
+      "quantity": 396,
+      "cut_target": "2026-09-04T00:00:00",
+      "cpis_delivery": "2026-09-18T00:00:00",
+      "historic_model_minutes": 296.62,
+      "assumed_setup_minutes": 20
+    }
+  ],
+  "scope": "Exemplo de três trabalhos; turno e preparação hipotéticos; stock não confirmado; sem executar VBA.",
+  "geometry_reconstruction_correction": "A comparação inicial usou N para a quantidade total; AP usa AH (QTD [un,]). Com AH, as 5684 linhas recalculáveis coincidem. N e AH diferem em 12 linhas. Ver analise_aprofundada.py e conclusao-aprofundada.md."
+}

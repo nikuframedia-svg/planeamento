@@ -1,0 +1,164 @@
+{
+  "snapshot": "mtg2_aa2d59af81541c37",
+  "sha256_extrato": "0dcaf2d0e268938d3e23c13d8620855edc5145176acb6509c1c90c4c15fffd46",
+  "sha256_folhas_auxiliares": "57413d33371f2cbe3e92866aeb47cc2e3f303a81172b65dbe89266a7bef8eb6a",
+  "sha256_ficheiro_drive_verificado": "aa2d59af81541c37165b4d611ed698dad97bcbc9b7cf74ca3db8ace7cf572968",
+  "natureza": "Experiência offline, sem validade de ordem de produção ou promessa de prazo.",
+  "hipoteses": {
+    "inicio": "2026-09-14",
+    "dias": "segunda a sexta",
+    "horas_uteis_dia": 7.5,
+    "feriados_e_operadores": "não modelados",
+    "mm2_h": 48024,
+    "origem_taxa": "CapacidadeMáquinas!C3, cabeçalho 11/11/2024",
+    "minutos_preparacao_por_familia": 20,
+    "familia": "tipo + perfil + qualidade",
+    "restricao_prioridade": "conservar grupos de Data Corte; datas não revalidadas",
+    "materia_prima": "não verificada; stock/SAP fora da primeira fase",
+    "abocardar": "excluído; nenhuma passagem de parcelas inferida",
+    "quantidades": "saldos importados; não são novos registos",
+    "maquinas": "manter atribuição MEBA existente; não testar substituições",
+    "conclusao": "das linhas MEBA incluídas; não de toda a obra nem da Produção"
+  },
+  "universo": {
+    "linhas_ativas": 1074,
+    "of_ativas": 268,
+    "pecas_pendentes": 85453,
+    "maquinas": {
+      "Vanguard": 153,
+      "Serrote MEBA IS381 Pav 3": 113,
+      "Sem máquina": 432,
+      "Serrote Fita Thomas IS639 Pav.1": 55,
+      "Serrote Disco pav 1": 199,
+      "Serrote Doall Pav.1": 122
+    },
+    "meba_linhas": 113,
+    "meba_calculaveis": 112
+  },
+  "excluidas_meba": [
+    {
+      "linha": 5127,
+      "of": "OF264280",
+      "ref": "CC0111A4613"
+    }
+  ],
+  "cenarios": {
+    "por_data_corte_e_of": {
+      "linhas": 112,
+      "of": 31,
+      "quantidade_pendente": 10155,
+      "preparacoes": 106,
+      "horas_preparacao_hipotese": 35.33333333333333,
+      "horas_execucao_historica": 178.7054979154958,
+      "horas_total_cenario": 214.03883124882944,
+      "semanas_equivalentes_37_5h": 5.7077021666354515,
+      "dia_fim_cenario": "2026-10-22"
+    },
+    "familias_dentro_da_mesma_data_corte": {
+      "linhas": 112,
+      "of": 31,
+      "quantidade_pendente": 10155,
+      "preparacoes": 62,
+      "horas_preparacao_hipotese": 20.666666666666664,
+      "horas_execucao_historica": 178.7054979154958,
+      "horas_total_cenario": 199.37216458216264,
+      "semanas_equivalentes_37_5h": 5.316591055524337,
+      "dia_fim_cenario": "2026-10-20"
+    },
+    "familias_sem_preparacao": {
+      "linhas": 112,
+      "of": 31,
+      "quantidade_pendente": 10155,
+      "preparacoes": 0,
+      "horas_preparacao_hipotese": 0.0,
+      "horas_execucao_historica": 178.7054979154958,
+      "horas_total_cenario": 178.70549791549587,
+      "semanas_equivalentes_37_5h": 4.765479944413223,
+      "dia_fim_cenario": "2026-10-15"
+    },
+    "familias_velocidade_25pc_inferior": {
+      "linhas": 112,
+      "of": 31,
+      "quantidade_pendente": 10155,
+      "preparacoes": 62,
+      "horas_preparacao_hipotese": 20.666666666666664,
+      "horas_execucao_historica": 238.2739972206611,
+      "horas_total_cenario": 258.9406638873279,
+      "semanas_equivalentes_37_5h": 6.905084370328744,
+      "dia_fim_cenario": "2026-10-30"
+    },
+    "familias_velocidade_25pc_superior": {
+      "linhas": 112,
+      "of": 31,
+      "quantidade_pendente": 10155,
+      "preparacoes": 62,
+      "horas_preparacao_hipotese": 20.666666666666664,
+      "horas_execucao_historica": 142.96439833239666,
+      "horas_total_cenario": 163.63106499906348,
+      "semanas_equivalentes_37_5h": 4.3634950666416925,
+      "dia_fim_cenario": "2026-10-13"
+    },
+    "familias_perda_primeiro_turno": {
+      "linhas": 112,
+      "of": 31,
+      "quantidade_pendente": 10155,
+      "preparacoes": 62,
+      "horas_preparacao_hipotese": 20.666666666666664,
+      "horas_execucao_historica": 178.7054979154958,
+      "horas_total_cenario": 199.37216458216264,
+      "semanas_equivalentes_37_5h": 5.316591055524337,
+      "dia_fim_cenario": "2026-10-21"
+    }
+  },
+  "efeitos_agrupamento": {
+    "linhas": {
+      "igual": 7,
+      "mais_cedo": 87,
+      "mais_tarde": 18
+    },
+    "ultima_linha_meba_incluida_por_of": {
+      "igual": 8,
+      "mais_cedo": 22,
+      "mais_tarde": 1
+    },
+    "of_com_ultima_linha_meba_incluida_mais_tarde": [
+      {
+        "of": "OF264576",
+        "diferenca_h": 3.3471747026190073
+      }
+    ],
+    "nota": "Reduzir preparações não melhora todas as entregas. Picking não foi otimizado."
+  },
+  "picking": {
+    "of_unicas_na_fonte": 800,
+    "linhas_ativas_com_semana_no_plano": 166,
+    "linhas_ativas_com_semana_na_fonte": 405,
+    "linhas_recuperadas": 239,
+    "of_recuperadas": 81,
+    "conflitos_entre_semanas_positivas": 0,
+    "distribuicao_semanas_fonte": {
+      "35": 41,
+      "36": 110,
+      "18": 2,
+      "23": 1,
+      "32": 3,
+      "28": 1,
+      "31": 6,
+      "29": 1,
+      "34": 48,
+      "33": 12,
+      "30": 2,
+      "37": 71,
+      "38": 60,
+      "39": 45,
+      "40": 2
+    },
+    "nota": "Ano e dia limite não definidos pela simples semana. Join OF reproduz relação existente na folha."
+  },
+  "verificacoes": [
+    "mesmas linhas e quantidades",
+    "sem sobreposição em tempo útil",
+    "grupos de Data Corte preservados",
+    "perda de turno desloca calendário, não aumenta trabalho"
+  ]
+}

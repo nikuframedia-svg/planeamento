@@ -1,0 +1,405 @@
+{
+  "macro_and_ocr_same_quantity": [
+    {
+      "production_order_no": "OF265569",
+      "component_ref": "DLT319",
+      "profile_type": "L180X180X16",
+      "length_mm": "1010",
+      "quantity_planned": "28",
+      "quantity_made": "14",
+      "remaining_quantity": "14",
+      "validated_ocr": 14.0,
+      "evidence_records": [
+        1025
+      ],
+      "operation_1": "119",
+      "operation_2": "302"
+    },
+    {
+      "production_order_no": "OF265141",
+      "component_ref": "ELT5221A",
+      "profile_type": "L50X50X4",
+      "length_mm": "683",
+      "quantity_planned": "1",
+      "quantity_made": "1",
+      "remaining_quantity": "0",
+      "validated_ocr": 1.0,
+      "evidence_records": [
+        1019
+      ],
+      "operation_1": "119",
+      "operation_2": "0"
+    },
+    {
+      "production_order_no": "OF265141",
+      "component_ref": "ELT5225",
+      "profile_type": "L50X50X4",
+      "length_mm": "1735",
+      "quantity_planned": "1",
+      "quantity_made": "1",
+      "remaining_quantity": "0",
+      "validated_ocr": 1.0,
+      "evidence_records": [
+        1020
+      ],
+      "operation_1": "119",
+      "operation_2": "0"
+    },
+    {
+      "production_order_no": "OF265141",
+      "component_ref": "ELT522A",
+      "profile_type": "L55X55X5",
+      "length_mm": "1205",
+      "quantity_planned": "2",
+      "quantity_made": "2",
+      "remaining_quantity": "0",
+      "validated_ocr": 2.0,
+      "evidence_records": [
+        1018
+      ],
+      "operation_1": "119",
+      "operation_2": "0"
+    },
+    {
+      "production_order_no": "OF265141",
+      "component_ref": "ELT5251",
+      "profile_type": "L45X45X4",
+      "length_mm": "913",
+      "quantity_planned": "1",
+      "quantity_made": "1",
+      "remaining_quantity": "0",
+      "validated_ocr": 1.0,
+      "evidence_records": [
+        1021
+      ],
+      "operation_1": "119",
+      "operation_2": "0"
+    },
+    {
+      "production_order_no": "OF265141",
+      "component_ref": "ELT5253",
+      "profile_type": "L45X45X4",
+      "length_mm": "705",
+      "quantity_planned": "2",
+      "quantity_made": "2",
+      "remaining_quantity": "0",
+      "validated_ocr": 2.0,
+      "evidence_records": [
+        1022
+      ],
+      "operation_1": "119",
+      "operation_2": "0"
+    },
+    {
+      "production_order_no": "OF264857",
+      "component_ref": "A18F13",
+      "profile_type": "L50X50X4",
+      "length_mm": "1702",
+      "quantity_planned": "16",
+      "quantity_made": "4",
+      "remaining_quantity": "12",
+      "validated_ocr": 4.0,
+      "evidence_records": [
+        1033
+      ],
+      "operation_1": "112",
+      "operation_2": "111"
+    }
+  ],
+  "perfis_cut_and_aboc_same_reference": [
+    {
+      "of": "OF265757",
+      "model_ref": "7012V004",
+      "records": 5,
+      "aboc": 100.0,
+      "cut": 150.0,
+      "lengths": [
+        2050.0,
+        2750.0,
+        3300.0
+      ],
+      "profiles": [
+        "114.3x3.2",
+        "76x2.6",
+        "89x2.9"
+      ]
+    },
+    {
+      "of": "OF265591",
+      "model_ref": "CI5618A4001",
+      "records": 3,
+      "aboc": 20.0,
+      "cut": 40.0,
+      "lengths": [
+        2000.0,
+        3350.0
+      ],
+      "profiles": [
+        "114x3",
+        "76x2.6"
+      ]
+    },
+    {
+      "of": "OF265587",
+      "model_ref": "CI5618A4001",
+      "records": 4,
+      "aboc": 101.0,
+      "cut": 200.0,
+      "lengths": [
+        2000.0,
+        2850.0
+      ],
+      "profiles": [
+        "114x3",
+        "76x2.6"
+      ]
+    },
+    {
+      "of": "OF265585",
+      "model_ref": "CI5618A4001",
+      "records": 3,
+      "aboc": 30.0,
+      "cut": 60.0,
+      "lengths": [
+        1700.0,
+        2550.0
+      ],
+      "profiles": [
+        "114x3",
+        "76x2.6"
+      ]
+    },
+    {
+      "of": "OF265583",
+      "model_ref": "CI6518A4001",
+      "records": 5,
+      "aboc": 200.0,
+      "cut": 300.0,
+      "lengths": [
+        1650.0,
+        2400.0,
+        3050.0
+      ],
+      "profiles": [
+        "114x3",
+        "76x2.6",
+        "89x2.6"
+      ]
+    },
+    {
+      "of": "OF265541",
+      "model_ref": "CI1822A4001",
+      "records": 2,
+      "aboc": 1.0,
+      "cut": 1.0,
+      "lengths": [
+        1200.0
+      ],
+      "profiles": [
+        "139.7x4"
+      ]
+    },
+    {
+      "of": "OF265380",
+      "model_ref": "CI5221A4006",
+      "records": 3,
+      "aboc": 5.0,
+      "cut": 10.0,
+      "lengths": [
+        2600.0,
+        3250.0
+      ],
+      "profiles": [
+        "114x3.2",
+        "60x2.6"
+      ]
+    },
+    {
+      "of": "OF265379",
+      "model_ref": "CI5121A4000",
+      "records": 3,
+      "aboc": 5.0,
+      "cut": 10.0,
+      "lengths": [
+        2600.0,
+        3250.0
+      ],
+      "profiles": [
+        "114x3.2",
+        "76x2.6"
+      ]
+    },
+    {
+      "of": "OF265378",
+      "model_ref": "CI5021A4000",
+      "records": 4,
+      "aboc": 20.0,
+      "cut": 100.0,
+      "lengths": [
+        2100.0,
+        3250.0
+      ],
+      "profiles": [
+        "114",
+        "114x3.2",
+        "76x2.6"
+      ]
+    },
+    {
+      "of": "OF265256",
+      "model_ref": "4836V003",
+      "records": 4,
+      "aboc": 101.0,
+      "cut": 200.0,
+      "lengths": [
+        2100.0,
+        3250.0
+      ],
+      "profiles": [
+        "114x3.2",
+        "76x3"
+      ]
+    },
+    {
+      "of": "OF265256",
+      "model_ref": "4836V004",
+      "records": 7,
+      "aboc": 200.0,
+      "cut": 300.0,
+      "lengths": [
+        2050.0,
+        2300.0,
+        2750.0
+      ],
+      "profiles": [
+        "114x3.2",
+        "76x3",
+        "88.9x2.9"
+      ]
+    },
+    {
+      "of": "OF265225",
+      "model_ref": "CI6518A4001",
+      "records": 5,
+      "aboc": 40.0,
+      "cut": 60.0,
+      "lengths": [
+        1650.0,
+        2400.0,
+        3050.0
+      ],
+      "profiles": [
+        "114x3",
+        "76x2.6",
+        "89x2.6"
+      ]
+    },
+    {
+      "of": "OF264957",
+      "model_ref": "2539N002",
+      "records": 2,
+      "aboc": 4.0,
+      "cut": 4.0,
+      "lengths": [
+        1200.0
+      ],
+      "profiles": [
+        "140x3"
+      ]
+    },
+    {
+      "of": "OF264845",
+      "model_ref": "CI7018A4001",
+      "records": 5,
+      "aboc": 20.0,
+      "cut": 60.0,
+      "lengths": [
+        3000.0,
+        3050.0,
+        3250.0
+      ],
+      "profiles": [
+        "101",
+        "133",
+        "133x3",
+        "76",
+        "76x2.6"
+      ]
+    },
+    {
+      "of": "OF264774",
+      "model_ref": "CI5421A3004",
+      "records": 5,
+      "aboc": 135.0,
+      "cut": 940.0,
+      "lengths": [
+        2050.0,
+        2300.0
+      ],
+      "profiles": [
+        "114x3.2",
+        "89x3"
+      ]
+    },
+    {
+      "of": "OF264763",
+      "model_ref": "CI5121A4000",
+      "records": 4,
+      "aboc": 181.0,
+      "cut": 406.0,
+      "lengths": [
+        2600.0,
+        3250.0
+      ],
+      "profiles": [
+        "114x3.2",
+        "76x2.6"
+      ]
+    },
+    {
+      "of": "OF264763",
+      "model_ref": "CI5121A4030",
+      "records": 3,
+      "aboc": 298.0,
+      "cut": 315.0,
+      "lengths": [
+        400.0
+      ],
+      "profiles": [
+        "133x3"
+      ]
+    },
+    {
+      "of": "OF264759",
+      "model_ref": "CI5021A4000",
+      "records": 6,
+      "aboc": 182.0,
+      "cut": 813.0,
+      "lengths": [
+        2100.0,
+        3250.0
+      ],
+      "profiles": [
+        "114x3.2",
+        "76x2.6"
+      ]
+    },
+    {
+      "of": "OF264122",
+      "model_ref": "B704T001",
+      "records": 5,
+      "aboc": 2.0,
+      "cut": 3.0,
+      "lengths": [
+        1650.0,
+        2700.0,
+        3050.0
+      ],
+      "profiles": [
+        "114x3",
+        "76x2.6",
+        "89x2.6"
+      ]
+    }
+  ]
+}

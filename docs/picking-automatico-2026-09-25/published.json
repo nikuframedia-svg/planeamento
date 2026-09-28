@@ -1,0 +1,24 @@
+{
+  "checked_at": "2026-09-25T11:35:06.979780+00:00",
+  "planning_generation": 1227,
+  "capacity_generation": 1230,
+  "capacity_contract": "capacity-20260925-integral-v28",
+  "aggregates_pending": false,
+  "counts": {
+    "active_lines": 1139,
+    "picking_weeks": 311,
+    "picking_dates": 311
+  },
+  "files": {
+    "app/planning_dates.py": "463626ef588656c6cfc8881a248acd0876a8b347587d6952fa89490cd7c0d9cf",
+    "app/planning_calculations.py": "b263aa4f148ad75bc744b64cf2f01806417fa765eceba19a7d46b3e023479776",
+    "app/raw/projection.py": "64dd6ee0567f78a0b6509c3fbd52b5fc0d4f48d35c34812cb200861972def139",
+    "app/raw/preview.py": "1018431858c12a96fb83642256568edd0c1e681aa3a68eb9444e217325cc6ceb",
+    "app/raw/edits.py": "73e29115e187adf607879268513bce4eed5e62aef338b013d251ad0dd7b78dfd",
+    "app/raw/contracts.py": "fb71b1f0c0c738b4125da0b35637190cf02542ed2388b2790e72552a6b6ab16f",
+    "app/raw/capacity_revision.py": "266a6c1e3146c583c67c8d17079f1c33fc0c8d7a8fc663f02b01d44059982786",
+    "app/web/templates/need_editor.html": "011eb26b7d09b72894496ef7783c851b1b3c85f581237d84342909f4a3e43814",
+    "app/web/static/need_editor.js": "7f40fdd41e4e240d374eb459089473d359cc3b977f5e8291bd98bb99c96ae7a5",
+    "app/web/static/need_editor.css": "662d01b0c8b767075525a294b280481e86f52b910fe8c04d05e5ec096d1a720e"
+  }
+}

@@ -1,0 +1,1 @@
+Both connectors load independently with the existing PostgreSQL library. PowerShell/Windows execution remains pending.

@@ -1,0 +1,9 @@
+MainPID=239043
+ExecStart={ path=/home/luis/projects/kanban-mes-mtg2/.venv/bin/uvicorn ; argv[]=/home/luis/projects/kanban-mes-mtg2/.venv/bin/uvicorn app.web.planning_app:app --host 127.0.0.1 --port 8113 --proxy-headers --env-file /home/luis/projects/kanban-mes-mtg2/.env ; ignore_errors=no ; start_time=[Tue 2026-09-22 23:48:35 CEST] ; stop_time=[n/a] ; pid=239043 ; code=(null) ; status=0/0 }
+ActiveState=active
+FragmentPath=/run/user/1000/systemd/transient/kanban-planning.service
+
+MainPID=239069
+ExecStart={ path=/home/luis/projects/kanban-mes-mtg2/.venv/bin/python ; argv[]=/home/luis/projects/kanban-mes-mtg2/.venv/bin/python -m app.raw.worker ; ignore_errors=no ; start_time=[Tue 2026-09-22 23:48:35 CEST] ; stop_time=[n/a] ; pid=239069 ; code=(null) ; status=0/0 }
+ActiveState=active
+FragmentPath=/home/luis/.config/systemd/user/kanban-raw-worker.service

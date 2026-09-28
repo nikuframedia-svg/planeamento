@@ -1,0 +1,63 @@
+{
+  "OF265541": {
+    "reference": "CI1822A4001",
+    "lines": [
+      {
+        "plan_key": "mtg2_756950d5721977a8:plan:6700",
+        "required": 1.0,
+        "macro_remaining": 1.0,
+        "ocr_display_sum": 2.0,
+        "related": [
+          {
+            "id": 968,
+            "operation": "abocardar",
+            "quantity": 1.0,
+            "machine": "Abocardar",
+            "association": "technical_unique"
+          },
+          {
+            "id": 981,
+            "operation": "corte",
+            "quantity": 1.0,
+            "machine": "Serrote Disco pav 1",
+            "association": "technical_unique"
+          }
+        ]
+      }
+    ]
+  },
+  "OF264763": {
+    "reference": "CI5121A4030",
+    "lines": [
+      {
+        "plan_key": "mtg2_756950d5721977a8:plan:5580",
+        "required": 315.0,
+        "macro_remaining": 0.0,
+        "ocr_display_sum": 613.0,
+        "related": [
+          {
+            "id": 873,
+            "operation": "abocardar",
+            "quantity": 129.0,
+            "machine": "Abocardar",
+            "association": "technical_unique"
+          },
+          {
+            "id": 872,
+            "operation": "abocardar",
+            "quantity": 169.0,
+            "machine": "Abocardar",
+            "association": "technical_unique"
+          },
+          {
+            "id": 769,
+            "operation": "corte",
+            "quantity": 315.0,
+            "machine": "Serrote MEBA IS381 Pav 3",
+            "association": "technical_unique"
+          }
+        ]
+      }
+    ]
+  }
+}

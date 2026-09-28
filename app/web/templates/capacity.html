@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="pt">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>{{ title }} · RAW</title>
+    <link rel="stylesheet" href="/static/raw_workspace.css" />
+    <link rel="stylesheet" href="/static/capacity.css" />
+    <script src="/static/capacity.js" defer></script>
+  <link rel="stylesheet" href="/static/planning_typography.css">
+</head>
+  <body data-mode="{{ mode }}">
+    <header class="appbar">
+      <a href="/planeamento/raw" class="brand">RAW <span>Planeamento</span></a>
+      <nav>
+        <a id="raw-link" href="/planeamento/raw">Tabela</a
+        ><a
+          id="machines-link"
+          href="/planeamento/capacidades"
+          aria-current="{{ 'page' if mode == 'machines' else 'false' }}"
+          >Capacidades das máquinas</a
+        ><a
+          id="weekly-link"
+          href="/planeamento/disponibilidade"
+          aria-current="{{ 'page' if mode == 'weekly' else 'false' }}"
+          >Disponibilidade semanal</a
+        ><a href="/planeamento/gantt">Gantt · Perfis</a>
+      </nav>
+    </header>
+    <main class="capacity-page">
+      <div class="capacity-heading">
+        <div>
+          <h1>{{ title }}</h1>
+          <p id="subtitle">
+            Cada valor pode ser consultado nas peças e nas origens que o
+            suportam.
+          </p>
+        </div>
+        <div class="actions">
+          <button id="files">Fontes e versões</button
+          ><button id="configure">Definições · Capacidades e horas</button>
+        </div>
+      </div>
+      <form class="capacity-controls" id="filters">
+        <label
+          >Área<select id="area">
+            <option value="perfis">Perfis</option>
+            <option value="cantoneiras">Cantoneiras</option>
+          </select></label
+        >
+        <label
+          >Máquina<input
+            id="search"
+            type="search"
+            placeholder="Pesquisar máquina"
+        /></label>
+        {% if mode=='weekly' %}
+        <label
+          >Ano ISO<input
+            id="year"
+            type="number"
+            min="1900"
+            max="2200"
+            required /></label
+        ><label
+          >Semana ISO<input id="week" type="number" min="1" max="53" required
+        /></label>
+        <label class="check"
+          ><input id="unscheduled" type="checkbox" /> Por calendarizar / ano por
+          confirmar</label
+        >
+        {% endif %}
+        <button type="submit" class="primary">Consultar</button
+        ><button type="button" id="refresh">Atualizar</button>
+      </form>
+      <div class="capacity-context">
+        <span id="source-state">A preparar a consulta…</span
+        ><span id="period-state"></span
+        ><button id="references" {% if mode!="weekly" %}hidden{% endif %}>
+          Referências e cumprimento</button
+        ><button id="new-reference" {% if mode!="weekly" %}hidden{% endif %}>
+          Guardar referência desta semana
+        </button>
+      </div>
+      <p id="totals" class="capacity-totals"></p>
+      <p
+        class="capacity-notice"
+        id="notice"
+        role="status"
+        aria-live="polite"
+      ></p>
+      <div
+        class="capacity-grid"
+        tabindex="0"
+        aria-label="Capacidade por máquina"
+      >
+        <table id="matrix">
+          <thead></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <footer class="pager">
+        <span id="count"></span><span class="grow"></span
+        ><label
+          >Linhas
+          <select id="size">
+            <option>25</option>
+            <option>50</option>
+            <option selected>100</option>
+            <option>250</option>
+            <option>500</option>
+          </select></label
+        ><button id="prev" aria-label="Página anterior">←</button
+        ><span id="page"></span
+        ><button id="next" aria-label="Página seguinte">→</button>
+      </footer>
+      <p class="capacity-help">
+        Estimativa da macro, carga prevista e horas reais são valores
+        separados. A ausência de produção OCR não significa zero. A
+        disponibilidade só é confirmada com calendário e parâmetros válidos.
+      </p>
+    </main>
+    <dialog id="panel" aria-labelledby="panel-title">
+      <header>
+        <h2 id="panel-title"></h2>
+        <button id="close-panel" aria-label="Fechar">×</button>
+      </header>
+      <div id="panel-body"></div>
+    </dialog>
+    <dialog id="edit-panel" aria-labelledby="edit-title">
+      <header>
+        <h2 id="edit-title"></h2>
+        <button id="close-edit" aria-label="Fechar edição">×</button>
+      </header>
+      <form id="edit-form">
+        <div id="edit-fields" class="capacity-fields"></div>
+        <p id="edit-error" role="alert"></p>
+        <footer>
+          <button type="button" id="cancel-edit">Cancelar</button
+          ><button class="primary" id="save-config">Guardar</button>
+        </footer>
+      </form>
+    </dialog>
+  </body>
+</html>

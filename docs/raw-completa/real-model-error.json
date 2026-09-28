@@ -1,0 +1,23 @@
+{
+  "id": "e5130476-d78f-4474-bcb7-f2e563b26ea7",
+  "kind": "proposal",
+  "object_id": "ab276a95-ab2f-5975-81aa-d4596a975713",
+  "object_revision": 1,
+  "fingerprint": "e07238a3aff4824d0ae536d300d86e1e4e7adafe38c4eb0b76e9dd343eab423a",
+  "status": "failed",
+  "input": {
+    "area": "perfis",
+    "scope": {
+      "filters": []
+    },
+    "question": "Agrupa a quantidade por cortar por máquina e tipo de perfil nível 1. Mostra somas conhecidas e quantas linhas têm saldo desconhecido. Não somes OCR à macro."
+  },
+  "result": null,
+  "error": "Usa um campo entre [ ] ou uma função permitida.",
+  "model": null,
+  "worker": null,
+  "attempts": 0,
+  "heartbeat_at": null,
+  "created_at": "2026-09-22T17:03:46.341747+00:00",
+  "finished_at": "2026-09-22T17:04:16.444574+00:00"
+}

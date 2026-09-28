@@ -1,0 +1,52 @@
+{
+  "operations": 1167,
+  "cut_lines": 1139,
+  "state_counts": {
+    "blocked": 1130,
+    "complete": 37
+  },
+  "resource_count": 0,
+  "picking_cut_lines": 311,
+  "cut_date_lines": 1025,
+  "blocking_reasons": {
+    "Máquina física por confirmar.": 1104,
+    "Saldo da operação por confirmar.": 26,
+    "Saldo por confirmar.": 26
+  },
+  "source_references": {
+    "planning_generation": 733,
+    "capacity_generation": 736,
+    "configuration_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "sources_pending": false
+  },
+  "of264774": [
+    {
+      "key": "macro:mtg2_f6fb1ab305e92e22:plan:5589:corte",
+      "line": 34513,
+      "operation": "corte",
+      "remaining": 0.0,
+      "required": 840.0
+    },
+    {
+      "key": "macro:mtg2_f6fb1ab305e92e22:plan:5589:abocardar",
+      "line": 34513,
+      "operation": "abocardar",
+      "remaining": 0.0,
+      "required": 840.0
+    },
+    {
+      "key": "macro:mtg2_f6fb1ab305e92e22:plan:5590:corte",
+      "line": 34514,
+      "operation": "corte",
+      "remaining": 0.0,
+      "required": 840.0
+    },
+    {
+      "key": "macro:mtg2_f6fb1ab305e92e22:plan:5590:abocardar",
+      "line": 34514,
+      "operation": "abocardar",
+      "remaining": 20.0,
+      "required": 840.0
+    }
+  ]
+}

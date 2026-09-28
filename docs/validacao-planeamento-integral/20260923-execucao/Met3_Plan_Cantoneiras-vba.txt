@@ -1,0 +1,214 @@
+
+
+MODULE Module1.bas
+Attribute VB_Name = "Module1"
+Sub Registar()
+Attribute Registar.VB_ProcData.VB_Invoke_Func = " \n14"
+'
+' Registar Macro
+'
+
+'
+    
+    Columns("A:G").Select
+    Selection.EntireColumn.Hidden = True
+    Columns("I:K").Select
+    Selection.EntireColumn.Hidden = True
+    Columns("Q").Select
+    Selection.EntireColumn.Hidden = True
+    Columns("U:AF").Select
+    Selection.EntireColumn.Hidden = True
+    Columns("AI").Select
+    Selection.EntireColumn.Hidden = True
+    Columns("AL:AS").Select
+    Selection.EntireColumn.Hidden = True
+    Columns("AU:BH").Select
+    Selection.EntireColumn.Hidden = True
+    Range("Tabela4[[#Headers],[Ref.]]").Select
+   
+End Sub
+Sub Limpar()
+Attribute Limpar.VB_ProcData.VB_Invoke_Func = " \n14"
+'
+' Limpar Macro
+'
+
+'
+    Columns("A:BM").Select
+    Selection.EntireColumn.Hidden = False
+    
+End Sub
+
+
+MODULE EsteLivro.cls
+Attribute VB_Name = "EsteLivro"
+Attribute VB_Base = "0{00020819-0000-0000-C000-000000000046}"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = True
+Attribute VB_TemplateDerived = False
+Attribute VB_Customizable = True
+
+
+MODULE Folha6.cls
+Attribute VB_Name = "Folha6"
+Attribute VB_Base = "0{00020820-0000-0000-C000-000000000046}"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = True
+Attribute VB_TemplateDerived = False
+Attribute VB_Customizable = True
+
+
+MODULE Folha2.cls
+Attribute VB_Name = "Folha2"
+Attribute VB_Base = "0{00020820-0000-0000-C000-000000000046}"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = True
+Attribute VB_TemplateDerived = False
+Attribute VB_Customizable = True
+
+
+MODULE Folha11.cls
+Attribute VB_Name = "Folha11"
+Attribute VB_Base = "0{00020820-0000-0000-C000-000000000046}"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = True
+Attribute VB_TemplateDerived = False
+Attribute VB_Customizable = True
+
+
+MODULE Folha3.cls
+Attribute VB_Name = "Folha3"
+Attribute VB_Base = "0{00020820-0000-0000-C000-000000000046}"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = True
+Attribute VB_TemplateDerived = False
+Attribute VB_Customizable = True
+
+
+MODULE Folha1.cls
+Attribute VB_Name = "Folha1"
+Attribute VB_Base = "0{00020820-0000-0000-C000-000000000046}"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = True
+Attribute VB_TemplateDerived = False
+Attribute VB_Customizable = True
+
+
+MODULE Folha4.cls
+Attribute VB_Name = "Folha4"
+Attribute VB_Base = "0{00020820-0000-0000-C000-000000000046}"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = True
+Attribute VB_TemplateDerived = False
+Attribute VB_Customizable = True
+
+
+MODULE Folha5.cls
+Attribute VB_Name = "Folha5"
+Attribute VB_Base = "0{00020820-0000-0000-C000-000000000046}"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = True
+Attribute VB_TemplateDerived = False
+Attribute VB_Customizable = True
+
+
+MODULE Module2.bas
+Attribute VB_Name = "Module2"
+Sub Registo_Kanban()
+Attribute Registo_Kanban.VB_ProcData.VB_Invoke_Func = " \n14"
+'
+' Registo_Kanban Macro
+'
+
+'
+    Columns("A").Select
+    Selection.EntireColumn.Hidden = True
+    Columns("F:G").Select
+    Selection.EntireColumn.Hidden = True
+    Columns("I:L").Select
+    Selection.EntireColumn.Hidden = True
+    Columns("N").Select
+    Selection.EntireColumn.Hidden = True
+    Columns("Q").Select
+    Selection.EntireColumn.Hidden = True
+    Columns("U").Select
+    Selection.EntireColumn.Hidden = True
+    Columns("AB:AF").Select
+    Selection.EntireColumn.Hidden = True
+    Columns("AI:BI").Select
+    Selection.EntireColumn.Hidden = True
+    
+    Range("Tabela4[[#Headers],[Ref.]]").Select
+End Sub
+Sub Plan_Prod()
+Attribute Plan_Prod.VB_ProcData.VB_Invoke_Func = " \n14"
+'
+' Plan_Prod Macro
+'
+
+'
+    Columns("F:G").Select
+    Selection.EntireColumn.Hidden = True
+    Columns("J:L").Select
+    Selection.EntireColumn.Hidden = True
+    Columns("J:K").Select
+    Selection.EntireColumn.Hidden = True
+    Columns("Q").Select
+    Selection.EntireColumn.Hidden = True
+    Columns("S").Select
+    Selection.EntireColumn.Hidden = True
+    Columns("U:Z").Select
+    Selection.EntireColumn.Hidden = True
+    Columns("AB:AF").Select
+    Selection.EntireColumn.Hidden = True
+    Columns("AM:AP").Select
+    Selection.EntireColumn.Hidden = True
+    Columns("AR:AU").Select
+    Selection.EntireColumn.Hidden = True
+    Columns("AW:AX").Select
+    Selection.EntireColumn.Hidden = True
+    Columns("AZ:BF").Select
+    Selection.EntireColumn.Hidden = True
+    Range("Tabela4[[#Headers],[Ref.]]").Select
+   
+   
+    
+End Sub
+
+
+MODULE Folha7.cls
+Attribute VB_Name = "Folha7"
+Attribute VB_Base = "0{00020820-0000-0000-C000-000000000046}"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = True
+Attribute VB_TemplateDerived = False
+Attribute VB_Customizable = True
+
+
+MODULE Folha8.cls
+Attribute VB_Name = "Folha8"
+Attribute VB_Base = "0{00020820-0000-0000-C000-000000000046}"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = True
+Attribute VB_TemplateDerived = False
+Attribute VB_Customizable = True
