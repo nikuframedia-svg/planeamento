@@ -1,4 +1,5 @@
 """Stable, local-calendar forecast anchored to a successful preparation save."""
+from contextvars import ContextVar
 from datetime import timedelta
 from zoneinfo import ZoneInfo
 from . import planning
@@ -32,6 +33,12 @@ def register(conn, of):
     return read(number,conn)
 
 
+ANONYMOUS='Utilizador não identificado'
+# Set per request by the planning app's proxy-identity middleware (app/sector/auth.py), only when the
+# request carries the reverse proxy's secret. The MES never sets it, so its behaviour is unchanged.
+ACTOR=ContextVar('planning_actor',default=None)
+
+
 def human_actor(payload):
-    # No individual authentication is configured. A client name is not identity.
-    return 'Utilizador não identificado'
+    # A name sent by the client is not identity; only the authenticated proxy user counts.
+    return ACTOR.get() or ANONYMOUS

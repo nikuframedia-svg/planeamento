@@ -42,7 +42,9 @@ app.include_router(raw_workspace_router)
 # mas não tem o pacote sector: aí não se inclui nada; aqui, erros de importação continuam visíveis.
 if importlib.util.find_spec(__package__.rsplit(".", 1)[0] + ".sector") is not None:
     from ..sector.routes import router as sector_router
+    from ..sector.auth import ProxyIdentity
     app.include_router(sector_router)
+    app.add_middleware(ProxyIdentity)  # identidade dada pelo Caddy; sem a chave, tudo fica como antes
 
 
 @app.get("/")

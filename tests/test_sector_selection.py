@@ -14,7 +14,7 @@ from psycopg.rows import dict_row
 
 from app import planning
 from app.sector import portfolio, selection
-from tests.test_sector_portfolio import TODAY, data, raw
+from tests.test_sector_portfolio import data, raw
 
 ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location("migrate", ROOT / "scripts/migrate.py")
@@ -120,6 +120,18 @@ def test_proposal_leaves_out_blocking_signals_and_is_filterable():
     assert top["totals"]["states"]["proposta"] == pytest.approx(10.0) and top["totals"]["proposed_metres"] == pytest.approx(10.0)
     only = portfolio.groups("cantoneiras", "referencia", filters={"estado": "proposta"}, data=d)
     assert only["totals"]["ofs"] == 1
+
+
+def test_the_authenticated_user_is_recorded_as_author(conn):
+    from app import planning_registration as registration
+    token = registration.ACTOR.set("planeador")
+    try:
+        result = selection.apply(payload(), data=D, conn=conn)
+    finally:
+        registration.ACTOR.reset(token)
+    assert result["actor"] == "planeador"
+    assert {r["actor"] for r in conn.execute("SELECT actor FROM planning_mtg.sector_selection").fetchall()} == {"planeador"}
+    assert {r["actor"] for r in conn.execute("SELECT actor FROM planning_mtg.sector_decision_events").fetchall()} == {"planeador"}
 
 
 def test_web_save_checks_json_and_same_origin(monkeypatch):
