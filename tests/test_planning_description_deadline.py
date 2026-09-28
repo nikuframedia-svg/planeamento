@@ -64,7 +64,7 @@ def test_deadline_identifies_date_origin_day_and_each_operation(area,values,raw,
     assert result['values']['overdue'] is overdue
     for field in ('deadline_status','overdue'):
         inputs=result['rules'][field]['inputs']
-        assert inputs['deadline']=='2026-09-23' and inputs['deadline_source']=='expected_date'
+        assert inputs['deadline']=='2026-09-23' and inputs['deadline_source']=='Previsão de corte'
         assert inputs['local_date']=='2026-09-24'
         assert set(inputs['operation_balances'])=={r['operation'] for r in result['operations']}
         if overdue is None:assert result['rules']['overdue']['reason']
@@ -73,7 +73,7 @@ def test_deadline_identifies_date_origin_day_and_each_operation(area,values,raw,
 def test_delivery_fallback_and_same_day_are_not_overdue():
     result=calculate({'quantity_required':10,'abocardar':'-','delivery_date':'2026-09-24'},raw={'Ser.':0},today=date(2026,9,24))
     assert result['values']['overdue'] is False and result['values']['deadline_status']=='Dentro do prazo'
-    assert result['rules']['overdue']['inputs']['deadline_source']=='delivery_date'
+    assert result['rules']['overdue']['inputs']['deadline_source']=='Entrega'
     result=calculate({'quantity_required':10,'abocardar':'-','expected_date':'invalid','delivery_date':'2026-09-01'},raw={'Ser.':0},today=date(2026,9,24))
     assert result['values']['overdue'] is None and result['values']['deadline_status']=='Sem data'
 
