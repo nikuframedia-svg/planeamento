@@ -49,6 +49,8 @@ O código está em git, só localmente. Ficam fora do histórico:
 - não usar `git checkout`, `git restore` nem `git stash` sobre eles: esses comandos criam um ficheiro novo e cortam a ligação, e o MES ficaria com a versão antiga;
 - o código novo do planeamento vai para `app/sector/`, que o MES não importa.
 
+**A suíte completa de testes regrava imagens de prova em `docs/`.** Os testes `test_planning_gantt.py`, `test_planning_raw.py`, `test_raw_workspace.py` e `test_planning_picking_automatic.py` chamam scripts de browser que escrevem capturas nas pastas de validações antigas. Depois de correr a suíte, repor com `git restore -- docs/`; estas imagens não estão ligadas ao MES.
+
 ## Validação e reversão
 
 Os testes de escrita usam PostgreSQL descartável. A verificação de leitura do destino público está em `tests/planning_final_public_browser.cjs`. A prova específica desta separação compara fontes, projeções, decisões, históricos, documentos e processos antes/depois. As provas antigas em `docs/validacao-planeamento-integral/` continuam a documentar a candidata de origem; a separação não altera o motor de cálculo.
