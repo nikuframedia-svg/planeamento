@@ -8,7 +8,7 @@
 .controls label.grow { flex: 1 1 18rem; }
 .controls select, .controls input { font: inherit; font-size: .9rem; padding: .35rem .5rem; border: 1px solid #c9ced6; border-radius: 6px; background: #fff; }
 
-.totals { display: grid; grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); gap: .75rem; margin-bottom: 1rem; }
+.totals { display: grid; grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr)); gap: .75rem; margin-bottom: 1rem; }
 .totals .card { border: 1px solid #dfe3e8; border-radius: 8px; padding: .65rem .8rem; background: #fff; display: flex; flex-direction: column; gap: .15rem; }
 .totals .card span { font-size: .75rem; color: #5b6470; }
 .totals .card strong { font-size: 1.25rem; }
@@ -59,3 +59,14 @@ table.tree .toggle:focus-visible { outline: 2px solid #1f6feb; }
 .rules h2 { font-size: 1rem; }
 .empty, .error { padding: 1rem; margin: 0; }
 .error { color: #9d2a26; }
+
+/* Decisão («Planear») */
+.decide { min-width: 10.5rem; }
+.decide .state { display: block; font-size: .75rem; white-space: nowrap; }
+.state-selecionado { color: #1e6b3d; font-weight: 700; }
+.state-proposta { color: #7a5300; }
+.state-excluido { color: #6b7480; text-decoration: line-through; }
+.acts { display: flex; gap: .3rem; margin-top: .25rem; flex-wrap: wrap; }
+table.tree .act { padding: .15rem .45rem; font-size: .72rem; font-weight: 600; border-radius: 5px; border: 1px solid #a9bbc4; background: #fff; color: #10384b; }
+table.tree .act-plan { background: #10384b; color: #fff; border-color: #10384b; }
+table.tree .act:hover { filter: brightness(.95); }

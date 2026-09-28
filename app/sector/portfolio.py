@@ -59,6 +59,15 @@ SIGNALS = {
     "estado_cpis": "Estado CPIS por confirmar",
 }
 
+STATES = {
+    "proposta": "Proposta por decidir",
+    "selecionado": "Marcado para planear",
+    "excluido": "Excluído",
+    "por_decidir": "Sem decisão",
+}
+BLOCKING = ("anulada", "eletrofer", "validacao", "estado_cpis")  # sinais que tiram uma linha da proposta
+WHOLE = "*"  # decisão sobre a OF inteira
+
 _PRIORITY = re.compile(r"(\d+)\s*[ªº]?\s*PRIORIDADE", re.I)
 _CANCELLED = re.compile(r"anulad", re.I)
 _ELETROFER = re.compile(r"ELE[C]?TROFER", re.I)
@@ -182,8 +191,38 @@ def line_from_row(row: dict, today: date) -> dict | None:
         "cut_date": cut_date,
         "delivery_date": _day(v.get("delivery_date")),
         "window": window_of(cut_date, today),
-        "signals": signals_of(designation, row.get("notes"), row.get("observations"), row.get("galvanising_notes"), status),
+        "signals": (signals := signals_of(designation, row.get("notes"), row.get("observations"), row.get("galvanising_notes"), status)),
+        "proposal": proposal_of(signals, window_of(cut_date, today)),
     }
+
+
+def proposal_of(signals: dict, window: str) -> str | None:
+    """Proposed tier: A prioridade escrita, B atrasado, C até ao fim da semana ISO +2; None fora da proposta."""
+    if any(signals.get(name) for name in BLOCKING):
+        return None
+    if signals.get("prioridade") is not None:
+        return "A"
+    return {"atrasado": "B", "3_semanas": "C"}.get(window)
+
+
+def decision_of(line: dict, decisions: dict | None) -> str | None:
+    """A decisão mais específica ganha: (OF, referência) antes de (OF, '*')."""
+    if not decisions:
+        return None
+    specific = decisions.get((line["of"], line["reference"]))
+    if specific:
+        return specific["decision"]
+    whole = decisions.get((line["of"], WHOLE))
+    return whole["decision"] if whole else None
+
+
+def state_of(line: dict, decisions: dict | None) -> str:
+    decision = decision_of(line, decisions)
+    if decision == "selected":
+        return "selecionado"
+    if decision == "excluded":
+        return "excluido"
+    return "proposta" if line["proposal"] else "por_decidir"
 
 
 def load(sector: str, *, today: date | None = None, conn=None) -> dict:
@@ -234,8 +273,11 @@ def matches(line: dict, filters: dict) -> bool:
     return True
 
 
-def _summary(lines: list[dict]) -> dict:
+def _summary(lines: list[dict], decisions: dict | None = None) -> dict:
     metres = sum(x["metres"] for x in lines)
+    by_state = defaultdict(float)
+    for x in lines:
+        by_state[state_of(x, decisions)] += x["metres"]
     by_machine = defaultdict(float)
     windows = defaultdict(float)
     signals = defaultdict(int)
@@ -261,6 +303,8 @@ def _summary(lines: list[dict]) -> dict:
         "written_weeks": sorted({x["signals"]["entrega_escrita"] for x in lines if x["signals"]["entrega_escrita"]}),
         "customers": sorted({x["customer"] for x in lines})[:3],
         "designation": next((x["designation"] for x in lines if x["designation"]), ""),
+        "states": {k: round(by_state.get(k, 0.0), 1) for k in STATES},
+        "proposed_metres": round(sum(x["metres"] for x in lines if x["proposal"]), 1),
     }
 
 
@@ -271,7 +315,7 @@ def _urgency(group: dict):
 
 
 def groups(sector: str, view: str = "referencia", path: list[str] | None = None, filters: dict | None = None,
-           sort: str = "urgencia", limit: int = 500, *, data: dict | None = None) -> dict:
+           sort: str = "urgencia", limit: int = 500, *, data: dict | None = None, decisions: dict | None = None) -> dict:
     """Groups at the level below `path` for the chosen view, with totals."""
     if view not in VIEWS:
         raise planning.PlanningError("Vista inválida.")
@@ -280,25 +324,31 @@ def groups(sector: str, view: str = "referencia", path: list[str] | None = None,
     if len(path) >= len(levels):
         raise planning.PlanningError("Não há mais níveis nesta vista.")
     data = data or load(sector)
-    selected = [x for x in data["lines"] if matches(x, filters or {})]
+    filters = filters or {}
+    selected = [x for x in data["lines"] if matches(x, filters)]
+    if filters.get("estado"):
+        if filters["estado"] not in STATES:
+            raise planning.PlanningError("Estado inválido.")
+        selected = [x for x in selected if state_of(x, decisions) == filters["estado"]]
     for level, key in zip(levels, path):
         selected = [x for x in selected if x[level] == key]
     level = levels[len(path)]
     buckets = defaultdict(list)
     for x in selected:
         buckets[x[level]].append(x)
-    result = [{"key": k, **_summary(v)} for k, v in buckets.items()]
+    result = [{"key": k, **_summary(v, decisions)} for k, v in buckets.items()]
     result.sort(key=_urgency if sort == "urgencia" else (lambda g: (-g["metres"], g["key"])))
     return {
         "sector": sector, "sector_label": SECTORS[sector], "view": view, "levels": [{"id": l, "label": LEVELS[l]} for l in levels],
         "level": {"id": level, "label": LEVELS[level]}, "path": path, "has_children": len(path) + 1 < len(levels),
         "generation": data["generation"], "snapshot": data["snapshot"], "imported_at": data["imported_at"], "today": data["today"],
-        "totals": _summary(selected), "groups": result[:limit], "truncated": len(result) > limit, "group_count": len(result),
-        "windows": WINDOWS, "signals": SIGNALS,
+        "totals": _summary(selected, decisions), "groups": result[:limit], "truncated": len(result) > limit, "group_count": len(result),
+        "windows": WINDOWS, "signals": SIGNALS, "states": STATES,
         "rules": {
             "saldo": "Saldo = pedido − maior(contador do Excel, produção MES associada), nunca abaixo de zero; é um saldo em papel.",
             "modelo": "Referência mestre = código do modelo no início da referência (ED4T40 → ED4, DLT319 → DLT, 1283V053 → 1283).",
             "janela": "«Até ao fim da semana ISO +2» conta a partir de hoje; «Data Corte já passada» é anterior a hoje.",
+            "proposta": "Proposta = prioridade escrita, depois Data Corte já passada, depois até ao fim da semana ISO +2; ficam fora as linhas anuladas, da Eletrofer, à espera de validação ou com estado CPIS por confirmar. O corte pela capacidade das máquinas entra quando a capacidade estiver confirmada (semana 2).",
         },
     }
 

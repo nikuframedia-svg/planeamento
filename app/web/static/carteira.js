@@ -2,7 +2,7 @@
 // Carteira (plano de 28/09/2026): grupos por nível, abertos a pedido. Só leitura.
 (() => {
   const $ = (id) => document.getElementById(id);
-  const FILTERS = ['setor', 'vista', 'familia', 'janela', 'maquina', 'sinal', 'q', 'ordem'];
+  const FILTERS = ['setor', 'vista', 'familia', 'janela', 'maquina', 'sinal', 'estado', 'q', 'ordem'];
   const WINDOWS = ['atrasado', '3_semanas', 'mais_tarde', 'sem_data'];
   const SIGNAL_LABELS = {prioridade: null, anulada: 'Anulada', eletrofer: 'Eletrofer', validacao: 'Após validação', estado_cpis: 'CPIS por confirmar'};
   const number = new Intl.NumberFormat('pt-PT', {maximumFractionDigits: 0});
@@ -17,7 +17,7 @@
       else if (key === 'dataset') Object.assign(node.dataset, value);
       else node.setAttribute(key, value === true ? '' : value);
     }
-    for (const child of children.flat()) if (child !== null && child !== undefined) node.append(child);
+    for (const child of children.flat(Infinity)) if (child !== null && child !== undefined) node.append(child);
     return node;
   }
 
@@ -90,10 +90,65 @@
       el('td', {class: 'num'}, group.metres_without_machine ? number.format(group.metres_without_machine) : '—'),
       el('td', {}, day(group.earliest_cut_date)),
       el('td', {}, windowBar(group.windows, group.metres)),
-      el('td', {class: 'machines'}, group.machines.map((m) => el('span', {}, `${m.machine} · ${number.format(m.metres)} m`))),
+      el('td', {class: 'machines'}, group.machines.slice(0, 3).map((m) => el('span', {}, `${m.machine} · ${number.format(m.metres)} m`))),
       el('td', {class: 'signals'}, signalBadges(group)));
+    tr.children[0].after(el('td', {class: 'decide'}, decisionCell(group, key, tr)));
     if (data.has_children) toggle.addEventListener('click', () => expand(tr, key, depth));
     return tr;
+  }
+
+  function decisionCell(group, path, tr) {
+    const s = group.states || {};
+    const lines = [];
+    if (s.selecionado) lines.push(el('span', {class: 'state state-selecionado'}, `Marcado · ${number.format(s.selecionado)} m`));
+    if (s.proposta) lines.push(el('span', {class: 'state state-proposta'}, `Proposta · ${number.format(s.proposta)} m`));
+    if (s.excluido) lines.push(el('span', {class: 'state state-excluido'}, `Excluído · ${number.format(s.excluido)} m`));
+    const plan = el('button', {type: 'button', class: 'act act-plan', title: 'Marcar todo o trabalho deste grupo para planear'}, 'Planear');
+    const skip = el('button', {type: 'button', class: 'act act-skip', title: 'Excluir este grupo do planeamento, com motivo'}, 'Excluir…');
+    const clear = el('button', {type: 'button', class: 'act act-clear', title: 'Tirar a decisão deste grupo'}, 'Limpar');
+    plan.addEventListener('click', () => decide(tr, path, 'selecionar'));
+    skip.addEventListener('click', () => {
+      const reason = prompt(`Motivo para excluir ${path[path.length - 1]} do planeamento:`);
+      if (reason && reason.trim()) decide(tr, path, 'excluir', reason.trim());
+    });
+    clear.addEventListener('click', () => decide(tr, path, 'limpar'));
+    const actions = el('span', {class: 'acts'}, plan, skip, (s.selecionado || s.excluido) ? clear : null);
+    return [lines, actions];
+  }
+
+  async function decide(tr, path, action, reason) {
+    const buttons = tr.querySelectorAll('.act');
+    buttons.forEach((b) => { b.disabled = true; });
+    try {
+      const s = state();
+      const filtros = {familia: s.familia, janela: s.janela, maquina: s.maquina, sinal: s.sinal, estado: s.estado, q: s.q};
+      const response = await fetch('/planeamento/api/carteira/selecao', {
+        method: 'POST', headers: {'Content-Type': 'application/json', Accept: 'application/json'},
+        body: JSON.stringify({setor: s.setor, vista: s.vista, caminho: path, filtros, acao: action, motivo: reason || null, request_id: crypto.randomUUID()}),
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(body.error || `Erro ${response.status}`);
+      await refresh(tr, path);
+    } catch (error) {
+      showError(error);
+      buttons.forEach((b) => { b.disabled = false; });
+    }
+  }
+
+  async function refresh(tr, path) {
+    // Atualiza a linha decidida e os totais; os subníveis abertos fecham-se para não ficarem desatualizados.
+    const button = tr.querySelector('.toggle');
+    if (button && button.getAttribute('aria-expanded') === 'true') {
+      collapse(tr);
+      button.setAttribute('aria-expanded', 'false');
+      button.textContent = '▸';
+    }
+    const parent = await api('/planeamento/api/carteira', query({caminho: path.slice(0, -1)}));
+    const group = parent.groups.find((g) => g.key === path[path.length - 1]);
+    if (group) tr.replaceWith(row(group, parent, path.slice(0, -1), Number(tr.dataset.depth)));
+    else tr.remove();
+    const top = await api('/planeamento/api/carteira', query());
+    totals(top);
   }
 
   function collapse(tr) {
@@ -124,7 +179,7 @@
         anchor = child;
       }
       if (data.truncated) anchor.after(el('tr', {class: `level-${depth + 1} more`, dataset: {path: JSON.stringify([...path, '…'])}},
-        el('td', {colspan: '9'}, `Mostram-se ${data.groups.length} de ${data.group_count}. Usa os filtros para ver os restantes.`)));
+        el('td', {colspan: '10'}, `Mostram-se ${data.groups.length} de ${data.group_count}. Usa os filtros para ver os restantes.`)));
       button.setAttribute('aria-expanded', 'true');
       button.textContent = '▾';
     } catch (error) {
@@ -148,7 +203,9 @@
       card('Sem máquina', `${km.format(t.metres_without_machine / 1000)} km`, t.metres ? `${Math.round((100 * t.metres_without_machine) / t.metres)}% do total` : ''),
       card('Data Corte já passada', `${km.format(t.windows.atrasado / 1000)} km`),
       card('Até ao fim da semana ISO +2', `${km.format(t.windows['3_semanas'] / 1000)} km`),
-      card('Sem Data Corte', `${km.format(t.windows.sem_data / 1000)} km`));
+      card('Sem Data Corte', `${km.format(t.windows.sem_data / 1000)} km`),
+      card('Marcado para planear', `${km.format((t.states.selecionado || 0) / 1000)} km`, 'Decidido na Carteira'),
+      card('Proposta por decidir', `${km.format((t.states.proposta || 0) / 1000)} km`, 'Prioridade, atrasado e até à semana ISO +2'));
     $('source').textContent = `Excel importado a ${new Date(data.imported_at).toLocaleString('pt-PT')} · importação ${data.snapshot} · prazos contados a ${day(data.today)}`;
     $('level-title').textContent = data.level.label;
     $('rule-list').replaceChildren(...Object.values(data.rules).map((text) => el('li', {}, text)));

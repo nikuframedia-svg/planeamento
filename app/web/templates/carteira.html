@@ -51,6 +51,9 @@
       <label>Sinal
         <select id="sinal"><option value="">Todos</option>{% for key, label in signals.items() %}<option value="{{ key }}">{{ label }}</option>{% endfor %}</select>
       </label>
+      <label>Estado
+        <select id="estado"><option value="">Todos</option>{% for key, label in states.items() %}<option value="{{ key }}">{{ label }}</option>{% endfor %}</select>
+      </label>
       <label class="grow">Pesquisar
         <input id="q" type="search" placeholder="OF, OV, referência, modelo, cliente ou obra" autocomplete="off">
       </label>
@@ -66,6 +69,7 @@
         <thead>
           <tr>
             <th scope="col" id="level-title">Grupo</th>
+            <th scope="col">Planear</th>
             <th scope="col" class="num">Metros</th>
             <th scope="col" class="num">Peças</th>
             <th scope="col" class="num">OF</th>

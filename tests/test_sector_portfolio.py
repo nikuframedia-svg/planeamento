@@ -87,7 +87,9 @@ def test_only_mtg3_for_now():
 @pytest.fixture()
 def client(monkeypatch):
     from app.web.planning_app import app
+    from app.sector import selection
     monkeypatch.setattr(portfolio, "load", lambda sector, **kw: data(raw("OF1", "DLT319", 10, 1000)))
+    monkeypatch.setattr(selection, "current", lambda sector, conn=None: {})
     return TestClient(app)
 
 
