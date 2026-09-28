@@ -1,0 +1,7 @@
+[Unit]
+Description=Cópia diária das decisões do planeamento (planning_mtg, sem caches)
+Documentation=file:/home/luis/projects/planeamento/scripts/backup_decisoes_planeamento.sh
+
+[Service]
+Type=oneshot
+ExecStart=/home/luis/projects/planeamento/scripts/backup_decisoes_planeamento.sh
