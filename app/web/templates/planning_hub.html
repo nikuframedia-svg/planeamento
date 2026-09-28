@@ -13,6 +13,7 @@
     <a class="wordmark" href="/planeamento"><span>METALOGALVA</span><small>Planeamento</small></a>
     <nav aria-label="Entrada do planeamento">
       <a href="/planeamento" aria-current="page">Ordens de fabrico</a>
+      {% if selection_enabled is defined and selection_enabled() %}<a href="/planeamento/carteira">Carteira</a>{% endif %}
       {% if raw_enabled() %}<a href="/planeamento/raw">Vista RAW</a>{% endif %}
       <a href="/planeamento/dossies">Carregar PDF</a>
       <a href="/planeamento/manual">Preencher manualmente</a><details class="consult-menu"><summary>Consultas</summary><a href="/planeamento/ocr-original">OCR original</a></details>
