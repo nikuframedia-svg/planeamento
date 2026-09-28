@@ -345,7 +345,19 @@ Cada passo diz: **o que é**, **porquê**, **o que vais ver** e **como se sabe q
 
 - 28/09/2026: plano aprovado. Guardadas a análise, as provas e os programas (só leitura), com um índice em `pedido-2026-09-28/README.md`.
 - 28/09/2026, 07:28 UTC: o planeador gravou versões novas dos dois Excel. As provas usam as de 25/09. A semana 1 começa com as mais recentes.
-- Próximo passo: quando disseres "avança com a semana 1", começo pelos passos 1 a 3 (git, cópias de segurança, login), pedindo autorização antes de cada ação sensível (por exemplo `sudo` e o Caddy).
+- 28/09/2026, semana 1 em curso (registos `9ad3704` a `6c96735`):
+  - **Passo 1:** código no git.
+  - **Passo 2:** cópia diária das decisões às 02:30, com o restauro testado; registo de migrações, com a linha de base 010–038 e a 039.
+  - **Passo 4:** "Setor" em vez de "Área" nos ecrãs principais.
+  - **Passo 5:** Carteira de MTG3 por referência, em `/planeamento/carteira`.
+  - **Passo 6:** "Planear" / "Excluir" / "Limpar", com o histórico só de acrescentar; migração 040 aplicada.
+  - **Passo 3:** parte da aplicação pronta e desligada.
+  - Os 8 testes de prazo desatualizados foram corrigidos.
+- Falta para fechar a semana 1:
+  - registo DNS `planeamento.nikufra.ai`;
+  - lista de utilizadores;
+  - autorização para o bloco do Caddy (`deploy/caddy-planeamento.caddyfile`) e para desligar o túnel temporário;
+  - reunião com o planeador.
 
 ---
 
