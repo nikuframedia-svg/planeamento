@@ -1,0 +1,27 @@
+# Bloco a acrescentar a ~/stacks/caddy/Caddyfile (Passo 3 do plano de 28/09/2026). Sem segredos aqui.
+#
+# Antes de o aplicar:
+#   1. Registo DNS A planeamento.nikufra.ai -> 188.40.230.28 (Squarespace).
+#   2. Uma palavra-passe por pessoa; o hash de cada uma:
+#        docker exec caddy caddy hash-password --plaintext '<palavra-passe>'
+#   3. Uma chave aleatória partilhada, igual à de MES_PLANNING_PROXY_KEY no serviço de planeamento
+#      (~/.config/systemd/user/kanban-planning.service.d/auth.conf, chmod 600). O Caddyfile passa a chmod 600.
+# Aplicar com `docker exec caddy caddy reload --config /etc/caddy/Caddyfile` (sem cortar os outros sites).
+# Só depois de o endereço funcionar: desligar o túnel temporário (kanban-planning-tunnel.service).
+
+planeamento.nikufra.ai {
+    import ocr_security_headers
+
+    basic_auth {
+        # <utilizador> <hash bcrypt>
+    }
+
+    # Nunca confiar nestes cabeçalhos se vierem do browser.
+    request_header -X-Auth-User
+    request_header -X-Planning-Proxy-Key
+
+    reverse_proxy 127.0.0.1:8113 {
+        header_up X-Auth-User {http.auth.user.id}
+        header_up X-Planning-Proxy-Key <CHAVE>
+    }
+}
