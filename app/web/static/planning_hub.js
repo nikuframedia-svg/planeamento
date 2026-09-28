@@ -31,7 +31,7 @@
     if((order.status_values||[]).length>1)identity.append(text('small',order.status_values.join(' / '),'conflict'));
     for(const unknown of order.population_unknown_states||[])identity.append(text('small','Estado desconhecido ('+unknown.source+'): '+unknown.value+' · não interpretado como fechado','conflict'));
     const customer=document.createElement('td');customer.append(text('strong',order.customer_name||'Cliente não disponível'),text('small',order.observations||'Sem descrição no CPIS'));
-    const area=document.createElement('td'),planLines=Object.values(order.plan||{}).reduce((sum,value)=>sum+Number(value||0),0);area.append(badge(({perfis:'Perfis',cantoneiras:'Cantoneiras',ambas:'Ambas',por_identificar:'Área por identificar'})[order.area]||order.area,order.area==='por_identificar'?'review':''),text('small',planLines?planLines+' peça(s) no plano':'Sem linha no plano'));
+    const area=document.createElement('td'),planLines=Object.values(order.plan||{}).reduce((sum,value)=>sum+Number(value||0),0);area.append(badge(({perfis:'MTG2 Perfis',cantoneiras:'MTG3 Cantoneiras',ambas:'MTG2 e MTG3',por_identificar:'Setor por identificar'})[order.area]||order.area,order.area==='por_identificar'?'review':''),text('small',planLines?planLines+' peça(s) no plano':'Sem linha no plano'));
     const prep=document.createElement('td');const preparation=order.preparation;
     prep.append(preparation?badge((preparation.statuses||[]).includes('ready')?'Preparada':'Rascunho',(preparation.statuses||[]).includes('ready')?'ready':'review'):badge('Sem ficha de preparação'));if(order.documents)prep.append(text('small',order.documents+' PDF associado(s)'));
     const execution=document.createElement('td');execution.append(order.execution_complete?badge('Plano fechado na macro','ready'):order.production_records?badge(order.production_records+' registos OCR','review'):badge('Sem registos OCR encontrados','review'));if(order.production_records&&order.execution_complete)execution.append(text('small',order.production_records+' registo(s) OCR'));if(order.conferences)execution.append(text('small',order.conferences+' conferência(s)'));
@@ -55,7 +55,7 @@
   }
   function fact(label,value,conflict=false){const el=text('div',null,'fact'+(conflict?' conflict':''));el.append(text('span',label),text('strong',value||'Não disponível'));return el}
   function planItem(line,detail){
-    const box=text('article',null,'item'),top=text('div',null,'item-top');top.append(text('strong',line.component_ref||'Sem referência'),badge(line.source_app==='kanban-mes-mtg2'?'Perfis':'Cantoneiras'));
+    const box=text('article',null,'item'),top=text('div',null,'item-top');top.append(text('strong',line.component_ref||'Sem referência'),badge(line.source_app==='kanban-mes-mtg2'?'MTG2 Perfis':'MTG3 Cantoneiras'));
     box.append(top,text('p',[line.material_type,line.profile_type,line.length_mm?fmt(line.length_mm)+' mm':null].filter(Boolean).join(' · ')||'Dados técnicos por preencher'));
     box.append(text('p','Necessário: '+(line.quantity_planned==null?'Por confirmar':fmt(line.quantity_planned)+' un.')+(line.cutting_machine?' · '+line.cutting_machine:'')));
     for(const operation of line.operations||[]){

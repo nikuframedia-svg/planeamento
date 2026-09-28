@@ -22,8 +22,8 @@ from .config import settings
 from .dossiers.models import order_number
 
 AREAS = {
-    "perfis": ("ds-met2-perfis", "Perfis · MTG2"),
-    "cantoneiras": ("ds-2638099daddc474e", "Cantoneiras · MTG3"),
+    "perfis": ("ds-met2-perfis", "MTG2 Perfis"),
+    "cantoneiras": ("ds-2638099daddc474e", "MTG3 Cantoneiras"),
 }
 OPEN_STATES = ("Em Aberto", "Em Produção")
 
