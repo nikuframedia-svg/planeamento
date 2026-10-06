@@ -71,6 +71,7 @@ def rebalance(c, area, data, lanes, *, study, by_id, limit=MAX_PROPOSALS):
     names = throughput.aliases_to_names(by_id)
     from ..gantt import research
     rates = estimates.area_rates(research.load(c)["metadata"]) if research.enabled() else {}
+    extra = data.get("_estimate_inputs") or {}  # tabela de velocidades e margem do setor, as mesmas da Carteira
     cap = {rid: lane["weekly_capacity_hours"] for (a, rid), lane in lanes.items()
            if a == area and lane["weekly_capacity_hours"] and lane["role"] in ("maquina", "posto_composto")}
     load = {rid: lanes[(area, rid)]["load_hours"] for rid in cap}
@@ -117,7 +118,8 @@ def rebalance(c, area, data, lanes, *, study, by_id, limit=MAX_PROPOSALS):
                     if (key, dst) not in hours_cache:
                         total = 0.0
                         for f in items:
-                            h, _ = estimates.estimate(f, by_id.get(dst), names.get(dst, set()), study, rates) if study else (None, None)
+                            h, _ = estimates.estimate(f, by_id.get(dst), names.get(dst, set()), study, rates,
+                                                      table=extra.get("table"), timing=extra.get("timing")) if study else (None, None)
                             total += h if h is not None else f["load_hours"]
                         hours_cache[(key, dst)] = total
                     hours_to = hours_cache[(key, dst)]

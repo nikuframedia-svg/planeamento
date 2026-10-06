@@ -29,9 +29,14 @@
       <h2>Máquinas</h2>
       <p class="muted">Turnos padrão = turnos de uma semana normal (as semanas mudadas em «Carga e turnos» ficam como estão). A ficha de capacidades vem do ficheiro da fábrica; podes corrigir o intervalo aqui.</p>
       <div class="scroll"><table class="grid">
-        <thead><tr><th scope="col">Máquina</th><th scope="col">Processo</th><th scope="col">Confirmada</th><th scope="col">Turnos padrão</th><th scope="col">Próximas semanas</th><th scope="col">Ficha de capacidades (perfil mín. – máx.)</th><th scope="col">Tempos</th></tr></thead>
+        <thead><tr><th scope="col">Máquina</th><th scope="col">Processo</th><th scope="col">Confirmada</th><th scope="col">Turnos padrão</th><th scope="col">Próximas semanas</th><th scope="col">Ficha de capacidades (perfil mín. – máx.)</th><th scope="col" id="rates-head">Tempos</th></tr></thead>
         <tbody id="machines"></tbody>
       </table></div>
+    </section>
+
+    <section class="block" id="speeds-block" hidden>
+      <h2>Velocidades das máquinas</h2>
+      <div id="speeds"></div>
     </section>
 
     <section class="block">

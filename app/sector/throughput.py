@@ -163,6 +163,20 @@ def speeds(rows):
             {k: {"value": weighted_median(c), "lines": sum(c.values())} for k, c in by_profile.items()})
 
 
+RECENT_WEEKS = 8
+
+
+def recent_speeds(rows, *, until: date, weeks: int = RECENT_WEEKS):
+    """Velocidade do Excel (m/h) em vigor por máquina (moda das linhas com a Data Corte mais recente).
+
+    A regra está em `productivity.recent_excel_speeds`, a mesma que o motor de capacidade e o Gantt usam, para a
+    Carteira, a Carga, o motor e o Gantt darem a mesma velocidade. Devolve ({máquina}, {(máquina, perfil)},
+    {(máquina, operação)}); só a primeira entra nas horas (a velocidade não depende do perfil nem da operação).
+    """
+    from ..raw.productivity import recent_excel_speeds
+    return recent_excel_speeds(rows, until=until, weeks=weeks)
+
+
 def mes_rates(events):
     """Hours and metres declared per MES sheet (machine × day); one value per sheet, never per row."""
     sheets = {}
@@ -215,10 +229,12 @@ def load(conn=None) -> dict:
         until = date.fromisoformat(str(loaded)[:10]) if loaded else date.today()
         weekly = weekly_mtg3(rows, until=until)
         by_machine, by_profile = speeds(rows)
+        recent, recent_profile, recent_operation = recent_speeds(rows, until=until)
         events = research.load(c)["metadata"]["events"] if research.enabled() else []
     result = {"source": {"snapshot": snap["snapshot_id"], "loaded_at": str(loaded), "research_version": version},
               "weekly": weekly, "summary": summarise(weekly["series"]), "speeds": by_machine,
-              "profile_speeds": by_profile, "mes": mes_rates(events)}
+              "profile_speeds": by_profile, "recent_speeds": recent, "recent_profile_speeds": recent_profile,
+              "recent_operation_speeds": recent_operation, "mes": mes_rates(events)}
     with _lock:
         _cache["study"] = (key, result)
     return result

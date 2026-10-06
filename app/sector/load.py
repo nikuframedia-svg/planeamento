@@ -381,27 +381,41 @@ def estimate_calculation(fact: dict) -> dict | None:
     """Cálculo das horas estimadas da Carteira (estimates.estimate) para o «Ver cálculo» (auditoria 06/10, CARGA-OPS-01).
 
     Quando as horas da linha são estimadas, a prova do motor de capacidade não as explica: a conta mostrada tem de
-    ser a da estimativa — MTG3 metros do saldo ÷ velocidade do Excel; MTG2 saldo × área unitária ÷ taxa mm²/h.
-    A taxa é a que deu estas horas (volume ÷ horas); a base (mediana, perfil, linhas) vem da origem guardada.
+    ser a da estimativa, com a origem verdadeira da taxa (plano de 06/10, parte 3): taxa confirmada da tabela de
+    velocidades, linha da tabela com origem Excel, velocidade mais recente do Excel (MTG3) ou taxa mm²/h da folha
+    CapacidadeMáquinas (MTG2). A taxa mostrada é a da tabela/Excel; o tempo por peça e a margem aparecem à parte,
+    para a conta bater certo. Sem o detalhe guardado (Carteira antiga), a taxa é volume ÷ horas.
     """
     hours, remaining = fact.get("load_hours"), fact.get("remaining")
     if fact.get("load_basis") != "estimada" or not hours or remaining is None:
         return None
+    detail = fact.get("load_estimate") or {}
     if fact.get("area") == "cantoneiras":
         length = fact.get("length_mm")
         if not length:
             return None
-        volume, unit, rate_unit = remaining * length / 1000, "m", "m/h"
-        formula = "metros em falta (peças em falta × comprimento ÷ 1000) ÷ velocidade do Excel"
+        volume, unit, rate_unit, what = remaining * length / 1000, "m", "m/h", "metros em falta (peças em falta × comprimento ÷ 1000)"
     else:
         section = fact.get("section_unit")
         if not section:
             return None
-        volume, unit, rate_unit = remaining * section, "mm²", "mm²/h"
-        formula = "peças em falta × área de corte unitária ÷ taxa mm²/h do Excel (sem fator ×3)"
-    return {"formula": formula, "remaining": remaining, "length_mm": fact.get("length_mm"), "section_unit": fact.get("section_unit"),
-            "volume": round(volume, 3), "volume_unit": unit, "rate": round(volume / hours, 3), "rate_unit": rate_unit,
-            "hours": round(hours, 4), "basis": fact.get("load_origin")}
+        volume, unit, rate_unit, what = remaining * section, "mm²", "mm²/h", "peças em falta × área de corte unitária"
+    origin = detail.get("origin") or ("velocidade do Excel" if fact.get("area") == "cantoneiras" else "taxa mm²/h do Excel (sem fator ×3)")
+    rate = detail.get("rate") if detail.get("rate") else volume / hours
+    piece_seconds, margin = detail.get("piece_seconds") or 0, detail.get("margin_pct") or 0
+    formula = f"{what} ÷ {origin}"
+    if piece_seconds:
+        formula += f" + peças em falta × {piece_seconds:g} s por peça ÷ 3600"
+    if margin:
+        formula = f"({formula}) × (1 + {margin:g} % de margem)"
+    out = {"formula": formula, "remaining": remaining, "length_mm": fact.get("length_mm"), "section_unit": fact.get("section_unit"),
+           "volume": round(volume, 3), "volume_unit": unit, "rate": round(rate, 3), "rate_unit": rate_unit,
+           "hours": round(hours, 4), "basis": fact.get("load_origin"), "rate_origin": origin}
+    if piece_seconds or margin:
+        out.update(piece_seconds=piece_seconds, rate_piece_seconds=detail.get("rate_piece_seconds") or 0,
+                   fixed_piece_seconds=detail.get("fixed_piece_seconds") or 0, margin_pct=margin,
+                   volume_hours=round(volume / rate, 4), pieces_hours=round(remaining * piece_seconds / 3600, 4))
+    return out
 
 
 def operations(sector: str, machine: str, year: int, week: int, of: str, *, today: date | None = None) -> dict:

@@ -176,7 +176,7 @@ def _history_note(history):
     return [found['reason']] if str(found.get('reason') or '').startswith('Amostra') else []
 
 
-def _duration(row, candidate, resource, configs, templates, started_at, context=None, *, rate_day=None):
+def _duration(row, candidate, resource, configs, templates, started_at, context=None, *, rate_day=None, timing=None):
     from .inputs import _option
     q = balance(row)['planning_remaining']
     if q is None or q <= 0:
@@ -186,20 +186,37 @@ def _duration(row, candidate, resource, configs, templates, started_at, context=
     section = section_unit(row)
     values = {'quantity_to_plan':q, 'length_mm':row.get('comprimento_mm'), 'section_unit':section,
               'profile':row.get('perfil'), 'grade':row.get('qualidade'), 'material_type':row.get('material_type')}
-    names = {op, op.removeprefix('CPIS:'), 'corte' if row['fase'] == 'principal' else op,
-             'abocardar' if op == 'LOCAL:ABOCARDAR' else op}
-    rates = [c['definition'] for c in configs if c['kind'] == 'rate' and c['definition'].get('confirmed')
-             and str(c['definition'].get('resource_id')) == resource['id']
-             and c['definition'].get('area') == area and str(c['definition'].get('operation')) in names
-             and all(not c['definition'].get(k) or c['definition'][k] == row.get(column)
-                     for k, column in [('profile', 'perfil'), ('material_type', 'material_type'), ('grade','qualidade')])]
+    from ..raw.productivity import match_rate, operation_names, timed
+    names = operation_names(op, row['fase'] == 'principal', area)
+    table = [c for c in configs if c['kind'] == 'rate']
+    # A mesma escolha da Carteira, da Carga e do motor (productivity.match_rate): tabela de velocidades com
+    # intervalo de espessura/área e «imediatamente superior», vigência pela data de hoje.
     day = rate_day or str(started_at)[:10]
-    rates = [r for r in rates if (not r.get('valid_from') or r['valid_from'] <= day) and (not r.get('valid_until') or r['valid_until'] >= day)]
-    source = 'Manual'
-    if len(rates) > 1:
+    found = match_rate(table, resource['id'], area, names, {**values, 'grade': row.get('qualidade')}, day, tier='Confirmada')
+    if found and found.get('conflict'):
         candidate['duration_reason'] = 'Taxas confirmadas sobrepostas.'; return None
+    rates = [found['rate']] if found else []
+    source = 'Manual'
     history = None
     documentary, note = _documentary(row, candidate, templates)
+    if area == 'cantoneiras' and context is not None and (documentary or row['fase'] == 'principal'):
+        # Velocidade do Excel em vigor = a mais recente da máquina (a mesma da Carteira, da Carga e do motor),
+        # não a Mt\h de cada linha nem a mediana de velocidades antigas; na operação principal vale também numa
+        # máquina sem velocidade escrita para este perfil/operação (como a Carteira, estimates.speed_for).
+        from ..raw.productivity import current_excel
+        recent = getattr(context, 'recent_excel', None) or {}
+        machine = next((n for n in [candidate.get('resource_code')] + [a['name'] for a in resource.get('aliases', []) if a.get('area') == area]
+                        if n and str(n).strip() in recent), None)
+        if machine:
+            base = documentary[0] if documentary else {'method': 'metres_hour', 'value': None, 'unit': 'm/h', 'setup_minutes': 0}
+            documentary, note = [current_excel(base, recent, machine)], None
+    excel_table = None if rates else match_rate(table, resource['id'], area, names, {**values, 'grade': row.get('qualidade')}, day, tier='Excel')
+    table_conflict = bool(excel_table and excel_table.get('conflict'))
+    if table_conflict:
+        excel_table = None  # só bloqueia se o histórico não valer (o histórico ganha às linhas com origem Excel)
+    if excel_table:
+        # Linha da tabela com origem Excel (semente): vale como a velocidade do Excel, abaixo do histórico.
+        documentary, note = [{**excel_table['rate'], 'source': 'Excel'}], None
     if not rates and context and resource['confirmed']:
         alias = next((a['name'] for a in resource.get('aliases',[]) if a['area']==area and (area,a['name']) in context.aliases),None)
         historical_op = ('corte' if row['fase']=='principal' else 'abocardar') if area=='perfis' and op.startswith('LOCAL:') else candidate['proposed_code'].removeprefix('CPIS:')
@@ -212,6 +229,8 @@ def _duration(row, candidate, resource, configs, templates, started_at, context=
                                    as_of=min(date.fromisoformat(day),today))
             if history.get('source')=='Histórico':
                 rates = [history['rate']]; source = 'Histórico'
+    if not rates and table_conflict:
+        candidate['duration_reason'] = 'Taxas da tabela sobrepostas.'; return None
     if not rates:
         rates = documentary
         if note:
@@ -222,7 +241,9 @@ def _duration(row, candidate, resource, configs, templates, started_at, context=
     rate = rates[0]
     if row['fase'] == 'principal' and row['setor'] == 'MTG2' and op != 'LOCAL:PRINCIPAL' and rate['method'] == 'area_hour':
         candidate['duration_reason'] = 'Taxa de corte não abrange toda a rota.'; return None
-    hours, reason = estimate(values, rate, op)
+    if timing is None:
+        timing = (getattr(context, 'timing', None) or {}).get(area) if context else None
+    hours, reason = estimate(values, timed(rate, source, timing), op)
     if reason:
         candidate['duration_reason'] = reason; return None
     result = _option(resource['id'], {'hours': hours, 'quantity': q, 'source': source, 'rate': rate}, source, started_at)
@@ -277,6 +298,14 @@ def machine_choice_digest(c):
     return {'machine_choice_digest': needs.digest([ctx['digest'] for ctx in contexts])}
 
 
+def sector_timing_digest(c):
+    """Margem e tempo fixo por peça das Definições (mudam todas as durações); ausente enquanto forem 0, para as
+    referências dos cenários existentes ficarem iguais."""
+    from ..raw.productivity import sector_timing
+    timing = sector_timing(c)
+    return {'sector_timing_digest': needs.digest(timing)} if any(v for t in timing.values() for v in t.values()) else {}
+
+
 def references(c):
     h = research.head(c)
     configs = c.execute("SELECT id,kind,revision,definition,name,area FROM planning_mtg.raw_objects WHERE kind=ANY(%s) AND NOT archived ORDER BY id", (['resource', 'calendar', 'rate', 'worked_hours'],)).fetchall()
@@ -301,7 +330,7 @@ def references(c):
     return {'schema_version': 2, 'provider': research.PROVIDER, 'research_version': h['version_id'],
             'configuration_digest': needs.digest(needs.serial(configs)),
             'selection_digest': needs.digest(needs.serial(selection)), 'application_generations': generations,
-            **member_selection_digest(c), **machine_choice_digest(c),
+            **member_selection_digest(c), **machine_choice_digest(c), **sector_timing_digest(c),
             'cpis_tables_version':cp['version_id'] if cp else None,'sources_pending': pending,
             'priority_digest': priority.digest(c), 'machine_decisions_digest': assignments.digest(c)}
 
@@ -428,9 +457,9 @@ def capture(c, definition, started_at, *, expected_references=None):
                 continue
             if resource['mapping_conflict']:
                 candidate.update(eligibility='excluded', reasons=['Correspondência de recurso ambígua.']); continue
-            days = {start.date().isoformat()} | {cfg['definition']['valid_from'] for cfg in configs if cfg['kind']=='rate'
-                and str(cfg['definition'].get('resource_id'))==resource['id'] and cfg['definition'].get('valid_from')
-                and start.date().isoformat()<cfg['definition']['valid_from']<end.date().isoformat()}
+            # Vigência das taxas pela data de hoje (início do cenário), igual à Carteira, à Carga e ao motor
+            # (plano de 06/10, parte 3): uma taxa futura só vale quando chegar o seu dia.
+            days = {start.date().isoformat()}
             durations = {}
             for day in sorted(days):
                 duration = _duration(row,candidate,resource,configs,templates,start.isoformat(),context,rate_day=day)

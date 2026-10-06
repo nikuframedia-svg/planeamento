@@ -1,12 +1,13 @@
 // Aceitação de Carga e turnos, Definições do setor e Gantt semanal (pedido do Luís, 06/10/2026).
 // Nada é gravado: os pedidos de gravação são intercetados e respondidos com uma confirmação simulada;
 // o teste confirma o que a página pediria ao servidor.
-// Uso: SETOR_BASE=http://127.0.0.1:8113 SETOR_SHOTS=/tmp/setor [SETOR_CARGA_DIR=<pasta>] node tests/setor_browser.cjs
+// Uso: SETOR_BASE=http://127.0.0.1:8113 SETOR_SHOTS=/tmp/setor [SETOR_CARGA_DIR=<pasta>] [SETOR_DEFS_DIR=<pasta>] node tests/setor_browser.cjs
 const {chromium} = require('./playwright_core.cjs');
 const assert = require('node:assert/strict');
 const base = process.env.SETOR_BASE || 'http://127.0.0.1:8113';
 const shots = process.env.SETOR_SHOTS;
 const cargaDir = process.env.SETOR_CARGA_DIR;
+const defsDir = process.env.SETOR_DEFS_DIR;
 const fs = require('node:fs');
 
 (async () => {
@@ -182,6 +183,136 @@ const fs = require('node:fs');
   assert.ok(await page.locator('#machines details.names').count() >= 1, 'nomes e operações das máquinas');
   await page.waitForSelector('#worked .worked-form', {timeout: 60000});
   if (shots) await page.screenshot({path: `${shots}/definicoes.png`, fullPage: true});
+
+  // Velocidades das máquinas (plano de 06/10, parte 3): tabela como o ecrã do Corte Térmico, gravações intercetadas.
+  // SETOR_DEFS_DIR=<pasta com definicoes-<setor>.json> serve a resposta nova da API (gerada só de leitura) enquanto o
+  // serviço não é reiniciado; sem ela, usa a API ao vivo. Com a API antiga, a página mostra a coluna antiga de taxas.
+  let withRates = false;
+  const fakeRates = (body) => {
+    const tab = body.speed_table.operations.find((t) => t.code === '112') || body.speed_table.operations[0];
+    const m = body.machines.find((x) => x.confirmed && x.has_object && tab.machines.includes(x.id));
+    const common = {area: 'cantoneiras', operation: tab.code, operation_code: tab.code, method: 'metres_hour', piece_seconds: 0, profile: '',
+      material_type: '', confirmed: true, valid_from: '2026-10-06', valid_until: null, in_force: true, resource_id: m.id};
+    m.rates = [{...common, id: 'teste-taxa-1', name: 't1', revision: 3, value: 120, thickness_min: null, thickness_max: 10, notes: '', source: 'Excel'},
+      {...common, id: 'teste-taxa-2', name: 't2', revision: 1, value: 100, thickness_min: 10, thickness_max: 30, notes: 'medido', source: 'Confirmada'}];
+    return {machine: m, tab};
+  };
+  let fake = null;
+  await page.route(/\/planeamento\/api\/setor\/definicoes\?/, async (route) => {
+    const setor = new URL(route.request().url()).searchParams.get('setor');
+    const body = defsDir ? JSON.parse(fs.readFileSync(`${defsDir}/definicoes-${setor}.json`, 'utf8')) : await (await route.fetch()).json();
+    if (body.speed_table && withRates && setor === 'cantoneiras') fake = fakeRates(body);
+    return route.fulfill({status: 200, contentType: 'application/json', body: JSON.stringify(body)});
+  });
+  await page.goto(`${base}/planeamento/setor/definicoes?setor=cantoneiras`);
+  await page.waitForSelector('#machines tr', {timeout: 60000});
+  const hasSpeeds = !(await page.locator('#speeds-block').isHidden());
+  if (defsDir) assert.ok(hasSpeeds, 'resposta nova: secção Velocidades das máquinas');
+  if (!hasSpeeds) {
+    assert.equal(await page.locator('#rates-head').innerText(), 'Tempos', 'API antiga: coluna antiga de taxas');
+  } else {
+    assert.equal(await page.locator('#rates-head').innerText(), 'Velocidade em uso');
+    assert.equal(await page.locator('#machines details.new-rate').count(), 0, 'formulário antigo de taxas retirado');
+    assert.match(await page.locator('#speeds .speed-rule').innerText(), /imediatamente superior/);
+    assert.equal(await page.locator('#speed-filter option').first().innerText(), 'Todas as máquinas');
+    const tabs = await page.locator('#speeds .speed-tabs button').allInnerTexts();
+    assert.ok(tabs.some((t) => /^Punção · 112/.test(t)) && tabs.some((t) => /^Broca · 119/.test(t)), `separadores por operação: ${tabs}`);
+    assert.deepEqual(await page.locator('#speed-table thead th').allInnerTexts().then((h) => h.slice(0, 6)),
+      ['Máquina', 'Esp. de (mm)', 'Esp. até (mm)', 'Velocidade (m/h)', 'Arranque por peça (s)', 'Notas']);
+    // Primeira vez (sem linhas): «Preencher com as velocidades atuais do Excel» mostra o que vai criar antes de gravar.
+    if (await page.locator('#speed-seed').count()) {
+      const n = writes.length;
+      await page.click('#speed-seed');
+      await page.waitForSelector('#speed-seed-preview');
+      const seedRows = await page.locator('#speed-seed-preview tbody tr').count();
+      assert.ok(seedRows >= 1, 'pré-visualização da semente');
+      assert.equal(writes.length, n, 'pré-visualizar não grava');
+      await page.click('#speed-seed-create');
+      await page.waitForFunction(() => /velocidades do Excel/.test(document.getElementById('notice').textContent));
+      const sent = writes.at(-1).body;
+      assert.equal(sent.tipo, 'taxas_lote');
+      assert.equal(sent.linhas.length, seedRows);
+      assert.ok(sent.linhas.every((x) => x.origem === 'Excel' && x.maquina && x.operacao && x.valor > 0));
+    }
+    // Com linhas na tabela (simuladas): editar, adicionar, apagar, margem.
+    withRates = true;
+    await page.reload();
+    await page.waitForSelector('#speed-rows tr[data-key="teste-taxa-1"]', {timeout: 60000});
+    assert.equal(await page.locator('#speed-seed').count(), 0, 'com linhas, sem botão de preencher');
+    assert.ok(await page.locator('#speed-rows tr[data-key="teste-taxa-1"] .tag').count(), 'linha «origem Excel»');
+    // Editar a velocidade e sair da linha: grava a linha inteira com a revisão.
+    let n = writes.length;
+    const speedInput = page.locator('#speed-rows tr[data-key="teste-taxa-1"] [data-field="value"]');
+    await speedInput.fill('110');
+    await page.locator('#speed-rows tr[data-key="teste-taxa-2"] [data-field="notes"]').click();
+    await page.waitForFunction(() => document.querySelector('#speed-rows tr[data-key="teste-taxa-1"] .row-status')?.textContent === 'Gravado');
+    assert.equal(writes.length, n + 1);
+    let sent = writes.at(-1).body;
+    assert.equal(sent.tipo, 'taxa');
+    assert.equal(sent.id, 'teste-taxa-1');
+    assert.equal(sent.expected_revision, 3);
+    assert.equal(sent.valor, 110);
+    assert.equal(sent.esp_de, null);
+    assert.equal(sent.esp_ate, 10);
+    assert.equal(sent.maquina, fake.machine.id);
+    assert.equal(sent.operacao, fake.tab.code);
+    assert.equal(sent.origem, undefined, 'editar confirma a linha (origem Confirmada no servidor)');
+    assert.equal(await page.locator('#speed-rows tr[data-key="teste-taxa-1"] .tag').count(), 0, 'deixa de dizer origem Excel');
+    // Segunda edição da mesma linha: a revisão subiu um.
+    n = writes.length;
+    await page.locator('#speed-rows tr[data-key="teste-taxa-1"] [data-field="piece_seconds"]').fill('4,5');
+    await page.locator('#speed-rows tr[data-key="teste-taxa-1"] [data-field="piece_seconds"]').press('Enter');
+    for (let i = 0; i < 100 && writes.length <= n; i++) await page.waitForTimeout(50);
+    assert.equal(writes.length, n + 1, 'Enter grava a linha');
+    sent = writes.at(-1).body;
+    assert.equal(sent.expected_revision, 4);
+    assert.equal(sent.arranque_s, 4.5);
+    // Adicionar linha: grava ao sair da linha, sem id.
+    await page.selectOption('#speed-filter', fake.machine.id);
+    await page.click('#speed-add');
+    const draft = page.locator('#speed-rows tr[data-key^="new-"]');
+    assert.equal(await draft.count(), 1);
+    assert.equal(await draft.locator('[data-field="machine"]').inputValue(), fake.machine.id, 'máquina do filtro');
+    await draft.locator('[data-field="thickness_min"]').fill('30');
+    await draft.locator('[data-field="thickness_max"]').fill('40');
+    await draft.locator('[data-field="value"]').fill('80');
+    n = writes.length;
+    await page.locator('#speed-margin').click();
+    await page.waitForFunction(() => /linha nova/.test(document.getElementById('notice').textContent));
+    assert.equal(writes.length, n + 1);
+    sent = writes.at(-1).body;
+    assert.equal(sent.id, undefined);
+    assert.deepEqual([sent.maquina, sent.esp_de, sent.esp_ate, sent.valor, sent.metodo], [fake.machine.id, 30, 40, 80, 'metres_hour']);
+    // Apagar (✕): arquiva a linha.
+    n = writes.length;
+    await page.locator('#speed-rows tr[data-key="teste-taxa-2"] button.del').click();
+    await page.waitForFunction(() => /Linha apagada/.test(document.getElementById('notice').textContent));
+    sent = writes.at(-1).body;
+    assert.deepEqual([sent.tipo, sent.id, sent.expected_revision, sent.arquivar], ['taxa', 'teste-taxa-2', 1, true]);
+    // Margem e tempo fixo por peça.
+    await page.fill('#speed-margin', '10');
+    await page.fill('#speed-fixed', '0,5');
+    await page.click('#speed-timing-save');
+    await page.waitForFunction(() => /Margem 10 %/.test(document.getElementById('notice').textContent));
+    sent = writes.at(-1).body;
+    assert.deepEqual([sent.tipo, sent.margin_pct, sent.piece_minutes, typeof sent.expected_revision], ['tempos', 10, 0.5, 'number']);
+    if (shots) await page.screenshot({path: `${shots}/definicoes-velocidades.png`, fullPage: true});
+    // Perfis: tipo de material e área de secção, separador Corte.
+    await page.goto(`${base}/planeamento/setor/definicoes?setor=perfis`);
+    await page.waitForSelector('#speed-table thead th', {timeout: 60000});
+    assert.deepEqual(await page.locator('#speed-table thead th').allInnerTexts().then((h) => h.slice(0, 7)),
+      ['Máquina', 'Tipo de material', 'Área de (mm²)', 'Área até (mm²)', 'Velocidade (mm²/h)', 'Tempo por corte (s)', 'Notas']);
+    assert.ok((await page.locator('#speeds .speed-tabs button').allInnerTexts()).some((t) => /^Corte/.test(t)), 'separador Corte');
+    // 390 px: a tabela desliza dentro da caixa, a página não.
+    await page.setViewportSize({width: 390, height: 900});
+    for (const setor of ['cantoneiras', 'perfis']) {
+      await page.goto(`${base}/planeamento/setor/definicoes?setor=${setor}`);
+      await page.waitForSelector('#speed-table', {timeout: 60000});
+      assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), `Definições ${setor} sem scroll horizontal a 390 px`);
+      if (shots) await page.screenshot({path: `${shots}/definicoes-390-${setor}.png`, fullPage: true});
+    }
+    await page.setViewportSize({width: 1440, height: 1000});
+  }
 
   // Gantt semanal: sete colunas (seg a dom), «planeado / capacidade h» por dia, ◀ ▶ mudam de semana.
   await page.goto(`${base}/planeamento/gantt`);

@@ -152,6 +152,11 @@ _index_cache: dict = {}
 _index_lock = threading.Lock()
 
 
+def _timing(c, data):
+    from ..raw.productivity import sector_timing
+    return sector_timing(c).get(data.get("area"))
+
+
 def _evidence(c, data):
     """Candidate machines with the same rules as the Gantt (cached per research version)."""
     from ..gantt import machines, integrated
@@ -173,8 +178,10 @@ def _evidence(c, data):
             _index_cache["index"] = (key, (index, templates))
     from . import estimates, throughput
     # Horas pela mesma regra da Carteira e da Carga (estimates.hours_on), não pelo motor do Gantt (PROP-4).
+    extra = data.get("_estimate_inputs") or {}
     hours = {"by_id": by_id, "names": throughput.aliases_to_names(by_id), "study": throughput.load(c),
-             "rates": estimates.area_rates(package["metadata"])}
+             "rates": estimates.area_rates(package["metadata"]),
+             "table": extra.get("table", [cfg for cfg in configs if cfg["kind"] == "rate"]), "timing": extra["timing"] if "timing" in extra else _timing(c, data)}
     return {"codes": codes, "by_id": by_id, "configs": configs, "index": index, "templates": templates, "hours": hours}
 
 

@@ -148,9 +148,14 @@ def stamp(c, area, today):
     # Os calendários entram no equilíbrio das sugestões dos perfis (PROP-7): uma mudança refaz as ocorrências.
     calendars = tuple(c.execute("SELECT count(*) n, max(updated_at) m FROM planning_mtg.raw_objects WHERE kind='calendar' AND NOT archived"
                                 ).fetchone().values()) if area == "perfis" else None
+    # Tabela de velocidades (taxas, também as arquivadas) e margem/tempo fixo do setor mudam as horas estimadas.
+    from ..raw.productivity import sector_timing
+    rates = tuple(c.execute("SELECT count(*) FILTER (WHERE NOT archived) n, count(*) t, max(updated_at) m "
+                            "FROM planning_mtg.raw_objects WHERE kind='rate'").fetchone().values())
+    timing = tuple(sorted(sector_timing(c)[area].items()))
     return (area, g["id"], research.head(c)["version_id"] if research.enabled() else None,
             sku_families.token(c, area), priority.digest(c), assignments.digest(c),
-            scope.digest(scope.read(c)), machine_choice.digests(c), calendars, today)
+            scope.digest(scope.read(c)), machine_choice.digests(c), calendars, rates, timing, today)
 
 
 def resources_context(c, start=None):
@@ -299,13 +304,16 @@ def build(c, area: str, today: date | None = None) -> dict:
     learned = machine_learning.model(area, conn=c) if package else None
     # MTG2 sem débito observado: o equilíbrio usa as horas dos calendários do setor (auditoria 06/10, PROP-7).
     calendar = estimates.calendar_capacity(c, list(by_id), today) if package and area == "perfis" else None
+    from ..raw.productivity import sector_timing
+    table = [cfg for cfg in configs if cfg["kind"] == "rate"]  # tabela de velocidades: antes do Excel, também nas sugeridas
+    timing = sector_timing(c)[area]
     balance_info = estimates.apply(facts, rows_by_key, codes=codes, by_id=by_id, package=package, study=study, learned=learned,
-                                   calendar=calendar)
+                                   calendar=calendar, table=table, timing=timing)
     return {"area": area, "unit": UNITS[area], "generation": g["id"], "snapshot": snapshot,
             "imported_at": g["created_at"], "research_version": package["head"]["version_id"] if package else None,
             "today": today, "facts": facts, "resources": {rid: {k: r.get(k) for k in ("id", "code", "name", "type", "capacity")}
                                                           for rid, r in by_id.items()},
-            "_rows": rows_by_key, "machine_balance": balance_info}
+            "_rows": rows_by_key, "machine_balance": balance_info, "_estimate_inputs": {"table": table, "timing": timing}}
 
 
 _building: set = set()

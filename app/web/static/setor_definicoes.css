@@ -44,3 +44,40 @@ details.names textarea, details.names input { display: block; width: 100%; max-w
 .worked-form label { display: flex; flex-direction: column; gap: .15rem; }
 .worked-actions { display: flex; gap: .6rem; align-items: center; flex-wrap: wrap; }
 button.linklike { border: 0; background: none; color: #1f6f8b; text-decoration: underline; padding: 0; width: auto; min-height: 0; }
+
+/* Velocidades das máquinas (plano de 06/10, parte 3): como o ecrã do Corte Térmico. */
+.speed-timing { display: flex; gap: .6rem; align-items: flex-end; flex-wrap: wrap; margin-bottom: .3rem; }
+.speed-timing label { display: flex; flex-direction: column; gap: .15rem; }
+.speed-timing input { border: 1px solid #c9d4d7; padding: .15rem .3rem; width: 6rem; }
+.speed-rule { margin: .2rem 0 .5rem; }
+.speed-bar { display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; margin-bottom: .4rem; }
+.speed-bar select { border: 1px solid #c9d4d7; padding: .15rem .3rem; max-width: 100%; }
+.speed-seed.preview { flex-basis: 100%; border: 1px solid #dce6e8; border-radius: 8px; padding: .4rem .6rem; }
+.speed-seed.preview p { margin: 0 0 .3rem; }
+.speed-actions { display: flex; gap: .5rem; margin-top: .4rem; flex-wrap: wrap; }
+.speed-tabs { display: flex; gap: .2rem; flex-wrap: wrap; border-bottom: 1px solid #dce6e8; margin-bottom: .3rem; }
+.speed-tabs button { border: 1px solid #dce6e8; border-bottom: 0; border-radius: 6px 6px 0 0; background: #f4f6f8; color: #10384b; padding: .2rem .7rem; width: auto; }
+.speed-tabs button.on { background: #fff; font-weight: 700; box-shadow: 0 1px 0 #fff; }
+table.speed-table td { vertical-align: middle; white-space: nowrap; }
+table.speed-table input, table.speed-table select { border: 1px solid #c9d4d7; padding: .1rem .3rem; }
+table.speed-table input.n { width: 6rem; text-align: right; }
+table.speed-table input.txt { width: 9rem; }
+table.speed-table td:nth-last-child(2) input.txt { width: 14rem; }
+table.speed-table select { max-width: 11rem; }
+table.speed-table tr.off { color: #5d737a; }
+table.speed-table tr.excel td { background: #fbf8ef; }
+table.speed-table .acts { display: flex; gap: .3rem; align-items: center; }
+button.del { border: 0; background: none; color: #9d2a26; padding: 0 .3rem; width: auto; min-height: 0; cursor: pointer; }
+.row-status { color: #1e6b3d; }
+.row-status.bad { color: #9d2a26; white-space: normal; }
+button.tag { font-size: inherit; }
+#speeds .scroll { position: relative; }  /* contém o .sr (posição absoluta) dentro da caixa que desliza */
+.sr { position: absolute; left: 0; top: 0; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+/* planning_hub.css transforma as tabelas em cartões abaixo de 720 px; estas ficam tabela e deslizam dentro da caixa. */
+@media (max-width: 720px) {
+  table.speed-table, table.speed-preview { display: table; }
+  table.speed-table thead, table.speed-preview thead { display: table-header-group; }
+  table.speed-table tbody, table.speed-preview tbody { display: table-row-group; }
+  table.speed-table tr, table.speed-preview tr { display: table-row; border-bottom: 0; padding: 0; }
+  table.speed-table th, table.speed-table td, table.speed-preview th, table.speed-preview td { display: table-cell; padding: .35rem .45rem; }
+}

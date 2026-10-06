@@ -182,7 +182,8 @@ def test_closed_history_supplies_active_draft_then_manual_overrides_and_expires(
     assert evidence['hours']==10 and evidence['event_count']==2
     frozen=query.listing({'area':area,'population':'all'})['version']
     manual=objects.save(command(name='Manual faster',area=area,definition={'resource_id':resource['id'],'area':area,
-        'operation':op,'method':method,'value':20*unit_volume,'valid_from':'2026-09-01','valid_until':'2026-09-30','confirmed':True}), 'rate')
+        # Vigência pela data de hoje (07/10/2026): a taxa vale hoje, seja qual for a data prevista da linha.
+        'operation':op,'method':method,'value':20*unit_volume,'valid_from':'2026-09-01','valid_until':'2099-12-31','confirmed':True}), 'rate')
     capacity.rebuild()
     row=query.listing({'area':area,'dataset':'capacity_items'})['rows'][0]
     assert row['values']['planned_hours']==5 and row['values']['rate_source']=='Manual'

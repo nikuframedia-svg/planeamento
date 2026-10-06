@@ -5,7 +5,9 @@ Lê e grava sem criar uma segunda fonte de verdade:
   e correção local do intervalo da ficha de capacidades (`capacity_override`, aplicada nas candidatas);
 - turnos = calendários semanais (shifts.py) gerados a partir do modelo do setor (horas dos turnos,
   dias de trabalho, feriados) guardado em sector_settings;
-- tempos = taxas confirmadas (kind='rate'), que têm prioridade sobre as velocidades do Excel.
+- tempos = tabela de velocidades (kind='rate', plano de 06/10, parte 3): uma linha por máquina, operação e
+  intervalo (espessura nas cantoneiras, tipo de material e área de secção nos perfis), com arranque por peça;
+  margem (%) e tempo fixo por peça (min) do setor em sector_settings (0 = as horas não mudam).
 """
 from __future__ import annotations
 
@@ -21,14 +23,18 @@ from . import shifts
 
 UNIT = {"cantoneiras": "MTG3", "perfis": "MTG2"}
 HORIZON_WEEKS = 52
-METHODS = {"metres_hour": "m/h", "area_hour": "mm²/h", "units_hour": "peças/h", "minutes_unit": "min/peça"}
+METHODS = {"metres_hour": "m/h", "area_hour": "mm²/h", "units_hour": "peças/h", "minutes_unit": "min/peça", "fixed_minutes": "min"}
+TIMING = {"margin_pct": ("Margem sobre os tempos estimados (%)", 0, 300), "piece_minutes": ("Tempo fixo por peça (min)", 0, 120)}
+STORED = ("template", "workdays", "holidays", *TIMING)  # chaves guardadas em sector_settings.definition
+OPERATION_NAMES = {"112": "Punção", "119": "Broca", "corte": "Corte", "abocardar": "Abocardar"}
 _TIME = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
 
 
 def default(today: date | None = None) -> dict:
     year = (today or date.today()).year
     return {"template": [list(x) for x in shifts.DEFAULT_TEMPLATE], "workdays": list(shifts.DEFAULT_WORKDAYS),
-            "holidays": shifts.national_holidays(year) + shifts.national_holidays(year + 1), "revision": 0}
+            "holidays": shifts.national_holidays(year) + shifts.national_holidays(year + 1), "revision": 0,
+            "margin_pct": 0, "piece_minutes": 0}
 
 
 def read(c, sector: str) -> dict:
@@ -91,11 +97,82 @@ def machine_rows(c, sector: str) -> list[dict]:
     return sorted(out, key=lambda m: (m["process"] or "~", m["name"]))
 
 
+def _operation_code(op) -> str:
+    from ..raw.capacity import operation_code
+    return operation_code(op)
+
+
+def rate_operation_codes(sector: str, m: dict) -> list[str]:
+    """Operações da máquina que podem ter linhas na tabela. Nas cantoneiras só códigos ('112', '119'): o motor
+    procura o código da operação, por isso uma linha 'corte' nunca valeria lá (só nos perfis)."""
+    codes = [_operation_code(op) for op in m.get("operations") or []] + [_operation_code(f["operation"]) for f in m.get("ficha") or []]
+    return list(dict.fromkeys(c for c in codes if c and (sector != "cantoneiras" or c.isdigit())))
+
+
+def operation_tabs(machines: list[dict], rates: list[dict]) -> list[dict]:
+    """Separadores por operação da tabela de velocidades (ex.: Punção · 112, Broca · 119), com o processo da ficha."""
+    from collections import Counter, defaultdict
+    processes = defaultdict(Counter)
+    for m in machines:
+        for cap in m.get("ficha") or []:
+            if cap.get("process"):
+                processes[_operation_code(cap["operation"])][cap["process"]] += 1
+    codes = {code for m in machines for code in m.get("rate_operations_codes") or []}
+    codes |= {_operation_code(r.get("operation")) for r in rates if r.get("operation")}
+    tabs = []
+    for code in sorted(codes, key=lambda c: (not c.isdigit(), int(c) if c.isdigit() else 0, c)):
+        name = processes[code].most_common(1)[0][0] if processes[code] else OPERATION_NAMES.get(code)
+        tabs.append({"code": code, "label": f"{name} · {code}" if name and code.isdigit() else (name or code),
+                     "machines": [m["id"] for m in machines if code in (m.get("rate_operations_codes") or [])]})
+    return tabs
+
+
+def excel_seed(sector: str, machines: list[dict], study: dict | None, excel_area: dict) -> list[dict]:
+    """«Preencher com as velocidades atuais do Excel»: uma linha por máquina confirmada e operação.
+
+    Cantoneiras: a velocidade mais recente do Excel da máquina (moda das linhas com Data Corte nas últimas
+    semanas com dados, `productivity.recent_excel_speeds`), igual em todas as operações da máquina — a mesma que
+    a Carteira, a Carga, o motor e o Gantt usam sem tabela, por isso preencher não muda as horas. Perfis: a taxa
+    mm²/h da folha CapacidadeMáquinas (coluna C), sem o fator ×3 da Thomas.
+    """
+    from .throughput import aliases_to_names
+    seed = []
+    for m in machines:
+        if not m.get("confirmed") or not m.get("has_object"):
+            continue  # uma taxa confirmada exige a identidade física confirmada (raw/capacity.validate)
+        if sector == "cantoneiras":
+            if not study:
+                continue
+            names = sorted(n for n in aliases_to_names({m["id"]: {"name": m["name"], "aliases": m.get("aliases")}})[m["id"]] if n)
+            recent = next((study.get("recent_speeds", {}).get(n) for n in names if study.get("recent_speeds", {}).get(n)), None)
+            if not recent:
+                continue
+            for code in [c for c in m.get("rate_operations_codes") or [] if c.isdigit()]:
+                found = recent
+                seed.append({"maquina": m["id"], "nome": m["name"], "operacao": code, "metodo": "metres_hour", "valor": found["value"],
+                             "unidade": "m/h", "linhas": found["lines"],
+                             "notas": f"Excel: velocidade mais recente ({found['lines']} linhas desde {recent.get('from')})"})
+        elif excel_area.get(m.get("code")) and "corte" in (m.get("rate_operations_codes") or []):
+            seed.append({"maquina": m["id"], "nome": m["name"], "operacao": "corte", "metodo": "area_hour", "valor": excel_area[m["code"]],
+                         "unidade": "mm²/h", "linhas": None, "notas": "Excel: folha CapacidadeMáquinas, coluna C (sem fator ×3)"})
+    return seed
+
+
+def _rate_view(r: dict, today: str) -> dict:
+    from ..raw.productivity import rate_tier
+    d = r["definition"]
+    return {"id": str(r["id"]), "name": r["name"], "revision": r["revision"], **d,
+            "operation_code": _operation_code(d.get("operation")), "source": rate_tier(d),
+            "in_force": bool(d.get("confirmed")) and str(d.get("valid_from") or "") <= today
+                        and (not d.get("valid_until") or today <= str(d["valid_until"]))}
+
+
 def overview(sector: str) -> dict:
     from . import priority, throughput
     from .estimates import area_rates
     from ..gantt import research
     planning.check_area(sector)
+    today = date.today().isoformat()
     with planning.connect(readonly=True) as c:
         settings = read(c, sector)
         machines = machine_rows(c, sector)
@@ -117,34 +194,53 @@ def overview(sector: str) -> dict:
                 else:
                     plan.append({"year": year, "week": week, "shifts": None, "hours": 0, "manual": False, "day_changes": 0})
             weeks.append({"machine": m["id"], "weeks": plan})
-            m["rates"] = [{"id": str(r["id"]), "name": r["name"], "revision": r["revision"], **r["definition"]}
-                          for r in rates if str(r["definition"].get("resource_id")) == m["id"]]
+            m["rates"] = [_rate_view(r, today) for r in rates if str(r["definition"].get("resource_id")) == m["id"]
+                          and r["definition"].get("area") in (None, sector)]
+            m["rate_operations_codes"] = rate_operation_codes(sector, m)
             excel = None
             if study:
-                found = study["speeds"].get(m["name"])
+                names = [n for n in throughput.aliases_to_names({m["id"]: {"name": m["name"], "aliases": m.get("aliases")}})[m["id"]] if n]
+                found = next((study.get("recent_speeds", {}).get(n) for n in sorted(names) if study.get("recent_speeds", {}).get(n)), None)
                 if found and found.get("value"):
                     excel = {"value": round(found["value"], 1), "unit": "m/h", "lines": found.get("lines"),
-                             "source": "Mediana da coluna Mt\\h do Excel (todas as peças desta máquina)"}
-                profiles = sorted(((p, v) for (name, p), v in study["profile_speeds"].items() if name == m["name"] and v["lines"] >= 3),
+                             "source": f"Velocidade mais recente da coluna Mt\\h do Excel (linhas com Data Corte de {found.get('from')} a {found.get('to')})"}
+                recent_profiles = study.get("recent_profile_speeds") or {}
+                profiles = sorted(((p, v) for (name, p), v in recent_profiles.items() if name in names and v["lines"] >= 3),
                                   key=lambda kv: -kv[1]["lines"])[:12]
                 m["profile_speeds"] = [{"profile": p, "value": round(v["value"], 1), "lines": v["lines"]} for p, v in profiles]
                 summary = study["summary"].get(m["name"]) or {}
                 m["observed_week_hours"] = summary.get("hours_median")
             elif excel_area.get(m["code"]):
-                excel = {"value": excel_area[m["code"]], "unit": "mm²/h", "source": "Folha CapacidadeMáquinas do Excel"}
+                excel = {"value": excel_area[m["code"]], "unit": "mm²/h", "source": "Folha CapacidadeMáquinas do Excel (coluna C)"}
             m["excel_rate"] = excel
-            m["rate_in_use"] = ("Taxa confirmada" if any(r.get("confirmed") for r in m["rates"]) else
-                                "Velocidade do Excel" if excel else "Por definir")
+            active = [r for r in m["rates"] if r["in_force"]]
+            m["rate_in_use"] = ("Tabela de velocidades (confirmada)" if any(r["source"] == "Confirmada" for r in active) else
+                                "Tabela de velocidades (origem Excel)" if active else
+                                ("Velocidade mais recente do Excel" if sector == "cantoneiras" else "Taxa mm²/h do Excel (CapacidadeMáquinas)")
+                                if excel else "Por definir")
+        all_rates = [r for m in machines for r in m["rates"]]
+        tabs = operation_tabs(machines, all_rates)
+        seed = excel_seed(sector, machines, study, excel_area)
     rules = [
         "Prazo: " + ("Data Corte." if sector == "cantoneiras" else "Picking (semana do Excel; ano deduzido), depois Data Corte."),
         "Máquina de cada linha: escolha da Carteira → coluna Máquina da Tabela → conjunto de famílias.",
         "Estados: Planeado (Planear + máquina) · Planeado para nesting (tem máquina) · Sem máquina atribuída. Sem máquina não se planeia.",
-        "Horas: taxa confirmada da máquina; senão a velocidade do Excel para a máquina e o perfil.",
+        "Horas: taxa confirmada da tabela de velocidades; senão histórico válido (só com máquina confirmada); senão velocidade mais recente do Excel.",
+        "Horas = volume ÷ velocidade + peças × (arranque por peça + tempo fixo por peça), depois × (1 + margem). A margem e o tempo fixo não se aplicam ao histórico.",
+        ("Se a espessura não estiver na tabela, usa a imediatamente superior." if sector == "cantoneiras" else
+         "Tipo de material vazio = todos. Se a área de secção não estiver na tabela, usa a imediatamente superior."),
         "Capacidade de cada semana: os turnos da máquina nessa semana (calendário), sem os feriados.",
         "Fora da ficha de capacidades: a máquina escolhida mantém-se e entra no plano.",
     ]
+    speed_table = {"unit": "m/h" if sector == "cantoneiras" else "mm²/h", "method": "metres_hour" if sector == "cantoneiras" else "area_hour",
+                   "range": {"cantoneiras": {"field": "thickness", "label": "Esp.", "unit": "mm"},
+                             "perfis": {"field": "section", "label": "Área", "unit": "mm²"}}[sector],
+                   "rule": rules[5], "operations": tabs, "seed": seed,
+                   "timing": {k: settings.get(k, 0) for k in TIMING},
+                   "timing_labels": {k: v[0] for k, v in TIMING.items()}}
     return needs.serial({"sector": sector, "settings": settings, "machines": machines, "weeks": weeks, "rules": rules,
-                         "policy": policy, "methods": METHODS, "shift_hours": shifts.shift_hours(settings["template"])})
+                         "policy": policy, "methods": METHODS, "shift_hours": shifts.shift_hours(settings["template"]),
+                         "speed_table": speed_table})
 
 
 def regenerate(c, sector: str, settings: dict, request_id: uuid.UUID, *, machines: list[dict] | None = None,
@@ -227,6 +323,92 @@ def _validate_settings(p: dict) -> dict:
     return {"template": clean, "workdays": sorted(set(workdays)), "holidays": holidays}
 
 
+def _store(c, sector: str, definition: dict, actor) -> None:
+    clean = {k: definition[k] for k in STORED if k in definition}
+    c.execute("""INSERT INTO planning_mtg.sector_settings (area, definition, actor) VALUES (%s, %s, %s)
+                 ON CONFLICT (area) DO UPDATE SET definition = EXCLUDED.definition, revision = sector_settings.revision + 1,
+                 actor = EXCLUDED.actor, updated_at = now()""", (sector, Jsonb(clean), actor))
+
+
+def _validate_timing(p: dict, current: dict) -> dict:
+    """Margem (%) e tempo fixo por peça (min) do setor; campo ausente = mantém o valor atual."""
+    out = {}
+    for name, (label, low, high) in TIMING.items():
+        value = p.get(name, current.get(name, 0))
+        try:
+            number = float(str(value).replace(",", ".")) if value not in (None, "") else 0.0
+        except ValueError:
+            raise planning.PlanningError(f"{label}: indica um número.") from None
+        if not low <= number <= high or number != number:
+            raise planning.PlanningError(f"{label}: entre {low} e {high}.")
+        out[name] = int(number) if number.is_integer() else round(number, 3)
+    return out
+
+
+def _seed_now(c, sector: str, machines: list[dict]) -> list[dict]:
+    from . import throughput
+    from .estimates import area_rates
+    from ..gantt import research
+    study = throughput.load(c) if research.enabled() and sector == "cantoneiras" else None
+    excel_area = area_rates(research.load(c)["metadata"]) if research.enabled() and sector == "perfis" else {}
+    for m in machines:
+        m["rate_operations_codes"] = rate_operation_codes(sector, m)
+    return excel_seed(sector, machines, study, excel_area)
+
+
+RATE_FIELDS = {  # payload do ecrã → definição da taxa
+    "esp_de": "thickness_min", "esp_ate": "thickness_max", "area_de": "section_min", "area_ate": "section_max",
+    "arranque_s": "piece_seconds", "notas": "notes"}
+
+
+def _save_rate(c, sector: str, payload: dict, machines: dict, request_id: uuid.UUID, salt: str) -> None:
+    """Grava (ou arquiva) uma linha da tabela de velocidades; a validação é a do motor (raw/capacity.validate)."""
+    from ..raw import objects
+    existing = payload.get("id")
+    row = c.execute("SELECT revision, archived, definition, name FROM planning_mtg.raw_objects WHERE id = %s AND kind = 'rate'",
+                    (existing,)).fetchone() if existing else None
+    if existing and not row:
+        raise planning.PlanningError("Linha da tabela desconhecida. Recarrega a página.", 404)
+    if row and payload.get("expected_revision") is not None and payload["expected_revision"] != row["revision"]:
+        raise planning.PlanningError("A linha foi alterada entretanto. Recarrega a página.", 409)
+    if payload.get("arquivar"):  # apagar linha = arquivar (fica no histórico de versões)
+        if not row:
+            raise planning.PlanningError("Linha da tabela desconhecida. Recarrega a página.", 404)
+        if str(row["definition"].get("resource_id")) not in machines:
+            raise planning.PlanningError("Máquina desconhecida neste setor.")
+        objects.save({"request_id": str(uuid.uuid5(request_id, salt)), "id": existing, "expected_revision": row["revision"],
+                      "name": row["name"], "area": sector, "definition": row["definition"], "archived": True}, "rate", conn=c, signal=False)
+        return
+    if str(payload.get("maquina")) not in machines:
+        raise planning.PlanningError("Máquina desconhecida neste setor.")
+    method = payload.get("metodo") or ("metres_hour" if sector == "cantoneiras" else "area_hour")
+    if method not in METHODS:
+        raise planning.PlanningError("Unidade da taxa inválida.")
+    origin = str(payload.get("origem") or "Confirmada")
+    if origin not in ("Excel", "Confirmada"):
+        raise planning.PlanningError("Origem da taxa desconhecida.")
+    operation = _operation_code(str(payload.get("operacao") or "").strip() or ("corte" if sector == "perfis" else ""))
+    if sector == "cantoneiras" and not operation.isdigit():
+        raise planning.PlanningError("Nas cantoneiras a operação é um código (ex.: 112 ou 119).")
+    definition = {"resource_id": str(payload["maquina"]), "area": sector, "operation": operation,
+                  "method": method, "value": payload.get("valor"), "setup_minutes": 0,
+                  "profile": str(payload.get("perfil") or "").strip(),
+                  "material_type": str(payload.get("tipo_material") or "").strip() if sector == "perfis" else "",
+                  "valid_from": str(payload.get("desde") or (row["definition"].get("valid_from") if row else None) or date.today().isoformat()),
+                  "valid_until": str(payload["ate"]) if payload.get("ate") else None,
+                  "confirmed": True, "source": origin}
+    for field, name in RATE_FIELDS.items():
+        if field in payload:
+            definition[name] = payload[field]
+    ranges = [definition.get(k) for k in ("thickness_min", "thickness_max", "section_min", "section_max")]
+    label = " · ".join(x for x in [
+        machines[str(payload["maquina"])]["name"], operation or "operação", definition["material_type"] or None, definition["profile"] or None,
+        (f"{ranges[0] if ranges[0] not in (None, '') else '…'}–{ranges[1] if ranges[1] not in (None, '') else '…'} mm" if any(r not in (None, "") for r in ranges[:2]) else None),
+        (f"{ranges[2] if ranges[2] not in (None, '') else '…'}–{ranges[3] if ranges[3] not in (None, '') else '…'} mm²" if any(r not in (None, "") for r in ranges[2:]) else None)] if x)
+    objects.save({"request_id": str(uuid.uuid5(request_id, salt)), "id": existing, "expected_revision": row["revision"] if row else 0,
+                  "name": label, "area": sector, "definition": definition, "archived": False}, "rate", conn=c, signal=False)
+
+
 def save(payload: dict, *, conn=None) -> dict:
     sector = str(payload.get("setor") or "")
     kind = payload.get("tipo")
@@ -244,11 +426,19 @@ def save(payload: dict, *, conn=None) -> dict:
             new = _validate_settings(payload)
             if payload.get("expected_revision") != current["revision"]:
                 raise planning.PlanningError("As definições mudaram entretanto. Recarrega a página.", 409)
-            c.execute("""INSERT INTO planning_mtg.sector_settings (area, definition, actor) VALUES (%s, %s, %s)
-                         ON CONFLICT (area) DO UPDATE SET definition = EXCLUDED.definition, revision = sector_settings.revision + 1,
-                         actor = EXCLUDED.actor, updated_at = now()""", (sector, Jsonb(new), actor))
+            new = {**{k: current[k] for k in TIMING if k in current}, **new}  # a margem e o tempo fixo ficam
+            _store(c, sector, new, actor)
             settings = {**new, "revision": current["revision"] + 1}
             changed = regenerate(c, sector, settings, request_id)
+        elif kind == "tempos":  # margem e tempo fixo por peça: mudam as horas, não os calendários
+            if payload.get("expected_revision") != current["revision"]:
+                raise planning.PlanningError("As definições mudaram entretanto. Recarrega a página.", 409)
+            timing = _validate_timing(payload, current)
+            stored = c.execute("SELECT definition FROM planning_mtg.sector_settings WHERE area = %s", (sector,)).fetchone() \
+                if c.execute("SELECT to_regclass('planning_mtg.sector_settings') t").fetchone()["t"] else None
+            base = dict(stored["definition"]) if stored else {k: current[k] for k in ("template", "workdays", "holidays")}
+            _store(c, sector, {**base, **timing}, actor)
+            changed = 1
         elif kind == "maquina":
             machines = {m["id"]: m for m in machine_rows(c, sector)}
             m = machines.get(str(payload.get("id")))
@@ -298,21 +488,29 @@ def save(payload: dict, *, conn=None) -> dict:
                                       reset_base_for={m["id"]})
         elif kind == "taxa":
             machines = {m["id"]: m for m in machine_rows(c, sector)}
-            if str(payload.get("maquina")) not in machines:
-                raise planning.PlanningError("Máquina desconhecida neste setor.")
-            if payload.get("metodo") not in METHODS:
-                raise planning.PlanningError("Unidade da taxa inválida.")
-            definition = {"resource_id": str(payload["maquina"]), "area": sector, "operation": str(payload.get("operacao") or "").strip(),
-                          "method": payload["metodo"], "value": payload.get("valor"), "setup_minutes": 0,
-                          "profile": str(payload.get("perfil") or "").strip(), "material_type": "",
-                          "valid_from": str(payload.get("desde") or date.today().isoformat()), "confirmed": True}
-            existing = payload.get("id")
-            row = c.execute("SELECT revision, archived FROM planning_mtg.raw_objects WHERE id = %s", (existing,)).fetchone() if existing else None
-            objects.save({"request_id": str(uuid.uuid5(request_id, "rate")), "id": existing, "expected_revision": row["revision"] if row else 0,
-                          "name": f"{machines[str(payload['maquina'])]['name']} · {definition['operation'] or 'operação'}"
-                                  + (f" · {definition['profile']}" if definition["profile"] else ""),
-                          "area": sector, "definition": definition, "archived": bool(payload.get("arquivar"))}, "rate", conn=c, signal=False)
+            _save_rate(c, sector, payload, machines, request_id, "rate")
             changed = 1
+        elif kind == "taxas_lote":  # «Preencher com as velocidades atuais do Excel»
+            machines = {m["id"]: m for m in machine_rows(c, sector)}
+            lines = payload.get("linhas")
+            if lines is None:
+                lines = [{**x, "origem": "Excel"} for x in _seed_now(c, sector, list(machines.values()))]
+            if not isinstance(lines, list) or len(lines) > 500:
+                raise planning.PlanningError("Lista de velocidades inválida.")
+            active = c.execute("SELECT definition FROM planning_mtg.raw_objects WHERE kind='rate' AND NOT archived").fetchall()
+            taken = {(str(r["definition"].get("resource_id")), r["definition"].get("area"), _operation_code(r["definition"].get("operation")))
+                     for r in active}
+            changed = 0
+            for i, line in enumerate(lines):
+                if not isinstance(line, dict):
+                    raise planning.PlanningError("Linha de velocidade inválida.")
+                ident = (str(line.get("maquina")), sector, _operation_code(line.get("operacao") or ("corte" if sector == "perfis" else "")))
+                if ident in taken:
+                    continue  # a máquina/operação já tem linhas na tabela: preencher não as substitui
+                _save_rate(c, sector, {**line, "id": None, "arquivar": False, "origem": line.get("origem") or "Excel"},
+                           machines, request_id, f"rate-batch-{i}")
+                taken.add(ident)
+                changed += 1
         else:
             raise planning.PlanningError("Tipo de definição desconhecido.")
         if changed:

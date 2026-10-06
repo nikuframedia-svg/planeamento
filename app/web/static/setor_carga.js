@@ -11,7 +11,7 @@
   const KIND = {plan: 'no plano', due: 'a vencer', suggested: 'a vencer, máquina sugerida'};
   // Nomes com explicação no cursor (a mesma explicação em todas as páginas; ver static/nomes.json).
   const EXPLAIN = {
-    previstas: 'Horas que a Carga usa: taxa confirmada; senão velocidade do Excel (mediana da máquina e perfil na MTG3, mm²/h na MTG2).',
+    previstas: 'Horas que a Carga usa: taxa confirmada da tabela de velocidades; senão histórico válido (só com máquina confirmada); senão velocidade mais recente do Excel (MTG3) ou taxa mm²/h da folha CapacidadeMáquinas (MTG2). Com margem e tempo fixo por peça das Definições.',
     excel: 'Horas pela regra do próprio Excel, só na operação principal: MTG3 metros em falta ÷ velocidade Mt\\h da linha; MTG2 área ÷ taxa da folha CapacidadeMáquinas (×3 no Thomas acima de 50 peças). Escalada ao saldo atual.',
     reais: 'Horas declaradas nas folhas OCR validadas e horas corrigidas à mão, pela data de produção.',
     capacidade: 'Horas dos turnos dessa semana no calendário da máquina (na semana atual, só as que faltam).',
@@ -300,8 +300,17 @@
       ['Volume', `${h1.format(e.volume)} ${e.volume_unit}`],
       ['Taxa', `${h1.format(e.rate)} ${e.rate_unit}`],
       ['Origem da taxa', e.basis || '—'],
-      ['Horas previstas', `${h1.format(e.volume)} ÷ ${h1.format(e.rate)} = ${hrs(e.hours)}`],
     ];
+    // Tempo por peça e margem (tabela de velocidades e Definições): a conta mostrada tem de bater certo.
+    if (e.piece_seconds || e.margin_pct) {
+      if (e.piece_seconds) items.push(['Tempo por peça', `${h1.format(e.piece_seconds)} s`]);
+      if (e.margin_pct) items.push(['Margem', `${h1.format(e.margin_pct)} %`]);
+      const base = `${h1.format(e.volume)} ÷ ${h1.format(e.rate)}` +
+        (e.piece_seconds ? ` + ${h.format(e.remaining)} × ${h1.format(e.piece_seconds)} ÷ 3600` : '');
+      items.push(['Horas previstas', e.margin_pct ? `(${base}) × ${(1 + e.margin_pct / 100).toLocaleString('pt-PT', {maximumFractionDigits: 3})} = ${hrs(e.hours)}` : `${base} = ${hrs(e.hours)}`]);
+    } else {
+      items.push(['Horas previstas', `${h1.format(e.volume)} ÷ ${h1.format(e.rate)} = ${hrs(e.hours)}`]);
+    }
     return el('dl', {class: 'proof'}, items.map(([k, v]) => [el('dt', {}, k), el('dd', {}, v)]));
   }
 

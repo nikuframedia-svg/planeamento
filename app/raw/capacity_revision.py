@@ -9,7 +9,7 @@ from pydantic_core import from_json, to_json
 from .. import planning, planning_needs as needs, planning_raw as raw, planning_catalogs as catalogs, planning_dates, planning_calendars
 from . import query, projection, objects, workbooks
 
-CONTRACT = 'capacity-20260925-integral-v32'  # v32 (06/10): janela histórica até hoje (C3-F6); v31 (06/10): MTG3 calendarizada pela Data Corte; v30: códigos CPIS:/LOCAL: aceites; um turno = uma declaração; amostra mínima e plausibilidade do histórico
+CONTRACT = 'capacity-20260925-integral-v33'  # v33 (07/10): tabela de velocidades (intervalos, arranque por peça, origem Excel), margem e tempo fixo do setor, vigência das taxas por hoje, velocidade mais recente do Excel por máquina nas cantoneiras; v32 (06/10): janela histórica até hoje (C3-F6); v31 (06/10): MTG3 calendarizada pela Data Corte; v30: códigos CPIS:/LOCAL: aceites; um turno = uma declaração; amostra mínima e plausibilidade do histórico
 NON_PHYSICAL = {'', 'sem máquina', 'mtg3', 'subcontrato', 'abocardar', 'serrote mtg2', 'serrote mtg3'}
 
 
@@ -364,7 +364,17 @@ def rebuild(*,force=False):
                 raise planning.PlanningError('Capacidades pendentes: a origem de '+area+' mudou; aguardar o recálculo da área.',409)
         today=datetime.now(ZoneInfo(planning.settings.display_timezone)).date()
         reference_inputs={a:needs.digest(src['sheets']) for a,src in sources.items()}
-        fp=needs.digest([CONTRACT,str(today),versions,needs.serial(configs),{a:s['snapshot_id'] for a,s in sources.items()},reference_inputs])
+        from . import productivity
+        # Margem e tempo fixo por peça das Definições mudam as horas de todas as peças: entram no contrato
+        # (uma mudança obriga a um cálculo completo). Com tudo a 0 o contrato fica igual ao de sempre.
+        timing=productivity.sector_timing(c)
+        # Velocidade mais recente do Excel por máquina (cantoneiras): muda as horas de todas as linhas dessa máquina,
+        # mesmo das que não mudaram no ficheiro; por isso entra no contrato e uma mudança obriga a um cálculo completo.
+        recent=productivity.current_excel_speeds(c)
+        speeds={m:r['value'] for m,r in sorted(recent.items())}
+        varying={k:v for k,v in (('timing',timing if any(v for t in timing.values() for v in t.values()) else None),('excel_speeds',speeds or None)) if v}
+        contract=CONTRACT if not varying else CONTRACT+'|'+needs.digest(varying)
+        fp=needs.digest([contract,str(today),versions,needs.serial(configs),{a:s['snapshot_id'] for a,s in sources.items()},reference_inputs])
         prev=c.execute("SELECT * FROM planning_mtg.raw_generations WHERE dataset='capacity:perfis' ORDER BY id DESC LIMIT 1").fetchone()
         if prev and prev['metadata'].get('calculation_fingerprint',prev['metadata'].get('source_fingerprint'))==fp and not force:return
         publication_fp=needs.digest([fp,'forced',prev['id']]) if force and prev else fp
@@ -372,11 +382,10 @@ def rebuild(*,force=False):
         resources,aliases=resource_index(configs)
         def machine_key(area,name):return aliases.get((area,name)) or area+':'+str(name or 'Por definir')
         snapshots={a:src['snapshot_id'] for a,src in sources.items()}
-        from . import productivity
-        rate_context=productivity.Context(c,configs)
+        rate_context=productivity.Context(c,configs,timing=timing,recent_excel=recent)
         history_hash=rate_context.history_inputs_hash()
         history_unchanged=bool(prev and prev['metadata'].get('history_inputs_hash')==history_hash)
-        scope=None if force else capacity_scope.identify(c,prev,gens,versions,snapshots,configs,CONTRACT,str(today),machine_key,reference_inputs,history_unchanged=history_unchanged)
+        scope=None if force else capacity_scope.identify(c,prev,gens,versions,snapshots,configs,contract,str(today),machine_key,reference_inputs,history_unchanged=history_unchanged)
         result=calculate(c,configs,sources,gens,today=today,scope=scope,rate_context=rate_context)
         all_items,weekly,machine_rows=result['items'],result['weekly'],result['machines']
         published=publish_planning_results(c,gens,all_items,weekly,publication_fp,restored=scope['restored'] if scope else None,
@@ -387,7 +396,7 @@ def rebuild(*,force=False):
             'configuration_digest':needs.digest(needs.serial(configs)),'snapshots':{a:s['snapshot_id'] for a,s in sources.items()},
             'reference_inputs':reference_inputs,'history_inputs_hash':history_hash,'history_inputs_unchanged':history_unchanged,
             'reference_reuse_policy':'Unchanged workbook cells/formulas retain the cited immutable source evidence.',
-            'planning_versions':versions,'source_fingerprint':fp,'contract':CONTRACT,'scope':'Recurso físico; áreas partilhadas identificadas explicitamente','display_timezone':planning.settings.display_timezone}
+            'planning_versions':versions,'source_fingerprint':fp,'contract':contract,'sector_timing':timing,'excel_speeds':speeds,'scope':'Recurso físico; áreas partilhadas identificadas explicitamente','display_timezone':planning.settings.display_timezone}
         for area in planning.AREAS:
             visible_machines={r['key'] for r in machine_rows if area in r['areas']}
             capacity_scope.publish(c,'capacity_items:'+area,publication_fp,[r for r in all_items if r['values']['machine_key'] in visible_machines],meta,scope)

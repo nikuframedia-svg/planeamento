@@ -19,11 +19,14 @@ As ocorrências são tratadas por urgência (atraso, prazo), para que o trabalho
 primeiro. Uma sugestão nunca tira trabalho a uma máquina atribuída.
 
 Horas estimadas (só quando não há horas documentais para o saldo atual):
-- MTG3, operação principal: metros do saldo ÷ velocidade mediana do Excel (`Mt\\h`) dessa máquina para o
-  mesmo perfil (≥ 3 linhas), senão a mediana da máquina;
+- primeiro a tabela de velocidades das Definições (taxa confirmada, depois as linhas com origem Excel), com a
+  mesma escolha do motor e do Gantt (`productivity.match_rate`), em qualquer operação;
+- MTG3, operação principal: metros do saldo ÷ velocidade **mais recente** do Excel (`Mt\\h`) dessa máquina
+  (não depende do perfil; a mesma do motor de capacidade e do Gantt);
 - MTG2, operação principal: saldo × área de corte unitária ÷ taxa mm²/h da máquina no Excel
   (`CapacidadeMáquinas`), sem o fator ×3 da Thomas;
-- operações seguintes: sem taxa conhecida → continuam desconhecidas.
+- operações seguintes sem linha na tabela: continuam desconhecidas;
+- no fim, peças × tempo por peça (arranque da linha + tempo fixo do setor) e a margem do setor.
 """
 from __future__ import annotations
 
@@ -41,8 +44,23 @@ def _profile(value) -> str:
 
 
 def speed_for(study, names, profile):
-    """Excel speed for one machine (any of its names) and profile, with the basis used."""
+    """Excel speed for one machine (any of its names) and profile, with the basis used.
+
+    Plano de 06/10 (parte 3): a velocidade do Excel em vigor é a **mais recente** da máquina (moda das linhas
+    com Data Corte nas últimas semanas com dados, `productivity.recent_excel_speeds`), a mesma do motor de
+    capacidade e do Gantt. Não depende do perfil (medido a 06/10: a `Mt\\h` é constante por máquina), por isso
+    restos da transição num perfil (ex.: 6 linhas a 100 m/h numa máquina a 120) não contam. A mediana de todo o
+    histórico fica apenas como último recurso (estudos antigos sem a medida recente).
+    """
+    recent = study.get("recent_speeds") or {}
+    recent_profiles = study.get("recent_profile_speeds") or {}
     best = None
+    for name in sorted(n for n in names if n):
+        found = recent.get(name)
+        if found and found.get("value"):
+            return found["value"], found["lines"], f"velocidade mais recente do Excel de {name} ({found['lines']} linhas desde {found.get('from', '?')})"
+    if recent or recent_profiles:
+        return None  # a máquina não tem linhas com Data Corte: não se usa a mediana antiga de outra época
     for name in names:
         found = study["profile_speeds"].get((name, _profile(profile)))
         if found and found["lines"] >= MIN_PROFILE_LINES and (not best or found["lines"] > best[1]):
@@ -89,42 +107,98 @@ def calendar_capacity(c, resource_ids, today=None, weeks: int = 13) -> dict:
     return {rid: {"hours_median": median(v), "basis": "calendário"} for rid, v in hours.items() if v and median(v) > 0}
 
 
-def hours_on(fact, rid, *, by_id, names, study, rates):
+def hours_on(fact, rid, *, by_id, names, study, rates, table=None, timing=None, detail=None):
     """(horas, base, origem) de uma ocorrência numa máquina: a regra única da Carteira, da Carga e da previsão.
 
-    Horas documentais do saldo quando existem; senão a estimativa (`estimate`) dessa máquina.
+    Horas documentais do saldo quando existem; senão a estimativa (`estimate`) dessa máquina, que lê primeiro
+    a tabela de velocidades das Definições (`table`, objetos kind='rate') e aplica a margem e o tempo fixo do
+    setor (`timing`).
     """
     if fact["hours"] is not None:
         return fact["hours"], "documental", fact["hours_origin"]
     if not rid:
         return None, None, None
-    hours, why = estimate(fact, by_id.get(rid), names.get(rid, set()), study, rates) if study else (None, None)
+    if not study and not table:
+        return None, None, None
+    hours, why = estimate(fact, by_id.get(rid), names.get(rid, set()), study, rates, table=table, timing=timing, detail=detail)
     return (hours, "estimada", why) if hours is not None else (None, None, why)
 
 
-def estimate(fact, resource, names, study, area_rates):
-    """Hours for one occurrence on one machine, or (None, reason)."""
+def _hours(fact, rate, source, timing, detail=None, origin=None):
+    """Horas pela conta única do motor (capacity.estimate): volume ÷ velocidade + peças × tempo por peça, × margem.
+
+    `detail` (opcional) recebe a conta usada, para o «Ver cálculo» da Carga dizer a verdade (origem da taxa,
+    velocidade da tabela, tempo por peça e margem).
+    """
+    from ..raw.capacity import estimate as engine
+    from ..raw.productivity import timed
+    values = {"quantity_to_plan": fact["remaining"], "length_mm": fact.get("length_mm"), "section_unit": fact.get("section_unit")}
+    effective = timed(rate, source, timing)
+    hours, reason = engine(values, effective, fact.get("operation"))
+    if detail is not None and hours is not None:
+        detail.clear()
+        detail.update(origin=origin, method=rate.get("method"), rate=rate.get("value"),
+                      rate_piece_seconds=effective.get("rate_piece_seconds", effective.get("piece_seconds") or 0) or 0,
+                      fixed_piece_seconds=effective.get("fixed_piece_seconds") or 0,
+                      piece_seconds=effective.get("piece_seconds") or 0, margin_pct=effective.get("margin_pct") or 0)
+    return hours, reason
+
+
+def table_rate(fact, resource, table, *, tier):
+    """Linha da tabela de velocidades que vale para esta ocorrência nesta máquina (productivity.match_rate)."""
+    if not table or not resource or not resource.get("id"):
+        return None
+    from ..raw.productivity import match_rate, operation_names
+    values = {"profile": fact.get("profile"), "designation": fact.get("designation"), "section_unit": fact.get("section_unit"),
+              "material_type": None if fact.get("material_type") in (None, "Sem tipo") else fact.get("material_type")}
+    return match_rate(table, resource["id"], fact["area"], operation_names(fact.get("operation"), fact["phase"] == "principal", fact["area"]), values,
+                      tier=tier)
+
+
+def estimate(fact, resource, names, study, area_rates, *, table=None, timing=None, detail=None):
+    """Hours for one occurrence on one machine, or (None, reason).
+
+    Ordem (a mesma do motor e do Gantt, sem o histórico): taxa confirmada da tabela de velocidades; linha da
+    tabela com origem Excel; velocidade mais recente do Excel (cantoneiras) ou taxa mm²/h da CapacidadeMáquinas
+    (perfis, sem o fator ×3). Margem e tempo fixo por peça do setor somados no fim.
+    """
     remaining = fact["remaining"]
     if remaining is None:
         return None, "Saldo por confirmar."
+    for tier, label in (("Confirmada", "taxa confirmada"), ("Excel", "tabela de velocidades (origem Excel)")):
+        found = table_rate(fact, resource, table, tier=tier)
+        if found and found.get("conflict"):
+            return None, "Taxas da tabela de velocidades em conflito."
+        if found:
+            rate = found["rate"]
+            hours, reason = _hours(fact, rate, "Manual" if tier == "Confirmada" else "Excel provisório", timing, detail,
+                                   "taxa confirmada da tabela de velocidades" if tier == "Confirmada" else "velocidade da tabela de velocidades (origem Excel)")
+            if hours is None:
+                return None, reason
+            unit = {"metres_hour": "m/h", "area_hour": "mm²/h"}.get(rate.get("method"), rate.get("method"))
+            return hours, f"Estimativa: {label} de {resource['name']}, {rate['value']:g} {unit} ({found['basis']})"
     if fact["phase"] != "principal":
         return None, "Operação seguinte sem taxa conhecida."
     if fact["area"] == "cantoneiras":
         length = fact.get("length_mm")
         if not length:
             return None, "Comprimento desconhecido."
-        found = speed_for(study, names, fact["profile"])
+        found = speed_for(study or {"speeds": {}, "profile_speeds": {}}, names, fact["profile"])
         if not found:
             return None, "Velocidade da máquina desconhecida no Excel."
         value, _, basis = found
-        return remaining * length / 1000 / value, f"Estimativa: {basis}, {value:g} m/h"
+        hours, reason = _hours(fact, {"method": "metres_hour", "value": value}, "Excel provisório", timing, detail,
+                               "velocidade mais recente do Excel")
+        return (hours, f"Estimativa: {basis}, {value:g} m/h") if hours is not None else (None, reason)
     section = fact.get("section_unit")
     rate = area_rates.get(resource.get("code")) if resource else None
     if not section:
         return None, "Área de corte unitária por confirmar."
     if not rate:
         return None, "Taxa mm²/h da máquina desconhecida no Excel."
-    return remaining * section / rate, f"Estimativa: taxa Excel {rate:g} mm²/h de {resource['name']} (sem fator ×3)"
+    hours, reason = _hours(fact, {"method": "area_hour", "value": rate}, "Excel provisório", timing, detail,
+                           "taxa mm²/h da folha CapacidadeMáquinas do Excel (sem fator ×3)")
+    return (hours, f"Estimativa: taxa Excel {rate:g} mm²/h de {resource['name']} (sem fator ×3)") if hours is not None else (None, reason)
 
 
 SERIES_PIECES = 8      # «factor de selecção maq» of the workbook (Analise maq!Q1), confirmed by the data
@@ -191,7 +265,7 @@ def area_rates(metadata):
     return {code: next(iter(v)) for code, v in found.items() if len(v) == 1}
 
 
-def apply(facts, rows, *, codes, by_id, package, study, learned=None, calendar=None):
+def apply(facts, rows, *, codes, by_id, package, study, learned=None, calendar=None, table=None, timing=None):
     """Add suggested machine, planning machine and load hours to every occurrence (in place).
 
     `calendar` ({resource_id: {"hours_median"}}, de `calendar_capacity`) é a capacidade semanal das máquinas
@@ -209,15 +283,17 @@ def apply(facts, rows, *, codes, by_id, package, study, learned=None, calendar=N
     processes = group_processes(facts)
     peers = defaultdict(lambda: defaultdict(int))  # (OF, operation, profile) → machine → lines
 
-    def own_hours(fact, rid):
-        return hours_on(fact, rid, by_id=by_id, names=names, study=study, rates=rates)
+    def own_hours(fact, rid, detail=None):
+        return hours_on(fact, rid, by_id=by_id, names=names, study=study, rates=rates, table=table, timing=timing, detail=detail)
 
     for fact in facts:
         rid = fact["assigned_resource_id"]
-        hours, basis, why = own_hours(fact, rid)
+        detail = {}
+        hours, basis, why = own_hours(fact, rid, detail)
         fact.update(planning_resource_id=rid, planning_machine=fact["assigned_machine"] if rid else "Sem máquina",
                     machine_basis="atribuída" if rid else None, suggestion=None,
-                    load_hours=hours, load_basis=basis, load_origin=why)
+                    load_hours=hours, load_basis=basis, load_origin=why,
+                    load_estimate=detail if basis == "estimada" and detail else None)
         if rid and hours:
             load[rid] += hours
         if rid:
@@ -239,15 +315,16 @@ def apply(facts, rows, *, codes, by_id, package, study, learned=None, calendar=N
         options = []
         for c in candidates:
             rid = c["resource_id"]
-            hours, _, why = own_hours(fact, rid)
+            detail = {}
+            hours, _, why = own_hours(fact, rid, detail)
             cap = (capacity.get(rid) or {}).get("hours_median")
             weeks = (load[rid] + (hours or 0)) / cap if cap else None
             options.append((score(c, peer=peer, process=processes.get(group_key(fact)), hours=hours, weeks=weeks,
-                                  learned=(preference or {}).get("resource_id")), c, hours, why, weeks))
+                                  learned=(preference or {}).get("resource_id")), c, hours, why, weeks, detail))
         if not options:
             fact["load_origin"] = fact["load_origin"] or "Sem máquina candidata na ficha nem no histórico."
             continue
-        _, chosen, hours, why, weeks = min(options, key=lambda o: o[0])
+        _, chosen, hours, why, weeks, detail = min(options, key=lambda o: o[0])
         rid = chosen["resource_id"]
         peers[group_key(fact)][rid] += 1
         process = processes.get(group_key(fact))
@@ -265,7 +342,8 @@ def apply(facts, rows, *, codes, by_id, package, study, learned=None, calendar=N
                                 "with_of_peers": rid == peer, "process": chosen.get("process"), "preferred_process": process,
                                 "learned": preference if preference and rid == preference["resource_id"] else None})
         if fact["hours"] is None:
-            fact.update(load_hours=hours, load_basis="estimada" if hours is not None else None, load_origin=why)
+            fact.update(load_hours=hours, load_basis="estimada" if hours is not None else None, load_origin=why,
+                        load_estimate=detail if hours is not None and detail else None)
         if hours:
             load[rid] += hours
     return {"loads": dict(load), "capacity": {rid: c for rid, c in capacity.items() if c}}

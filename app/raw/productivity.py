@@ -123,17 +123,257 @@ MIN_SHIFTS, MIN_DAYS, MIN_HOURS = 3, 2, 15.0
 PLAUSIBLE = (0.25, 4.0)  # taxa histórica aceite entre ¼ e 4 vezes a velocidade do Excel
 
 
-def select_rate(values, *, area, operation, resource_id, manual, historical_rate, excel, when):
-    """H10 selection, before calculating hours. A conflict cannot fall through."""
-    applicable=[r for r in manual if r['definition'].get('confirmed')
-        and r['definition'].get('resource_id')==resource_id and r['definition'].get('area')==area
-        and str(r['definition'].get('operation'))==str(operation)
-        and all(not r['definition'].get(k) or key(r['definition'][k])==key(values.get(k)) for k in ('material_type','profile'))
-        and r['definition']['valid_from']<=when and (not r['definition'].get('valid_until') or when<=r['definition']['valid_until'])]
-    if len(applicable)>1:return {'source':None,'rate':None,'reason':'Taxas manuais aplicáveis em conflito.','candidates':[r['id'] for r in applicable]}
-    if applicable:
-        r=applicable[0]
-        return {'source':'Manual','rate':r['definition'],'configuration':r,'reason':None,'factor':1}
+# ---------------------------------------------------------------- tabela de velocidades (07/10/2026)
+# Uma só regra para Carteira, Carga, Gantt e motor de capacidade (plano de 06/10, parte 3):
+#   1. taxa confirmada da tabela (origem «Confirmada»);
+#   2. histórico válido (só no motor e no Gantt, com máquina confirmada);
+#   3. linha da tabela com origem «Excel» (semente «velocidades atuais do Excel»), tratada como Excel;
+#   4. velocidade do Excel da própria linha / da máquina.
+# Dentro da tabela: máquina, área e operação (nos dois formatos, 'CPIS:112' = '112', 'LOCAL:PRINCIPAL' =
+# 'corte'); tipo de material e perfil quando a linha os indica (a linha específica ganha à geral); a
+# espessura (cantoneiras, tirada da designação) ou a área de secção (perfis) dentro do intervalo, senão o
+# intervalo imediatamente superior. Vigência pela data de hoje (as linhas atrasadas usam a taxa de hoje).
+RANGE_FIELDS={'cantoneiras':('thickness_min','thickness_max'),'perfis':('section_min','section_max')}
+TIMING_FIELDS=('margin_pct','piece_minutes')
+
+
+def _code(operation):
+    from .capacity import operation_code
+    return operation_code(operation)
+
+
+def rate_tier(definition):
+    """'Excel' para as linhas criadas pela semente do Excel (até alguém as editar), senão 'Confirmada'."""
+    return 'Excel' if str((definition or {}).get('source') or '')=='Excel' else 'Confirmada'
+
+
+def operation_names(operation, principal, area=None):
+    """Nomes de taxa aceites para uma ocorrência (os mesmos no Gantt, na Carteira e no motor).
+
+    'corte' só nos perfis (é o nome da operação principal do motor de perfis); nas cantoneiras o motor procura
+    só o código da operação ('112', '119'), e a Carteira e o Gantt fazem o mesmo.
+    """
+    op=str(operation or '')
+    names={op,op.removeprefix('CPIS:')}
+    if principal and area!='cantoneiras':names.add('corte')
+    if op=='LOCAL:ABOCARDAR':names.add('abocardar')
+    return names
+
+
+def rate_dimension(area, values):
+    """Espessura (mm) nas cantoneiras, área de secção unitária (mm²) nos perfis; None se desconhecida."""
+    if area=='cantoneiras':
+        n=positive(values.get('thickness_mm'))
+        if n is not None:return n
+        try:from ..gantt.machines import dimensions
+        except ImportError:dimensions=_angle_dimensions  # o MES partilha app/raw sem app/gantt
+        for text in (values.get('profile'),values.get('designation')):
+            found=dimensions(text)
+            if found:return found[2]
+        return None
+    return positive(values.get('section_unit'))
+
+
+def _angle_dimensions(profile):
+    import re
+    found=re.fullmatch(r'L([0-9.]+)[X×*]+([0-9.]+)[X×*]+([0-9.]+)',re.sub(r'\s','',str(profile or '').upper()).replace(',','.'))
+    try:return tuple(float(v) for v in found.groups()) if found else None
+    except ValueError:return None
+
+
+def interval(definition, area):
+    lo,hi=RANGE_FIELDS.get(area,(None,None))
+    a=number(definition.get(lo)) if lo else None;b=number(definition.get(hi)) if hi else None
+    return (float('-inf') if a is None else a, float('inf') if b is None else b)
+
+
+def intervals_overlap(a, b):
+    """[de, até] fechados. Linhas encostadas (5–8 e 8–12) não se sobrepõem; um ponto num limite sobrepõe-se."""
+    lo,hi=max(a[0],b[0]),min(a[1],b[1])
+    if lo>hi:return False
+    if lo<hi:return True
+    return a[0]==a[1] or b[0]==b[1]
+
+
+def _valid_on(d, day):
+    start=str(d.get('valid_from') or '');end=str(d.get('valid_until') or '')
+    return (not start or start<=day) and (not end or day<=end)
+
+
+def match_rate(rates, resource_id, area, operation, values, when=None, *, tier=None):
+    """A linha da tabela de velocidades que vale para esta ocorrência, ou None.
+
+    `rates`: objetos raw_objects kind='rate' (com 'definition') ou definições soltas. `operation`: um código
+    ou um conjunto de nomes aceites. `when`: dia da vigência (por defeito hoje). `tier`: 'Confirmada' ou
+    'Excel' para escolher só essa origem. Devolve {'rate', 'configuration', 'basis'} ou, quando duas linhas
+    valem por igual, {'rate': None, 'conflict': [ids], 'reason'}.
+    """
+    day=str(when or date.today())[:10]
+    wanted={_code(x) for x in ([operation] if isinstance(operation,str) or operation is None else operation)}
+    pool=[]
+    for r in rates or ():
+        d=r.get('definition',r) if isinstance(r,dict) else {}
+        if not d.get('confirmed') or (isinstance(r,dict) and r.get('archived')):continue
+        if str(d.get('resource_id'))!=str(resource_id) or d.get('area')!=area or _code(d.get('operation')) not in wanted:continue
+        if tier and rate_tier(d)!=tier:continue
+        if not _valid_on(d,day):continue
+        if any(d.get(k) and key(d[k])!=key(values.get(k)) for k in ('material_type','profile','grade')):continue
+        pool.append((r,d))
+    if not pool:return None
+    dimension=rate_dimension(area,values)
+    # A linha que indica material/perfil ganha à geral; dentro de cada grupo, intervalo e depois o superior.
+    groups=defaultdict(list)
+    for r,d in pool:groups[tuple(bool(d.get(k)) for k in ('material_type','profile','grade'))].append((r,d))
+    for _,group in sorted(groups.items(),key=lambda kv:(-sum(kv[0]),kv[0])):
+        found=[];basis=None
+        if dimension is not None:
+            inside=[(interval(d,area),r,d) for r,d in group if interval(d,area)[0]<=dimension<=interval(d,area)[1]]
+            if inside:
+                best=min(i[0][1] for i in inside)
+                found=[(r,d) for i,r,d in inside if i[1]==best];basis='dentro do intervalo'
+            else:
+                above=[(interval(d,area),r,d) for r,d in group if interval(d,area)[0]>dimension]
+                if above:
+                    best=min(i[0][0] for i in above)
+                    found=[(r,d) for i,r,d in above if i[0]==best];basis='intervalo imediatamente superior'
+        else:
+            found=[(r,d) for r,d in group if interval(d,area)==(float('-inf'),float('inf'))];basis='sem intervalo'
+        if len(found)>1:
+            return {'rate':None,'conflict':sorted(str(r.get('id','')) for r,_ in found),'reason':'Taxas da tabela aplicáveis em conflito.'}
+        if found:
+            r,d=found[0]
+            return {'rate':d,'configuration':r if r is not d else None,'basis':basis,'dimension':dimension}
+    return None
+
+
+def _production_day(value):
+    """Um dia de produção explícito (Data Corte), ou None. Nunca escolhe entre vários dias («20+21/08»)."""
+    import re
+    text=str(value or '')[:10].strip()  # como o estudo da Carteira: os 10 primeiros caracteres
+    if not text or '+' in text:return None
+    try:day=date.fromisoformat(text[:10])
+    except ValueError:
+        found=re.match(r'^(\d{1,2})/(\d{1,2})/(\d{2,4})$',text)
+        if not found:return None
+        d,m,y=(int(x) for x in found.groups())
+        try:day=date(y+2000 if y<100 else y,m,d)
+        except ValueError:return None
+    return day if day.year>=2000 else None
+
+
+RECENT_WEEKS=8
+
+
+def recent_excel_speeds(rows, *, until, weeks=RECENT_WEEKS):
+    """Velocidade do Excel (m/h) em vigor por máquina: a moda das linhas com a Data Corte mais recente.
+
+    Medido a 06/10/2026: a velocidade `Mt\\h` não depende da espessura nem do perfil; é constante por máquina
+    (Rapid 20T 45, Rapid 25T 35, Peddi 6 50) ou mudou no tempo (XP T4/XP T6/Peddi 8: 80 → 100 → 120 m/h).
+    Conta só a janela das últimas `weeks` semanas com dados de cada máquina, pela Data Corte (até `until`; uma
+    máquina só com datas futuras usa as suas mais antigas). É a regra única da Carteira, da Carga, do motor de
+    capacidade e do Gantt quando não há taxa confirmada. Devolve ({máquina: {...}}, {(máquina, perfil): {...}},
+    {(máquina, operação): {...}}); os dois últimos só para consulta.
+    """
+    import re
+    from collections import Counter
+    lines=defaultdict(list)
+    for r in rows:
+        machine=str(r.get('Máquina Corte') or '').strip()
+        speed=number(r.get('Mt\\h'))
+        day=_production_day(r.get('Data Corte'))
+        if not machine or not speed or speed<=0 or day is None:continue
+        profile=re.sub(r'\s','',str(r.get('Tipo de perfil') or '').upper())
+        operation=str(r.get('1ª Oper.') or '').strip().removesuffix('.0')
+        lines[machine].append((day,speed,profile,operation))
+    by_machine,by_profile,by_operation={},{},{}
+
+    def mode(values):
+        counts=Counter(v for _,v in values)
+        latest={v:d for d,v in sorted(values)}  # empate: a velocidade da linha mais recente
+        return max(counts,key=lambda v:(counts[v],latest[v]))
+
+    for machine,items in lines.items():
+        past=[x for x in items if x[0]<=until]
+        pool=past or items
+        last=max(x[0] for x in pool) if past else min(x[0] for x in pool)
+        start=last-timedelta(weeks=weeks)
+        window=[x for x in items if start<x[0]<=last] if past else [x for x in items if x[0]<last+timedelta(weeks=weeks)]
+        by_machine[machine]={'value':mode([(d,s) for d,s,_,_ in window]),'lines':len(window),'from':start.isoformat(),'to':last.isoformat(),
+                             'values':dict(Counter(s for _,s,_,_ in window).most_common(4))}
+        for index,target in ((2,by_profile),(3,by_operation)):
+            groups=defaultdict(list)
+            for x in window:
+                if x[index]:groups[x[index]].append((x[0],x[1]))
+            for k,values in groups.items():target[(machine,k)]={'value':mode(values),'lines':len(values)}
+    return by_machine,by_profile,by_operation
+
+
+def current_excel_speeds(conn):
+    """{máquina: velocidade mais recente} do ficheiro de cantoneiras mais recente (o mesmo do estudo da Carteira)."""
+    found=conn.execute("SELECT to_regclass('raw_mtg.plan_production_rows') r, to_regclass('audit_mtg.snapshots') s").fetchone()
+    if not found['r'] or not found['s']:return {}  # base sem o Excel das cantoneiras (MES, testes)
+    try:snap=planning.snapshot(conn,'cantoneiras')
+    except planning.PlanningError:return {}
+    rows=conn.execute("SELECT row_data->>'Máquina Corte' m, row_data->>%s s, row_data->>'Data Corte' d "
+                      "FROM raw_mtg.plan_production_rows WHERE snapshot_id=%s",('Mt\\h',snap['snapshot_id'])).fetchall()
+    loaded=snap.get('loaded_at')
+    until=date.fromisoformat(str(loaded)[:10]) if loaded else date.today()
+    return recent_excel_speeds([{'Máquina Corte':r['m'],'Mt\\h':r['s'],'Data Corte':r['d']} for r in rows],until=until)[0]
+
+
+def current_excel(excel, recent, machine):
+    """Velocidade do Excel de uma linha de cantoneiras substituída pela mais recente da máquina (quando existe).
+
+    As linhas da tabela de velocidades (têm 'resource_id') e as taxas mm²/h ficam como estão.
+    """
+    if not excel or excel.get('method')!='metres_hour' or excel.get('resource_id'):return excel
+    found=(recent or {}).get(str(machine or '').strip())
+    if not found or not positive(found.get('value')):return excel
+    return {**excel,'value':found['value'],'unit':'m/h','source':'Velocidade mais recente do Excel',
+            'row_value':excel.get('value'),'excel_window':{'from':found.get('from'),'to':found.get('to'),'lines':found.get('lines')}}
+
+
+def sector_timing(conn):
+    """{área: {'margin_pct', 'piece_minutes'}} gravados nas Definições do setor (por defeito 0 = nada muda)."""
+    result={area:{'margin_pct':0.0,'piece_minutes':0.0} for area in planning.AREAS}
+    if not conn.execute("SELECT to_regclass('planning_mtg.sector_settings') t").fetchone()['t']:return result  # base sem Definições
+    rows=conn.execute("SELECT area,definition->'margin_pct' m,definition->'piece_minutes' p FROM planning_mtg.sector_settings").fetchall()
+    for r in rows:
+        if r['area'] in result:
+            result[r['area']]={'margin_pct':max(number(r['m']) or 0.0,0.0),'piece_minutes':max(number(r['p']) or 0.0,0.0)}
+    return result
+
+
+def timed(rate, source, timing):
+    """A taxa com o arranque por peça (da linha) mais o tempo fixo do setor e a margem, prontos para as contas.
+
+    O Histórico mede horas reais (já com arranques, manuseamento e perdas): nem margem nem tempo fixo.
+    """
+    if not rate:return rate
+    own=number(rate.get('rate_piece_seconds',rate.get('piece_seconds'))) or 0.0
+    timing=timing or {}
+    historical=source=='Histórico'
+    fixed=0.0 if historical else (number(timing.get('piece_minutes')) or 0.0)*60
+    margin=0.0 if historical else number(timing.get('margin_pct')) or 0.0
+    if not own and not fixed and not margin:return rate
+    return {**rate,'rate_piece_seconds':own,'fixed_piece_seconds':fixed,'piece_seconds':own+fixed,'margin_pct':margin}
+
+
+def select_rate(values, *, area, operation, resource_id, manual, historical_rate, excel, when, rate_day=None):
+    """H10 selection, before calculating hours. A conflict cannot fall through.
+
+    `rate_day` é o dia da vigência das taxas da tabela (o motor passa hoje); sem ele usa-se `when`.
+    """
+    day=str(rate_day or when)[:10]
+    found=match_rate(manual,resource_id,area,operation,values,day,tier='Confirmada')
+    if found and found.get('conflict'):return {'source':None,'rate':None,'reason':'Taxas manuais aplicáveis em conflito.','candidates':found['conflict'],'factor':1}
+    if found:
+        return {'source':'Manual','rate':found['rate'],'configuration':found['configuration'],'reason':None,'factor':1,'basis':found['basis']}
+    table=match_rate(manual,resource_id,area,operation,values,day,tier='Excel')
+    # Duas linhas com origem Excel em conflito só bloqueiam quando o histórico não vale (o histórico ganha-lhes).
+    conflict=table if table and table.get('conflict') else None
+    if conflict:table=None
+    if table:excel={**table['rate'],'source':'Excel','basis':table['basis']}
     historical_value=positive(historical_rate.get('value'))
     plausible=True
     if historical_value and excel and positive(excel.get('value')) and excel.get('method')==historical_rate.get('method'):
@@ -141,16 +381,23 @@ def select_rate(values, *, area, operation, resource_id, manual, historical_rate
         plausible=PLAUSIBLE[0]<=ratio<=PLAUSIBLE[1]  # longe demais da velocidade do Excel: amostra suspeita, fica o Excel
     if historical_value and plausible:
         return {'source':'Histórico','rate':{k:historical_rate[k] for k in ('method','value','unit','window') if k in historical_rate},'reason':None,'factor':1}
+    if conflict:return {'source':None,'rate':None,'reason':'Taxas da tabela aplicáveis em conflito.','candidates':conflict['conflict'],'factor':1}
     if excel and positive(excel.get('value')):
         factor=3 if area=='perfis' and operation=='corte' and values.get('machine')=='Serrote Fita Thomas IS639 Pav.1' and (quantity(values.get('quantity_required')) or 0)>50 else 1
-        return {'source':'Excel provisório','rate':{**excel,'value':excel['value']*factor},'reason':None,'factor':factor}
+        result={'source':'Excel provisório','rate':{**excel,'value':excel['value']*factor},'reason':None,'factor':factor}
+        if table:result['configuration']=table['configuration']
+        return result
     return {'source':None,'rate':None,'reason':historical_rate.get('reason') or 'Sem taxa manual, histórica ou Excel válida.','factor':1}
 
 
 class Context:
     """One database snapshot and memoized rates for a whole planning calculation."""
-    def __init__(self, conn, configs, *, rows_override=None, events_override=None):
+    def __init__(self, conn, configs, *, rows_override=None, events_override=None, timing=None, recent_excel=None):
         self.configs=needs.serial(configs);self.manual=[r for r in self.configs if r['kind']=='rate']
+        # Velocidade mais recente do Excel por máquina (cantoneiras): substitui o Mt\\h de cada linha.
+        self.recent_excel=recent_excel if recent_excel is not None else current_excel_speeds(conn)
+        # Margem e tempo fixo por peça das Definições de cada setor (0 = as horas não mudam).
+        self.timing=timing if timing is not None else sector_timing(conn)
         self.resources={r['id']:r for r in self.configs if r['kind']=='resource' and r['definition'].get('confirmed')}
         self.aliases={(a['area'],a['name']):r for r in self.resources.values() for a in r['definition']['aliases']}
         self.observed=worked_hours.observations(conn);self.events=[];self.cache={};self.time_cache={};self.history_hashes={}
@@ -224,7 +471,9 @@ class Context:
             self.scopes[cache_key]={'resource_id':resource['id'] if resource['id'] in self.resources else None,
                                     'machine':values.get('machine'),'area':area,'operation':str(operation)}
         history=self.cache[cache_key]
-        chosen=select_rate(values,area=area,operation=operation,resource_id=resource['id'],manual=self.manual,historical_rate=history,excel=excel,when=when)
+        if area=='cantoneiras':excel=current_excel(excel,getattr(self,'recent_excel',None),values.get('machine'))
+        # Vigência das taxas da tabela pela data de hoje (as_of), não pela data prevista (plano de 06/10, parte 3).
+        chosen=select_rate(values,area=area,operation=operation,resource_id=resource['id'],manual=self.manual,historical_rate=history,excel=excel,when=when,rate_day=str(as_of))
         digest=self.history_hashes[cache_key]
         return {**chosen,'history_hash':digest,'history':{k:v for k,v in history.items() if k not in ('cohorts','excluded')},
                 'excluded_cohorts':len(history['excluded'])}
@@ -246,10 +495,11 @@ class Context:
         if not allowed or resource and not supports(resource,operation):
             result={**applied,'source':None,'rate':None,'hours':None,'reason':'Operação por confirmar para este recurso.'}
             return {**result,'calculation':estimate_rule(values,result)}
-        h,reason=estimate(values,applied['rate'],operation) if applied['rate'] else (None,applied['reason'])
+        effective=timed(applied['rate'],applied['source'],getattr(self,'timing',{}).get(area))
+        h,reason=estimate(values,effective,operation) if applied['rate'] else (None,applied['reason'])
         if quantity(values.get('quantity_to_plan'))==0:h,reason=0,None
         result={**applied,'hours':h,'reason':reason}
-        return {**result,'calculation':estimate_rule(values,result)}
+        return {**result,'calculation':estimate_rule(values,{**result,'rate':effective})}
 
 
 def apply_rows(conn, area, rows, configs, *, persist=True, context=None, source=None, today=None):

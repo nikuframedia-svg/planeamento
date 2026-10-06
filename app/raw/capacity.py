@@ -6,13 +6,14 @@ from .. import planning,planning_needs as needs,planning_raw as old
 from . import objects,projection,query
 
 METHODS={'area_hour':'mm²/h','metres_hour':'m/h','units_hour':'un./h','minutes_unit':'min/un.','fixed_minutes':'min'}
-ESTIMATE_CONTRACT='planning-operation-hours-20260924-v2'  # v2 (06/10): janela histórica até hoje, amostra mínima e plausibilidade
+ESTIMATE_CONTRACT='planning-operation-hours-20260924-v3'  # v3 (07/10): tabela de velocidades (intervalos, arranque por peça), margem e tempo fixo do setor, vigência por hoje; v2 (06/10): janela histórica até hoje, amostra mínima e plausibilidade
+RATE_SOURCES=('Excel','Confirmada')
 
 
 def hourly_rate(rate):
     """A physical rate needs a compatible unit and cannot absorb a setup cost."""
     value=old.number(rate.get('value'))
-    if value is None or value<=0 or rate.get('setup_minutes'):return None
+    if value is None or value<=0 or rate.get('setup_minutes') or rate.get('piece_seconds'):return None
     unit={'area_hour':'mm²','metres_hour':'m','units_hour':'un.','minutes_unit':'un.'}.get(rate.get('method'))
     if unit is None:return None
     return unit,60/value if rate['method']=='minutes_unit' else value
@@ -63,13 +64,58 @@ def validate(c,kind,id,d):
     try:start=date.fromisoformat(d['valid_from']);end=date.fromisoformat(d['valid_until']) if d.get('valid_until') else None
     except (KeyError,ValueError):raise planning.PlanningError('Indica a vigência da taxa.')
     if end and end<start:raise planning.PlanningError('A vigência termina antes de começar.')
-    d={**d,'material_type':str(d.get('material_type') or '').strip(),'profile':str(d.get('profile') or '').strip(),'value':positive(d.get('value')),'setup_minutes':positive(d.get('setup_minutes',0),True),'confirmed':bool(d.get('confirmed'))}
+    d=validate_rate_fields(d)
     for r in c.execute("SELECT definition FROM planning_mtg.raw_objects WHERE kind='rate' AND NOT archived AND id<>%s",(id,)).fetchall():
-        x=r['definition']
-        if (x.get('resource_id'),x.get('area'),x.get('operation'))!=(d['resource_id'],d['area'],d['operation']):continue
-        scopes_overlap=all(not x.get(k) or not d.get(k) or x[k]==d[k] for k in ('material_type','profile'))
-        if scopes_overlap and x.get('confirmed') and d['confirmed'] and (not x.get('valid_until') or x['valid_until']>=str(start)) and (not end or x['valid_from']<=str(end)):raise planning.PlanningError('Existem taxas confirmadas com vigência sobreposta.',409)
+        if rates_conflict(r['definition'],d):raise planning.PlanningError('Existem taxas confirmadas sobrepostas para esta máquina, operação e material (espessura/área ou vigência).',409)
     return d
+
+
+def _optional(d,name,label,zero=True):
+    v=d.get(name)
+    if v in (None,''):return None
+    n=old.number(v)
+    if n is None or n<0 or not zero and n==0:raise planning.PlanningError(f'{label}: indica um número '+('não negativo.' if zero else 'positivo.'))
+    return n
+
+
+def validate_rate_fields(d):
+    """Campos de uma linha da tabela de velocidades (07/10/2026); todos os novos são opcionais.
+
+    Cantoneiras: espessura de/até (mm). Perfis: tipo de material e área de secção de/até (mm²). Ambos:
+    arranque/tempo por peça (s), notas e origem ('Excel' para a semente, 'Confirmada' depois de editada).
+    """
+    from . import productivity
+    lo_name,hi_name=productivity.RANGE_FIELDS.get(d.get('area'),(None,None))
+    clean={**d,'material_type':str(d.get('material_type') or '').strip(),'profile':str(d.get('profile') or '').strip(),
+           'operation':operation_code(str(d.get('operation') or '').strip()),
+           'value':positive(d.get('value')),'setup_minutes':positive(d.get('setup_minutes',0),True),'confirmed':bool(d.get('confirmed')),
+           'piece_seconds':_optional(d,'piece_seconds','Arranque por peça') or 0.0,
+           'notes':str(d.get('notes') or '').strip()[:500],
+           'source':str(d.get('source') or 'Confirmada')}
+    if clean['source'] not in RATE_SOURCES:raise planning.PlanningError('Origem da taxa desconhecida.')
+    for other in set(f for pair in productivity.RANGE_FIELDS.values() for f in pair)-{lo_name,hi_name}:
+        if d.get(other) not in (None,''):raise planning.PlanningError('Intervalo não aplicável a este setor.')
+        clean.pop(other,None)
+    if lo_name:
+        label='Espessura' if d.get('area')=='cantoneiras' else 'Área de secção'
+        lo=_optional(d,lo_name,label+' de');hi=_optional(d,hi_name,label+' até')
+        if lo is not None and hi is not None and hi<lo:raise planning.PlanningError(label+': o «até» é menor do que o «de».')
+        clean[lo_name]=lo;clean[hi_name]=hi
+    return clean
+
+
+def rates_conflict(x,d):
+    """Duas taxas confirmadas sobrepõem-se só na mesma máquina, área, operação, material e perfil, com
+    intervalos (espessura/área) e vigências que se cruzam. Linhas encostadas (5–8 e 8–12) não se sobrepõem."""
+    from . import productivity
+    from ..planning_calculations import key
+    if not (x.get('confirmed') and d.get('confirmed')):return False
+    if (str(x.get('resource_id')),x.get('area'),operation_code(x.get('operation')))!=(str(d.get('resource_id')),d.get('area'),operation_code(d.get('operation'))):return False
+    if productivity.rate_tier(x)!=productivity.rate_tier(d):return False  # a semente do Excel fica abaixo das confirmadas
+    if any(key(x.get(k))!=key(d.get(k)) for k in ('material_type','profile')):return False
+    if not productivity.intervals_overlap(productivity.interval(x,d['area']),productivity.interval(d,d['area'])):return False
+    start,end=str(d.get('valid_from') or ''),str(d.get('valid_until') or '')
+    return (not x.get('valid_until') or not start or str(x['valid_until'])>=start) and (not end or not x.get('valid_from') or str(x['valid_from'])<=end)
 
 
 def estimate_inputs(values,rate):
@@ -77,6 +123,10 @@ def estimate_inputs(values,rate):
     inputs={'quantity':q,'rate':rate,'method':method,'volume':None,
             'volume_unit':{'area_hour':'mm²','metres_hour':'m','units_hour':'un.','minutes_unit':'un.'}.get(method),
             'setup_minutes':0 if q==0 else rate.get('setup_minutes',0) if rate else None}
+    if rate and (rate.get('piece_seconds') or rate.get('margin_pct')):
+        # Arranque por peça (s) da linha + tempo fixo por peça do setor, e margem sobre o total (07/10/2026).
+        inputs.update(piece_seconds=old.number(rate.get('piece_seconds')) or 0.0,rate_piece_seconds=rate.get('rate_piece_seconds'),
+                      fixed_piece_seconds=rate.get('fixed_piece_seconds'),margin_pct=old.number(rate.get('margin_pct')) or 0.0)
     if method=='area_hour':inputs['section_unit']=old.number(values.get('section_unit'))
     if method=='metres_hour':inputs['length_mm']=old.number(values.get('length_mm'))
     if q is not None and q>=0 and q.is_integer():
@@ -109,6 +159,9 @@ def estimate_rule(values,applied):
               'minutes_unit':'Saldo × taxa (min/un.) / 60 + preparação (min) / 60',
               'fixed_minutes':'Minutos fixos / 60 + preparação (min) / 60'}
     formula='Saldo nulo: 0 h, sem preparação' if inputs['quantity']==0 and applied.get('hours')==0 else formulas.get(method,'Taxa e método por confirmar')
+    if method in formulas and inputs['quantity']!=0:
+        if inputs.get('piece_seconds'):formula+=' + saldo × tempo por peça (s) / 3600'
+        if inputs.get('margin_pct'):formula='('+formula+') × (1 + margem % / 100)'
     if applied.get('source')=='Excel provisório':
         inputs['excel_factor']=applied.get('factor',1)
         rate=old.number((applied.get('rate') or {}).get('value'))
@@ -118,6 +171,20 @@ def estimate_rule(values,applied):
 
 
 def estimate(values,rate,operation):
+    """Horas = volume ÷ velocidade + preparação + peças × (arranque s + tempo fixo do setor) / 3600, × (1 + margem %).
+
+    `piece_seconds` e `margin_pct` vêm na taxa (productivity.timed); sem eles as contas são as de antes.
+    """
+    hours,reason=_base_estimate(values,rate)
+    q=old.number(values.get('quantity_to_plan'))
+    if hours is None or not q:return hours,reason
+    piece=old.number(rate.get('piece_seconds')) or 0.0;margin=old.number(rate.get('margin_pct')) or 0.0
+    if piece:hours+=q*piece/3600
+    if margin:hours*=1+margin/100
+    return hours,reason
+
+
+def _base_estimate(values,rate):
     inputs=estimate_inputs(values,rate);q=inputs['quantity']
     if q is None or q < 0 or not q.is_integer():return None,'Quantidade prevista negativa, inválida ou por confirmar'
     if q==0:return 0,None
