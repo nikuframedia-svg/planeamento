@@ -108,12 +108,14 @@ def capture(conn, area, path=None):
     path = Path(path or os.getenv('MES_RAW_WORKBOOK_ROOT', '/home/luis/projects/DATARESEARCHMTG'))
     if path.is_dir(): path = path / src['source_filename']
     if not path.is_file(): return
+    # Excel mudado no disco depois da importação (07/10/2026): sem 409 a quem grava; valem os valores
+    # importados (source) até a cópia voltar a coincidir ou chegar a importação seguinte.
     digest = hashlib.sha256(path.read_bytes()).hexdigest()
     if digest != src['source_sha256']:
-        raise planning.PlanningError('A cópia Excel difere da versão importada; evidência de fórmulas pendente.', 409)
+        return
     sheets = extract(path, area)
     if hashlib.sha256(path.read_bytes()).hexdigest() != digest:
-        raise planning.PlanningError('O Excel mudou durante a leitura. Repete a consulta.', 409)
+        return
     conn.execute('INSERT INTO planning_mtg.raw_workbook_evidence(snapshot_id,source_sha256,source_filename,sheets) VALUES(%s,%s,%s,%s) ON CONFLICT DO NOTHING',
                  (snap['snapshot_id'], digest, src['source_filename'], Jsonb(sheets)))
 

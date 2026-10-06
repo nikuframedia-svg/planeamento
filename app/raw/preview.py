@@ -14,16 +14,16 @@ def preview(payload):
     raw=dict(payload.get('values') or {})
     if set(raw)-{f['id'] for f in catalogs.fields()}:raise planning.PlanningError('A produção e os resultados calculados são obtidos pelo servidor.')
     from . import registration as free
-    if not free.enabled():raw.pop('quantity_to_plan',None)
+    from .edits import current_source
     decisions=payload.get('decisions') or {}
     if not isinstance(decisions,dict) or any(v not in ('write','select','accept','clear') for v in decisions.values()):
         raise planning.PlanningError('Decisões de preparação inválidas.')
     with planning.connect(readonly=True) as conn:
         conn.execute('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ')
+        # Sem 409 (07/10/2026): calcula sobre o catálogo, a origem e a peça na versão atual.
         cat=catalogs.catalog(area,conn)
-        if payload.get('catalog_version')!=cat['version']:raise planning.PlanningError('O catálogo mudou. Atualiza as opções antes de calcular.',409)
-        src=needs.source_data(payload.get('source'),area,conn) if payload.get('source') else None
-        need=needs.load(conn,payload['need_id'],payload.get('expected_revision')) if payload.get('need_id') else None
+        src=current_source(conn,payload.get('source'),area)
+        need=needs.load(conn,payload['need_id']) if payload.get('need_id') else None
         of=need['production_order_no'] if need else order_number(src['of'] if src else payload.get('production_order_no'))
         if not of:raise planning.PlanningError('Indica uma OF válida para calcular a peça.')
         if src and order_number(src['of'])!=of:raise planning.PlanningError('A origem pertence a outra OF.',409)
@@ -35,10 +35,6 @@ def preview(payload):
             matches=[r for r in rows if needs.complete(proposed) and needs.signature(r['values'])==needs.signature(proposed)
                 and planning._number(r['values'].get('quantity_required'))==planning._number(proposed.get('quantity_required'))]
             if len(matches)==1:base=matches[0]
-            else:
-                similar=[r for r in rows if catalogs.key(r['values'].get('component_ref'))==catalogs.key(proposed.get('component_ref')) and proposed.get('component_ref')]
-                if similar:return needs.serial({'needs_decision':True,'reason':'Existem peças semelhantes. Escolhe a associação ao guardar antes de usar os saldos.',
-                    'candidates':[{'key':r['key'],'values':r['values']} for r in similar],'preview':True})
         if base and base.get('need_id') and need is None:need=needs.load(conn,base['need_id'])
         if base is None:
             base={'key':str(need['id']) if need else 'preview','need_id':str(need['id']) if need else 'preview',
@@ -55,13 +51,12 @@ def preview(payload):
             base['status']=context.get('cpis_status');base['status_values']=context.get('status_values',[])
             base['values']['status']=base['status'];planning_population.annotate(base)
         row=deepcopy(base)
-        if free.enabled():row['input_values']={**row.get('input_values',{}),**raw}
-        op=str(raw.get('operation') or row['values'].get('operation') or ('corte' if area=='perfis' else 'por_definir'))
+        row['input_values']={**row.get('input_values',{}),**raw}
+        op=str(raw.get('operation') or row['values'].get('operation') or free.DEFAULTS[area]['operation'])
         previous_preparation=next((r for r in row['preparations'] if r['values_json'].get('operation')==op),None)
         previous={**row['values'],**(previous_preparation['values_json'] if previous_preparation else {}),**(need['specification'] if need else {})}
-        if op=='por_definir':cat['operations'].append({'value':op,'label':'Por definir','countable':False,'sequence':1})
-        if op=='abocardar' and previous_preparation:cat['operations'].append({'value':op,'label':'Abocardar','countable':True,'sequence':2})
-        vals=(free.normalize({**raw,'operation':op},cat,previous)[0] if free.enabled() else catalogs.validate({**raw,'operation':op},cat,previous=previous))
+        section_table=calculations.sections(conn,meta['snapshot']['snapshot_id'])
+        vals,warnings=free.normalize({**raw,'operation':op},cat,previous,sections=section_table if area=='perfis' else None)
         technical_changed=bool(need and any(need['specification'].get(k)!=vals.get(k) for k in needs.TECH_FIELDS))
         if need and technical_changed:
             hypothetical={**need,'specification':{k:vals.get(k) for k in needs.PIECE_FIELDS},
@@ -95,7 +90,7 @@ def preview(payload):
         local=(payload.get('local_order') or {}).get('values') or {}
         if not row['values'].get('delivery_date'):row['values']['delivery_date']=local.get('delivery_date')
         snap=meta['snapshot']['snapshot_id']
-        calculations.recalculate(row,calculations.sections(conn,snap),calculations.weights(conn,snap))
+        calculations.recalculate(row,section_table,calculations.weights(conn,snap))
         configs=conn.execute("SELECT * FROM planning_mtg.raw_objects WHERE kind IN ('resource','calendar','rate','period','worked_hours') AND NOT archived").fetchall()
         productivity.apply_rows(conn,area,[row],configs,persist=False)
         simulated=capacity_preview.apply(conn,area,row,base,configs)
@@ -108,4 +103,5 @@ def preview(payload):
             'value':row['values'].get(name),'source':rule.get('source'),'reason':rule.get('reason')}
             for name,rule in row['calculation']['rules'].items() if name in fields]
         return needs.serial({'preview':True,'saved':False,'results':results,'need_revision':need['revision'] if need else None,
+            'registration_warnings':warnings,
             'calculated_at':datetime.now(timezone.utc),'source':meta,'row':row,'capacity_preview':simulated})

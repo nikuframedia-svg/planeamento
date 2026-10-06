@@ -12,6 +12,7 @@ que vem com ela (raw_mtg.cpis_rows):
 - Máquina: mesma OF + mesmo perfil → mesma OF → escolhas anteriores (machine_learning, filtradas pela ficha
   técnica quando a linha já existe na Carteira) → conjunto de famílias (machine_choice.effective).
 - A partir da mesma Referência (OF nova): tipo de material, perfil, comprimento, 1.ª/2.ª operação, qualidade.
+  Nas cantoneiras, sem mais nada, 1.ª Oper. 119 e 2.ª Oper. 0 (os valores por defeito do registo, 07/10/2026).
 - Dimensões a partir da Designação (geometry.parse_profile; cantoneiras L…X…X…) e Qualidade da Des. Material.
 
 Resultado: {campo: {"value", "source_pt", "confidence"}}; confidence = quota do valor escolhido (0–1) no nível
@@ -323,6 +324,13 @@ def suggest(area: str, of: str, reference: str | None = None, profile: str | Non
             _put(out, field, most(same, attr), "linha do Excel desta OF")
         elif reference:
             _put(out, field, idx.vote(attr, "ref", reference, exclude_of), "mesma referência noutras OF")
+    # Sem outra indicação, a 1.ª/2.ª Oper. por defeito, a mesma que se grava com o campo vazio (07/10/2026):
+    # 119 em 83% e 0 em 69% das linhas das cantoneiras importadas a 07/10.
+    if area == "cantoneiras":
+        from .raw.registration import DEFAULTS
+        for field, share in (("operation", 0.83), ("operation_detail", 0.69)):
+            if field not in out:
+                out[field] = {"value": DEFAULTS[area][field], "source_pt": "habitual nas cantoneiras", "confidence": share}
 
     # Equipa.
     customer = text(values.get("customer"))

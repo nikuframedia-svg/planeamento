@@ -96,9 +96,10 @@ def test_first_section_follows_the_excel_columns_of_each_sector():
         fields = planning_catalogs.arrange(planning_catalogs.fields(), area)
         return [f["id"] for f in sorted(fields, key=lambda f: f["order"]) if f["group"] == "piece" and f["editor_visible"]]
     # Pedido do Luís (06/10/2026, noite): todas as colunas do Excel, pela ordem do Excel, e a Máquina.
+    # O Picking ano saiu a 07/10/2026: é deduzido sozinho.
     assert first("perfis") == ["cut_date", "component_ref", "material_type", "profile", "quantity_required",
                                "outer_diameter_mm", "width_mm", "height_mm", "thickness_mm", "length_mm", "angle_deg",
-                               "grade", "abocardar", "picking_week", "picking_year", "team", "pavilion", "machine"]
+                               "grade", "abocardar", "picking_week", "team", "pavilion", "machine"]
     assert first("cantoneiras") == ["cut_date", "component_ref", "material_type", "quantity_required", "profile",
                                     "length_mm", "operation", "operation_detail", "team", "pavilion", "machine"]
     hidden = {f["id"] for f in planning_catalogs.arrange(planning_catalogs.fields(), "cantoneiras") if not f["editor_visible"]}

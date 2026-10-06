@@ -26,55 +26,103 @@ def macro_candidates(conn,area,of,values):
     return result
 
 
+def editor_fields(area):
+    """Campos que o formulário de registo mostra e envia para este setor."""
+    return {f['id'] for f in catalogs.arrange(catalogs.fields(),area) if f['editor_visible']}
+
+
+def linked_plan_lines(conn,area,of):
+    """Linhas do Excel desta OF já ligadas a uma peça, pelo identificador da importação atual."""
+    linked=set()
+    for s in conn.execute("""SELECT s.source_id FROM planning_mtg.need_sources s JOIN planning_mtg.needs n ON n.id=s.need_id
+        WHERE s.kind='plan_line' AND n.production_order_no=%s""",(of,)).fetchall():
+        try:linked.add(needs.source_data({'kind':'plan_line','id':s['source_id']},area,conn)['id'])
+        except planning.PlanningError:continue
+    return linked
+
+
+def current_source(conn,source,area):
+    """A origem na versão atual (07/10/2026: uma importação com o formulário aberto já não dá 409).
+
+    Uma linha do Excel que deixou de existir na importação atual conta como registo manual.
+    """
+    if not source:return None
+    try:return needs.source_data({k:v for k,v in source.items() if k!='version'},area,conn)
+    except planning.PlanningError:
+        if source.get('kind')=='plan_line':return None
+        raise
+
+
 @incremental.retry_serialization
 def prepare(p):
+    """Gravar do formulário de registo: grava sempre (07/10/2026).
+
+    Se a peça ou a origem mudaram entretanto (importação do Excel, outra pessoa), só os campos que o
+    formulário mudou (changed_fields) vão por cima da versão atual. Um pedido sem essa informação
+    (cliente antigo) grava tudo o que trouxe, como antes de haver conflitos de revisão.
+    """
     try:
         with planning.connect() as c:
             c.execute('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ')
             _,_,old=needs.command(c,p)
             if old:return old
             before=incremental.baseline(c)
-            area=planning.check_area(p.get('area'));src=needs.source_data(p.get('source'),area,c) if p.get('source') else None
-            values={**(src['values'] if src else {}),**(p.get('values') or {})};of=order_number(src['of'] if src else p.get('production_order_no'))
-            nid=p.get('need_id');revision=p.get('expected_revision');chosen=None
-            if src and p.get('production_order_no') and order_number(p['production_order_no'])!=of:raise planning.PlanningError('A OF do documento difere da OF selecionada. Confirma qual a ordem a utilizar.',409)
+            area=planning.check_area(p.get('area'));source=p.get('source') or None
+            src=current_source(c,source,area)
+            # Um PDF de outra OF usa a OF do PDF; o formulário avisa e não bloqueia.
+            of=order_number(src['of'] if src else p.get('production_order_no'))
+            nid=p.get('need_id');revision=None;chosen=None
+            stale=bool(source) and (src is None or (source.get('version') is not None and str(source['version'])!=str(src['version'])))
+            if nid:
+                revision=needs.refresh(c,needs.load(c,nid))['revision']
+                stale=stale or p.get('expected_revision')!=revision
+            entered=dict(p.get('values') or {});decisions=dict(p.get('decisions') or {})
+            if stale and isinstance(p.get('changed_fields'),list):
+                keep=set(p['changed_fields'])|({'operation'} if nid else set())
+                entered={k:v for k,v in entered.items() if k in keep}
+                decisions={k:v for k,v in decisions.items() if k in keep}
+                if src and not nid:entered={**{k:v for k,v in src['values'].items() if k in editor_fields(area)},**entered}
+            values={**(src['values'] if src else {}),**entered}
             if nid and src:
-                linked=needs.resolve({'request_id':str(uuid.uuid5(needs.uid(p['request_id']),'link')),'area':area,'source':p['source'],'need_id':nid,'expected_revision':revision,'reason':p.get('reason') or 'Reabertura da origem já associada.'},conn=c)
+                linked=needs.resolve({'request_id':str(uuid.uuid5(needs.uid(p['request_id']),'link')),'area':area,'source':{k:v for k,v in source.items() if k!='version'},'need_id':nid,'expected_revision':revision,'reason':p.get('reason') or 'Reabertura da origem já associada.'},conn=c)
                 if linked.get('needs_decision'):raise Candidates(linked)
                 if str(linked['need_id'])!=str(nid):raise planning.PlanningError('O documento já está associado a outra peça. Reabre a origem.',409)
                 revision=linked['revision']
             if not nid:
                 if not of:raise planning.PlanningError('Seleciona uma OF válida.')
                 possible=macro_candidates(c,area,of,values) if not src or src['kind']!='plan_line' else []
-                matches=[r for r in possible if r['exact'] and r['same_quantity']]
                 chosen=next((r for r in possible if r['plan_key']==p.get('selected_plan_key')),None)
-                if p.get('selected_plan_key') and not chosen:raise planning.PlanningError('A linha escolhida mudou. Atualiza as candidatas.',409)
-                if chosen and not free.enabled() and not str(p.get('reason') or '').strip():raise planning.PlanningError('Justifica a associação à linha escolhida.')
-                if not chosen and len(matches)==1:chosen=matches[0]
-                elif not chosen and possible and not p.get('create_distinct') and not free.enabled():
-                    raise Candidates({'needs_decision':True,'candidates':possible,'suggestion':values,'production_order_no':of})
-                if not free.enabled() and p.get('create_distinct') and possible and (not values.get('identity_discriminator') or not p.get('reason')):raise planning.PlanningError('Identifica o que distingue a peça e justifica a necessidade adicional.')
-                resolution={k:p[k] for k in ('area','production_order_no','source','reason','create_distinct') if k in p}
-                resolution.update(_allow_unresolved=free.enabled(),values=values,request_id=str(uuid.uuid5(needs.uid(p['request_id']),'resolve')))
+                if not chosen and possible and not p.get('create_distinct'):
+                    # Peça possivelmente repetida (07/10/2026): com uma só linha do Excel livre com a mesma
+                    # OF e Referência, liga-se a ela; com nenhuma ou várias, conta como peça própria.
+                    taken=linked_plan_lines(c,area,of)
+                    free_lines=[r for r in possible if r['plan_key'] not in taken]
+                    exact=[r for r in free_lines if r['exact'] and r['same_quantity']]
+                    chosen=exact[0] if len(exact)==1 else free_lines[0] if len(free_lines)==1 else None
+                if chosen:
+                    # O que ficou por escrever vem da linha do Excel, para a peça continuar compatível com o saldo dela.
+                    line=needs.source_data({'kind':'plan_line','id':chosen['plan_key']},area,c)['values']
+                    entered={**{k:v for k,v in line.items() if k in editor_fields(area)},**{k:v for k,v in entered.items() if v not in (None,'')}}
+                    values={**values,**entered}
+                resolution={k:p[k] for k in ('area','production_order_no','reason','create_distinct') if k in p}
+                if src:resolution['source']={k:v for k,v in source.items() if k!='version'}
+                resolution.update(_allow_unresolved=True,values=values,request_id=str(uuid.uuid5(needs.uid(p['request_id']),'resolve')))
                 result=needs.resolve(resolution,conn=c)
                 if result.get('needs_decision'):raise Candidates(result)
                 nid=result['need_id'];revision=result['revision']
-                if free.enabled() and possible and not chosen:
-                    from psycopg.types.json import Jsonb
-                    c.execute('UPDATE planning_mtg.needs SET identity_pending=true,identity_candidates=identity_candidates || %s WHERE id=%s',
-                        (Jsonb([{'kind':'plan_line','id':r['plan_key'],'version':r['source_version']} for r in possible]),nid))
             if chosen:
-                result=needs.resolve({'request_id':str(uuid.uuid5(needs.uid(p['request_id']),'macro')),'area':area,'source':{'kind':'plan_line','id':chosen['plan_key'],'version':chosen['source_version']},'need_id':nid,'expected_revision':revision,'reason':p.get('reason') or 'Correspondência técnica completa, única e com a mesma quantidade.'},conn=c)
+                result=needs.resolve({'request_id':str(uuid.uuid5(needs.uid(p['request_id']),'macro')),'area':area,'source':{'kind':'plan_line','id':chosen['plan_key'],'version':chosen['source_version']},'need_id':nid,'expected_revision':revision,'reason':p.get('reason') or 'Única linha do Excel com a mesma OF e Referência.'},conn=c)
                 revision=result['revision']
-            save_values=dict(p.get('values') or {})
+            save_values=dict(entered);typed=set(decisions)|set(p.get('changed_fields') or [])
             if src:
                 for f in c.execute('SELECT * FROM planning_mtg.field_state WHERE need_id=%s',(nid,)).fetchall():
-                    if f['field'] in save_values and f['field'] not in (p.get('decisions') or {}) and f.get('human_decision'):save_values[f['field']]=f['value']
-            result=needs.save({**p,'values':save_values,'request_id':str(uuid.uuid5(needs.uid(p['request_id']),'save')),'need_id':nid,'expected_revision':revision},conn=c)
+                    if f['field'] in save_values and f['field'] not in typed and f.get('human_decision'):save_values[f['field']]=f['value']
+            result=needs.save({**p,'values':save_values,'decisions':decisions,'request_id':str(uuid.uuid5(needs.uid(p['request_id']),'save')),'need_id':nid,'expected_revision':revision},conn=c)
             if p.get('local_order') is not None:
                 from .. import planning_local_orders
                 need=needs.load(c,nid)
-                context=planning_local_orders.save(c,need['production_order_no'],p['local_order'],needs.registration.human_actor(p))
+                context=planning_local_orders.save(c,need['production_order_no'],p['local_order'],needs.registration.human_actor(p),
+                                                 merge=True,changed_fields=p.get('local_order_changed_fields'))
                 result['local_order']=needs.serial(context)
             projection.signal(c,'planning:'+area)
             published=incremental.publish(c,before,[needs.load(c,nid)['production_order_no']],[nid],p['request_id'])

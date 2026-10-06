@@ -10,3 +10,5 @@ input.suggested,select.suggested{background:#eef5f9;color:#3f6378;border-style:d
 .piece-calc{color:var(--muted);margin:14px 0 0}
 .save-section{margin:16px 0}.save-section .actions{margin-top:0}.save-section .help:empty{display:none}
 @media(max-width:650px){details.section{padding:12px 14px}}
+/* Registo só com o essencial (07/10/2026): aviso discreto ao lado do campo, sem ocupar espaço quando não há. */
+.field-note:empty,#quantity-summary:empty{display:none}

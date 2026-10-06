@@ -31,11 +31,15 @@ def recalculate(row, section_table, weight_table):
     operations=row.get('operations',[])
     manual_quantity=('quantity_to_plan' in row.get('input_values',{}))
     declared_quantity=v.get('quantity_to_plan')
+    # «Nada produzido ainda» vale para qualquer peça sem linha do Excel, também a que veio de um PDF
+    # (07/10/2026); antes só a peça escrita à mão, e a do PDF ficava sem saldo.
+    excel=row.get('plan_key') or any(s.get('kind')=='plan_line' for s in row.get('sources') or [])
     result=calculate(v,area=row['area'],raw=row['raw'],operations=operations,
-        local_initial=bool(row.get('need_id') and not row.get('sources') and not row.get('plan_key')),
+        local_initial=bool(row.get('need_id') and not excel),
         compatible=compatible,sections=section_table,weights=weight_table,
         today=datetime.now(ZoneInfo(planning.settings.display_timezone)).date(),
-        density=7850 if row['area']=='perfis' and row.get('plan_key') else None)
+        density=7850 if row['area']=='perfis' and row.get('plan_key') else None,
+        declared_remaining=v.get('remaining_declared'))  # «Qtd em falta»: só o registo manual a guarda
     row['values']=result['values']
     if manual_quantity:
         row['values']['quantity_to_plan']=declared_quantity

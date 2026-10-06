@@ -156,8 +156,7 @@ def save(payload):
         if payload.get('expected_revision')!=revision:raise planning.PlanningError('A associação mudou. Atualiza a evidência.',409)
         fingerprint=evidence_fingerprint(record)
         if payload.get('evidence_hash')!=fingerprint:raise planning.PlanningError('A evidência mudou. Reabre a associação.',409)
-        reason=str(payload.get('reason') or '').strip()
-        if not reason:raise planning.PlanningError('Justifica a decisão de associação.')
+        reason=str(payload.get('reason') or '').strip()  # opcional desde 07/10/2026; o autor e a hora ficam registados
         status=payload.get('status','associated')
         if status not in ('associated','pending','unrelated'):raise planning.PlanningError('Decisão inválida.')
         allocations=payload.get('allocations') or []

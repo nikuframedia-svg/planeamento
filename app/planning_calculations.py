@@ -10,7 +10,7 @@ from . import planning_dates
 import math
 import re
 
-CONTRACT = 'planning-integral-20260925-v9'  # v9 (06/10): semana prevista MTG3 pela Data Corte; v8: contador Excel vazio conta 0 quando a folha o confirma
+CONTRACT = 'planning-integral-20260925-v10'  # v10 (07/10): «Qtd em falta» do registo manual, aço 7850 sem Qual. e PDF sem Excel começa a 0; v9 (06/10): semana prevista MTG3 pela Data Corte; v8: contador Excel vazio conta 0 quando a folha o confirma
 
 # Keep the attempted rule visible even when its operands are unavailable/invalid.
 GEOMETRY = {
@@ -149,10 +149,15 @@ def section(values, table=None):
 
 
 def calculate(values, *, area='perfis', raw=None, operations=(), local_initial=False,
-              compatible=True, sections=None, weights=None, today=None, density=None):
-    """Pure calculation used by projection and previews; returns values + provenance."""
+              compatible=True, sections=None, weights=None, today=None, density=None, declared_remaining=None):
+    """Pure calculation used by projection and previews; returns values + provenance.
+
+    `declared_remaining` é a «Qtd em falta» escrita no registo manual: passa a ser o saldo da operação
+    principal (no máximo a QTD), com a produção implícita Q − saldo.
+    """
     v = dict(values); raw = raw or {}; today = today or date.today(); rules = {}
     q = quantity(v.get('quantity_required')); length = positive(v.get('length_mm'))
+    declared = quantity(declared_remaining)
     v['quantity_required'] = q
     ops = {str(op['operation']): dict(op) for op in operations}
     mark = abocardar(v.get('abocardar'))
@@ -176,6 +181,8 @@ def calculate(values, *, area='perfis', raw=None, operations=(), local_initial=F
         result = production_source(op, macro, compatible=compatible, local_initial=local_initial)
         if other_operation_excel and result['value'] is None:
             result['reason'] += f' O acumulado Excel pertence à operação {original_primary}.'
+        if code == primary and declared is not None and q is not None:
+            result.update(value=q-min(declared, q), origin='Qtd em falta (registo manual)', reason=None)
         made = result['value']
         result.update(operation=code, remaining=max(q-made,0) if q is not None and made is not None else None,
                       percent=100*made/q if q and made is not None else None,
@@ -273,7 +280,8 @@ def calculate(values, *, area='perfis', raw=None, operations=(), local_initial=F
         weight_inputs={'profile':v.get('profile'),'kg_m':next(iter(rates)) if len(rates)==1 else None,'L':length}
         weight_reason='Pesos divergentes para a designação exata.' if len(rates)>1 else 'Sem peso exato ou comprimento conhecido.'
     else:
-        if density is None and re.match(r'^(S\d|C\d|B\d|DX\d)',str(v.get('grade') or '').upper()): density=7850
+        # Aço 7850 kg/m³ pela Qual. ou, sem Qual., por defeito (07/10/2026: só para o peso).
+        if density is None and (not str(v.get('grade') or '').strip() or re.match(r'^(S\d|C\d|B\d|DX\d)',str(v.get('grade') or '').upper())): density=7850
         if unit is not None and length and positive(density): weight_unit=unit/1e6*length/1000*density
         weight_source={'density_kg_m3':density,'rule':'Met2 Planeamento!DB/DC · aço 7850 kg/m³' if density==7850 else 'Densidade explícita' if positive(density) else 'Densidade por confirmar'}
         weight_inputs={'A':unit,'L':length,'density_kg_m3':density}

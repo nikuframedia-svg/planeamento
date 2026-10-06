@@ -115,3 +115,14 @@ def test_registered_excel_line_keeps_the_excel_notes(manual):
     mine = [r for r in rows if not r["row_key"].startswith("macro:") and str(r["row_key"]) == str(saved["need_id"])]
     assert mine, [r["row_key"] for r in rows]
     assert mine[0]["observations"] == "Fabricar após validação do cliente" and mine[0]["notes"] == "anulada"
+
+
+def test_only_of_quantity_and_length_save_and_reach_the_carteira(manual, monkeypatch):
+    """Só o essencial (07/10/2026): OF + QTD + Comp. grava, sem o interruptor antigo, e a linha entra na Carteira."""
+    monkeypatch.delenv("MES_PLANNING_FREE_ENTRY")
+    saved = register({"quantity_required": "7", "length_mm": "2500"})
+    assert saved["record_status"] == "ready"
+    # Avisos discretos, nunca a impedir: sem máquina e sem área de corte (sem horas).
+    assert {w["field"] for w in saved["registration_warnings"]} == {"machine", "profile"}
+    lines = [x for x in portfolio.current("perfis", today=TODAY)["lines"] if x["key"] == str(saved["need_id"])]
+    assert len(lines) == 1 and lines[0]["pieces"] == 7 and lines[0]["metres"] == 17.5 and not lines[0]["machine"]

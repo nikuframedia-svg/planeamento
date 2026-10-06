@@ -55,16 +55,15 @@ def test_repeat_save_reuses_identity_and_does_not_sum_quantities(free_registrati
         assert c.execute('SELECT quantity_required FROM planning_mtg.needs').fetchone()['quantity_required'] == 100
 
 
-def test_ambiguous_input_is_saved_pending_instead_of_counted_twice(free_registration):
+def test_similar_input_counts_as_its_own_piece(free_registration):
+    # 07/10/2026: uma peça possivelmente repetida já não fica «por associar» nem perde o saldo.
     first = create_and_save(vals())
     other = {**vals(), 'quantity_required':75}
     second = create_and_save(other)
     assert first['need_id'] != second['need_id']
-    assert second['identity_pending']
-    from app.raw.projection import order_rows
-    rows = [{'key':'original','values':{'of':'OF4200','quantity_required':100,'remaining':40}},
-            {'key':'pending','identity_pending':True,'values':{'of':'OF4200','quantity_required':75,'remaining':75}}]
-    assert order_rows(rows)[0]['values']['quantity_required'] == 100
+    assert not second['identity_pending']
+    with planning.connect(readonly=True) as c:
+        assert not c.execute('SELECT bool_or(identity_pending) p FROM planning_mtg.needs').fetchone()['p']
 
 
 def test_free_input_keeps_optimistic_lock_and_command_idempotency(free_registration):
@@ -82,6 +81,7 @@ def test_normalization_keeps_original_invalid_data_out_of_calculations(free_regi
     cat = catalogs.catalog('perfis')
     values, warnings = free.normalize({'quantity_required':'-9','length_mm':'NaN','notes':'=literal'},cat)
     assert values['quantity_required'] is None and values['length_mm'] is None
-    assert values['notes'] == '=literal' and warnings
+    assert values['notes'] == '=literal'
+    assert {w['field'] for w in warnings} == {'quantity_required', 'length_mm', 'machine'}
     assert cat['free_entry']
-    assert next(f for f in cat['fields'] if f['id']=='quantity_to_plan')['editor_visible']
+    assert not next(f for f in cat['fields'] if f['id']=='quantity_to_plan')['editor_visible']

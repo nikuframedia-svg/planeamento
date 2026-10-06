@@ -94,12 +94,18 @@ def test_atomic_batch_revision_and_analysis(workspace):
     assert any(x['values']['available_hours']==80 for x in matrix['rows'])
 
 
-def test_atomic_manual_invalid_does_not_create(workspace):
+def test_atomic_manual_failure_does_not_create(workspace,monkeypatch):
     from app.raw.edits import prepare
     from tests.test_planning_needs import vals
     payload={'request_id':str(uuid.uuid4()),'area':'perfis','production_order_no':'OF4200','catalog_version':'s1','values':{**vals(),'machine':'Invalid machine'},'record_status':'draft'}
-    with pytest.raises(planning.PlanningError):prepare(payload)
+    # Uma máquina fora do catálogo já não impede de gravar (07/10/2026); uma falha a meio desfaz tudo.
+    def fail(*args,**kwargs):raise planning.PlanningError('Falha simulada ao gravar.')
+    with monkeypatch.context() as patched:
+        patched.setattr(needs,'save',fail)
+        with pytest.raises(planning.PlanningError):prepare(payload)
     with planning.connect(readonly=True) as c:assert c.execute('SELECT count(*) n FROM planning_mtg.needs').fetchone()['n']==0
+    saved=prepare({**payload,'request_id':str(uuid.uuid4())})
+    assert needs.detail(saved['need_id'])['records'][0]['values_json']['machine']=='Invalid machine'
 
 def test_workspace_browser(workspace,tmp_path):
     import os,socket,subprocess,time,urllib.request
