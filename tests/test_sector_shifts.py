@@ -170,3 +170,110 @@ def test_regenerate_skips_unconfirmed_machines_and_keeps_manual_weeks(monkeypatc
     assert store[("r1", y, w)]["definition"]["shift_plan"]["1"] == 3
     christmas = store[("r1", 2026, 52)]["definition"]
     assert christmas["date_overrides"]["2026-12-25"] == []
+
+
+def test_sector_members_come_from_the_catalogue_only():
+    from app.sector import members
+    by_id = {"r20": {"code": "RAPID20_1"}, "van": {"code": "VANGUARD"}, "sold": {"code": "SOLDADURA"}, "grp": {"code": "GRUPO_MTG3"}}
+    catalog = {"RAPID20_1": {"unit": "MTG3", "type": "maquina"}, "VANGUARD": {"unit": "MTG2", "type": "maquina"},
+               "SOLDADURA": {"unit": None, "type": "posto"}, "GRUPO_MTG3": {"unit": "MTG3", "type": "grupo"}}
+    assert members.rule(by_id, catalog, "cantoneiras") == {"r20"}
+    assert members.rule(by_id, catalog, "perfis") == {"van"}
+    assert members.home_sector("VANGUARD", catalog) == "perfis" and members.home_sector("SOLDADURA", catalog) is None
+
+
+def test_calendar_is_saved_with_the_machine_sector_not_the_caller(monkeypatch):
+    import uuid
+    m = {"id": "van", "name": "Vanguard", "default_shifts": 1, "confirmed": True, "area": "perfis"}
+    store, saved, _ = _fake_store(monkeypatch, [m])
+    shifts.apply({"setor": "cantoneiras", "request_id": str(uuid.uuid4()), "mudancas": [{"maquina": "van", "ano": 2026, "semana": 43, "turnos": 2}]})
+    assert saved[-1]["area"] == "perfis"
+
+
+def test_legacy_shift_count_calendars_keep_their_hours_and_are_not_regenerated(monkeypatch):
+    import uuid
+    from app.sector import settings as sector_settings
+    legacy = {"resource_id": "r1", "year": 2026, "week": 43, "shifts": 10, "hours_per_shift": 8, "exception_hours": 4, "confirmed": True}
+    assert shifts.is_legacy(legacy) and round(shifts.week_hours(legacy), 1) == 76.0
+    assert shifts.legacy_plan(legacy)["1"] == 2 and shifts.legacy_plan({**legacy, "shifts": 7}) is None
+    m = {"id": "r1", "name": "Peddi 8", "default_shifts": 1, "confirmed": True}
+    store, saved, _ = _fake_store(monkeypatch, [m])
+    y, w = sector_settings._current_week()
+    store[("r1", y, w)] = {"id": 7, "revision": 1, "definition": {**legacy, "year": y, "week": w}}
+    sector_settings.regenerate(None, "cantoneiras", SETTINGS, uuid.uuid4())
+    assert store[("r1", y, w)]["definition"].get("shifts") == 10 and "shift_plan" not in store[("r1", y, w)]["definition"]
+
+
+def test_sunday_night_shift_reaches_monday_of_the_next_week(monkeypatch):
+    import uuid
+    every = {str(d): 3 for d in range(1, 8)}
+    w44 = shifts.definition_for("r1", 2026, 44, every, {}, SETTINGS, manual=False, previous_sunday=3)
+    monday = [w for w in w44["date_overrides"].get("2026-10-26", w44["weekly_windows"]["1"])]
+    assert {"start": "00:00", "end": "05:30"} in monday
+    m = {"id": "r1", "name": "Peddi 8", "default_shifts": 2, "confirmed": True}
+    store, saved, _ = _fake_store(monkeypatch, [m])
+    shifts.apply({"setor": "cantoneiras", "request_id": str(uuid.uuid4()), "mudancas": [{"maquina": "r1", "ano": 2026, "semana": 44, "turnos": 2}]})
+    shifts.apply({"setor": "cantoneiras", "request_id": str(uuid.uuid4()), "mudancas": [{"maquina": "r1", "dia": "2026-10-25", "turnos": 3}]})
+    w44 = store[("r1", 2026, 44)]["definition"]
+    assert {"start": "00:00", "end": "05:30"} in w44["date_overrides"]["2026-10-26"]
+
+
+def test_advice_cuts_one_shift_at_a_time():
+    assert shifts.advise(0.0, 112.5, 3, SETTINGS)["delta"] == -1
+
+
+def test_confirmed_machines_accept_both_operation_code_formats():
+    from app.raw.capacity import supports, operation_code
+    rapid = {"definition": {"operations": ["CPIS:112", "CPIS:119"]}}
+    serrote = {"definition": {"operations": ["LOCAL:PRINCIPAL"]}}
+    assert supports(rapid, "119") and supports(rapid, "CPIS:119") and not supports(rapid, "111")
+    assert supports(serrote, "corte") and not supports(serrote, "abocardar")
+    assert operation_code("LOCAL:ABOCARDAR") == "abocardar"
+
+
+def test_history_needs_a_minimum_sample_and_a_plausible_rate():
+    from app.raw import productivity
+    excel = {"value": 120.0, "method": "metres_hour", "unit": "m/h"}
+    base = dict(values={}, area="cantoneiras", operation="119", resource_id="r", manual=[], excel=excel, when="2026-10-06")
+    good = productivity.select_rate(historical_rate={"value": 100.0, "method": "metres_hour"}, **base)
+    assert good["source"] == "Histórico"
+    absurd = productivity.select_rate(historical_rate={"value": 3.675, "method": "metres_hour"}, **base)
+    assert absurd["source"] == "Excel provisório"
+
+
+def test_pages_of_the_same_shift_count_the_shift_hours_once():
+    from app.raw import worked_hours
+    resource = {"id": "p8", "definition": {"aliases": [{"area": "cantoneiras", "name": "Peddi 8"}], "operations": ["CPIS:119"]}}
+    page = lambda k, op="Ana", h=7.5: {"key": k, "area": "cantoneiras", "sheet_uid": k, "date": "2026-09-29", "machine": "Peddi 8",  # noqa: E731
+                                       "hours": h, "origin": "OCR", "machines": ["Peddi 8"], "operator": op}
+    cohorts = worked_hours.resolve(resource, [], [page("a"), page("b"), page("c"), page("d", op="Rui")])
+    assert sorted(len(c["sheets"]) for c in cohorts) == [1, 3]
+    assert sum(c["hours"] for c in cohorts) == 15.0
+
+
+def test_extend_horizon_creates_only_missing_weeks_of_confirmed_machines_in_one_batch(monkeypatch):
+    """C1-5: os calendários acabavam em 2027-W39 e nada os prolongava; agora cria só as semanas em falta."""
+    from datetime import date
+    from app.sector import settings as sector_settings
+    today = date(2027, 7, 12)  # 2027-W28: a última das 13 semanas da Carga já não tinha calendário
+    confirmed = {"id": "r1", "name": "Peddi 8", "default_shifts": 2, "confirmed": True, "area": "cantoneiras"}
+    unconfirmed = {"id": "r2", "name": "Prensa", "default_shifts": 1, "confirmed": False, "area": "cantoneiras"}
+    store, saved, signals = _fake_store(monkeypatch, [confirmed, unconfirmed])
+    monkeypatch.setattr(sector_settings.planning, "connect", lambda *a, **k: _ConnLock())
+    weeks = list(sector_settings._weeks(today))
+    for y, w in weeks[:11]:  # existentes até 2027-W38, uma delas manual com 3 turnos
+        store[("r1", y, w)] = {"id": 1, "revision": 1, "definition": shifts.definition_for("r1", y, w, WEEKDAYS(3 if w == 30 else 1), {}, SETTINGS, manual=w == 30)}
+    before = {k: v["definition"] for k, v in store.items()}
+    out = sector_settings.extend_horizon("cantoneiras", today=today)
+    assert out == {"sector": "cantoneiras", "created": len(weeks) - 11, "machines": 1} and len(signals) == 1
+    assert all(store[k]["definition"] == d for k, d in before.items())  # semanas existentes intactas
+    assert {k for k in store if k[0] == "r2"} == set()
+    last = store[("r1", *weeks[-1])]["definition"]
+    assert last["shift_plan"]["1"] == 2 and not last["manual"]
+    # Repetir não grava nem sinaliza.
+    assert sector_settings.extend_horizon("cantoneiras", today=today)["created"] == 0 and len(signals) == 1
+
+
+class _ConnLock(_Conn):
+    def execute(self, sql, params=None):
+        assert "pg_advisory_xact_lock" in sql

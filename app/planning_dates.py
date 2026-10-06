@@ -66,10 +66,16 @@ def resolve_picking(of, line_week, indexed_weeks, evidence, *, manual_week=None,
 
 
 def period(values, *, area, operation='corte', cantoneiras_week=None):
-    """Resolve an operation period without borrowing the date of another operation."""
+    """Resolve an operation period without borrowing the date of another operation.
+
+    Data Corte: em Perfis só conta no corte; em MTG3 conta sempre que vem nos valores
+    (decisão do Luís, 01/10/2026: prazo MTG3 = Data Corte, à frente da semana W importada).
+    Quem resolve uma operação seguinte MTG3 não lhe passa a Data Corte: não herda o prazo do corte.
+    """
     expected = values.get('expected_date')
     explicit_year, explicit_week = values.get('planned_year'), values.get('planned_week')
-    forecast = expected or (values.get('cut_date') if area == 'perfis' and operation == 'corte' else None)
+    uses_cut = (area == 'perfis' and operation == 'corte') or area == 'cantoneiras'
+    forecast = expected or (values.get('cut_date') if uses_cut else None)
     from_date = None
     if forecast:
         try:

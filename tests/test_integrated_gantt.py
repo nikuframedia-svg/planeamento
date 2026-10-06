@@ -114,6 +114,24 @@ def test_same_machine_and_rate_keep_distinct_operation_alternatives():
     assert durations[0]['option_id']!=durations[1]['option_id']
 
 
+def test_version_ignores_reading_day_but_not_content():
+    # Auditoria 06/10 (A14-F2): a mudança de dia sozinha não cria versão nova.
+    a=package();a['metadata']['as_of']='2026-09-30'
+    b=copy.deepcopy(a);b['metadata']['as_of']='2026-10-06'
+    assert research.version_digest(a)==research.version_digest(b)
+    b['metadata']['events']=[{'id':1,'quantidade_reportada':5,'data_producao':'2026-10-05'}]
+    assert research.version_digest(a)!=research.version_digest(b)
+
+
+def test_new_reading_day_keeps_the_published_version(integrated_db):
+    with planning.connect() as c:
+        p=package();p['metadata']['as_of']='2026-10-05'
+        first=research.publish(c,p)
+        p['metadata']['as_of']='2026-10-06'
+        again=research.publish(c,p)
+        assert again['version']==first['version'] and not again['changed']
+
+
 def test_publication_is_idempotent_and_manual_choice_is_independent_of_time(integrated_db):
     with planning.connect() as c:
         initial=research.head(c)['version_id']
@@ -456,3 +474,189 @@ def test_selected_lines_without_machine_stay_out_of_the_gantt(integrated_db):
     info = service.operations()
     assert not info['operations']
     assert any('sem máquina' in p['reason'] for p in info['selection_summary']['pending'])
+
+
+def _research_row(**changes):
+    # Linha da pesquisa (retrato de 29/09), como a OF256804 ZG-4001 da auditoria de 06/10.
+    return {'setor':'MTG2','fase':'principal','operacao_id':'op1','item_id':'i1','linha_origem':'snapA:plan:748',
+            'ordem_codigo':'OF256804','referencia_original':'ZG-4001','perfil':'TUBO 40','comprimento_mm':1000,
+            'quantidade_base':8,'saldo_documental':8,'saldo_confirmado':None,'estado_quantidade':'coerente',
+            'operacao_codigo':'LOCAL:PRINCIPAL','codigo_original':'corte','ocorrencia':1,'snapshot_id':'snapA',
+            'raw':{'Ser.':None,'Qtd em Falta':8},**changes}
+
+
+def _raw_row(remaining, raw):
+    values={'of':'OF256804','component_ref':'ZG-4001','profile':'TUBO 40','length_mm':1000,'quantity_required':8,
+            'remaining':remaining,'planning_remaining':remaining,'stock_length_mm':6000,'section_unit':100,'weight_unit':2}
+    return {'key':'macro:snapB:plan:748','selection_aliases':['macro:snapA:plan:748'],'values':values,'raw':raw,
+            'calculation':{'production_sources':[{'operation':'corte','remaining':remaining,'value':None if remaining is None else 8-remaining,
+                                                  'origin':'Excel provisório' if remaining is not None else 'Indisponível','records':[]}]}}
+
+
+def test_newer_excel_counter_keeps_the_raw_balance_over_the_research_snapshot(monkeypatch):
+    # A6-1/A4-04: o Excel de 02/10 tem Ser.=7 (falta 1); a pesquisa de 29/09 ainda dizia falta 8.
+    monkeypatch.setattr(research,'enabled',lambda:True)
+    monkeypatch.setattr(research,'load',lambda c:{'rows':[_research_row()],'head':{'version_id':'v'}})
+    row=_raw_row(1,{'Ser.':7,'Qtd em Falta':1})
+    research.overlay_rows(None,'perfis',[row])
+    assert row['values']['remaining']==1 and row['values']['planning_remaining']==1
+    assert not any(s.get('v2_evidence') for s in row['calculation']['production_sources'])
+
+
+def test_research_balance_recomputes_the_fields_that_depend_on_it(monkeypatch):
+    # A5-F1: contadores iguais, saldo RAW desconhecido; os derivados seguem o saldo da pesquisa.
+    monkeypatch.setattr(research,'enabled',lambda:True)
+    monkeypatch.setattr(research,'load',lambda c:{'rows':[_research_row()],'head':{'version_id':'v'}})
+    row=_raw_row(None,{'Ser.':None,'Qtd em Falta':8})
+    research.overlay_rows(None,'perfis',[row])
+    v=row['values']
+    assert v['remaining']==8 and v['remaining_m']==8 and v['quantity_to_plan']==8
+    assert v['bars']==2 and v['section_pending']==800 and v['weight']==16
+
+
+def test_gantt_and_load_use_the_newer_excel_balance(monkeypatch):
+    from app.raw import query
+    monkeypatch.setattr(query,'generation',lambda c,area:{})
+    monkeypatch.setattr(query,'source',lambda g:('',[]))
+    raw=_raw_row(1,{'Ser.':7,'Qtd em Falta':1})
+    record={'area':'perfis','row_key':raw['key'],'values_json':raw['values'],
+            'detail':{'selection_aliases':raw['selection_aliases'],'raw':raw['raw'],'calculation':raw['calculation']}}
+    r={**_research_row(),'matched_application_key':raw['key']}
+    balances=research.application_balances(None,[r],records=[record])
+    assert integrated.balance({**r,**balances.get('op1',{})})['planning_remaining']==1
+    # Sem produção posterior, a pesquisa continua a valer.
+    record['detail']['raw']={'Ser.':None,'Qtd em Falta':8}
+    assert research.application_balances(None,[r],records=[record])=={}
+
+
+def test_application_only_line_keeps_the_portfolio_provisional_balance():
+    # A8-1/A7-5: o detalhe reduzido das ocorrências não traz 'original'; o saldo vem da projeção.
+    from app.sector import scope
+    record={'area':'perfis','row_key':'macro:snapB:plan:9','values_json':{'of':'OF1','component_ref':'R','quantity_required':10,
+            'remaining':None,'planning_remaining':10,'planning_balance_origin':'Saldo da macro provisório · Qtd em Falta','abocardar':'-'},
+            'detail':{'calculation':{'production_sources':[{'operation':'corte','remaining':None,'records':[]}]}}}
+    rows,_=scope.local_rows([record],{})
+    b=integrated.balance(rows[0])
+    assert b['planning_remaining']==10 and b['balance_origin']=='Saldo da macro provisório · Qtd em Falta'
+
+
+def test_gantt_uses_the_current_picking_sheet_on_research_matched_perfis_lines(integrated_db):
+    # Auditoria 06/10 (A9-1): a pesquisa de 29/09 não tem semana; a folha Picking atual diz W39.
+    # O Gantt deve dar o mesmo prazo da Carteira (Picking, 21/09) e não a Data Corte (09/10).
+    mtg2=row(setor='MTG2',ordem_codigo='OF200',referencia_original='CA1',item_id='item2',operacao_id='op2',
+        linha_origem='pline',operacao_codigo='LOCAL:PRINCIPAL',codigo_original='corte',perfil='HEA200',
+        semana_picking=None,ano_picking=None,data_corte_prevista='2026-10-09')
+    pkg=package(); pkg['rows'].append(mtg2)
+    values={'of':'OF200','component_ref':'CA1','profile':'HEA200','quantity_required':10,'length_mm':1000,
+        'status':'Em Aberto','planning_active':True,'machine':'PEDDI6','cut_date':'2026-10-09',
+        'picking_week':39,'picking_year':None,'abocardar':'-'}
+    with planning.connect() as c:
+        research.publish(c,pkg)
+        from app.raw import projection
+        projection.publish(c,'planning:perfis','picking-sheet',[{'key':'macro:pline','values':values,'area':'perfis'}],{})
+        c.execute("INSERT INTO planning_mtg.sector_selection(area,production_order_no,reference,decision,actor) VALUES('perfis','OF200','*','selected','test')")
+    research._cache.clear()
+    op=next(o for o in service.operations()['operations'] if o['of']=='OF200')
+    assert op['priority']['priority_field']=='picking'
+    assert op['priority']['priority_day']=='2026-09-21'
+
+
+def test_gantt_uses_the_application_section_or_derives_it_from_the_total():
+    # Auditoria 06/10 (GT-01, A7-4): a pesquisa de 29/09 não tem a área unitária; a Carga usa a da aplicação.
+    mtg2=row(setor='MTG2',operacao_codigo='LOCAL:PRINCIPAL',raw={'Área de Seção de Corte [mm2]':261380.5},quantidade_base=52)
+    assert integrated.section_unit({**mtg2,'section_unit':5026.55})==5026.55
+    assert integrated.section_unit(mtg2)==pytest.approx(5026.55,abs=0.01)
+    assert integrated.section_unit({**mtg2,'raw':{'Área de Seção de Corte Unit. [mm2]':400}})==400
+    # Linha só da aplicação sem área (peça alterada): continua por confirmar.
+    assert integrated.section_unit({**mtg2,'application_row_key':'macro:x','section_unit':None}) is None
+    rates={('VANGUARD','LOCAL:PRINCIPAL'):[{'method':'area_hour','value':10000,'setup_minutes':0}]}
+    option={'resource_code':'VANGUARD','proposed_code':'LOCAL:PRINCIPAL','eligibility':'admissible'}
+    found=integrated._duration(mtg2,option,{'id':'vg','confirmed':False},[],rates,MONDAY.isoformat())
+    assert found and found['duration_hours']==pytest.approx(10*5026.55/10000,abs=0.01)
+
+
+def test_application_inputs_bring_the_published_section_and_estimate_of_the_line():
+    record={'row_key':'macro:a','values_json':{'section_unit':520.2},'detail':{'calculation':{'operation_estimates':[
+        {'operation':'corte','machine':'Serrote Fita Thomas IS639 Pav.1','source':'Excel provisório','factor':3,
+         'rate':{'method':'area_hour','value':55434}},{'operation':'abocardar','machine':None,'source':None}]}}}
+    r=integrated._application_inputs(row(setor='MTG2',operacao_codigo='LOCAL:PRINCIPAL',matched_application_key='macro:a'),
+        record,{('perfis','Serrote Fita Thomas IS639 Pav.1'):'THOMAS'})
+    assert r['section_unit']==520.2 and r['documentary_rate']['operation']=='corte'
+    assert r['documentary_rate_resource']=='THOMAS'
+
+
+def test_gantt_uses_the_published_excel_rate_only_on_the_machine_of_that_estimate():
+    # Auditoria 06/10 (GT-05): a mesma taxa do Excel da Carga, sem o ×3 da Thomas e nunca noutra máquina.
+    estimate={'operation':'112','machine':'Peddi 6','source':'Excel provisório','factor':1,'rate':{'method':'metres_hour','value':120,'setup_minutes':0}}
+    r=row(recurso_atual='PEDDI6',documentary_rate=estimate,documentary_rate_resource='PEDDI6',perfil='L250X250X24')
+    templates={('XPT6','CPIS:112'):[{'method':'metres_hour','value':70,'setup_minutes':0,'profile':None}]}
+    own=integrated._duration(r,{'resource_code':'PEDDI6','proposed_code':'CPIS:112','eligibility':'admissible'},
+        {'id':'p6','confirmed':False},[],templates,MONDAY.isoformat())
+    assert own['duration_hours']==pytest.approx(10*1/120,abs=0.01)
+    other=integrated._duration(r,{'resource_code':'XPT6','proposed_code':'CPIS:112','eligibility':'admissible'},
+        {'id':'xp','confirmed':False},[],templates,MONDAY.isoformat())
+    assert other['duration_hours']==pytest.approx(10*1/70,abs=0.01)
+    # Fator ×3 da Thomas fica fora do Gantt (decisão de 01/10).
+    thomas={**estimate,'factor':3,'rate':{'method':'metres_hour','value':360,'setup_minutes':0}}
+    assert integrated._documentary({**r,'documentary_rate':thomas},{'resource_code':'PEDDI6','proposed_code':'CPIS:112'},{})[0][0]['value']==120
+
+
+class _History:
+    aliases={('cantoneiras','Peddi 8'):{}}
+
+    def __init__(self, value):
+        self.value=value; self.calls=[]
+
+    def rate(self, values, area, operation, when, *, excel=None, as_of=None):
+        from app.raw.productivity import select_rate
+        self.calls.append({'excel':excel,'as_of':as_of})
+        history={'source':'Histórico','method':'metres_hour','unit':'m/h','value':self.value,'window':{}}
+        chosen=select_rate(values,area=area,operation=operation,resource_id='p8',manual=[],historical_rate=history,excel=excel,when=when)
+        return {**chosen,'history_hash':'h','history':history,'excluded_cohorts':0}
+
+
+def test_gantt_history_follows_the_same_plausibility_and_window_as_the_load():
+    # Auditoria 06/10 (GT-04, C3-F6): o Gantt passa a taxa do Excel à regra H10 e a janela acaba hoje.
+    estimate={'operation':'112','machine':'Peddi 8','source':'Excel provisório','factor':1,'rate':{'method':'metres_hour','value':120,'setup_minutes':0}}
+    r=row(recurso_atual='PEDDI8',documentary_rate=estimate,documentary_rate_resource='PEDDI8')
+    option={'resource_code':'PEDDI8','proposed_code':'CPIS:112','eligibility':'admissible'}
+    resource={'id':'p8','confirmed':True,'aliases':[{'area':'cantoneiras','name':'Peddi 8'}]}
+    far=_History(20)  # 1/6 do Excel: implausível, fica o Excel
+    found=integrated._duration(r,dict(option),resource,[],{},MONDAY.isoformat(),far,rate_day='2026-10-20')
+    assert far.calls[0]['excel']['value']==120 and str(far.calls[0]['as_of'])==MONDAY.isoformat()[:10]
+    assert found['duration_origin']!='Histórico' and found['duration_hours']==pytest.approx(10/120,abs=0.01)
+    assert any('fora do intervalo plausível' in a for a in found['assumptions'])
+    near=_History(100)
+    assert integrated._duration(r,dict(option),resource,[],{},MONDAY.isoformat(),near)['duration_hours']==pytest.approx(10/100,abs=0.01)
+
+
+def test_insights_keep_the_machine_and_operation_of_each_historical_evidence():
+    # Auditoria 06/10 (GT-08): a evidência guarda a máquina e a operação da taxa.
+    snap={'operations':[],'historical_evidence':{'h1':{'unit':'m/h','window':{'end':'2026-10-06','days':90},'cohorts':[],'excluded':[],
+        'scope_resource_id':'p8','scope_machine':'Peddi 8','scope_operation':'112'}}}
+    observed=insights.build(snap)['observed_productivity'][0]
+    assert (observed['resource_id'],observed['machine'],observed['operation'])==('p8','Peddi 8','112')
+
+
+def test_runtime_manifest_covers_the_modules_that_change_durations():
+    # Auditoria 06/10 (GT-07): mudar as horas trabalhadas ou a regra de horas torna o plano obsoleto.
+    names={str(p).split('/app/')[-1] for p in service.runtime_paths()}
+    assert {'raw/worked_hours.py','raw/capacity.py','raw/productivity.py','sector/priority.py','sector/estimates.py',
+            'sector/assignments.py','planning_calculations.py'} <= names
+
+
+def test_local_cantoneiras_line_with_composite_second_operation_gives_one_occurrence_per_operation():
+    # Auditoria 06/10 (ORF-2): «111-1034» na 2.ª Oper. são duas operações, como na pesquisa.
+    from app.sector import scope
+    record={'area':'cantoneiras','row_key':'macro:s:plan:7','values_json':{'of':'OF1','component_ref':'ZG-1','operation':'119',
+            'quantity_required':3,'profile':'L60X60X4'},
+            'detail':{'calculation':{'production_sources':[{'operation':'111-1034','remaining':2,'records':[{'source':'excel'}],'origin':'Excel'},
+                                                           {'operation':'119','remaining':3,'records':[],'origin':'Excel provisório'}]}}}
+    rows,deps=scope.local_rows([record],{})
+    assert [(r['ocorrencia'],r['operacao_codigo'],r['fase']) for r in rows]==[(1,'CPIS:119','principal'),(2,'CPIS:111','complementar'),(3,'CPIS:1034','complementar')]
+    # O saldo é o da operação composta, a única fonte.
+    assert [r['saldo_documental'] for r in rows[1:]]==[2,2]
+    assert len(deps)==2
+    # Na MTG2 não se divide nada.
+    record['area']='perfis'
+    assert 'CPIS:111-1034' in [r['operacao_codigo'] for r in scope.local_rows([record],{})[0]]

@@ -78,7 +78,8 @@ def proposals():
           row_data->>'Mt\\h' speed,count(*) n FROM raw_mtg.plan_production_rows WHERE snapshot_id=%s
           GROUP BY 1,2,3,4,5""",(snap['snapshot_id'],)).fetchall():
             rate=calc.number(r['speed'])
-            if rate is None or rate<=0:continue
+            # Sem máquina não há recurso a que dar o ritmo (como em capacity.source_proposals; auditoria 06/10, A4-07).
+            if rate is None or rate<=0 or not (r['machine'] or '').strip():continue
             output.append({'kind':'rate','area':'cantoneiras','machine':r['machine'],'provenance':{'snapshot':snap['snapshot_id'],'rows':r['n'],'speed':rate},'definition':{'area':'cantoneiras','operation':r['operation'],'material_type':r['material_type'],'profile':r['profile_type'],'method':'metres_hour','value':rate,'valid_from':None,'setup_minutes':0,'confirmed':False,'source':snap['snapshot_id']+' · velocidade das linhas ('+str(r['n'])+')'}})
     return needs.serial({'proposals':output,'notice':'Escolhe uma sugestão e confirma recurso, âmbito, unidades e vigência. Alternativas E/F e auxiliares XP/Rapid não são aplicadas automaticamente.'})
 

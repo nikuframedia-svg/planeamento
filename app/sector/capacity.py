@@ -220,6 +220,20 @@ def _suggested(f):
     return f.get("machine_basis") == "sugerida"
 
 
+def _typical_week(cells: list[dict], slots: list[dict], today: date) -> dict | None:
+    """Semana que mede as «semanas de carga»: a mediana das semanas completas seguintes com capacidade.
+
+    A semana atual só tem as horas que faltam a partir de agora (e pode ter feriados), por isso não serve
+    de ritmo semanal; só conta quando não há nenhuma semana seguinte com capacidade (auditoria 06/10/2026, C5-1).
+    """
+    weeks = [c for c, s in zip(cells, slots) if s["kind"] == "week" and c["capacity_hours"]]
+    later = sorted((c for c, s in zip(cells, slots) if s["kind"] == "week" and c["capacity_hours"]
+                    and date.fromisoformat(s["start"]) > today), key=lambda c: c["capacity_hours"])
+    if not later:
+        return weeks[0] if weeks else None
+    return later[(len(later) - 1) // 2]
+
+
 def build(datasets: dict, resources: dict, relations: list[dict], budgets: list[dict], quota_rows: list[dict],
           bars: dict, *, today: date, horizon_weeks: int = 12, granularity: str = "auto", filters: dict | None = None,
           sets: dict | None = None, observed: dict | None = None, declared: dict | None = None,
@@ -408,7 +422,7 @@ def build(datasets: dict, resources: dict, relations: list[dict], budgets: list[
                 else:
                     fam["need_hours"] += _load(f)
             total_load = sum(_load(f) for f in lane_facts if _load(f) is not None)
-            week = next((c for c, s in zip(cells, slots) if s["kind"] == "week" and c["capacity_hours"]), None)
+            week = _typical_week(cells, slots, today)
             lane = {"resource_id": rid, "name": r["name"], "code": r.get("code"), "type": r["type"], "role": role,
                     "role_note": NOT_CAPACITY.get(r["type"]) or ("Posto composto: conta o posto quando tem capacidade própria, senão as máquinas que o compõem" if role == "posto_composto" else
                                                                  "Horas-pessoa: não somadas às horas-máquina" if role == "operadores" else None),

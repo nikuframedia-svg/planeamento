@@ -219,7 +219,7 @@
     const info = await call(`/necessidades/ocorrencia?setor=${row.area}&key=${encodeURIComponent(row.key)}`);
     const o = info.occurrence, box = $("needs-detail");
     const lines = [["Ocorrência", `${o.of} · ${o.reference} · ${o.operation_label} (ocorr. ${o.occurrence}, ${o.phase})`],
-      ["Família SKU", `${o.sku_family} · ${o.classification}`], ["Família da encomenda", o.cpis_family],
+      ["Família SKU", `${o.sku_family} · ${o.classification}`], ["Família de Produto", o.cpis_family],
       ["Perfil", `${o.material_type} · ${o.profile}${o.length_mm ? ` · ${nf.format(o.length_mm)} mm` : ""}`],
       ["Saldo", `${o.remaining ?? "?"} de ${o.quantity_required ?? "?"} · ${o.balance_origin}${o.balance_provisional ? " · provisório" : ""}`],
       ["Horas", o.hours != null ? `${nf2.format(o.hours)} h · ${o.hours_origin}` : o.load_hours != null ? `${nf2.format(o.load_hours)} h estimadas · ${o.load_origin}` : (o.load_origin || o.hours_reason || "por confirmar")],

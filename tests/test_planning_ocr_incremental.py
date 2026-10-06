@@ -48,6 +48,8 @@ def test_scoped_administrative_context_keeps_conflicting_cpis_copies(workspace):
     from app import planning_hub as hub
     with psycopg.connect(workspace) as c:
         c.execute("UPDATE raw_mtg.cpis_rows SET status='Fechada' WHERE snapshot_id='c1'")
+        # Decisão de 06/10/2026: a cópia mais recente (c1) decide o estado da OF.
+        c.execute("UPDATE audit_mtg.snapshots SET loaded_at=loaded_at+interval '1 minute' WHERE snapshot_id='c1'")
     with planning.connect() as c:
         direct=hub._direct_version(c)
         copies=hub._order_rows(c,direct,'',None,only_ofs=['OF4200'])

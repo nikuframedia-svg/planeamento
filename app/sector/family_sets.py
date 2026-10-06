@@ -16,21 +16,21 @@ from psycopg.types.json import Jsonb
 from .. import planning, planning_needs as needs, planning_registration as registration
 from . import machine_choice, portfolio
 
-UNIT = {"cantoneiras": "MTG3", "perfis": "MTG2"}
-
 
 def machines(sector: str, conn=None) -> list[dict]:
     """Máquinas físicas que se podem escolher neste setor (catálogo), com o ID físico."""
     from .occurrences import resources_context
     from .portfolio_kpis import catalog
+    from .members import rule
     with (planning.connect(readonly=True) if conn is None else nullcontext(conn)) as c:
         codes, by_id, _, _, _ = resources_context(c)
         info = catalog(c, sector) if by_id else {}
+    own = rule(by_id, info, sector)
     used = {x["machine"] for x in portfolio.current(sector)["lines"] if x["machine"]}
     out = []
     for rid, r in by_id.items():
         meta = info.get(r.get("code")) or {}
-        if meta.get("unit") == UNIT[sector] and meta.get("type") in ("maquina", "posto") or r.get("name") in used:
+        if rid in own or r.get("name") in used:  # também o que os planeadores escreveram na Tabela
             out.append({"id": rid, "name": r.get("name") or rid, "code": r.get("code"), "process": meta.get("process")})
     return sorted(out, key=lambda m: (m.get("process") or "~", m["name"]))
 

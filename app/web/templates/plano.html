@@ -7,8 +7,8 @@
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="/static/planning_typography.css">
   <link rel="stylesheet" href="/static/planeamento_ui.css?v=20261002">
-  <link rel="stylesheet" href="/static/plano.css?v=20261002e">
-  <script src="/static/plano.js?v=20261002f" defer></script>
+  <link rel="stylesheet" href="/static/plano.css?v=20261006a">
+  <script src="/static/plano.js?v=20261006b" defer></script>
 </head>
 <body>
   {% set active = 'gantt' %}{% include "_app_nav.html" %}
@@ -39,18 +39,18 @@
         <summary id="cpis-title"></summary>
         <p>Estas OF estão abertas no CPIS mas não aparecem no plano de Perfis nem no de Cantoneiras. Ainda não se sabe em que setor entram.</p>
         <div class="pq-table-wrap"><table class="pq-table">
-          <thead><tr><th scope="col">OF</th><th scope="col">Cliente</th><th scope="col">Tipo de obra</th><th scope="col">Entrou</th><th scope="col">Entrega</th></tr></thead>
+          <thead><tr><th scope="col">OF</th><th scope="col">Cliente</th><th scope="col" data-nome="work_type">Família de Produto</th><th scope="col" data-nome="record_date">Data de registo</th><th scope="col" data-nome="delivery_date">Data de entrega</th></tr></thead>
           <tbody id="cpis-list"></tbody>
         </table></div>
       </details>
     </section>
     <section class="pq-ok" id="all-planned" hidden><strong>Tudo planeado.</strong> Todas as OF deste setor já têm máquina.</section>
 
-    <section class="pq-board" aria-labelledby="board-title">
+    <section class="pq-board" id="week-board" aria-labelledby="board-title">
       <div class="pq-board-head">
         <div>
           <h2 id="board-title">O que cada máquina vai fazer</h2>
-          <p>Cada linha é uma máquina. Cada caixa é uma OF: começa no dia em que a máquina pega nela e acaba no dia em que deve ficar feita. Carrega numa caixa para ver os pormenores.</p>
+          <p>Cada linha é uma máquina. Cada caixa é uma OF: começa no dia em que a máquina pega nela e acaba no dia em que deve ficar feita. Carrega numa caixa para ver os pormenores, ou num dia para o ver hora a hora, por turno.</p>
         </div>
         <div class="pq-weeks" role="group" aria-label="Semanas">
           <button type="button" id="prev" aria-label="Semana anterior">◀</button>
@@ -65,9 +65,27 @@
         <li><i class="pq-box-sample approximate"></i> Só se sabe a semana</li>
       </ul>
       <div class="pq-behind" id="behind" hidden></div>
+      <details class="pq-elsewhere" id="elsewhere" hidden><summary></summary><ul></ul></details>
+      <details class="pq-elsewhere" id="missing" hidden><summary></summary><ul></ul></details>
       <div class="pq-gantt" id="gantt" tabindex="0" aria-label="Plano por máquina"></div>
       <div class="pq-empty" id="empty" hidden></div>
       <button type="button" class="pq-more" id="idle-toggle" hidden></button>
+    </section>
+
+    <section class="pq-board pq-dayview" id="day" aria-labelledby="day-title" hidden>
+      <div class="pq-board-head">
+        <div>
+          <h2 id="day-title"></h2>
+          <p>Hora a hora, com os turnos. Cada bloco é trabalho de uma OF nessa máquina; ao lado do nome, as horas planeadas / horas do turno.</p>
+        </div>
+        <div class="pq-weeks" role="group" aria-label="Dias">
+          <button type="button" id="day-prev">◀ Dia anterior</button>
+          <button type="button" id="day-back">Voltar à semana</button>
+          <button type="button" id="day-next">Dia seguinte ▶</button>
+          <button type="button" id="day-all" hidden>Ver todas as máquinas</button>
+        </div>
+      </div>
+      <div id="day-content"></div>
     </section>
 
     <p class="pq-foot">Para fazer propostas, aceitar o plano ou mudar a máquina de uma operação: <a href="/planeamento/gantt/detalhe">ferramentas do planeador</a>.</p>

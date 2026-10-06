@@ -306,7 +306,10 @@ def enrich(conn,area,rows,snapshot,*,facts=None,proofs=None):
                     if n['technical_revision']!=a['technical_revision'] or not op:valid=False
                     allocations.append({**a,'operation':op['code'] if op else 'operacao_por_confirmar','component_ref':n['component_ref']})
                 if not valid:allocations=[];state='compatibility_review'
-            unresolved=state not in ('associated','explicit','technical_unique','unrelated') or (not allocations and operation=='operacao_por_confirmar' and state!='unrelated')
+            # Barra completa: a operação pode estar decidida por filho (ver planning_production).
+            by_child=r.get('operation_by_plan_key') or {}
+            per_child_done=bool(by_child) and all(k in by_child for k in r.get('resolved_plan_keys',[]))
+            unresolved=state not in ('associated','explicit','technical_unique','unrelated') or (not allocations and operation=='operacao_por_confirmar' and not per_child_done and state!='unrelated')
             children=r['plan_refs'] if r.get('full_profile') or r['plan_refs'] else [None]
             if not children:children=[{'plan_key':'incomplete','assumed_quantity':None}]
             for i,child in enumerate(children):
@@ -317,7 +320,8 @@ def enrich(conn,area,rows,snapshot,*,facts=None,proofs=None):
                 known_sum=sum(a['quantity'] for a in assigned if a['quantity'] is not None)
                 if not assigned or qty is not None and known_sum<qty:
                     if assigned:unresolved=True
-                    fragments.append({'quantity':qty-known_sum if qty is not None else None,'operation':operation,'component_ref':(child.get('component_ref') or child.get('model_ref')) if child else r.get('model_ref'),'association_status':state if not assigned else 'unallocated'})
+                    child_plan=(r.get('resolved_plan_refs') or [])[i]['plan_key'] if i<len(r.get('resolved_plan_refs') or []) else None
+                    fragments.append({'quantity':qty-known_sum if qty is not None else None,'operation':by_child.get(child_plan,operation),'component_ref':(child.get('component_ref') or child.get('model_ref')) if child else r.get('model_ref'),'association_status':state if not assigned else 'unallocated'})
                 for j,fragment in enumerate(fragments):
                     v=dict(of=of,ov=r.get('sales_order'),machine=r.get('machine'),production_date=r.get('sheet_date'),length_mm=r.get('length_mm'),hours_worked=None,source=r.get('source',app),sheet=r.get('sheet_no'),**fragment)
                     # Resolved refs retain probe order: each expanded child belongs

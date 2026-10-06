@@ -27,14 +27,47 @@ def test_estimates_negative_zero_varied_rates_and_thomas_boundary():
         assert capacity.estimate(v,{'method':'area_hour','value':100},'corte')[0]==2
 
 
-def test_period_requires_scoped_confirmation_and_uses_cut_date_only_for_perfis_cut():
+def test_period_mtg3_uses_cut_date_and_keeps_scoped_confirmation_only_without_it():
+    # Decisão do Luís (01/10/2026, plano das vistas por família): prazo MTG3 = Data Corte. Antes (22/09) a
+    # capacidade MTG3 usava só a semana W importada, com o ano confirmado à mão por versão da macro; a
+    # carga ficava sem ano e a ocupação das máquinas MTG3 aparecia a 0 % (auditoria 06/10, C1-1/A9-2).
     periods=[{'area':'cantoneiras','definition':{'snapshot':'s','week':39,'year':2026}}]
-    assert calc.period({'imported_week':39,'cut_date':'2025-03-14'},'cantoneiras','s',periods)[:2]==(2026,39)
+    assert calc.period({'imported_week':39,'cut_date':'2025-03-14'},'cantoneiras','s',periods)==(2025,11,'Data Corte')
+    assert calc.period({'imported_week':41,'cut_date':'2026-10-07','operation':'119'},'cantoneiras','new-version',[])==(2026,41,'Data Corte')
+    # Operações seguintes não herdam o prazo do corte; sem Data Corte mantém-se a regra antiga da semana W.
+    assert calc.period({'imported_week':39,'cut_date':'2026-10-07'},'cantoneiras','s',periods,primary=False)[:2]==(2026,39)
+    assert calc.period({'imported_week':39},'cantoneiras','s',periods)[:2]==(2026,39)
     assert calc.period({'imported_week':39},'cantoneiras','new-version',periods)[:2]==(None,39)
+    # Uma semana escolhida localmente continua a mandar sobre a Data Corte.
+    assert calc.period({'cut_date':'2026-10-07','planned_year':2026,'planned_week':44},'cantoneiras','s',[])[:2]==(2026,44)
     assert calc.period({'cut_date':'2026-09-22','operation':'corte'},'perfis','s',[])[:2]==(2026,39)
     assert calc.period({'cut_date':'2026-09-22','operation':'abocardar'},'perfis','s',[])[:2]==(None,None)
     assert calc.period({'expected_date':'2027-01-01'},'perfis','s',[])[:2]==(2026,53)
     assert calc.period({'expected_date':'2026-09-22','planned_week':40,'planned_year':2026},'perfis','s',[])[:2]==(None,None)
+
+
+def test_mtg3_table_week_and_capacity_occupancy_follow_cut_date():
+    from app import planning_dates
+    assert planning_dates.period({'cut_date':'2026-10-07','imported_week':41},area='cantoneiras',operation='119',cantoneiras_week=41)==(2026,41,'Data Corte')
+    assert planning_dates.period({'cut_date':None,'imported_week':41},area='cantoneiras',operation='0',cantoneiras_week=41)==(None,41,'Semana W importada — ano por confirmar')
+    # Com ano e semana, o balde da máquina recebe a carga e a ocupação deixa de ser 0 %.
+    confirmed={'local':True,'confirmed':True,'hours':60,'shifts':8,'hours_per_shift':7.5}
+    y,w,_=calc.period({'cut_date':'2026-10-07','imported_week':41},'cantoneiras','s',[])
+    out=calc.summary([item(h=30)],[confirmed],None,y,w,[])
+    assert out['values']['occupancy']==50 and 'Ano por confirmar' not in out['warnings']
+
+
+def test_workbook_evidence_keeps_excel_dates_readable(tmp_path):
+    from datetime import datetime
+    from openpyxl import Workbook
+    book=Workbook();sheet=book.active;sheet.title='Plan_semanal'
+    sheet['G6']=datetime(2026,7,28);sheet['G6'].number_format='dd/mm/yyyy'
+    sheet['H6']=46231;sheet['I6']=1.5;sheet['I6'].number_format='0.00'
+    path=tmp_path/'Met3.xlsx';book.save(path)
+    cells=workbooks.extract(path,'cantoneiras')['Plan_semanal'][0]['cells']
+    # O valor guardado fica igual ao do Excel (número de série); a data legível segue ao lado.
+    assert cells['G']['value']==46231 and cells['G']['date']=='2026-07-28'
+    assert 'date' not in cells['H'] and 'date' not in cells['I']
 
 
 def item(q=2,h=1,primary=True):
@@ -153,6 +186,46 @@ def test_invalidated_local_quantity_cannot_reappear_in_capacity(workspace):
     assert 'revisão' in r['reason']
 
 
+def _drive_file(path,when,sha):
+    return {'Path':path,'Name':path.rpartition('/')[2],'ModTime':when,'Hashes':{'sha256':sha}}
+
+
+def test_drive_choice_sees_a_newer_plan_in_a_subfolder():
+    # Auditoria 06/10 (A1-F1/A1-F2): o plano gravado só em "Kanban's MTG3/" passava despercebido.
+    name='Met2_Plan_Perfis.xlsm'
+    root=_drive_file(name,'2026-09-29T07:00:00Z','old')
+    sub=_drive_file("Kanban's MTG3/"+name,'2026-09-30T06:58:51.241123456Z','new')
+    stale=_drive_file('SAIDA/'+name,'2026-09-21T12:54:32Z','older')
+    assert workbooks.drive_choice([root,sub,stale],name) is sub
+    assert workbooks.drive_choice([root,stale],name) is root
+    assert workbooks.drive_choice([root,{**sub,'Hashes':{'sha256':'old'}}],name) is root
+    assert workbooks.drive_choice([sub],name) is sub
+
+
+def test_drive_observation_reports_newer_plan_in_subfolder(workspace,monkeypatch):
+    import json,subprocess
+    imported={}
+    with planning.connect() as c:
+        for a in planning.AREAS:
+            snap=planning.snapshot(c,a)
+            imported[a]=c.execute('SELECT source_sha256 FROM audit_mtg.snapshots WHERE snapshot_id=%s',(snap['snapshot_id'],)).fetchone()['source_sha256']
+    files=[_drive_file('Met2_Plan_Perfis.xlsm','2026-09-29T07:00:00Z',imported['perfis']),
+           _drive_file("Kanban's MTG3/Met2_Plan_Perfis.xlsm",'2026-09-30T06:58:51Z','subfolder-hash'),
+           _drive_file('Met3_Plan_Cantoneiras.xlsm','2026-09-29T07:00:00Z',imported['cantoneiras'])]
+    calls=[]
+    def run(command,**kwargs):
+        calls.append(command)
+        return subprocess.CompletedProcess(command,0,json.dumps(files),'')
+    monkeypatch.setenv('MES_RAW_DRIVE_CHECK','1')
+    monkeypatch.setattr(workbooks.subprocess,'run',run)
+    workbooks.observe_drive(force=True)
+    assert '--recursive' in calls[0] and '- crm-backups/**' in calls[0]
+    by_area={x['area']:x for x in workbooks.status()['sources']}
+    assert by_area['perfis']['newer_available'] and by_area['perfis']['newer_folder']=="Kanban's MTG3"
+    assert by_area['perfis']['drive']['remote_filename']=="Kanban's MTG3/Met2_Plan_Perfis.xlsm"
+    assert not by_area['cantoneiras']['newer_available'] and by_area['cantoneiras']['newer_folder'] is None
+
+
 def test_drive_failure_preserves_observation_and_does_not_import(workspace,monkeypatch):
     import subprocess
     with planning.connect() as c:
@@ -167,3 +240,27 @@ def test_drive_failure_preserves_observation_and_does_not_import(workspace,monke
         assert x['snapshot']==y['snapshot']
         assert x['drive']['checked_at']==y['drive']['checked_at']
         assert y['drive']['remote_sha256']=='known-hash' and y['drive']['error']
+
+
+def test_rate_proposals_skip_cantoneiras_rows_without_machine(monkeypatch):
+    # Auditoria 06/10 (A4-07): linhas com Mt\h mas sem máquina davam propostas de ritmo com machine=None.
+    from contextlib import contextmanager
+
+    class Conn:
+        def execute(self, sql, args=None):
+            class R:
+                def fetchall(self):
+                    return [{'machine': None, 'operation': '119', 'material_type': 'L', 'profile_type': 'L60', 'speed': '80', 'n': 3},
+                            {'machine': '', 'operation': '119', 'material_type': 'L', 'profile_type': 'L60', 'speed': '80', 'n': 1},
+                            {'machine': 'Peddi 8', 'operation': '119', 'material_type': 'L', 'profile_type': 'L60', 'speed': '80', 'n': 2}]
+            return R()
+
+    @contextmanager
+    def connect(readonly=False):
+        yield Conn()
+    monkeypatch.setattr(planning, 'connect', connect)
+    monkeypatch.setattr(workbooks, 'source', lambda c, a: {})
+    monkeypatch.setattr(calc, 'workbook_index', lambda sources: ({}, {}, None))
+    monkeypatch.setattr(planning, 'snapshot', lambda c, a: {'snapshot_id': 'mtg_x'})
+    rates = [p for p in views.proposals()['proposals'] if p['kind'] == 'rate']
+    assert [p['machine'] for p in rates] == ['Peddi 8']

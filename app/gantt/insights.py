@@ -87,17 +87,23 @@ def build(snapshot):
                       'known_remaining': sum(o['planning_remaining'] or 0 for o in ops),
                       'unknown_balances': sum(o['planning_remaining'] is None for o in ops),
                       'examples': [o['key'] for o in sorted(ops, key=lambda o: (o['priority_group'], o.get('deadline') or '9999', o['key']))[:10]],
-                      'resolution_url': '/planeamento/disponibilidade' if 'Calendário' in reason else '/planeamento/capacidades' if 'Duração' in reason or 'Compatibilidade' in reason else '/planeamento/raw'})
+                      'resolution_url': '/planeamento/setor/carga' if 'Calendário' in reason else '/planeamento/setor/definicoes' if 'Duração' in reason or 'Compatibilidade' in reason else '/planeamento/raw'})
     queue.sort(key=lambda g: (-g['urgent'], -g['known_remaining'], -g['operations'], g['reason']))
     observed=[]
     historical = snapshot.get('historical_evidence',{})
     for digest,evidence in historical.items():
-        scopes={(o['resource_id'],op['operation']) for op in snapshot['operations'] for o in op.get('options',[]) if o.get('history_hash')==digest}
+        # Máquina e operação guardadas com a evidência (auditoria 06/10, GT-08); nos retratos antigos,
+        # inferidas das durações (opções e candidatas) que a usaram.
+        scopes={(o['resource_id'],op['operation']) for op in snapshot['operations']
+                for o in [*op.get('options',[]),*(d for c in op.get('candidates',[]) for d in c.get('durations') or [])]
+                if o.get('history_hash')==digest}
         resource,operation = next(iter(scopes)) if len(scopes)==1 else (None,None)
+        if evidence.get('scope_resource_id') or evidence.get('scope_operation'):
+            resource,operation = evidence.get('scope_resource_id') or resource, evidence.get('scope_operation') or operation
         cohorts=[{**c,'resource_id':resource,'operation':operation,'unit':evidence.get('unit')} for c in evidence.get('cohorts',[])]
         period = evidence.get('window',{})
         cutoff = (date.fromisoformat(period['end'])-timedelta(days=max(1,period.get('days',90)//3))).isoformat() if period.get('end') else None
-        observed.append({'digest':digest,'resource_id':resource,'operation':operation,'unit':evidence.get('unit'),
+        observed.append({'digest':digest,'resource_id':resource,'machine':evidence.get('scope_machine'),'operation':operation,'unit':evidence.get('unit'),
             'kind':'produtividade_observada','scope':evidence.get('scope'),**cohort_statistics(cohorts),
             'excluded_cohorts':len(evidence.get('excluded',[])), 'exclusion_reasons':dict(Counter(reason for c in evidence.get('excluded',[]) for reason in c.get('reasons',[]))),
             'temporal_evaluation':temporal_evaluation(cohorts,cutoff) if cutoff else None})

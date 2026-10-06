@@ -194,7 +194,7 @@
       row.append(text("span",op.of,"of"),text("span",`${op.reference||"Sem referência"} · ${op.operation}`),
         text("span",`${op.planning_remaining??"?"} un.`),text("span",provisional?"Provisório":"Confirmado",provisional?"provisional":""),
         text("span",status,state==="complete"?"done":"reason"));
-      row.title=`${op.key}\nMáquina no planeamento: ${op.source_machine||"—"}\nDuração calculada: ${op.source_duration?.hours??"—"} h · ${op.source_duration?.origin||"—"}\nOrigem do saldo: ${op.balance_origin||"desconhecida"}\n${(bars[op.key]?.provisional_reasons||[]).join("; ")}\nPrevisão: ${op.milestones?.operation_forecast||"—"}\nPicking: ${format(op.milestones?.picking)}\nFim Produção: ${op.milestones?.planned_finish_date||"—"}\nEntrega: ${op.milestones?.delivery_date||"—"}\nObservações Kanban: ${op.observations?.length||0}`;
+      row.title=`${op.key}\nMáquina no planeamento: ${op.source_machine||"—"}\nDuração calculada: ${op.source_duration?.hours??"—"} h · ${op.source_duration?.origin||"—"}\nOrigem do saldo: ${op.balance_origin||"desconhecida"}\n${(bars[op.key]?.provisional_reasons||[]).join("; ")}\nPrevisão: ${op.milestones?.operation_forecast||"—"}\nPicking: ${format(op.milestones?.picking)}\nFim previsto da Produção: ${op.milestones?.planned_finish_date||"—"}\nData de entrega: ${op.milestones?.delivery_date||"—"}\nObservações Kanban: ${op.observations?.length||0}`;
       row.addEventListener("click",()=>selectOperation(op.key));wrap.append(row);
     }
     if(rows.length>500)wrap.append(text('p',`A mostrar as primeiras 500 de ${rows.length} operações. Pesquisa para encontrar uma OF ou referência; o cálculo usa toda a seleção.`,'hint'));
@@ -240,7 +240,7 @@
       ['Previsão',known?`${known.start_date} · ${known.precision==='week'?'semana':'dia'} · ${known.forecast_origin||'planeamento'}`:op.milestones?.operation_forecast||'Por indicar'],
       ['Prazo do setor',op.priority?.priority_day?`${op.priority.priority_day.split('-').reverse().join('/')} · ${op.priority.priority_source}${op.priority.priority_scope==='order'?' · OF inteira':''}`:(op.priority?.missing_reason||'—')],
       ['Picking',`${format(op.milestones?.picking)}${op.milestones?.picking_provisional?' · ano assumido':''}`],
-      ['Fim Produção',op.milestones?.planned_finish_date||'—'],['Entrega',op.milestones?.delivery_date||'—']];
+      ['Fim previsto da Produção',op.milestones?.planned_finish_date||'—'],['Data de entrega',op.milestones?.delivery_date||'—']];
     for(const [label,value] of details){const line=text('p','');line.append(text('strong',label+' '),text('span',value));detail.append(line)}
     if(op.provisional||known?.provisional)detail.append(text('p','Estimativa provisória','provisional'));
     if(op.blocking_reasons?.length)detail.append(text('p','Para calendarizar ao minuto: '+op.blocking_reasons.join('; '),'hint'));
@@ -389,9 +389,9 @@
         bar.append(text("span",`${op.planning_remaining??"?"} un.`),text("small",entry.hours==null?"? h":Number(entry.hours).toFixed(2)+" h"));
         const low=Math.max(start,Date.parse(entry.start_date)),high=Math.min(end,Date.parse(entry.end_date_exclusive));
         bar.type="button";bar.style.left=`${(low-start)/86400000/unit*width}px`;bar.style.width=`${Math.max(4,(high-low)/86400000/unit*width-2)}px`;
-        bar.title=`${resource.name}\n${op.of} · ${op.reference||""} · ${op.operation} · linha ${op.line||op.key}\nPrevisão: ${entry.start_date} (${entry.precision==="week"?"semana":"dia"}) · ${entry.forecast_origin||"planeamento"}\nSaldo: ${op.planning_remaining??"?"} un. · ${op.balance_origin}\nCarga: ${entry.hours==null?"desconhecida":Number(entry.hours).toFixed(2)+" h"} · ${entry.duration_origin||"origem por confirmar"}${entry.provisional?" · provisória":""}\nPicking: ${format(op.milestones.picking)}\nFim Produção: ${op.milestones.planned_finish_date||"—"}\nEntrega: ${op.milestones.delivery_date||"—"}\nCalendarização horária: ${entry.hourly_reasons.join("; ")||"disponível para cálculo"}`;
+        bar.title=`${resource.name}\n${op.of} · ${op.reference||""} · ${op.operation} · linha ${op.line||op.key}\nPrevisão: ${entry.start_date} (${entry.precision==="week"?"semana":"dia"}) · ${entry.forecast_origin||"planeamento"}\nSaldo: ${op.planning_remaining??"?"} un. · ${op.balance_origin}\nCarga: ${entry.hours==null?"desconhecida":Number(entry.hours).toFixed(2)+" h"} · ${entry.duration_origin||"origem por confirmar"}${entry.provisional?" · provisória":""}\nPicking: ${format(op.milestones.picking)}\nFim previsto da Produção: ${op.milestones.planned_finish_date||"—"}\nData de entrega: ${op.milestones.delivery_date||"—"}\nCalendarização horária: ${entry.hourly_reasons.join("; ")||"disponível para cálculo"}`;
         bar.addEventListener("click",()=>selectOperation(op.key));const slot=lane();slot.append(bar);
-        for(const [title,field,cls] of [["Picking","picking","picking"],["Fim Produção","planned_finish_date","fim"],["Entrega","delivery_date","entrega"]]){
+        for(const [title,field,cls] of [["Picking","picking","picking"],["Fim previsto da Produção","planned_finish_date","fim"],["Data de entrega","delivery_date","entrega"]]){
           const at=op.milestones[field];if(!at)continue;
           const instant=Date.parse(at.slice(0,10));if(instant<start||instant>=end)continue;
           const marker=text("span","","milestone milestone-"+cls);marker.style.left=`${(instant-start)/86400000/unit*width}px`;marker.title=`${title}: ${at}`;slot.append(marker);
@@ -441,7 +441,7 @@
     }
     const milestoneKinds=[
       ["Picking","picking"],["Previsão","operation_forecast"],
-      ["Período","period_deadline"],["Fim Produção","planned_finish_date"],["Entrega","delivery_date"]];
+      ["Período","period_deadline"],["Fim previsto da Produção","planned_finish_date"],["Data de entrega","delivery_date"]];
     for(const [kind,field] of milestoneKinds){
       const buckets=new Map();
       for(const op of snapshot.operations){

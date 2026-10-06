@@ -72,10 +72,13 @@ def _windows(n: int, previous: int, template) -> list[dict]:
     return sorted(result, key=lambda w: w["start"])
 
 
-def build(base_plan: dict, day_shifts: dict, holidays, template, year: int, week: int) -> tuple[dict, dict]:
-    """(weekly_windows, date_overrides) for one ISO week."""
+def build(base_plan: dict, day_shifts: dict, holidays, template, year: int, week: int, *, previous_sunday: int = 0) -> tuple[dict, dict]:
+    """(weekly_windows, date_overrides) for one ISO week.
+
+    `previous_sunday` = turnos do domingo anterior: o seu turno da noite acaba na segunda de madrugada.
+    """
     base = {str(d): int(base_plan.get(str(d), 0)) for d in range(1, 8)}
-    weekly = {str(d): _windows(base[str(d)], base[str(d - 1)] if d > 1 else 0, template) for d in range(1, 8)}
+    weekly = {str(d): _windows(base[str(d)], base[str(d - 1)] if d > 1 else base["7"], template) for d in range(1, 8)}
     first = date.fromisocalendar(year, week, 1)
     holidays = set(holidays or ())
     effective = {}
@@ -87,16 +90,32 @@ def build(base_plan: dict, day_shifts: dict, holidays, template, year: int, week
     overrides = {}
     for offset in range(7):
         day = first + timedelta(days=offset)
-        windows = _windows(effective[offset], effective[offset - 1] if offset else 0, template)
+        windows = _windows(effective[offset], effective[offset - 1] if offset else previous_sunday, template)
         if windows != weekly[str(offset + 1)]:
             overrides[day.isoformat()] = windows
     return weekly, overrides
+
+
+def is_legacy(definition: dict) -> bool:
+    """Calendário antigo só com número de turnos e horas por turno, sem horários (editor de capacidades)."""
+    return not definition.get("weekly_windows") and "shift_plan" not in definition
+
+
+def legacy_plan(definition: dict, workdays=DEFAULT_WORKDAYS) -> dict | None:
+    """Turnos por dia de um calendário antigo, só quando a divisão pelos dias de trabalho é exata (0 a 3)."""
+    total = definition.get("shifts")
+    if not isinstance(total, (int, float)) or not workdays or total % len(workdays):
+        return None
+    n = int(total // len(workdays))
+    return {str(d): (n if d in workdays else 0) for d in range(1, 8)} if 0 <= n <= MAX_SHIFTS else None
 
 
 def decode(definition: dict, template=DEFAULT_TEMPLATE) -> tuple[dict, dict]:
     """(base_plan, day_shifts) of a calendar; old calendars are read from their windows."""
     if "shift_plan" in definition:
         return {str(k): int(v) for k, v in definition["shift_plan"].items()}, dict(definition.get("day_shifts") or {})
+    if is_legacy(definition):
+        return legacy_plan(definition) or {str(d): 0 for d in range(1, 8)}, {}
     starts = {s for s, _ in template}
     plan = {}
     for d in range(1, 8):
@@ -105,9 +124,20 @@ def decode(definition: dict, template=DEFAULT_TEMPLATE) -> tuple[dict, dict]:
     return plan, {}
 
 
+def sunday_shifts(definition: dict | None, settings: dict, template=None) -> int:
+    """Turnos efetivos do domingo de um calendário semanal (0 sem calendário)."""
+    if not definition:
+        return 0
+    base, days = decode(definition, template or settings["template"])
+    sunday = date.fromisocalendar(int(definition["year"]), int(definition["week"]), 7).isoformat()
+    if sunday in days:
+        return int(days[sunday])
+    return 0 if sunday in set(settings.get("holidays") or ()) else int(base.get("7", 0))
+
+
 def definition_for(resource_id: str, year: int, week: int, base_plan: dict, day_shifts: dict, settings: dict,
-                   *, manual: bool, previous: dict | None = None) -> dict:
-    weekly, overrides = build(base_plan, day_shifts, settings["holidays"], settings["template"], year, week)
+                   *, manual: bool, previous: dict | None = None, previous_sunday: int = 0) -> dict:
+    weekly, overrides = build(base_plan, day_shifts, settings["holidays"], settings["template"], year, week, previous_sunday=previous_sunday)
     d = {k: v for k, v in (previous or {}).items() if k not in ("weekly_windows", "date_overrides", "shift_plan", "day_shifts", "manual")}
     d.update(resource_id=resource_id, year=year, week=week, timezone="Europe/Lisbon", weekly_windows=weekly,
              date_overrides=overrides, shift_plan={str(k): int(v) for k, v in base_plan.items()},
@@ -117,7 +147,9 @@ def definition_for(resource_id: str, year: int, week: int, base_plan: dict, day_
 
 def week_hours(definition: dict, *, after: datetime | None = None) -> float:
     """Horas do calendário; com `after`, só as que faltam a partir desse instante."""
-    intervals = planning_calendars.expand(definition) or []
+    intervals = planning_calendars.expand(definition)
+    if intervals is None:  # calendário antigo sem horários: turnos × horas por turno (não há «a partir de agora»)
+        return max(planning_calendars.available_hours(definition), 0.0)
     total = 0.0
     for r in intervals:
         start, end = datetime.fromisoformat(r["start"]), datetime.fromisoformat(r["end"])
@@ -151,8 +183,7 @@ def advise(load_hours: float, capacity_hours: float, shifts: int, settings: dict
         return {"delta": delta, "text": text, "still_missing": round(max(left, 0), 1)}
     spare = -missing
     if shifts > 1 and spare >= per_shift:
-        delta = -min(int(spare // per_shift), shifts - 1)
-        return {"delta": delta, "text": f"{delta} turno{'s' if delta < -1 else ''} · sobram {spare:.0f} h"}
+        return {"delta": -1, "text": f"-1 turno · sobram {spare:.0f} h"}  # um de cada vez: a carga futura ainda pode chegar
     return {"delta": 0, "text": f"Certo · sobram {spare:.0f} h" if spare >= 0.05 else "Certo"}
 
 
@@ -167,11 +198,16 @@ def write(c, resource: dict, area: str, year: int, week: int, base_plan: dict, d
     from ..raw import objects
     row = calendar_row(c, resource["id"], year, week)
     previous = (row or {}).get("definition") or {}
-    d = definition_for(resource["id"], year, week, base_plan, day_shifts, settings, manual=manual, previous=previous)
+    prior_year, prior_week, _ = (date.fromisocalendar(year, week, 1) - timedelta(days=7)).isocalendar()
+    prior = calendar_row(c, resource["id"], prior_year, prior_week)
+    d = definition_for(resource["id"], year, week, base_plan, day_shifts, settings, manual=manual, previous=previous,
+                       previous_sunday=sunday_shifts((prior or {}).get("definition"), settings))
     if row and all(previous.get(k) == d.get(k) for k in ("weekly_windows", "date_overrides", "shift_plan", "day_shifts", "manual")):
         return False
+    # A área do calendário é o setor da máquina (machine_rows), nunca o de quem grava: não troca entre setores.
     objects.save({**actor_payload, "request_id": str(uuid.uuid5(request_id, f"{resource['id']}:{year}:{week}")),
-                  "id": str(row["id"]) if row else None, "expected_revision": row["revision"] if row else 0, "area": area,
+                  "id": str(row["id"]) if row else None, "expected_revision": row["revision"] if row else 0,
+                  "area": resource.get("area") or area,
                   "name": f"{resource['name']} · {year}-W{week:02}", "definition": d}, "calendar", conn=c, signal=False)
     return True
 
@@ -232,9 +268,16 @@ def apply(payload: dict, *, conn=None) -> dict:
                 for iso in [k for k in days if date.fromisoformat(k).isocalendar()[:2] == (year, week)]:
                     del days[iso]  # a semana inteira manda: as exceções de dias dessa semana saem
         changed = 0
-        for (rid, year, week), (base, days) in weeks.items():
+        for (rid, year, week), (base, days) in sorted(weeks.items(), key=lambda x: (x[0][0], x[0][1], x[0][2])):
             changed += write(c, machines[rid], sector, year, week, base, days, settings, manual=True,
                              request_id=request_id, actor_payload={})
+            # A segunda-feira seguinte recebe a madrugada do turno da noite deste domingo.
+            ny, nw, _ = (date.fromisocalendar(year, week, 1) + timedelta(days=7)).isocalendar()
+            following = calendar_row(c, rid, ny, nw) if (rid, ny, nw) not in weeks else None
+            if following and not is_legacy(following["definition"]):
+                fb, fd = decode(following["definition"], settings["template"])
+                changed += write(c, machines[rid], sector, ny, nw, fb, fd, settings, manual=bool(following["definition"].get("manual")),
+                                 request_id=request_id, actor_payload={})
         if changed:
             finish_batch(c, request_id)
     return {"changed": changed, "weeks": len(weeks)}

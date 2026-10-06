@@ -87,13 +87,27 @@ def update_available(version:str):
     return call(lambda:{'available':raw.dataset(force=True)['version']!=version})
 
 
+def _load_page(request:Request,view:str|None):
+    """Capacidades e Disponibilidade estão na Carga e turnos (06/10/2026). O MES partilha este ficheiro mas não
+    tem o pacote sector: aí as páginas antigas continuam como estavam."""
+    import importlib.util
+    if importlib.util.find_spec(__package__.rsplit('.',1)[0]+'.sector') is None:return None
+    from fastapi.responses import RedirectResponse
+    area=request.query_params.get('area') or request.query_params.get('setor')
+    area=area if area in ('perfis','cantoneiras') else 'cantoneiras'
+    return RedirectResponse('/planeamento/setor/carga?setor='+area+('&vista='+view if view else ''),status_code=302)
+
 @router.get('/planeamento/capacidades',response_class=HTMLResponse)
 def machine_capacity_page(request:Request):
+    moved=_load_page(request,'maquinas')
+    if moved:return moved
     if os.getenv('MES_RAW_WORKSPACE_ENABLED')!='1':raise HTTPException(404,'Página desativada.')
     return templates.TemplateResponse(request=request,name='capacity.html',context={'mode':'machines','title':'Capacidades das máquinas'})
 
 @router.get('/planeamento/disponibilidade',response_class=HTMLResponse)
 def weekly_capacity_page(request:Request):
+    moved=_load_page(request,None)
+    if moved:return moved
     if os.getenv('MES_RAW_WORKSPACE_ENABLED')!='1':raise HTTPException(404,'Página desativada.')
     return templates.TemplateResponse(request=request,name='capacity.html',context={'mode':'weekly','title':'Disponibilidade semanal'})
 

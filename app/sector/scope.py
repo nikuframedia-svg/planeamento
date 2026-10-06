@@ -186,14 +186,30 @@ def local_rows(records, resource_codes):
         mark = abocardar(v.get('abocardar'))
         if area=='perfis' and mark is not False:
             operations.append('abocardar')
-        operations += [str(s['operation']) for s in sources if str(s['operation']) not in operations]
+        whole = {}  # operação → código composto de origem («111-1034»), que é a única fonte de saldo
+        for s in sources:
+            code = str(s['operation'])
+            # 2.ª Oper. composta da MTG3 (ex. «111-1034»): uma ocorrência por operação, como na pesquisa
+            # (auditoria 06/10, ORF-2). O saldo e a preparação continuam a ser os da operação composta.
+            parts = [p.strip() for p in code.split('-') if p.strip()] if area=='cantoneiras' and code!=main else [code]
+            for part in parts:
+                if part not in operations:
+                    operations.append(part)
+                    whole[part] = code
         estimates = {str(e['operation']):e for e in detail.get('calculation',{}).get('operation_estimates',[])}
         preparations = {str(p['values_json'].get('operation')):p['values_json'] for p in detail.get('preparations',[])}
         prior = None
         for occurrence, operation in enumerate(operations,1):
             code = 'LOCAL:PRINCIPAL' if area=='perfis' and operation=='corte' else 'LOCAL:ABOCARDAR' if operation=='abocardar' else 'CPIS:'+operation
-            b = select_balance({**detail,'area':area,'values':v},operation)
-            prepared = preparations.get(operation,{})
+            source = whole.get(operation,operation)
+            b = select_balance({**detail,'area':area,'values':v},source)
+            if b['planning_remaining'] is None and operation==main and v.get('planning_balance_origin') \
+                    and isinstance(v.get('planning_remaining'),(int,float)):
+                # Mesmo saldo que a Carteira (auditoria 06/10, A8-1): o saldo provisório escolhido na
+                # projeção (ex. «Qtd em Falta») vale também para a Carga e o Gantt.
+                b = {'reconciled_remaining':None,'planning_remaining':v['planning_remaining'],
+                     'balance_origin':v['planning_balance_origin'],'provisional':True,'evidence':[],'reasons':[]}
+            prepared = preparations.get(operation) or preparations.get(source,{})
             machine = (prepared.get('machine') if operation!=main else v.get('machine'))
             origin = b['balance_origin'] or ''
             reconciled = b['planning_remaining'] if b['evidence'] and not b['provisional'] else None

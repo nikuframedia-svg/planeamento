@@ -124,3 +124,16 @@ como parte da reversão.
   stock ou atualização automática dos acumulados de produção.
 - A informação CPIS importada pode conter divergências entre as duas macros;
   esses campos aparecem em conflito e não são resolvidos escolhendo uma cópia.
+
+  **Substituído a 06/10/2026 (decisão do Luís).** Quando as duas cópias CPIS
+  importadas discordam, manda a cópia mais recente, para todos os campos
+  (estado, fim previsto da Produção, data de entrega, responsável, descrição,
+  cliente…). «Mais recente» é a cópia cujo Excel foi carregado mais tarde
+  (`audit_mtg.snapshots.loaded_at`); em empate, a linha com maior data de
+  registo. Se a cópia recente não tiver um campo preenchido, fica o valor da
+  outra. O estado mostra-se tal como vem (Em Aberto, Em Produção, Pronta,
+  Fechada…), sem aviso de conflito. Também deixa de bastar uma cópia dizer
+  «Fechada» (regra C06 de 23/09): vale o estado da cópia mais recente.
+  Código: `cpis_copies.latest_first`, `planning_hub._order_summary`
+  e `sector/board.not_in_plans`. O CPIS direto (`cpis_mtg`), se vier a existir,
+  mantém a regra antiga.

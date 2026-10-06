@@ -24,13 +24,20 @@ def codes(ctx):
     return {i['code'] for i in ctx['issues']}
 
 
-def test_pdf_uses_all_imported_copies_then_current_direct_cpis(canonical):
+def test_pdf_uses_newest_imported_copy_then_current_direct_cpis(canonical):
+    # Decisão de 06/10/2026 (substitui C06 «basta uma cópia Fechada»): manda a cópia CPIS mais recente.
     with psycopg.connect(canonical) as conn:
         conn.execute("UPDATE raw_mtg.cpis_rows SET status=' FeChAdA ' WHERE snapshot_id='c1'")
+        conn.execute("UPDATE audit_mtg.snapshots SET loaded_at=loaded_at-interval '1 minute' WHERE snapshot_id='c1'")
+    older=cpis.read_context('4200')
+    assert older['population']['active'] is True and older['status_values']==['Em Produção']
+    assert 'of_closed' not in codes(older) and 'cpis_ambiguous' not in codes(older)
+    with psycopg.connect(canonical) as conn:
+        conn.execute("UPDATE audit_mtg.snapshots SET loaded_at=loaded_at+interval '2 minutes' WHERE snapshot_id='c1'")
     imported=cpis.read_context('4200')
     assert imported['cpis_mode']=='imported'
     assert imported['population']['active'] is False
-    assert set(imported['status_values'])=={'Em Produção',' FeChAdA '}
+    assert imported['status_values']==[' FeChAdA ']
     assert 'of_closed' in codes(imported)
     assert all(not r['population']['active'] for r in imported['plan_rows'])
     first=cpis_sync.publish([direct_row('OF4200')],datetime.now(timezone.utc),central_dsn=canonical)

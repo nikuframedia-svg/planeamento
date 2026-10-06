@@ -33,6 +33,16 @@ def test_weighted_matching_cohorts_exclude_both_unknown_numerator_and_denominato
     assert len(result['excluded'])==2
 
 
+
+@pytest.fixture(autouse=True)
+def _small_history_samples(monkeypatch):
+    """Estes testes verificam a mecânica das coortes com amostras pequenas; a amostra mínima tem teste próprio."""
+    from app.raw import productivity
+    monkeypatch.setattr(productivity, 'MIN_SHIFTS', 1)
+    monkeypatch.setattr(productivity, 'MIN_DAYS', 1)
+    monkeypatch.setattr(productivity, 'MIN_HOURS', 0.0)
+    monkeypatch.setattr(productivity, 'PLAUSIBLE', (0.0, float('inf')))
+
 @pytest.mark.parametrize('change',[
     {'operation':'113'},{'area':'perfis'},{'identity_valid':False},
     {'length_mm':None},{'quantity':-1},{'quantity':1.5},
@@ -324,3 +334,21 @@ def test_shared_quantity_survives_other_operation_edits_and_keeps_validated_prod
     last=save(changed,{'operation':'corte','notes':'Nota sem alterar a quantidade comum'})
     assert needs.detail(last['need_id'])['need']['quantity_required']==51
     assert assoc.get_evidence(last['need_id'],last['operation_id'])['evidence']['ocr_quantity']==4
+
+
+def test_historical_window_ends_today_even_for_late_lines(monkeypatch):
+    # Auditoria 06/10 (C3-F6): uma linha atrasada (data prevista 10/08) não usa uma janela antiga;
+    # todas as linhas e o Gantt veem a mesma taxa histórica. A data prevista só dá a vigência manual.
+    from app.gantt import research
+    monkeypatch.setattr(research,'overlay_rows',lambda c,area,rows:None)
+    calls=[]
+    class Context:
+        def estimate(self,values,area,operation,when,*,excel=None,as_of=None):
+            calls.append((when,as_of))
+            return {'source':'Excel provisório','rate':excel,'hours':1,'reason':None,'calculation':{}}
+    rows=[{'key':'late','values':{'of':'OF1','machine':'Ficep','operation':'112','quantity_required':10,'expected_date':'2026-08-10'},
+           'raw':{'Mt\\h':5},'calculation':{'production_sources':[{'operation':'112','remaining':10,'origin':'Excel provisório'}]},
+           'preparations':[]}]
+    p.apply_rows(None,'cantoneiras',rows,[],persist=False,context=Context(),
+                 source={'snapshot_id':'s','sheets':{}},today=date(2026,10,6))
+    assert calls==[('2026-08-10',date(2026,10,6))]

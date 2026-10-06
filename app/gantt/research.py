@@ -13,6 +13,7 @@ import os
 from pathlib import Path
 import uuid
 from threading import Lock
+from zoneinfo import ZoneInfo
 
 import psycopg
 from psycopg.rows import dict_row
@@ -21,7 +22,7 @@ from psycopg.types.json import Jsonb
 from .. import planning, planning_needs as needs
 
 PROVIDER = 'research-v2'
-BALANCE_CONTRACT = 'research-balance-v2'
+BALANCE_CONTRACT = 'research-balance-v3'  # v3 (06/10): contador Excel mais recente ganha; derivados refeitos
 AREAS = {'MTG2': 'perfis', 'MTG3': 'cantoneiras'}
 _cache = {}
 _lock = Lock()
@@ -63,7 +64,8 @@ def connect():
 
 def read_source(c, *, as_of=None, orders=None, include_closed=False):
     """A bounded number of set queries, including all positive documentary history."""
-    as_of = as_of or date.today()
+    # Dia de exibição (Lisboa), não o fuso do servidor (Berlim), como projection.fingerprint.
+    as_of = as_of or datetime.now(ZoneInfo(planning.settings.display_timezone)).date()
     sources = {
         'excel': c.execute('SELECT * FROM consulta_v2.fontes_selecionadas ORDER BY setor,dataset_id').fetchall(),
         'cpis': c.execute('SELECT * FROM origem_v2.versoes_cpis ORDER BY id').fetchall(),
@@ -123,9 +125,21 @@ def read_source(c, *, as_of=None, orders=None, include_closed=False):
     return needs.serial({'sources': sources, 'metadata': metadata, 'rows': rows})
 
 
+def version_digest(package):
+    """Assinatura da versão só com o conteúdo lido (auditoria 06/10, A14-F2).
+
+    O 'as_of' é só o dia da leitura: se entrasse na assinatura, cada meia-noite
+    criava uma versão nova igual à anterior e obrigava a recalcular tudo. Os
+    eventos que o 'as_of' filtra já fazem parte do pacote, por isso uma mudança
+    real continua a dar versão nova.
+    """
+    metadata = {k: v for k, v in (package.get('metadata') or {}).items() if k != 'as_of'}
+    return needs.digest({**package, 'metadata': metadata})
+
+
 def publish(c, package):
     """Idempotent immutable versions and one atomic head switch (caller's transaction)."""
-    digest = needs.digest(package)
+    digest = version_digest(package)
     provider = PROVIDER
     c.execute('SELECT pg_advisory_xact_lock(hashtext(%s))', ('gantt-research-publish',))
     prior = c.execute('SELECT version_id FROM planning_mtg.gantt_source_heads WHERE provider=%s', (provider,)).fetchone()
@@ -216,6 +230,50 @@ def refresh():
         raise
 
 
+EXCEL_COUNTERS = {'perfis': ('Ser.', 'Qtd em Falta'), 'cantoneiras': ('Maq.', 'Qtd falta')}
+
+
+def excel_counters_changed(area, research_raw, current_raw):
+    """O Excel atual registou produção depois do retrato da pesquisa (auditoria 06/10).
+
+    Compara o contador e a coluna de falta da operação principal. Só decide quando
+    as duas linhas trazem a coluna de falta; sem ela fica a regra anterior.
+    """
+    from ..planning_calculations import quantity
+    counter, remaining = EXCEL_COUNTERS[area]
+    old, new = research_raw or {}, current_raw or {}
+    if remaining not in old or remaining not in new:
+        return False
+    return any(quantity(old.get(k)) != quantity(new.get(k)) for k in (counter, remaining))
+
+
+def _rederive(row, origin):
+    """Campos que dependem do saldo, refeitos depois de a pesquisa o substituir.
+
+    Mesmas fórmulas de planning_calculations.calculate; sem isto ficavam calculados
+    com o saldo anterior (muitas vezes desconhecido).
+    """
+    import math
+    from ..planning_calculations import positive, CONTRACT
+    v = row['values']; rules = row.setdefault('calculation', {}).setdefault('rules', {})
+    rem = v.get('remaining'); length = positive(v.get('length_mm'))
+    unit = positive(v.get('section_unit')); stock = positive(v.get('stock_length_mm'))
+    weight_unit = positive(v.get('weight_unit'))
+    pieces = math.floor(stock/length) if stock and length else 0
+    derived = {
+        'remaining_m': (0 if rem == 0 else rem*length/1000 if rem is not None and length else None, 'saldo × L / 1000', 'm'),
+        'section_pending': (0 if rem == 0 else unit*rem if unit is not None and rem is not None else None, 'A × saldo', 'mm²'),
+        'bars': (0 if rem == 0 else math.ceil(rem/pieces) if rem is not None and pieces else None, 'ceil(saldo / floor(S / L))', 'un.'),
+        'weight': (weight_unit*rem if weight_unit is not None and rem is not None else None, 'peso unitário × saldo principal', 'kg')}
+    if 'quantity_to_plan' not in (row.get('input_values') or {}):
+        derived['quantity_to_plan'] = (rem, 'Saldo da operação planeada', 'un.')
+    for field, (value, formula, unit_name) in derived.items():
+        v[field] = value
+        rules[field] = {**(rules.get(field) or {}), 'formula': formula, 'unit': unit_name, 'source': origin,
+                        'inputs': {'saldo': rem, 'L': length, 'A': unit, 'S': stock, 'weight_unit': weight_unit},
+                        'contract': CONTRACT, 'reason': None if value is not None else 'Saldo ou dados da peça desconhecidos.'}
+
+
 def overlay_rows(c, area, rows):
     """One balance policy for projections, their tables and portfolio views.
 
@@ -252,6 +310,9 @@ def overlay_rows(c, area, rows):
             v.update(planning_remaining=source.get('remaining'),remaining=source.get('remaining'),
                 planning_balance_origin=source.get('origin'),planning_balance_provisional=False)
             continue
+        if excel_counters_changed(area, r.get('raw'), row.get('raw')):
+            # Produção registada no Excel depois do retrato da pesquisa: o saldo RAW ganha.
+            continue
         b = balance(r)
         from ..sector.scope import matches_current
         if calc.get('compatible') is False or not matches_current(r,v):
@@ -261,8 +322,11 @@ def overlay_rows(c, area, rows):
                        'records': [], 'coverage_reasons': b['reasons'],
                        'v2_evidence': {'version': package['head']['version_id'], 'operation_id': r['operacao_id'], 'snapshot': r['snapshot_id']}}
         sources[:] = [s for s in sources if str(s.get('operation')) != operation] + [replacement]
+        changed = v.get('remaining') != b['planning_remaining']
         v.update(planning_remaining=b['planning_remaining'], remaining=b['planning_remaining'], planning_balance_origin=replacement['origin'],
                  planning_balance_provisional=b['balance_provisional'])
+        if changed:
+            _rederive(row, replacement['origin'])
 
 
 def application_balances(c, source_rows, *, records=None):
@@ -303,6 +367,11 @@ def application_balances(c, source_rows, *, records=None):
                     result[r['operacao_id']] = {'saldo_confirmado':source.get('remaining'),
                         'saldo_documental':None if source.get('remaining') is None else r.get('saldo_documental'),
                         'application_balance_evidence':source, 'execution_started':bool(source.get('made') or source.get('records'))}
+                elif (r['fase']=='principal' and source and not source.get('v2_evidence') and source.get('remaining') is not None
+                      and excel_counters_changed(area, r.get('raw'), detail.get('raw'))):
+                    # O Excel atual tem produção posterior ao retrato da pesquisa: o mesmo saldo RAW da Carteira.
+                    result[r['operacao_id']] = {'saldo_confirmado':None,'saldo_documental':source.get('remaining'),
+                        'application_balance_evidence':source,'execution_started':bool(source.get('value'))}
     return result
 
 

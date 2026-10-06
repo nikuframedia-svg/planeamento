@@ -36,7 +36,13 @@ def read(c, sector: str) -> dict:
     if c.execute("SELECT to_regclass('planning_mtg.sector_settings') t").fetchone()["t"]:
         row = c.execute("SELECT definition, revision FROM planning_mtg.sector_settings WHERE area = %s", (sector,)).fetchone()
         if row:
-            return {**default(), **row["definition"], "revision": row["revision"]}
+            stored = {**default(), **row["definition"], "revision": row["revision"]}
+            year = date.today().year
+            covered = {h[:4] for h in stored["holidays"]}
+            for y in (year, year + 1):  # anos ainda sem feriados gravados: os nacionais entram sozinhos
+                if str(y) not in covered:
+                    stored["holidays"] = sorted(set(stored["holidays"]) | set(shifts.national_holidays(y)))
+            return stored
     return default()
 
 
@@ -53,19 +59,20 @@ def _weeks(today: date | None = None, count: int = HORIZON_WEEKS):
 
 
 def machine_rows(c, sector: str) -> list[dict]:
-    """Máquinas do setor: catálogo da base de pesquisa (setor e tipo) ou com calendário neste setor."""
+    """Máquinas do setor pelo catálogo de recursos (members.rule); a área dos calendários não conta."""
+    from .members import rule
     from .occurrences import resources_context
     from .portfolio_kpis import catalog
     codes, by_id, _, configs, package = resources_context(c)
     info = catalog(c, sector) if by_id else {}
-    with_calendar = {str(cfg["definition"].get("resource_id")) for cfg in configs if cfg["kind"] == "calendar" and cfg.get("area") == sector}
+    own = rule(by_id, info, sector)
     objects = {str(cfg["id"]): cfg for cfg in configs if cfg["kind"] == "resource"}
     capacities = (package or {}).get("metadata", {}).get("capacities", []) if package else []
     y, w = _current_week()
     out = []
     for rid, r in by_id.items():
         meta = info.get(r.get("code")) or {}
-        if not (rid in with_calendar or meta.get("unit") == UNIT[sector] and meta.get("type") in ("maquina", "posto")):
+        if rid not in own:
             continue
         obj = objects.get(rid)
         d = (obj or {}).get("definition") or {}
@@ -74,9 +81,10 @@ def machine_rows(c, sector: str) -> list[dict]:
             row = shifts.calendar_row(c, rid, y, w)
             plan, _ = shifts.decode(row["definition"]) if row else ({}, {})
             default_shifts = max([plan.get(str(day), 0) for day in range(1, 6)] or [0])
-        out.append({"id": rid, "code": r.get("code"), "name": r.get("name") or rid, "type": meta.get("type") or r.get("type"),
+        out.append({"id": rid, "code": r.get("code"), "name": r.get("name") or rid, "type": meta.get("type") or r.get("type"), "area": sector,
                     "process": meta.get("process"), "confirmed": bool(d.get("confirmed")), "revision": (obj or {}).get("revision"),
                     "default_shifts": int(default_shifts), "has_object": bool(obj), "override": d.get("capacity_override") or {},
+                    "aliases": d.get("aliases") or [], "operations": d.get("operations") or [], "history_window_days": d.get("history_window_days"),
                     "ficha": [{"operation": cap["operacao_codigo"], "process": cap.get("processo_fisico"), "min": cap.get("perfil_minimo"),
                                "max": cap.get("perfil_maximo"), "source": cap.get("fonte")}
                               for cap in capacities if cap["recurso_codigo"] == r.get("code")]})
@@ -154,6 +162,8 @@ def regenerate(c, sector: str, settings: dict, request_id: uuid.UUID, *, machine
         default_plan = {str(d): (m["default_shifts"] if d in settings["workdays"] else 0) for d in range(1, 8)}
         for year, week in _weeks():
             row = shifts.calendar_row(c, m["id"], year, week)
+            if row and shifts.is_legacy(row["definition"]):
+                continue  # calendário antigo só com turnos: não se reescreve sem horários conhecidos
             manual = bool(row and row["definition"].get("manual"))
             if row:
                 base, days = shifts.decode(row["definition"], settings["template"])
@@ -163,6 +173,38 @@ def regenerate(c, sector: str, settings: dict, request_id: uuid.UUID, *, machine
                 base, days = default_plan, {}
             changed += shifts.write(c, m, sector, year, week, base, days, settings, manual=manual, request_id=request_id, actor_payload={})
     return changed
+
+
+def missing_weeks(c, sector: str, *, machines: list[dict] | None = None, today: date | None = None) -> list[tuple[str, int, int]]:
+    """Semanas do horizonte (52 semanas) sem calendário nas máquinas confirmadas: [(máquina, ano, semana)]. Só leitura."""
+    machines = machines if machines is not None else machine_rows(c, sector)
+    return [(m["id"], y, w) for m in machines if m.get("confirmed")
+            for y, w in _weeks(today) if not shifts.calendar_row(c, m["id"], y, w)]
+
+
+def extend_horizon(sector: str, *, conn=None, today: date | None = None) -> dict:
+    """Prolonga os calendários: cria só as semanas em falta das próximas 52, com os turnos padrão (auditoria 06/10, C1-5).
+
+    Sem isto o horizonte encurta uma semana por semana até alguém gravar as Definições (regenerate só corre aí).
+    Regras: só máquinas confirmadas; semanas existentes (manuais, antigas ou não) não se tocam; feriados do modelo
+    do setor; um só lote com um só sinal. Pensado para correr uma vez por semana (tarefa agendada); repetir não grava.
+    """
+    with (planning.connect() if conn is None else nullcontext(conn)) as c:
+        planning.check_area(sector)
+        c.execute("SELECT pg_advisory_xact_lock(hashtext('sector_settings:' || %s))", (sector,))  # o mesmo lock de save()
+        settings = read(c, sector)
+        machines = {m["id"]: m for m in machine_rows(c, sector)}
+        missing = missing_weeks(c, sector, machines=list(machines.values()), today=today)
+        request_id = uuid.uuid4()
+        created = 0
+        for rid, year, week in missing:
+            m = machines[rid]
+            base = {str(d): (m["default_shifts"] if d in settings["workdays"] else 0) for d in range(1, 8)}
+            created += shifts.write(c, m, sector, year, week, base, {}, settings, manual=False, request_id=request_id,
+                                    actor_payload={})
+        if created:
+            shifts.finish_batch(c, request_id)
+    return {"sector": sector, "created": created, "machines": len({rid for rid, _, _ in missing})}
 
 
 def _validate_settings(p: dict) -> dict:
@@ -235,6 +277,19 @@ def save(payload: dict, *, conn=None) -> dict:
                             raise planning.PlanningError("Perfil inválido na ficha (ex.: L200X200X24).")
                         override[op] = {"min": lo or None, "max": hi or None}
                 d["capacity_override"] = override
+            if "nomes" in payload:  # nomes da máquina no Excel e nas folhas OCR, por setor (antes em «Capacidades e horas»)
+                aliases = []
+                for item in payload.get("nomes") or []:
+                    area, name = str((item or {}).get("area") or ""), str((item or {}).get("name") or "").strip()
+                    if area not in planning.AREAS or not name:
+                        raise planning.PlanningError("Cada nome precisa do setor (MTG2 ou MTG3) e do nome.")
+                    if {"area": area, "name": name} not in aliases:
+                        aliases.append({"area": area, "name": name})
+                d["aliases"] = aliases
+            if "operacoes" in payload:
+                d["operations"] = [str(x).strip() for x in payload.get("operacoes") or [] if str(x).strip()]
+            if "janela_historico" in payload:
+                d["history_window_days"] = payload["janela_historico"]
             objects.save({"request_id": str(uuid.uuid5(request_id, "resource")), "id": m["id"], "expected_revision": obj["revision"],
                           "name": obj["name"], "area": obj["area"], "definition": d}, "resource", conn=c, signal=False)
             changed = 1
@@ -263,3 +318,11 @@ def save(payload: dict, *, conn=None) -> dict:
         if changed:
             shifts.finish_batch(c, request_id)
     return {"changed": changed, "tipo": kind}
+
+
+if __name__ == "__main__":  # tarefa semanal: python -m app.sector.settings prolongar (C1-5)
+    import json
+    import sys
+    if sys.argv[1:] != ["prolongar"]:
+        raise SystemExit("Uso: python -m app.sector.settings prolongar")
+    print(json.dumps([extend_horizon(sector) for sector in planning.AREAS], ensure_ascii=False))

@@ -89,7 +89,7 @@ def read_context(of: str, references=()) -> dict:
         problems.append(issue("cpis_ambiguous", "Existem registos CPIS incompatíveis para esta OF.", blocking=True))
     population = planning_population.classify({'status_values':summary.get('status_values',[])})
     if not population['active']:
-        problems.append(issue("of_closed", "A OF está fechada numa das fontes CPIS e não pode originar novas linhas.", blocking=True))
+        problems.append(issue("of_closed", "A OF está fechada no CPIS e não pode originar novas linhas.", blocking=True))
     elif cpis and (len(summary['status_values'])!=1 or summary['cpis_status'] not in planning.OPEN_STATES):
         problems.append(issue("of_not_operational", "O estado CPIS não confirma autorização para concluir ou exportar. A OF não foi interpretada como fechada.", blocking=True))
     for unknown in population['unknown_states']:

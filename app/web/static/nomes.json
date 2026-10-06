@@ -1,0 +1,35 @@
+{
+  "_sobre": "Um nome por conceito em todas as páginas (pedido do Luís, 06/10/2026: nomes que, tendo em conta o CPIS, fazem sentido e dão contexto). 'cpis' = campo da vista do CPIS (ordensfabrico_listagem_excel_vw / folha CPIS_Dados dos Excel); 'excel' = coluna dos Excel de planeamento quando existe e foi confirmada nos dados.",
+  "campos": {
+    "of": {"nome": "OF", "cpis": "of", "excel": {"perfis": "OF Nº", "cantoneiras": "OF"}, "explicacao": "Ordem de fabrico."},
+    "ov": {"nome": "OV", "cpis": "ov", "excel": {"perfis": "OV Nº", "cantoneiras": "OV Nº"}, "explicacao": "Ordem de venda (encomenda do cliente) a que a OF pertence."},
+    "customer": {"nome": "Cliente", "cpis": "cliente", "excel": {"perfis": "CLIENTE", "cantoneiras": "Cliente"}, "explicacao": "Cliente da encomenda, como está no CPIS."},
+    "designation": {"nome": "Descrição da obra", "cpis": "observacoes", "excel": {"perfis": "DESIGNAÇÃO", "cantoneiras": "Designação"}, "explicacao": "Texto do CPIS (observacoes) que descreve a obra; nos Excel é a coluna Designação."},
+    "status": {"nome": "Estado CPIS", "cpis": "status", "excel": {"cantoneiras": "Status"}, "explicacao": "Estado da OF no CPIS (Em Aberto, Em Produção, Pronta, Fechada…)."},
+    "delivery_date": {"nome": "Data de entrega", "cpis": "dataentregadl", "excel": {"perfis": "Data Cpis (coluna K)"}, "explicacao": "Data de entrega ao cliente no CPIS (dataentregadl). No Excel dos perfis é a coluna «Data Cpis» (igual em 7 590 de 7 762 linhas)."},
+    "planned_finish_date": {"nome": "Fim previsto da Produção", "cpis": "datafimprevdp", "excel": null, "explicacao": "Data em que a Direção de Produção prevê acabar a OF (CPIS datafimprevdp)."},
+    "planned_start_date": {"nome": "Início previsto da Produção", "cpis": "datainiprev", "excel": null, "explicacao": "Data em que a Direção de Produção prevê começar a OF (CPIS datainiprev)."},
+    "work_type": {"nome": "Família de Produto", "cpis": "codtipobr + destipobr", "excel": null, "explicacao": "Tipo de obra no CPIS (código e descrição), por exemplo «1 Postes Treliçados»."},
+    "record_date": {"nome": "Data de registo", "cpis": "data", "excel": null, "explicacao": "Dia em que a OF foi registada no CPIS."},
+    "responsible_dp": {"nome": "Responsável DP", "cpis": "responsaveldp", "excel": {"cantoneiras": "Equipa Cpis"}, "explicacao": "Responsável da Direção de Produção pela OF."},
+    "factory_unit": {"nome": "Unidade fabril", "cpis": "codunifab", "excel": null, "explicacao": "Unidade fabril da OF no CPIS."},
+    "order_weight": {"nome": "Peso da OF (kg)", "cpis": "pesoof", "excel": null, "explicacao": "Peso total da OF no CPIS."},
+    "sap_order": {"nome": "Ordem SAP", "cpis": "ordemsap", "excel": null, "explicacao": "Número da ordem no SAP."},
+    "cut_date": {"nome": "Data Corte", "cpis": null, "excel": {"perfis": "Data Corte", "cantoneiras": "Data Corte"}, "explicacao": "Data de corte escrita no Excel de planeamento (prazo da MTG3)."},
+    "picking": {"nome": "Picking", "cpis": "pickingprodcab (semana)", "excel": {"perfis": "folha Picking / coluna Picking"}, "explicacao": "Semana de Picking da OF; sem ano no Excel, o ano é o da semana mais perto da Data Corte (ou de hoje)."},
+    "machine": {"nome": "Máquina", "cpis": null, "excel": {"perfis": "Máquina Corte", "cantoneiras": "Máquina Corte"}, "explicacao": "Máquina escolhida: Carteira, depois a coluna Máquina da Tabela, depois o conjunto de famílias."},
+    "capacity": {"nome": "Capacidade", "cpis": null, "excel": null, "explicacao": "Horas dos turnos da máquina nessa semana (calendário); na semana atual, só as que faltam."},
+    "planned_hours": {"nome": "Horas previstas", "cpis": null, "excel": null, "explicacao": "Horas que a Carga usa: taxa confirmada; senão velocidade do Excel (mediana da máquina e perfil na MTG3, mm²/h na MTG2)."},
+    "excel_hours": {"nome": "Horas segundo o Excel", "cpis": null, "excel": {"perfis": "Horas Consumidas / CapacidadeMáquinas", "cantoneiras": "Mt\\h · h teor. Falta"}, "explicacao": "Horas pela regra do próprio Excel, só na operação principal: MTG3 metros em falta ÷ velocidade Mt\\h da linha; MTG2 área ÷ taxa da folha CapacidadeMáquinas (×3 no Thomas acima de 50 peças). Antes chamava-se «Carga segundo a macro»."},
+    "actual_hours": {"nome": "Horas reais declaradas", "cpis": null, "excel": null, "explicacao": "Horas declaradas nas folhas OCR validadas e horas corrigidas à mão nas Definições do setor, pela data de produção."}
+  },
+  "sinonimos": {
+    "designation": ["Designação da obra", "Obra"],
+    "delivery_date": ["Data CPIS · entrega", "Entrega"],
+    "work_type": ["Tipo de obra", "Família da encomenda (CPIS)", "Família da encomenda", "Família de Produto (CPIS)"],
+    "ov": ["Obra / OV"],
+    "planned_finish_date": ["Fim Produção"],
+    "record_date": ["Entrou"],
+    "excel_hours": ["Carga segundo a macro (h)", "Carga segundo a macro"]
+  }
+}

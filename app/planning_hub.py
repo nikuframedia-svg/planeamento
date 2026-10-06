@@ -16,7 +16,7 @@ from psycopg.types.json import Jsonb
 from . import planning
 from .config import settings
 from .dossiers.models import order_number, ref_key
-from . import planning_production, planning_population
+from . import cpis_copies, planning_production, planning_population
 from .matching.geometry import profile_key
 
 OPEN_STATES = ('Em Aberto', 'Em Produção')
@@ -194,6 +194,13 @@ def _order_summary(rows):
               'delivery_date', 'actual_start_date', 'actual_finish_date')
     result = {'of': rows[0]['production_order_no'], 'sources': [],
               'cpis_copies': sorted({r.get('area') for r in rows if r.get('area')})}
+    # Cópias importadas dos Excel trazem a hora de carga: manda a mais recente, campo a campo,
+    # sem conflito (decisão de 06/10/2026, substitui 20/09 e C06). Um campo vazio na cópia
+    # recente fica com o valor da outra. Sem hora de carga (CPIS direto), a regra antiga mantém-se.
+    by_recency = any(r.get('copy_loaded_at') for r in rows)
+    if by_recency:
+        rows = cpis_copies.latest_first(rows)
+        result['cpis_latest_copy'] = rows[0].get('area')
     conflicts = []
     for field in fields:
         values = []
@@ -201,10 +208,14 @@ def _order_summary(rows):
             value = row.get(field)
             if value not in (None, '') and value not in values:
                 values.append(value)
-        result[field] = values[0] if len(values) == 1 else None
+        if by_recency and field != 'sales_order_no':
+            result[field] = values[0] if values else None
+            values = values[:1] if field == 'status' else values
+        else:
+            result[field] = values[0] if len(values) == 1 else None
+            if len(values) > 1 and field != 'sales_order_no':
+                conflicts.append(field)
         result[field + '_values'] = values
-        if len(values) > 1 and field != 'sales_order_no':
-            conflicts.append(field)
     result['ovs'] = result.pop('sales_order_no_values')
     result.pop('sales_order_no', None)
     result['conflicts'] = conflicts
@@ -229,7 +240,8 @@ def _order_rows(conn, version, query, states, extra_ofs=(), *, only_ofs=None):
         source = '''SELECT c.production_order_no,c.sales_order_no,c.customer_name,c.observations,c.status,
         c.factory_unit,c.work_type_code,c.work_type_description,c.responsible_dp,c.planned_start_date,c.planned_finish_date,
         c.delivery_date,c.actual_start_date,c.actual_finish_date,
-        CASE WHEN s.dataset_id='ds-met2-perfis' THEN 'perfis' ELSE 'cantoneiras' END AS area
+        CASE WHEN s.dataset_id='ds-met2-perfis' THEN 'perfis' ELSE 'cantoneiras' END AS area,
+        s.loaded_at AS copy_loaded_at,c.record_date AS copy_record_date
         FROM raw_mtg.cpis_rows c JOIN audit_mtg.snapshots s USING(snapshot_id)
         WHERE c.snapshot_id=ANY(%s) AND c.production_order_no IS NOT NULL'''
         params = [ids]

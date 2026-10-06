@@ -22,15 +22,23 @@ USER_FIELDS = {'horizon_weeks', 'urgent', 'pins', 'picking_year_by_of',
                'picking_deadline_by_of', 'alternatives', 'machine_overrides', 'areas', 'included_operations'}
 
 
-@lru_cache(maxsize=1)
-def runtime_manifest():
+def runtime_paths():
+    """Ficheiros de código cujo conteúdo entra no retrato do Gantt (durações, saldos, prazos, máquinas)."""
     root = Path(__file__).resolve().parents[1]
-    paths = sorted([*root.joinpath('gantt').glob('*.py'),
+    return sorted([*root.joinpath('gantt').glob('*.py'),
                     root/'planning_dates.py', root/'planning_estimates.py',
                     root/'planning_calendars.py',root/'planning_population.py',
                     root/'sector/scope.py',root/'sector/decisions.py',root/'sector/machine_choice.py',
-                    root/'raw/productivity.py'])
-    digest = sha256(b''.join(path.read_bytes() for path in paths)).hexdigest()
+                    root/'raw/productivity.py',
+                    # Também mudam durações, saldos, prazos ou máquinas do retrato (auditoria 06/10, GT-07).
+                    root/'raw/worked_hours.py',root/'raw/capacity.py',root/'planning_calculations.py',
+                    root/'planning_needs.py',root/'sector/priority.py',root/'sector/estimates.py',
+                    root/'sector/assignments.py',root/'sector/occurrences.py',root/'sector/portfolio.py'])
+
+
+@lru_cache(maxsize=1)
+def runtime_manifest():
+    digest = sha256(b''.join(path.read_bytes() for path in runtime_paths())).hexdigest()
     return {'code_sha256': digest,
             'python_dependencies': {name: version(name) for name in ('ortools', 'psycopg')}}
 

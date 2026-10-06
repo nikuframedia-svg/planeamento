@@ -22,13 +22,13 @@ DIMENSIONS = {
     "unit": "Setor",
     "sku_family": "Família SKU",
     "classification": "Estado da família",
-    "cpis_family": "Família da encomenda (CPIS)",
+    "cpis_family": "Família de Produto",
     "material_type": "Tipo de material",
     "profile": "Perfil",
     "master": "Referência mestre",
     "reference": "Referência (SKU)",
     "of": "OF",
-    "work": "Obra / OV",
+    "work": "OV",
     "customer": "Cliente",
     "machine": "Máquina atribuída",
     "machine_planned": "Máquina atribuída ou sugerida",
@@ -49,6 +49,7 @@ WINDOWS = {
     "3_semanas": "Até ao fim da semana ISO +2",
     "mais_tarde": "Mais tarde",
     "sem_data": "Sem prazo",
+    "estacionada": "Estacionada no Excel (W 2026/53)",  # S53-1
 }
 FLAGS = {
     "late": "Atrasado pelo marco do setor",

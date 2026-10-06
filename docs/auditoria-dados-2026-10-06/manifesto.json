@@ -1,0 +1,50 @@
+{
+ "gerado_em": "2026-10-06T12:10:58.374515+00:00",
+ "git_head": "6c284b06043a64c8aa2f536accafdd74f8398c79",
+ "snapshots": {
+  "perfis": {
+   "snapshot_id": "mtg2_727e495edcf69a8f",
+   "loaded_at": "2026-10-02 12:53:20.164418+00:00"
+  },
+  "cantoneiras": {
+   "snapshot_id": "mtg_cdd4dda73e0856f6",
+   "loaded_at": "2026-10-02 12:51:22.749373+00:00"
+  }
+ },
+ "raw_generations_cols": [
+  "id",
+  "dataset",
+  "fingerprint",
+  "metadata",
+  "row_count",
+  "created_at"
+ ],
+ "raw_generations": {
+  "capacity:cantoneiras": 5657,
+  "capacity_items:cantoneiras": 5656,
+  "capacity_items:perfis": 5653,
+  "capacity_machines:cantoneiras": 5658,
+  "capacity_machines:perfis": 5655,
+  "capacity:perfis": 5654,
+  "orders:cantoneiras": 5542,
+  "orders:perfis": 5650,
+  "original:cantoneiras": 5660,
+  "original:perfis": 5659,
+  "planning:cantoneiras": 5652,
+  "planning:perfis": 5651,
+  "production:cantoneiras": 5538,
+  "production_hours:cantoneiras": 5539,
+  "production_hours:perfis": 5648,
+  "production:perfis": 5647
+ },
+ "research_head": [
+  {
+   "provider": "research-v2",
+   "version_id": "6aebcd10ddf8c69675100647ad031bf36f642abf73e62fac2365dcb2cb1d05ac",
+   "checked_at": "2026-10-06 12:00:43.906798+00:00",
+   "last_error": "None"
+  }
+ ],
+ "cpis_versions": 0,
+ "calendars": 624
+}

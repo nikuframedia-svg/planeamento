@@ -70,12 +70,13 @@ def members(setor: str = "cantoneiras", vista: str = "referencia", caminho: list
         sector = portfolio.check_sector(setor)
         try:
             learned = machine_learning.model(sector)
+            checked = machine_learning.technical(sector)  # só máquinas que a ficha técnica admite (PROP-2)
         except Exception:  # a sugestão é opcional: a lupa abre na mesma
             import logging
             logging.getLogger(__name__).exception("Preferências de máquina indisponíveis")
-            learned = None
+            learned, checked = None, {}
         return needs.serial(portfolio.members(sector, vista, caminho, cursor=cursor, limit=limite, q=pesquisa, filters=filters,
-                                              decisions=selection.current(setor), learned=learned))
+                                              decisions=selection.current(setor), learned=learned, checked=checked))
     return _call(build)
 
 
@@ -151,10 +152,11 @@ async def machine_suggestion(request: Request):
         sector = portfolio.check_sector(str(p.get("setor") or ""))
         keys = set(portfolio.keys_from(p))
         learned = machine_learning.model(sector)
+        checked = machine_learning.technical(sector)  # só máquinas que a ficha técnica admite (PROP-2)
         votes, labels = Counter(), {}
         for x in portfolio.current(sector)["lines"]:
             if x["key"] in keys:
-                found = machine_learning.suggest(learned, x.get("sku_family"), x.get("profile"))
+                found = machine_learning.for_line(learned, checked, x)
                 if found:
                     votes[found["resource_id"]] += 1
                     labels.setdefault(found["resource_id"], found)
@@ -240,6 +242,22 @@ def load_cell(setor: str, maquina: str, ano: int, semana: int):
     return _call(lambda: load.cell(portfolio.check_sector(setor), maquina, ano, semana))
 
 
+@router.get("/planeamento/api/setor/carga/operacoes")
+def load_operations(setor: str, maquina: str, ano: int, semana: int, of: str):
+    """Operações de uma OF numa célula da Carga, com o cálculo de cada uma (06/10/2026)."""
+    _guard()
+    from . import load
+    return _call(lambda: load.operations(portfolio.check_sector(setor), maquina, ano, semana, of))
+
+
+@router.get("/planeamento/api/setor/carga/producao")
+def load_production(setor: str, maquina: str, ano: int, semana: int, pagina: int = 1):
+    """Produção registada (OCR validado) numa máquina e semana, e as horas reais declaradas (06/10/2026)."""
+    _guard()
+    from . import load
+    return _call(lambda: load.production(portfolio.check_sector(setor), maquina, ano, semana, pagina))
+
+
 @router.post("/planeamento/api/setor/turnos")
 async def shifts_save(request: Request):
     """Mais ou menos turnos numa semana ou num dia, para uma ou várias máquinas (um só lote)."""
@@ -266,6 +284,14 @@ def board(setor: str = "cantoneiras"):
     _guard()
     from . import board as quadro
     return _call(lambda: needs.serial(quadro.board(setor)))
+
+
+@router.get("/planeamento/api/setor/quadro/dia")
+def board_day(setor: str = "cantoneiras", dia: str = "", maquina: str | None = None):
+    """Gantt de um dia por máquina do setor: horas, turnos e o que não tem hora (pedido de 06/10/2026)."""
+    _guard()
+    from . import board as quadro
+    return _call(lambda: quadro.day(setor, dia, maquina or None))
 
 
 # --- Vistas por família e capacidade (plano de 01/10/2026). Interruptor próprio, desligado por defeito.

@@ -252,7 +252,9 @@ window.RawPanels = (() => {
           x.generation?.id ?? "Por preparar",
           x.drive?.error ||
             (x.newer_available
-              ? "Versão no Drive ainda não importada"
+              ? x.newer_folder
+                ? `Versão mais recente na pasta «${x.newer_folder}» do Drive; a carga automática só lê a raiz`
+                : "Versão no Drive ainda não importada"
               : x.drive?.checked_at
                 ? "Hash do Drive e importação coincidem"
                 : "Drive por verificar"),

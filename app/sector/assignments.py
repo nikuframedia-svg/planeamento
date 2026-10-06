@@ -171,30 +171,35 @@ def _evidence(c, data):
         templates = integrated._templates(package)
         with _index_lock:
             _index_cache["index"] = (key, (index, templates))
-    return {"codes": codes, "by_id": by_id, "configs": configs, "index": index, "templates": templates}
+    from . import estimates, throughput
+    # Horas pela mesma regra da Carteira e da Carga (estimates.hours_on), não pelo motor do Gantt (PROP-4).
+    hours = {"by_id": by_id, "names": throughput.aliases_to_names(by_id), "study": throughput.load(c),
+             "rates": estimates.area_rates(package["metadata"])}
+    return {"codes": codes, "by_id": by_id, "configs": configs, "index": index, "templates": templates, "hours": hours}
 
 
 def alternatives(c, data, fact, evidence=None) -> list[dict]:
-    """Every documentary alternative of one occurrence, with eligibility, conditions and hours."""
-    from ..gantt import integrated
+    """Every documentary alternative of one occurrence, with eligibility, conditions and hours.
+
+    Auditoria 06/10 (PROP-4): as horas de cada máquina são as que a Carteira e a Carga mostrariam com essa
+    máquina (horas documentais do saldo, senão a estimativa de estimates.py), para a previsão não prometer
+    outras horas.
+    """
+    from . import estimates
     evidence = evidence or _evidence(c, data)
     row = data["_rows"].get(fact["key"])
     if not evidence or not row:
         return []
-    started_at = datetime.now(timezone.utc).replace(second=0, microsecond=0).isoformat()
     result = []
     for candidate in evidence["index"].candidates(row, evidence["codes"]):
         rid = candidate.get("resource_id")
         resource = evidence["by_id"].get(rid) if rid else None
         hours, origin, reason = None, None, candidate.get("reasons") and "; ".join(candidate["reasons"]) or None
-        if resource and rid == fact["resource_id"] and fact["hours"] is not None:
-            hours, origin = fact["hours"], fact["hours_origin"]
-        elif resource and candidate["eligibility"] != "excluded":
-            option = integrated._duration(row, dict(candidate), resource, evidence["configs"], evidence["templates"], started_at)
-            if option:
-                hours, origin = option["duration_hours"], option["duration_origin"]
-            else:
-                reason = candidate.get("duration_reason") or reason or "Duração por confirmar."
+        if resource and (candidate["eligibility"] != "excluded" or rid in (fact["resource_id"], fact.get("planning_resource_id"))):
+            hours, _, origin = estimates.hours_on(fact, rid, **evidence["hours"])
+            if hours is None:
+                excluded = candidate["eligibility"] == "excluded" and reason
+                reason, origin = reason if excluded else origin or reason or "Duração por confirmar.", None
         result.append({"resource_id": rid, "resource_code": candidate["resource_code"],
                        "name": resource["name"] if resource else candidate["resource_code"],
                        "eligibility": candidate["eligibility"], "conditions": candidate.get("conditions", []),

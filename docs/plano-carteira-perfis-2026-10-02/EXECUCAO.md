@@ -2,6 +2,73 @@
 
 Plano: [PLANO.md](PLANO.md). Estado: **ativo em produção desde 02/10/2026 ~19:17** (autorizado pelo Luís): migração 046 aplicada, `kanban-planning` e `kanban-research-sync` reiniciados, vistas da base de pesquisa aplicadas, ecrã antigo removido (cópia em `~/.local/state/planning-carteira-membros/antes-20261002/`, com as definições anteriores das vistas `consulta_v2`). Teste de browser aprovado contra a produção.
 
+## 06/10/2026 (tarde): Carga completa, Gantt por turno e por dia, nomes do CPIS, auditoria
+
+Plano aprovado: `~/.claude/plans/esta-horrivel-n-o-existe-gleaming-clarke.md`. Ponto de partida guardado no commit `6c284b0`. Ativo a 06/10 ao longo da tarde, com 3 reinícios do kanban-planning.
+
+**Só as máquinas do setor.** Novo `app/sector/members.py`: uma máquina é de um setor pela unidade (MTG2/MTG3) e pelo tipo (máquina/posto) do catálogo de recursos. A área dos calendários deixa de contar.
+- Usado em `settings.machine_rows`, `family_sets.machines` e `shifts.write` (o calendário fica com o setor da máquina).
+- Medição antes da mudança: `scripts/audit_sector_members.py`. Mesmas máquinas nas duas regras; as cantoneiras tinham 467 operações na Soldadura e 91 na Quinadora MTG2.
+- Esse trabalho aparece agora como nota (`elsewhere`) no Gantt e na Carga, nunca como linha.
+
+**Gantt por turno e por dia.**
+- `app/sector/week.py`: `shift_at` (a madrugada conta para o 3.º turno do dia anterior), `split_by_shift`, `labelled_windows`, `bands`, `hour_ticks`, `day_bounds`. As horas são reais em UTC: 25/10 tem 25 h.
+- `board.py`:
+  - `_built` com cache e pormenores privados por segmento;
+  - `boxes_from_proposal(area=)` filtra o setor e guarda `timed`;
+  - cada caixa traz `shifts` (horas por dia e turno);
+  - previsões sem horas recebem a estimativa da Carteira (`hours_estimated`);
+  - novo `day()` e rota `GET /planeamento/api/setor/quadro/dia?setor&dia&maquina`.
+- Ecrã `plano.*`:
+  - os dias do cabeçalho são clicáveis (todas as máquinas); a célula abre a máquina nesse dia;
+  - eixo 00–24 com faixas dos turnos e totais «N.º turno: planeado / capacidade h»;
+  - linha «agora» e faixa «Sem hora marcada»;
+  - ◀ ▶, «Voltar à semana», URL `?dia=&maquina=`.
+
+**Carga e turnos com o que Capacidades e Disponibilidade mostravam.** Novo `app/sector/load_sources.py`:
+- horas segundo o Excel e peso por linha, a partir de `capacity_items`, escalados ao saldo atual;
+- horas reais declaradas e calendário do Excel, a partir de `capacity`;
+- cálculo de cada operação.
+
+Os conjuntos `capacity*` juntam os dois setores, por isso filtra-se sempre pela área da linha. `load.py` acrescenta:
+- **semana:** `excel_hours`, `actual_hours` e `excel_calendar_hours`;
+- **`totals` por máquina:** separador «Máquinas»;
+- **novas funções:** `operations()` e `production()`, com as rotas `/carga/operacoes` e `/carga/producao`.
+
+No ecrã ficam os separadores Semanas | Máquinas. O resumo da célula mostra Capacidade · Horas previstas · Horas segundo o Excel · Horas reais declaradas · Peso. Há a lista de operações com «Ver cálculo» e a «Produção registada».
+
+**Páginas antigas e configuração.**
+- `/planeamento/capacidades` e `/disponibilidade` redirecionam (302) para a Carga, mas só nesta app. O MES partilha `raw_routes.py`, `capacity.js` (hard link) e `raw_panels.js`, e lá ficam como estavam. Por isso `capacity.*` **não foram apagados**.
+- Saíram do menu. Links atualizados em `gantt.html` e `insights.py`.
+- **Definições do setor** ganharam:
+  - nomes e operações de cada máquina (aliases);
+  - «válida desde» e «Arquivar» nas taxas;
+  - a secção «Horas reais corrigidas à mão» (`raw/horas/prever` + `raw/objects/worked_hours`).
+- **Calendários antigos «só turnos»:** contam pelas horas (`shifts.week_hours`) e `regenerate` não os reescreve. Hoje não existe nenhum (os 624 têm horários).
+
+**Nomes com base no CPIS.**
+- Fonte única: `app/web/static/nomes.json` (nome, campo CPIS, coluna Excel, explicação), `app/naming.py` e `static/nomes.js` (explicação no cursor de `[data-nome]`, carregado no menu).
+- Trocas feitas:
+  - «Designação da obra», «Descrição» e «Obra» → «Descrição da obra»;
+  - «Data CPIS · entrega» e «Entrega» → «Data de entrega»;
+  - «Tipo de obra», «Família da encomenda (CPIS)» e «Família de Produto (CPIS)» → «Família de Produto»;
+  - «Obra / OV» → «OV»;
+  - «Fim Produção» → «Fim previsto da Produção»;
+  - «Entrou» → «Data de registo».
+- Proteção: `tests/test_naming.py` proíbe os sinónimos antigos.
+- Nota acrescentada a `regras-confirmadas-2026-09-10.md`: nos dados, «Data Cpis» = data de entrega. Fica por confirmar com o Luís.
+
+**Factos dos dados vistos pelo caminho** (entram no relatório da auditoria):
+- As folhas OCR quase não trazem horas trabalhadas: em todo o motor de capacidade só há 18 h, no Serrote Doall na S40.
+- 11 724 linhas MTG3 não têm velocidade Mt\h ou comprimento no Excel, por isso não têm «Horas segundo o Excel».
+
+**Testes:**
+- `tests/test_sector_shifts.py`: membros do setor, área de casa do calendário, calendários antigos;
+- `tests/test_naming.py`;
+- `tests/setor_browser.cjs`: dia hora a hora, máquinas do setor, resumo, cálculo, produção, separador Máquinas, redirecionamentos, Definições novas.
+
+**Ambiente:** a pasta `~/.cache/ms-playwright` voltou a desaparecer. Reinstalar com `cd ~/.cache/planeamento-playwright && node node_modules/playwright-core/cli.js install chromium`.
+
 ## 06/10/2026: definições do setor, carga e turnos, Gantt semanal e preenchimento manual
 
 Plano aprovado: `~/.claude/plans/esta-horrivel-n-o-existe-gleaming-clarke.md`. **Ativo desde 06/10 ~12:46** (049 aplicada, kanban-planning, kanban-raw-worker e kanban-research-sync reiniciados).

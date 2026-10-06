@@ -200,6 +200,47 @@ def test_cantoneiras_operation_requires_piece_evidence_not_machine():
     assert all(op['ocr_quantity'] is None and op['coverage_reasons'] for op in line['operations'])
 
 
+def test_perfis_new_template_machines_count_as_cut():
+    # A12-F1: os modelos de 22/09 (TPL290-294) usam nomes curtos sem «Serrote».
+    from app.planning_production import operation_for_record
+    for machine in ('DISCO PAV1','FITA PAV1','DOALL PAV1','MEBA','Serrote Disco pav 1',
+                    'Serrote Fita Thomas IS639 Pav.1','Vanguard'):
+        assert operation_for_record({'source_app':'kanban-mes-mtg2','machine':machine})=='corte',machine
+    for machine in ('MAQ. ABOCARDAR','Abocardar'):
+        assert operation_for_record({'source_app':'kanban-mes-mtg2','machine':machine})=='abocardar'
+    assert operation_for_record({'source_app':'kanban-mes-mtg2','machine':'Posto X'})=='operacao_por_confirmar'
+
+
+def test_cantoneiras_full_bar_child_with_second_operation_keeps_siblings():
+    # A12-F3: num registo de barra completa, a regra «única operação da peça»
+    # aplica-se a cada filho. Um filho com 2.ª operação fica por confirmar,
+    # mas não tira a produção aos irmãos de uma só operação.
+    from app.planning_production import operation_for_record, attach_operation_evidence
+    def line(key,first,second=0):
+        return {'source_app':'kanban-mes','plan_key':key,'quantity_planned':4,'quantity_made':None,
+                'operation_inputs':{'1ª Oper.':first,'2ª Oper.':second}}
+    lines=[line('a','112'),line('b','112','111'),line('c','119')]
+    record={'id':4268,'sheet_uid':'s','row_index':0,'source_app':'kanban-mes','machine':'Ficep Rapid 25T',
+            'full_profile':True,'association_status':'technical_unique','resolved_plan_keys':['a','b','c'],
+            'resolved_plan_refs':[{'plan_key':k,'assumed_quantity':4} for k in 'abc']}
+    attach_operation_evidence(lines,[record])
+    assert record['operation']=='operacao_por_confirmar'
+    assert record['operation_by_plan_key']=={'a':'112','c':'119'}
+    a,b,c=(x['operations'] for x in lines)
+    assert a[0]['operation']=='112' and a[0]['ocr_quantity']==4 and not a[0]['coverage_reasons']
+    assert c[0]['operation']=='119' and c[0]['ocr_quantity']==4
+    assert a[0]['ocr_records'][0]['operation']=='112'
+    # A peça com 1.ª e 2.ª operação continua a precisar de evidência própria.
+    assert all(op['ocr_quantity'] is None for op in b)
+    assert b[0]['coverage_reasons']==['Registo 4268: identidade ou operação por confirmar.']
+    # Registo de uma só peça mantém a regra antiga, sem mapa por filho.
+    single={'id':5,'source_app':'kanban-mes','association_status':'technical_unique','resolved_plan_keys':['b']}
+    assert operation_for_record(single,lines)=='operacao_por_confirmar' and 'operation_by_plan_key' not in single
+    # Quando todos os filhos concordam, o registo inteiro tem a operação.
+    record['resolved_plan_keys']=['a'];lines[0]['operations']=None
+    assert operation_for_record(record,lines)=='112' and 'operation_by_plan_key' not in record
+
+
 def test_known_ambiguous_event_prevents_partial_total_becoming_complete():
     from app.planning_production import attach_operation_evidence
     line={'source_app':'kanban-mes-mtg2','plan_key':'p','operation_inputs':{'Ser.':20,'Aborc.':'-'},'quantity_planned':100}

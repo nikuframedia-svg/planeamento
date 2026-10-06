@@ -22,6 +22,7 @@ MIN_CHOICES = 3
 MIN_SHARE = 0.6
 CONTEXT_LABELS = {"familia_perfil": "{f} {p}", "familia_espessura": "{f} com {t} mm", "perfil": "perfil {p}", "familia": "família {f}"}
 SETOR = {"cantoneiras": "MTG3", "perfis": "MTG2"}
+NO_PROFILE = "Sem perfil"
 
 _cache: dict = {}
 _lock = threading.Lock()
@@ -40,6 +41,8 @@ def _thickness(profile):
 def contexts(family, profile):
     """[(kind, key)] from most to least specific; family/profile missing → those contexts are skipped."""
     family = family if family and family != "Sem família SKU" else None
+    # «Sem perfil» é o marcador da Carteira/ocorrências para perfil vazio, não um perfil (auditoria 06/10, PROP-8).
+    profile = None if str(profile or "").strip() == NO_PROFILE else profile
     p = _profile(profile) or None
     t = _thickness(profile)
     out = []
@@ -153,3 +156,26 @@ def suggest(learned: dict | None, family, profile) -> dict | None:
             return {"resource_id": ident[0], "machine": ident[1], "share": round(share, 2), "choices": choices, "context": kind,
                     "label": f"{round(100 * share)}% de {choices} escolhas em " + CONTEXT_LABELS[kind].format(**values)}
     return None
+
+
+def technical(area: str) -> dict | None:
+    """{chave da linha: preferência aprendida já filtrada pelas candidatas técnicas da operação principal}.
+
+    Auditoria 06/10 (PROP-2): a Carteira pré-escolhia a máquina aprendida sem olhar à ficha técnica, que a
+    pode excluir (ex. Ficep Rapid 25T para L200X200X24) ou nem a ter como candidata. Esta é a mesma
+    preferência que a previsão e a Carga usam (estimates.apply). None quando não há ficha técnica (sem
+    camada de pesquisa): fica a sugestão aprendida tal como está.
+    """
+    from . import occurrences
+    data = occurrences.load(area, allow_stale=True)
+    if not data.get("research_version"):
+        return None
+    return {f["line_key"]: f["learned_preference"] for f in data["facts"]
+            if f["phase"] == "principal" and "learned_preference" in f}
+
+
+def for_line(learned: dict | None, checked: dict | None, line: dict) -> dict | None:
+    """Sugestão aprendida de uma linha da Carteira: filtrada pela ficha técnica quando `checked` existe."""
+    if checked is None:
+        return suggest(learned, line.get("sku_family"), line.get("profile"))
+    return checked.get(line["key"])

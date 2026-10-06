@@ -13,6 +13,7 @@ def number(value):
 
 
 def operation_for_record(record, plans=None):
+    record.pop('operation_by_plan_key', None)
     if record.get('source')=='ocr_original':
         explicit=str((record.get('extra') or {}).get('operation_code') or '').strip()
         if not explicit:return 'operacao_por_confirmar'
@@ -41,13 +42,28 @@ def operation_for_record(record, plans=None):
                 code=next(iter(unique))
                 record['operation_basis']={'kind':'sole_piece_operation','plan_keys':[line['plan_key'] for line in matched],'code':code}
                 return code
+            # Barra com vários filhos: a regra é por peça. Cada filho com uma só
+            # operação recebe essa operação; os filhos com 2.ª operação ficam por
+            # confirmar sem anular a produção dos irmãos.
+            per_child={line['plan_key']:ops[0]['operation'] for line,ops in zip(matched,sequences)
+                       if len(ops)==1 and not ops[0].get('requires_operation_review')}
+            if len(matched)>1 and per_child:
+                record['operation_by_plan_key']=per_child
+                record['operation_basis']={'kind':'sole_piece_operation_per_child','codes':per_child}
         return 'operacao_por_confirmar'
     machine = ' '.join(str(record.get('machine') or '').split()).casefold()
     if machine in ('abocardar', 'maq. abocardar'):
         return 'abocardar'
-    if any(word in machine for word in ('serrote', 'vanguard', 'meba', 'doall', 'corte')):
+    # Os modelos de 22/09 usam nomes curtos ('DISCO PAV1', 'FITA PAV1'): são as
+    # mesmas serras de disco e de fita, logo também corte.
+    if any(word in machine for word in ('serrote', 'vanguard', 'meba', 'doall', 'corte', 'disco', 'fita')):
         return 'corte'
     return 'operacao_por_confirmar'
+
+
+def record_operation(record, plan_key):
+    """Operação do registo para uma linha concreta (filho de barra incluído)."""
+    return (record.get('operation_by_plan_key') or {}).get(plan_key, record.get('operation'))
 
 
 def operations_for_line(line):
@@ -98,7 +114,7 @@ def attach_operation_evidence(plans, produced):
                                'macro_remaining': None, 'remaining_origin': 'Necessidade por confirmar',
                                'requires_need_review': True})
         for operation in operations:
-            records = [record for record in related if record['operation'] == operation['operation']]
+            records = [record for record in related if record_operation(record, line['plan_key']) == operation['operation']]
             facts = []
             for record in records:
                 refs = record.get('resolved_plan_refs') or []
@@ -106,13 +122,13 @@ def attach_operation_evidence(plans, produced):
                                  if ref['plan_key'] == line['plan_key']), None)
                 facts.append({'record_id': record['id'], 'sheet_uid': record['sheet_uid'],
                               'row_index': record['row_index'], 'quantity': number(quantity),
-                              'operation': record['operation'],
+                              'operation': record_operation(record, line['plan_key']),
                               'validated_at': record.get('validated_at'),
                               **({k:record[k] for k in ('source','instance_id','source_revision','source_content_hash')} if record.get('source')=='ocr_original' else {})})
             unresolved = [record for record in produced if
                 (line['plan_key'] in record.get('association_candidates',[]) or
-                 line['plan_key'] in record.get('resolved_plan_keys',[]) and record['operation']=='operacao_por_confirmar')
-                and record.get('operation') in (operation['operation'],'operacao_por_confirmar')
+                 line['plan_key'] in record.get('resolved_plan_keys',[]) and record_operation(record, line['plan_key'])=='operacao_por_confirmar')
+                and record_operation(record, line['plan_key']) in (operation['operation'],'operacao_por_confirmar')
                 and record.get('association_status') not in ('unrelated',)]
             reasons = ['Registo '+str(record['id'])+': identidade ou operação por confirmar.' for record in unresolved]
             origins={(f.get('source','mes'),f.get('instance_id')) for f in facts}

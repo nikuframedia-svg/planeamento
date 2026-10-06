@@ -1,0 +1,555 @@
+[
+ {
+  "domain": "A10-capacidade",
+  "findings": [
+   {
+    "id": "A10-F1",
+    "title_pt": "3.º turno de domingo perde a madrugada de segunda (5,5 h por ocorrência)",
+    "claim": "Quando um domingo tem 3 turnos (shift_plan['7']=3 ou day_shifts num domingo), a parte 00:00–05:30 de segunda-feira não entra em nenhum calendário: shifts.build dá previous=0 ao offset 0, e shifts.apply só regrava a semana ISO do dia alterado.",
+    "category": "code_bug",
+    "severity": "medium",
+    "screens": [
+     "Carga e turnos (/planeamento/setor/carga)",
+     "Quadro semanal e vista do dia (/planeamento/gantt)",
+     "Definições do setor (turnos)"
+    ],
+    "magnitude": "Latente: hoje nenhum dos 624 calendários tem turnos ao domingo (shift_plan '7'=0 em todos, sem day_shifts), por isso o impacto atual é 0 h. Se se usar, perdem-se 5,5 h de capacidade por cada domingo com 3 turnos (segunda 26/10/2026: app 17,0 h vs esperado 22,5 h).",
+    "evidence": [
+     {
+      "command": "python3 /tmp/claude-1000/-home-luis-projects-planeamento/0504eb09-808f-4b62-bc4e-2bf3435e17de/scratchpad/audit/A10/pure.py",
+      "result": "Plano 3 turnos x 7 dias, W43+W44/2026: dia 26/10 app 17.0 h, o meu cálculo 22.5 h; janelas de segunda W44 = [06:00-13:30, 14:00-21:30, 22:00-24:00] sem 00:00-05:30 (terça tem 00:00-05:30). Exceção day_shifts {'2026-10-18': 3}: domingo 18/10 tem 22:00-24:00, segunda 19/10 só 15.0 h (esperado 20.5 h)."
+     },
+     {
+      "command": "python3 -c \"...shifts.build({str(d):3 for d in range(1,8)}, {}, [], DEFAULT_TEMPLATE, 2026, 44)\" (no fim de pure.py)",
+      "result": "build plan7 W44 segunda [{'start': '06:00', 'end': '13:30'}, {'start': '14:00', 'end': '21:30'}, {'start': '22:00', 'end': '24:00'}] (2.ª confirmação, chamada direta)"
+     },
+     {
+      "command": "python3 /tmp/claude-1000/-home-luis-projects-planeamento/0504eb09-808f-4b62-bc4e-2bf3435e17de/scratchpad/audit/A10/q1.py",
+      "result": "shift_plan distintos: {1..5:2,6:0,7:0} x260, {1..5:1} x260, {1..5:3} x104; nenhum com domingo > 0 (latente)"
+     }
+    ],
+    "expected": "Segunda-feira recebe 00:00–05:30 quando o domingo anterior tem 3 turnos; ao mudar um domingo, a semana seguinte também é regravada.",
+    "actual": "A madrugada de segunda desaparece (o turno de domingo fica com 2 h em vez de 7,5 h) e a semana seguinte nunca é atualizada.",
+    "root_cause": {
+     "file": "app/sector/shifts.py",
+     "line": 79,
+     "explanation": "build(): weekly usa `base[str(d - 1)] if d > 1 else 0` e o ciclo de date_overrides usa `effective[offset - 1] if offset else 0`, ignorando o domingo da semana anterior; apply() (linhas ~230-255) agrupa por (máquina, ano, semana) do próprio dia e não toca na semana seguinte."
+    },
+    "fix": {
+     "kind": "code",
+     "summary": "Passar a build() os turnos efetivos do domingo anterior (lidos do calendário da semana anterior ou do plano base + day_shifts + feriados) e, em apply()/regenerate(), quando muda um domingo, regravar também a semana seguinte. Acrescentar teste com 3 turnos ao domingo e com a passagem de hora de 25/10.",
+     "risk": "Baixo; só muda calendários com turnos ao domingo (nenhum hoje). Requer regenerar calendários afetados.",
+     "mutates_production": false
+    },
+    "domain": "A10-capacidade",
+    "verdict": "confirmado",
+    "l1": {
+     "reproduced": true,
+     "numbers": "Plano com 3 turnos nos 7 dias, semana W44/2026: segunda 26/10 fica com 17,0 h quando devia ter 22,5 h, ou seja, perdem-se 5,5 h. As janelas de segunda são [06:00-13:30, 14:00-21:30, 22:00-24:00] e falta 00:00-05:30. A terça e o domingo têm 00:00-05:30. Na W43 a segunda também não tem 00:00-05:30. Exceção day_shifts {'2026-10-18': 3} (domingo da W42) com 3 turnos de segunda a sexta: a W42 só ganha a janela 22:00-24:00 no domingo; a W43 fica sem date_overrides e a segunda 19/10 continua sem 00:00-05:30. Na base de dados: 624 calendários, 0 com shift_plan['7']>0 e 0 com day_shifts num domingo, por isso hoje o impacto é 0 h (problema latente).",
+     "notes": "Reproduzi duas vezes, com o mesmo resultado, usando o meu script: python3 /tmp/claude-1000/-home-luis-projects-planeamento/0504eb09-808f-4b62-bc4e-2bf3435e17de/scratchpad/audit/A10v/rep.py. O script chama shifts.definition_for/build sem gravar nada e lê a base de dados só para consulta.\n\nCausa no código (app/sector/shifts.py):\n- Linha 78: no plano semanal, a segunda-feira usa `base[str(d - 1)] if d > 1 else 0`, por isso considera sempre 0 turnos no dia anterior.\n- Linha 90: as exceções por data usam `effective[offset - 1] if offset else 0`, que dá o mesmo resultado.\n- Em nenhum dos dois casos se olha para o domingo da semana anterior.\n- apply() (linhas ~226-252) agrupa as mudanças por (máquina, ano, semana ISO do próprio dia) e nunca toca na semana seguinte.\n\nregenerate() em app/sector/settings.py:144 reescreve as 52 semanas, mas cada uma de forma independente através do mesmo build(), por isso também não corrige o problema.\n\nNota sobre os números por dia: o meu script agrupa as horas pelo dia da data de início em UTC. Por causa da hora de verão, os valores antes de 25/10 aparecem deslocados (por exemplo 24/10 = 23,5 h e 25/10 = 17,0 h). O valor de 26/10 (17,0 h, já em hora de inverno, UTC+0) é exato, e as listas de janelas confirmam a falta de 00:00-05:30 também na W43."
+    },
+    "l2": {
+     "intended": false,
+     "decision_ref": "docs/plano-carteira-perfis-2026-10-02/EXECUCAO.md:88 e app/sector/shifts.py:6 (regra contrária ao comportamento)",
+     "notes": "Não foi decidido assim. Não encontrei nenhuma decisão que diga que o 3.º turno de domingo deve acabar à meia-noite, nem que a semana seguinte fica de fora. Pelo contrário, a regra escrita manda partir o turno em dois dias. docs/plano-carteira-perfis-2026-10-02/EXECUCAO.md:88 diz que \"o 3.º turno parte-se à meia-noite\" e app/sector/shifts.py:6 diz que \"o 3.º turno atravessa a meia-noite e parte-se em dois dias\". Ou seja, as 00:00–05:30 deviam passar para segunda-feira. Também docs/plano-carteira-perfis-2026-10-02/EXECUCAO.md:15 e app/sector/week.py:71-72 dizem que a madrugada conta para o 3.º turno do dia anterior. Sobre o código: em app/sector/shifts.py:79 está `base[str(d - 1)] if d > 1 else 0` e em app/sector/shifts.py:89 está `effective[offset - 1] if offset else 0`. Isto ignora o domingo da semana anterior, e não há nenhum comentário que justifique essa escolha. Nos testes, tests/test_sector_shifts.py:75-78 só cobre segunda a sexta. Aí segunda tem 17,0 h, o que está certo porque o domingo tem 0 turnos. O teste com o 3.º turno de sexta a passar para sábado (tests/test_sector_shifts.py:45) passa da sexta para o sábado dentro da mesma semana. Nenhum teste cobre um domingo com 3 turnos a passar para a semana seguinte. Conclusão: é um caso que ficou esquecido no código e contraria a regra documentada. Hoje não tem efeito, porque nenhum calendário tem turnos ao domingo."
+    },
+    "l3": {
+     "severity": "low",
+     "screens": [
+      "Carga e turnos (/planeamento/setor/carga)",
+      "Quadro semanal e vista do dia (/planeamento/gantt)",
+      "Definições do setor (turnos)"
+     ],
+     "impact": "Confirmei o erro duas vezes. Corri de novo audit/A10/pure.py e chamei shifts.build diretamente. Num plano de 3 turnos x 7 dias, a segunda 26/10/2026 recebe as janelas [06:00-13:30, 14:00-21:30, 22:00-24:00], que somam 17,0 h. Deviam ser 22,5 h, porque falta a madrugada 00:00-05:30. A terça tem essa madrugada, a segunda não. Com uma exceção day_shifts {'2026-10-18': 3}, a segunda 19/10 fica com 15,0 h em vez de 20,5 h. O turno de domingo conta só 2 h em vez de 7,5 h. A causa está em app/sector/shifts.py, linhas 78 e 90: o turno anterior vale 0 quando o dia é segunda. Além disso, apply() só regrava a semana ISO do dia que foi alterado.\n\nImpacto hoje: nenhum (0 máquinas, 0 dias, 0 h). Corri a consulta duas vezes (audit/A10/impact_f1.py sobre planning_mtg.raw_objects, só calendários não arquivados) e deu sempre o mesmo resultado: n=624 calendários em 12 máquinas, 0 com shift_plan['7']>0, 0 com day_shifts preenchido e 0 com janelas ao domingo. A combinação de turnos por dia nos calendários é sempre uma destas: 2 turnos de segunda a sexta (x260), 1 turno de segunda a sexta (x260) ou 3 turnos de segunda a sexta (x104). Em perfis e cantoneiras, os dias de trabalho são de segunda a sexta.\n\nBasta um clique para cair no erro. O ecrã Carga e turnos mostra a coluna 'dom' com botões +/- (setor_carga.js, linhas 9 e 155-156). Esses botões enviam day_shifts para a data e, ao chegar a 3 turnos no domingo, aparece o problema. O efeito potencial é de 5,5 h a menos por cada máquina e por cada domingo com 3 turnos, sempre na segunda seguinte. Há dois efeitos visíveis:\n(1) Na Carga, a capacidade da semana seguinte fica 5,5 h abaixo, o que pode levar a sugerir mais turnos ou mudar trabalho de semana sem necessidade.\n(2) No Gantt, no quadro semanal e na vista do dia, segunda-feira aparece sem a madrugada 00:00-05:30. O turno de domingo acaba à meia-noite e as operações saltam para as 06:00.\nAs Definições do setor só afetam isto se o modelo de turnos ou os dias de trabalho passarem a incluir o domingo.\n\nSeveridade real: baixa. É um defeito latente, com 0 h de impacto atual, e a fábrica não trabalha ao domingo. O erro é silencioso e só subestima a capacidade, não a inflaciona. Mesmo assim, deve corrigir-se antes de alguém usar o + no domingo. Correção: build() deve receber os turnos efetivos do domingo anterior, e apply()/regenerate() devem regravar também a semana seguinte quando o domingo muda."
+    }
+   },
+   {
+    "id": "A10-F2",
+    "title_pt": "Vista do dia mostra «Dia: 0 / 0 h» fora das 14 semanas do quadro",
+    "claim": "GET /planeamento/api/setor/quadro/dia devolve day.capacity=0 para dias depois de 2027-01-09 (fim da janela de _machine_days), embora shifts[].capacity venha correto a partir dos calendários; a navegação em plano.js não tem limite.",
+    "category": "code_bug",
+    "severity": "low",
+    "screens": [
+     "Quadro / vista do dia (/planeamento/gantt, plano.js)"
+    ],
+    "magnitude": "Todos os dias de 2027-01-10 a 2027-09-26 (fim dos calendários) para as 12 máquinas com calendário; ex.: Ficep XP T6 e Vanguard a 26/03/2027 mostram turno 3 com 7,5 h mas «Dia: 0 h» (o certo é 5,5 h).",
+    "evidence": [
+     {
+      "command": "python3 /tmp/claude-1000/-home-luis-projects-planeamento/0504eb09-808f-4b62-bc4e-2bf3435e17de/scratchpad/audit/A10/cmp_dia.py",
+      "result": "204 máquina×dia comparados, 2 diferenças: cantoneiras 2027-03-26 Ficep XP T6 shifts {(3,'2027-03-25'): 7.5} day.capacity 0, esperado 5.5; perfis 2027-03-26 Vanguard idem"
+     },
+     {
+      "command": "curl -s 'http://127.0.0.1:8113/planeamento/api/setor/quadro/dia?setor=perfis&dia=2027-02-03'",
+      "result": "Todas as 5 máquinas: shifts com capacity 7.5 por turno, mas day {'planned': 0, 'capacity': 0} (2.ª confirmação)"
+     }
+    ],
+    "expected": "day.capacity igual à soma das horas de calendário desse dia (hora de Lisboa) para qualquer dia com calendário.",
+    "actual": "day.capacity vem de m['days'] calculado só para a semana passada + 14 semanas; fora disso dá 0.",
+    "root_cause": {
+     "file": "app/sector/board.py",
+     "line": 464,
+     "explanation": "day() usa `m['days'].get(iso, 0)`, e m['days'] vem de _machine_days(..., weeks=14) (linha 251); a função já carrega os calendários das semanas à volta do dia mas não os usa para day.capacity."
+    },
+    "fix": {
+     "kind": "code",
+     "summary": "Em day(), calcular day.capacity com week.calendar_days(calendars[m['id']]) (já carregados) em vez de m['days']; ou limitar a navegação ao horizonte.",
+     "risk": "Muito baixo.",
+     "mutates_production": false
+    },
+    "domain": "A10-capacidade",
+    "verdict": "confirmado",
+    "l1": {
+     "reproduced": true,
+     "numbers": "Hoje é 2026-10-06. A janela de _machine_days vai de 2026-09-28 (semana passada) a 2027-01-10, ou seja, 15 semanas. Confirmei duas vezes com a API e as duas leituras bateram. (1) 2027-01-08 (sexta) e 2027-01-09 (sábado), ainda dentro da janela: day.capacity vem certo, por exemplo Vanguard e Ficep XP T6 = 22,5 h na sexta e 5,5 h no sábado. (2) 2027-02-03 (quarta), fora da janela: as 12 máquinas, 5 de perfis e 7 de cantoneiras, mostram day={'planned':0,'capacity':0}, mas os turnos têm horas (7,5 h por turno; a soma dos turnos dá 7,5, 15 ou 30 h conforme a máquina). (3) 2027-03-26: Vanguard e Ficep XP T6 mostram um turno com 7,5 h e «Dia: 0 h»; as outras máquinas não têm turnos nesse dia. Os calendários confirmados acabam na semana 2027-W39: 624 calendários, max(ano*100+semana)=202739.",
+     "notes": "Reproduzi o problema. Revi o código e chamei a API (só GET).\n\nCausa, em /home/luis/projects/planeamento/app/sector/board.py:\n- Linha 464, dentro de day(): `\"capacity\": round(m[\"days\"].get(iso, 0), 2)`.\n- m[\"days\"] vem de _machine_days(..., data[\"today\"]), chamada na linha 360 e definida na linha 251 com weeks=14. Na prática apanha da semana -1 à semana 13: 15 semanas, de 2026-09-28 a 2027-01-10.\n- A própria day() já carrega os calendários das semanas -1, 0 e +1 à volta do dia pedido (variável calendars). Mas só os usa para os totais dos turnos (shifts[].capacity) e para as janelas, não para day.capacity.\n\nNavegação, em /home/luis/projects/planeamento/app/web/static/plano.js:\n- Linhas 442-444: shiftDay(±1) avança e recua um dia de cada vez sem nenhum limite.\n- Linhas 437-438: os botões prev/next da semana também não têm limite.\n- O rótulo «Dia: planeado / capacidade h» está na linha 378.\n\nComandos para repetir a verificação:\n- `for d in 2027-01-08 2027-01-09 2027-01-10 2027-02-03 2027-03-26; do for s in perfis cantoneiras; do curl -s \"http://127.0.0.1:8113/planeamento/api/setor/quadro/dia?setor=$s&dia=$d\" | python3 -c \"import sys,json;j=json.load(sys.stdin);[print('$s','$d',m['name'],sum(x['capacity'] for x in m['shifts']),m['day']) for m in j['machines']]\"; done; done`\n- Para ver até onde vão os calendários: `SELECT max((definition->>'year')::int*100+(definition->>'week')::int) FROM planning_mtg.raw_objects WHERE kind='calendar' AND NOT archived AND (definition->>'confirmed')::boolean` dá 202739.\n\nUma nota para não comparar mal: a soma dos turnos não tem de ser igual a day.capacity. O turno 3 começa na véspera e parte das suas horas cai no dia anterior. Por exemplo, Vanguard a 2027-01-08 tem turnos a somar 30 h e o dia a 22,5 h, e isso está certo. O que mostra o erro é day.capacity=0 havendo turnos com horas.\n\nCorreção sugerida, de risco baixo: em day(), calcular a capacidade a partir de week.calendar_days(calendars[m['id']]).get(iso, 0), usando os calendários que já foram carregados, ou limitar a navegação ao horizonte. Não alterei nada no repositório nem na base de dados, e não deixei scripts no scratchpad: tudo foi feito com os comandos acima."
+    },
+    "l2": {
+     "intended": false,
+     "decision_ref": "",
+     "notes": "Não encontrei nenhuma decisão documentada que limite a vista do dia às 14 semanas do quadro, nem nenhuma que aceite «Dia: 0 h» fora dessa janela. O que encontrei: docs/plano-carteira-perfis-2026-10-02/EXECUCAO.md:21 descreve só o novo day() e a rota GET /planeamento/api/setor/quadro/dia. As linhas a seguir (até à 27) falam da navegação ◀ ▶, de «Voltar à semana» e dos totais «N.º turno: planeado / capacidade h», mas não mencionam nenhum horizonte nem limite de navegação. app/sector/board.py:251-252: _machine_days(weeks=14) tem só a docstring «da semana passada às próximas semanas». O valor 14 é o padrão da função, pensado para o quadro semanal (board.py:360), e não há comentário que o ligue à vista do dia. O 14 aparece em docs/plano-vistas-familias-capacidade-2026-10-01/PLANO.md:24 mas noutro sentido: são horizontes «de 14 dias e 52 semanas», propostos e configuráveis, que não falam desta vista. O teste tests/setor_browser.cjs não foi aberto. Nos testes .py e .cjs pesquisados não aparece a rota quadro/dia (grep por «quadro/dia» e «def test.*day»), e tests/test_sector_shifts.py só testa os calendários e a divisão por turno. Em app/web/static/plano.js:341 a vista do dia envia setor e dia sem limite, e a linha 378 mostra m.day.capacity tal como vem. A grep não encontrou nenhum limite de horizonte em plano.js; a função de navegação não foi aberta para confirmar. Em board.py:464 o código usa m['days'].get(iso, 0). Os calendários das semanas à volta do dia já estão carregados (linhas 420-426) e são usados para shifts[].capacity, mas não para day.capacity. Ninguém mudou isto de propósito: o day() reaproveita o m['days'] do quadro semanal, e daí a falha."
+    },
+    "l3": {
+     "severity": "low",
+     "screens": [
+      "Quadro / vista do dia (/planeamento/gantt, plano.js, GET /planeamento/api/setor/quadro/dia)"
+     ],
+     "impact": "Confirmei o erro duas vezes, com o serviço a correr e só com leituras.\n\n**Prova 1.** `curl -s 'http://127.0.0.1:8113/planeamento/api/setor/quadro/dia?setor=perfis&dia=2027-01-08'` dá o day.capacity certo (por exemplo Serrote Fita: 15 h). Com `dia=2027-01-11` passa a dar day.capacity=0 nas 5 máquinas de perfis. Mas os turnos (shifts) continuam com as horas certas: MEBA, Disco e Doall com 7,5 h, Fita com 15 h e Vanguard com 22,5 h.\n\n**Prova 2.** Com `dia=2027-02-03` acontece o mesmo: os 5 «Dia» vêm a 0, enquanto a soma dos turnos dá 7,5 / 7,5 / 7,5 / 15 / 30 h.\n\n**Causa.** Está em `app/sector/board.py`, linha 464: `m[\"days\"].get(iso, 0)`. O `m[\"days\"]` vem de `_machine_days(..., weeks=14)` (linhas 251-255). Esta função só lê os calendários da semana passada e das 13 semanas seguintes (`range(-1, weeks)`). Hoje (06/10/2026) isso cobre de 28/09/2026 a 10/01/2027. A partir de 11/01/2027 o «Dia» vem sempre a 0.\n\n**Pormenores a acertar na alegação.**\n- O limite real é 10/01/2027 inclusive (a alegação diz 09/01).\n- A janela anda com a data de hoje. Quanto mais o tempo passa, menos dias ficam afetados.\n- Os dias passados não têm calendários, por isso aí o 0 está certo (verifiquei 23/09 e 30/09 em cantoneiras: os turnos também dão 0).\n\n**Dimensão.** São afetadas as 12 máquinas com calendário (5 de perfis e 7 de cantoneiras), em todos os dias de calendário entre 11/01/2027 e o fim dos calendários (26/09/2027). Isto dá cerca de 37 semanas, ou seja ~180 dias úteis por máquina e ~2 000 máquina×dia. Por máquina e por dia, perdem-se entre 7,5 h e 22,5–30 h de capacidade mostrada.\n\n**Onde aparece.** O erro só se vê na vista do dia do Quadro. É o único sítio que chama este endpoint (`plano.js:342`), e a navegação por dias não tem limite. Não afeta o Gantt semanal, a Carga e turnos nem as Definições: estes mostram as horas a partir dos calendários ou só dentro da janela de 14 semanas. Não há dados errados gravados nem planos mal calculados.\n\n**Severidade: baixa.** Só se vê ao navegar mais de ~13 semanas para a frente, onde normalmente ainda não há nada planeado. Os turnos mostram as horas certas mesmo ao lado, por isso o «Dia: 0 / 0 h» contradiz-se a si próprio e não engana ninguém por muito tempo.\n\n**Correção.** Na função day(), calcular day.capacity com `week.calendar_days(...)` a partir dos calendários que a função já carrega, em vez de usar `m[\"days\"]`. A alternativa é limitar a navegação ao horizonte. O risco é muito baixo."
+    }
+   },
+   {
+    "id": "A10-F3",
+    "title_pt": "Calendários e feriados não avançam sozinhos (acabam em 2027-W39)",
+    "claim": "Os calendários só são gerados quando se gravam as Definições (regenerate em settings.save) e os feriados guardados em sector_settings são uma lista fixa de 2026 e 2027; não há tarefa que estenda o horizonte.",
+    "category": "config",
+    "severity": "low",
+    "screens": [
+     "Carga e turnos",
+     "Quadro semanal",
+     "Definições do setor"
+    ],
+    "magnitude": "Último calendário: 2027-W39 (12 máquinas). A Carga (13 semanas) começa a mostrar «Sem calendário» na última coluna a partir de 12/07/2027; feriados de 2028 só existem se alguém os acrescentar à mão.",
+    "evidence": [
+     {
+      "command": "python3 /tmp/claude-1000/-home-luis-projects-planeamento/0504eb09-808f-4b62-bc4e-2bf3435e17de/scratchpad/audit/A10/q1.py",
+      "result": "semanas com calendário: (2026,41)…(2027,39), 12 por semana; sector_settings.holidays só com datas 2026-xx e 2027-xx (26 datas) nos dois setores"
+     },
+     {
+      "command": "grep -rn \"regenerate\" /home/luis/projects/planeamento/app /home/luis/projects/planeamento/scripts --include=*.py; systemctl list-timers --all | grep -i plan",
+      "result": "só chamado em app/sector/settings.py (save tipo setor e mudança de turnos padrão); nenhum timer"
+     }
+    ],
+    "expected": "Horizonte de 52 semanas mantido continuamente e feriados nacionais do ano seguinte acrescentados automaticamente.",
+    "actual": "Horizonte congelado na data da última gravação das Definições; feriados fixos.",
+    "root_cause": {
+     "file": "app/sector/settings.py",
+     "line": 36,
+     "explanation": "read() faz {**default(), **row['definition']}: a lista de feriados guardada substitui a calculada por national_holidays; regenerate() só corre dentro de save()."
+    },
+    "fix": {
+     "kind": "code",
+     "summary": "Juntar sempre national_holidays(ano atual e seguinte) aos feriados guardados ao ler, e acrescentar uma tarefa semanal (ou ao arrancar) que crie as semanas em falta com regenerate.",
+     "risk": "Baixo; a tarefa escreve calendários, por isso deve ser decidida pelo Luís.",
+     "mutates_production": true
+    },
+    "domain": "A10-capacidade",
+    "verdict": "confirmado",
+    "l1": {
+     "reproduced": true,
+     "numbers": "Calendários ativos: 52 semanas, de 2026-W41 a 2027-W39, sempre 12 máquinas por semana (as contagens distintas dão só [12]). sector_settings: cantoneiras e perfis estão ambos na revisão 1, gravados a 06/10/2026 10:53 UTC, cada um com 26 feriados apenas de 2026 e 2027 (de 2026-01-01 a 2027-12-25). Calendário criado mais recentemente: 05/10 21:58 UTC; atualizado mais recentemente: 06/10 10:53:51 UTC, que coincide com a gravação das Definições. A Carga tem 13 semanas, por isso a última coluna passa a ficar sem calendário na semana que começa a 12/07/2027.",
+     "notes": "Reproduzido com código meu. Corri duas vezes e deu o mesmo resultado.\n\nEvidência 1 (base de dados, só leitura): `python3 /tmp/claude-1000/-home-luis-projects-planeamento/0504eb09-808f-4b62-bc4e-2bf3435e17de/scratchpad/audit/A10/f3_repro.py`\n- Resultado: semanas 52, primeira (2026,41,12), última (2027,39,12).\n- Os feriados nos dois setores são 26 datas, só de ['2026','2027'].\n- A última atualização de calendários (06/10 10:53:51) bate com a gravação de sector_settings (10:53:44 e 10:53:51).\n\nEvidência 2 (código):\n- `grep -rn \"regenerate\" app scripts --include=*.py`: só aparece em app/sector/settings.py, na linha 213 (save, kind='setor') e na linha 259 (save, kind='maquina', quando os turnos padrão mudam).\n- regenerate() (linhas 144-169) usa _weeks(), que dá 52 semanas a partir da segunda-feira de hoje. Só corre dentro de save().\n- read() (linhas 34-40) faz `{**default(), **row[\"definition\"], ...}`. Assim, a lista de feriados guardada substitui a que national_holidays(ano, ano+1) calcularia. O root_cause.line indicado (36) está perto, mas a linha exata é a 39.\n\nEvidência 3 (nada corre sozinho):\n- `systemctl list-timers --all` e `crontab -l`: nenhum timer ou cron gera calendários.\n- planning-research-refresh.timer corre `python -m app.gantt.research`, que não toca em calendar, regenerate nem shifts.\n- O arranque da app (lifespan em app/web/planning_app.py, linhas 16-34) só liga o worker de dossiês, o outbox e recover() do raw. Não estende calendários.\n\nNuance: há mais dois sítios que escrevem calendários, ambos manuais e disparados por alguém, nunca automáticos:\n- shifts.apply: edição de turnos de uma semana.\n- app/raw/capacity.py, linha 156: copiar um calendário para um intervalo de até 2 anos, com confirmação.\n\nIsto não muda a conclusão: o horizonte só avança quando alguém grava. A afirmação bate."
+    },
+    "l2": {
+     "intended": false,
+     "decision_ref": "Nenhuma decisão encontrada. Há apenas registos de facto: docs/plano-carteira-perfis-2026-10-02/EXECUCAO.md:143 («624 calendários horários (52 semanas desde 2026-W41…)», uma geração única) e EXECUCAO.md:90 («Feriados aplicados a 06/10 pela própria API»). O código também não regista nenhuma decisão: app/sector/settings.py:23 HORIZON_WEEKS = 52 e a docstring de regenerate em settings.py:146-149 («Reescreve os calendários das próximas 52 semanas… Semanas em falta são criadas»).",
+     "notes": "Procurei em docs/*/EXECUCAO.md, docs/*/PLANO.md, docs/plano-planeamento-2026-09-28.md, app/sector/settings.py, app/sector/shifts.py e tests/test_sector_shifts.py. Nenhum diz que o horizonte deve ficar parado nem que os feriados guardados não devem receber os do ano seguinte.\n\nO que existe vai no sentido oposto. A intenção é ter sempre 52 semanas: HORIZON_WEEKS=52 e _weeks() conta a partir de hoje. regenerate() «cria semanas em falta». default() (settings.py:28-31) calcula national_holidays(ano)+national_holidays(ano+1) de forma dinâmica.\n\nA falha é de implementação, não uma escolha. regenerate só é chamado em settings.py:213 e :259, ambos dentro do save. O read() em settings.py:39 faz {**default(), **row['definition']}, por isso a lista de feriados guardada substitui a calculada.\n\nOs testes (test_regenerate_skips_unconfirmed_machines_and_keeps_manual_weeks, linha 159) só verificam a regeneração quando é chamada. Não há nenhum teste nem nenhuma nota sobre estender o horizonte sozinho.\n\nRessalva: guardar a lista de feriados por setor é intencional, porque o Luís quer poder editar o feriado municipal e os encerramentos (plano-planeamento-2026-09-28.md:161 e :258). Não está documentado que essa lista deva deixar de receber os feriados nacionais dos anos seguintes."
+    },
+    "l3": {
+     "severity": "low",
+     "screens": [
+      "Carga e turnos",
+      "Quadro semanal",
+      "Definições do setor",
+      "Gantt (capacidade abaixo do Gantt)"
+     ],
+     "impact": "Confirmado duas vezes, a partir da base de dados e da API. Hoje não afeta nada; o problema só aparece daqui a cerca de 9 meses.\n\nFactos verificados:\n1) Existem 624 calendários ativos (364 em cantoneiras, 260 em perfis). Cobrem exatamente 12 máquinas confirmadas (7 em MTG3 e 5 em MTG2), da semana 2026-W41 à 2027-W39, sempre 12 por semana. Script: q1.py em scratchpad/audit/A10.\n2) Os feriados guardados em `sector_settings` são 26 datas fixas (13 de 2026 e 13 de 2027), iguais nos dois setores. Em `read()` (app/sector/settings.py:36), o `{**default(), **row['definition']}` deixa a lista guardada substituir a lista calculada por `national_holidays`.\n3) Só há 3 chamadas a `regenerate()`, todas dentro de `save()` (settings.py:213 e 259). O arranque do serviço (lifespan em app/web/planning_app.py) não cria calendários. Não há timer no systemd nem entrada no crontab do planeamento.\n4) GET /planeamento/api/setor/carga devolve hoje, nos dois setores, as semanas W41 a W53 de 2026 com 0 células «Sem calendário».\n\nImpacto e quando aparece:\n- Carga e turnos (13 semanas): a partir de segunda-feira 12/07/2027 (W28) a última coluna fica «Sem calendário». Depois perde uma coluna por semana, e em 27/09/2027 (W39) só resta 1 semana com calendário. Cada semana sem calendário apaga cerca de 787,5 h de capacidade nas 12 máquinas: 5 dias × 7,5 h × 21 turnos, porque há 5 máquinas a 2 turnos, 5 a 1 turno e 2 a 3 turnos. A capacidade passa a 0 e não aparece conselho de turnos.\n- Gantt (painel de capacidade): pelo `capacity.py`, sem calendário a capacidade fica «por confirmar» ou volta à estimativa do Excel, com erro histórico de 17 a 30%. Estas semanas deixam de ter percentagem fiável.\n- Quadro semanal: só falha quando a própria semana atual não tiver calendário, ou seja, a partir de 04/10/2027.\n- Definições do setor: este ecrã é o remédio. Gravar o tipo «setor» volta a gerar 52 semanas a partir dessa data. Mas usa a lista de feriados guardada, que não tem 2028. Por isso, os calendários de 2028 trataram 10 feriados em dias úteis (14/04, 25/04, 01/05, 15/06, 15/08, 05/10, 01/11, 01/12, 08/12 e 25/12) como dias de trabalho. Isso dá cerca de 157,5 h de capacidade a mais por feriado, cerca de 1 575 h no ano, a menos que alguém acrescente os feriados à mão.\n\nSeveridade real: baixa. Não há efeito até julho de 2027 e qualquer gravação das Definições adia o problema 52 semanas. O único risco que fica escondido é o dos feriados de 2028.\n\nCorreção proposta (mexe em produção, por isso é decisão do Luís):\n- Juntar `national_holidays` (ano atual e seguinte) aos feriados guardados quando se lê a configuração.\n- Criar as semanas em falta com uma tarefa semanal ou ao arrancar o serviço."
+    }
+   },
+   {
+    "id": "A10-F4",
+    "title_pt": "Recomendação de cortar turnos chega a -2, não só -1",
+    "claim": "advise() propõe -min(floor(folga/turno-semana), turnos-1), o que dá -2 em máquinas de 3 turnos; a regra pedida nesta auditoria diz «folga >= 1 turno-semana dá -1».",
+    "category": "doc",
+    "severity": "low",
+    "screens": [
+     "Carga e turnos"
+    ],
+    "magnitude": "3 de 156 células: Ficep XP T6 W42 (folga 95 h) e W43 (112 h) com -2; Vanguard W42 (112 h) com -2. Nunca fica abaixo de 1 turno.",
+    "evidence": [
+     {
+      "command": "python3 /tmp/claude-1000/-home-luis-projects-planeamento/0504eb09-808f-4b62-bc4e-2bf3435e17de/scratchpad/audit/A10/advice.py",
+      "result": "deltas cantoneiras {1:8,-1:6,0:71,-2:2,2:4}; perfis {2:3,0:57,1:1,-1:3,-2:1}; 0 diferenças entre a app e a fórmula do código"
+     },
+     {
+      "command": "jq das células com advice.delta<0 em carga_*.json (comando python em linha no scratchpad)",
+      "result": "Ficep XP T6 42: {'delta': -2, 'text': '-2 turnos · sobram 95 h'}; 43: -2 sobram 112 h; Vanguard 42: -2 sobram 112 h"
+     }
+    ],
+    "expected": "Confirmar com o Luís: -1 de cada vez (regra da auditoria) ou até ao mínimo de 1 turno (código).",
+    "actual": "O código propõe até -2.",
+    "root_cause": {
+     "file": "app/sector/shifts.py",
+     "line": 168,
+     "explanation": "`delta = -min(int(spare // per_shift), shifts - 1)`."
+    },
+    "fix": {
+     "kind": "doc",
+     "summary": "Decidir a regra; se for -1, trocar por `delta = -1`; senão, documentar na docstring de load.py que pode cortar mais de um turno.",
+     "risk": "Nenhum.",
+     "mutates_production": false
+    },
+    "domain": "A10-capacidade",
+    "verdict": "confirmado",
+    "l1": {
+     "reproduced": true,
+     "numbers": "156 células com calendário (91 cantoneiras + 65 perfis). Turno-semana = 7,5 h × 5 dias = 37,5 h. Três células com -2: Ficep XP T6 W42 (3 turnos, cap. 112,5 h, carga 17,6 h, sobram 95 h → floor(95/37,5)=2, min(2, 3-1)=2 → -2), Ficep XP T6 W43 (sobram 112 h → -2), Vanguard W42 (sobram 112 h → -2). Distribuição dos deltas: cantoneiras {1:8, -1:6, 0:71, -2:2, 2:4}; perfis {2:3, 0:57, 1:1, -1:3, -2:1}. 0 diferenças entre a minha fórmula e o que a app devolve. Nenhuma célula fica abaixo de 1 turno.",
+     "notes": "Reproduzido e confirmado duas vezes, com dados lidos da API ao vivo (só GET) e uma fórmula escrita por mim.\n\nComandos (pasta /tmp/claude-1000/-home-luis-projects-planeamento/0504eb09-808f-4b62-bc4e-2bf3435e17de/scratchpad/audit/A10/f4/):\n1) `curl -s \"http://127.0.0.1:8113/planeamento/api/setor/carga?setor=cantoneiras|perfis\" -o carga_<setor>.json`, depois `python3 check.py`: lista as células com advice.delta<0. Aparecem as 3 células com -2 e o texto '-2 turnos · sobram 95/112 h'.\n2) `python3 recompute.py`: recalcula a recomendação de cada célula de forma independente. Usa como turno-semana as horas do 1.º turno do modelo × dias úteis abertos (sem feriados; na semana atual, só de hoje em diante) e aplica: em falta → +ceil; com folga → -min(floor(folga/turno-semana), turnos-1); da 4.ª semana em diante a proposta de corte passa a 0 (REDUCE_WEEKS=3). Resultado: 0 diferenças nos dois setores. Na primeira passagem usei, por engano, REDUCE_WEEKS=2 e saíram 5 diferenças, todas na W43. Corrigi para 3, o valor real em app/sector/load.py:24, e voltou a dar 0.\n\nCorreção à referência: a linha `delta = -min(int(spare // per_shift), shifts - 1)` está em app/sector/shifts.py:172, não na 168. Quem chama é app/sector/load.py:172. MAX_SHIFTS=3 está em app/sector/shifts.py:22.\n\nA afirmação confirma-se: o código propõe cortar até ficar em 1 turno (até -2 numa máquina de 3 turnos) e não apenas -1. Classificar como «doc/decisão»: não é um erro de cálculo, é uma regra que tem de ser confirmada com o Luís."
+    },
+    "l2": {
+     "intended": false,
+     "decision_ref": "Não há decisão documentada que permita cortar mais de 1 turno. O que existe: tests/test_sector_shifts.py:59 (advise(30,75,2) dá -1, só com 2 turnos), tests/test_sector_shifts.py:60 («nunca abaixo de 1 turno», só com 1 turno), app/sector/load.py:8 e :24 e docs/plano-carteira-perfis-2026-10-02/EXECUCAO.md:77 (dizem só QUANDO se propõe tirar turnos, nas 3 primeiras semanas, e não QUANTOS).",
+     "notes": "Não encontrei nenhuma decisão escrita que diga se se pode cortar mais de um turno de uma vez. A linha está em app/sector/shifts.py:173 (no código atual; a auditoria aponta a 168): `delta = -min(int(spare // per_shift), shifts - 1)`. Entrou no commit 6c284b0 (checkpoint de 06/10), sem explicação na mensagem nem em comentário.\n\nOnde procurei: docs/*/EXECUCAO.md, docs/*/PLANO.md, docs/plano-planeamento-2026-09-28.md, as docstrings de app/sector/load.py e de shifts.advise, e tests/test_sector_shifts.py.\n\nO que os testes cobrem:\n- linha 59: 2 turnos com 45 h de folga (um turno-semana são 37,5 h) dá -1;\n- linha 60: com 1 turno nunca se corta.\n\nNenhum teste tem uma máquina de 3 turnos com folga de 2 ou mais turnos-semana. Por isso o -2 não está fixado nem como intenção nem num teste.\n\nA documentação (EXECUCAO.md:77 e load.py:8/:24) só define em que semanas se propõe tirar turnos: a atual e as duas seguintes (REDUCE_WEEKS=3). Não diz quantos turnos se tiram.\n\nO -2 parece ser simetria com o lado do +, que pede ceil(falta/turno), até ao máximo de 3. Isto é dedução minha a partir do código, não está escrito em lado nenhum.\n\nConclusão: o comportamento não foi decidido de forma explícita. O achado mantém-se como «doc», de gravidade baixa. É preciso o Luís escolher entre -1 de cada vez e até ao mínimo de 1 turno, e depois acrescentar um teste com 3 turnos para fixar a escolha."
+    },
+    "l3": {
+     "severity": "low",
+     "screens": [
+      "Carga e turnos"
+     ],
+     "impact": "Confirmei duas vezes: com a cópia guardada (advice.py sobre carga_*.json) e com um GET novo a /planeamento/api/setor/carga?setor=cantoneiras|perfis (live_*.json no scratchpad A10). Os números batem certo. Em 156 células (91 de cantoneiras e 65 de perfis), a app mostra \"-2 turnos\" em 3: Ficep XP T6 na S42 (carga 17,6 h, capacidade 112,5 h, sobram 95 h), Ficep XP T6 na S43 (carga 0,9 h, sobram 112 h) e Vanguard na S42 (carga 0 h, sobram 112 h). As três máquinas estão em 3 turnos. Há mais 9 células com -1 (6 em cantoneiras e 3 em perfis). Um turno a mais por semana vale 7,5 h × 5 dias = 37,5 h. A conta do código (app/sector/shifts.py:168, `delta = -min(int(spare // per_shift), shifts - 1)`) está certa: depois de passar para 1 turno fica uma capacidade de 37,5 h, que continua a cobrir a carga das três células (17,6 / 0,9 / 0 h). Nunca baixa de 1 turno nem cria falta de capacidade. Só propõe cortes nas 3 primeiras semanas (REDUCE_WEEKS=3 em load.py). Nada muda sozinho: o turno só muda quando alguém carrega em \"Aplicar\" na célula ou em \"Aplicar todas as recomendações\", que pede confirmação (setor_carga.js:61-62 e 86-89). Se as 3 forem aplicadas, saem 6 turnos-semana, cerca de 225 h de capacidade, em 2 máquinas e 15 dias de trabalho. Não toca no Gantt nem nas Definições, só depois de aplicado. A parte desta ordem de grandeza que mais conta é a S43. A carga dessa semana ainda pode estar a chegar, e cortar 2 turnos de uma vez deixa menos margem do que cortar 1. Não é um erro de cálculo. O código e a regra desta auditoria («-1 por cada vez») dizem coisas diferentes, por isso é preciso o Luís decidir. Se ficar a regra do código, acrescenta-se uma frase na docstring de load.py; se ficar -1, troca-se para `delta = -1`. Em ambos os casos o risco é nulo. Gravidade real: baixa."
+    }
+   },
+   {
+    "id": "A10-F5",
+    "title_pt": "Dia de hoje e turno-semana da semana atual mal medidos",
+    "claim": "load.overview usa date.today() do servidor (fuso Europe/Berlin), não de Lisboa; e na semana atual o turno-semana (per_shift) conta hoje inteiro (7,5 h) mesmo quando o 1.º turno já passou, enquanto a capacidade só conta as horas a partir de agora.",
+    "category": "code_bug",
+    "severity": "low",
+    "screens": [
+     "Carga e turnos"
+    ],
+    "magnitude": "Entre as 23:00 e as 24:00 de Lisboa, 'today' já é o dia seguinte (ao domingo, a semana atual salta para a próxima durante essa hora). O per_shift da semana 41 é 30 h (4 dias) quando, às 13:40 de terça, um turno a mais só daria 22,5 h + o que restasse de hoje; pode subestimar o número de turnos sugerido.",
+    "evidence": [
+     {
+      "command": "cat /etc/timezone; date +%Z",
+      "result": "Europe/Berlin / CEST (Lisboa está 1 h atrás)"
+     },
+     {
+      "command": "python3 /tmp/claude-1000/-home-luis-projects-planeamento/0504eb09-808f-4b62-bc4e-2bf3435e17de/scratchpad/audit/A10/advice.py (semana 41, dias abertos = 4 incluindo hoje)",
+      "result": "Ficep Rapid 20T -1 W41: capacidade 52.5 h (só desde agora) mas per_shift 30 h; a app reproduz exatamente esta conta"
+     }
+    ],
+    "expected": "today = data de Lisboa; na semana atual, um turno a mais = horas desse turno ainda por vir.",
+    "actual": "today do fuso do servidor; per_shift sem 'a partir de agora'.",
+    "root_cause": {
+     "file": "app/sector/load.py",
+     "line": 104,
+     "explanation": "`today = today or date.today()` (sem ZoneInfo('Europe/Lisbon')); linha 170 conta `x >= today` como dia inteiro."
+    },
+    "fix": {
+     "kind": "code",
+     "summary": "Usar datetime.now(ZoneInfo('Europe/Lisbon')).date(); na semana atual calcular o turno-semana com as janelas do template que ainda estão no futuro.",
+     "risk": "Baixo.",
+     "mutates_production": false
+    },
+    "domain": "A10-capacidade",
+    "verdict": "confirmado",
+    "l1": {
+     "reproduced": true,
+     "numbers": "Execução a 06/10/2026, 12:44 UTC (14:44 Berlim, 13:44 Lisboa). O fuso do servidor é Europe/Berlin (/etc/localtime aponta para Berlin) e o processo do serviço (pid 3442650, porta 8113) não tem a variável TZ definida, por isso date.today() dá a data de Berlim. Exemplo: domingo 11/10 às 23:30 em Lisboa já é 12/10 em Berlim, o que faz saltar da semana 41 para a 42. Semana 41, 4 dias abertos (terça a sexta). O 1.º turno (06:00-13:30) já tinha acabado. A app usa per_shift = 7,5 × 4 = 30 h, mas o valor certo é 7,5 × 3 dias futuros + 0 h que restam do 1.º turno de hoje = 22,5 h. A capacidade, pelo contrário, conta só a partir de agora: Ficep Rapid 20T -1 com 2 turnos dá 52,5 h (= 45 h de quarta a sexta + 7,5 h do 2.º turno de hoje). Efeito visível: em Serrote Doall Pav.1 (perfis) a carga é 80,9 h, a capacidade 22,5 h e faltam 58,4 h. A app mostra '+2 turnos · faltam 58 h' sem aviso de que fica a faltar alguma coisa, mas 2 × 22,5 = 45 h, por isso mesmo com 3 turnos ficariam a faltar cerca de 13 h. Ficep Rapid 20T -1: a app diz 'ficam a faltar 245 h', o certo é cerca de 252,7 h. Em todas as máquinas da semana 41 dos dois setores, o número de turnos sem o limite máximo fica abaixo do real (por exemplo, 10 em vez de 13 e 15 em vez de 20). Confirmado em 2 execuções iguais.",
+     "notes": "Confirmei o problema com código meu: /tmp/claude-1000/-home-luis-projects-planeamento/0504eb09-808f-4b62-bc4e-2bf3435e17de/scratchpad/audit/A10-F5/repro.py (comando: python3 repro.py). O script faz GET a /planeamento/api/setor/carga?setor=cantoneiras e ?setor=perfis, conta outra vez os dias abertos e o per_shift como a app faz e compara com o valor certo (dias futuros inteiros mais o que ainda falta do 1.º turno de hoje, em hora de Lisboa).\n\nOrigem no código:\n- app/sector/load.py:104 usa `today = today or date.today()`, sem ZoneInfo('Europe/Lisbon').\n- app/sector/load.py:170 conta `x >= today`, ou seja, o dia de hoje entra como dia inteiro.\n- app/sector/shifts.py:156 calcula per_shift = 7,5 × dias abertos.\n- A capacidade vem de shifts.week_hours(after=now), em load.py:165, e só conta as horas a partir de agora.\n\nImpacto real é pequeno. O delta mostrado fica preso ao máximo de 3 turnos, por isso o número sugerido raramente muda. O que fica mal é o texto 'mesmo com N turnos ficam a faltar X h': mostra X a menos ou omite o aviso, como em Serrote Doall Pav.1. O caso do fuso horário (das 23:00 às 24:00 de Lisboa a data já é o dia seguinte; ao domingo a semana atual passa para a próxima) foi demonstrado por cálculo, não observado ao vivo, porque agora são 13:44 de Lisboa.\n\nGravidade baixa, como está no pedido. Tudo feito só em leitura (apenas GETs e nenhuma alteração ao repositório)."
+    },
+    "l2": {
+     "intended": false,
+     "decision_ref": "nenhuma",
+     "notes": "Não encontrei nenhuma decisão documentada que justifique qualquer das duas partes do problema.\n(1) Fuso horário: app/sector/load.py:107 tem `today = today or date.today()` sem fuso, e a docstring (load.py:1-14) não fala de fuso. Noutros pontos o projeto usa explicitamente Europe/Lisbon: board.py:30, priority.py:27, capacity.py:34, config.py:36 (MES_DISPLAY_TIMEZONE) e docs/plano-vistas-familias-capacidade-2026-10-01/EXECUCAO.md:19 («até ao fim do dia em Lisboa»). Isto indica que Lisboa é a referência pretendida e que o date.today() do servidor (Berlim) é um descuido, não uma escolha.\n(2) Turno-semana com o dia de hoje inteiro: a docstring em load.py:4 diz que a capacidade da semana atual conta «só as que faltam a partir de agora». Mas load.py:170 (`x >= today`) conta o dia de hoje inteiro em open_days, que vai para shifts.advise(workdays_in_week=...) em shifts.py:156. Nada justifica essa diferença. docs/plano-carteira-perfis-2026-10-02/EXECUCAO.md:102 («Nos dias já passados da semana, a proposta não tem horas») e :106 (o atrasado entra na semana atual) falam de outras coisas e não do dia de hoje parcial. tests/test_sector_shifts.py:57-65 testa advise sem workdays_in_week e sem semana atual parcial. Procurei também em ~/.claude/plans/*.md e não há nada.\nConclusão: é um bug não intencional (code_bug), coerente com a descrição do problema A10-F5."
+    },
+    "l3": {
+     "severity": "low",
+     "screens": [
+      "Carga e turnos"
+     ],
+     "impact": "Confirmei o erro duas vezes: as duas execuções do script deram o mesmo md5, 5db155d0…. Mas hoje não muda nenhuma sugestão de turnos que a app mostra, e parte da magnitude que veio no pedido está errada.\n\nOnde aparece: só no ecrã \"Carga e turnos\". `load.overview` é chamado apenas pela rota GET /planeamento/api/setor/carga (app/sector/routes.py:233), e `shifts.advise` só por app/sector/load.py:172. O Gantt e as Definições não usam este código.\n\nCausa, confirmada no código:\n- app/sector/load.py:107 (não 104) faz `today = today or date.today()`. O fuso do servidor é Europe/Berlin (`cat /etc/timezone` dá Europe/Berlin; `date` dá 14:44 CEST, ou seja, 13:44 em Lisboa). O mesmo padrão está nas linhas 37, 227 e 302.\n- Na linha 170, `open_days` conta hoje como dia inteiro (`x >= today`). Em app/sector/shifts.py:156, o `per_shift` é 7,5 h × dias abertos. Para a semana 41 são 4 dias (segunda 05/10 é feriado nas Definições), logo 30 h.\n- Já a capacidade (linha 163) só conta as horas a partir de agora (`after=now`).\n\nCorreção da magnitude: o turno que se acrescenta não é o 1.º, é o turno seguinte do modelo (`template[n]`): o 2.º (14:00–21:30) para máquinas com 1 turno, ou o 3.º (22:00–05:30) para máquinas com 2. Às 13:40 de terça esse turno ainda está todo por vir, por isso o `per_shift` de 30 h está CERTO nesse momento. A frase \"às 13:40 só daria 22,5 h\" é falsa. O valor só fica inflacionado depois do início desse turno:\n- até mais 7,5 h em 30 (25 %) para máquinas com 1 turno, depois das 21:30 de Lisboa;\n- cerca de 1 h por cada hora passada desde as 22:00 para máquinas com 2 turnos.\n\nRecálculo próprio, semana 41, a partir de GET /planeamento/api/setor/carga?setor=perfis e ?setor=cantoneiras, simulando as 13:45, as 21:36 e as 23:00 de Lisboa (script: /tmp/claude-1000/-home-luis-projects-planeamento/0504eb09-808f-4b62-bc4e-2bf3435e17de/scratchpad/audit/A10-F5/sens.py):\n- 12 máquinas com calendário: 5 em perfis, 7 em cantoneiras.\n- 2 já estão no máximo de 3 turnos, por isso o erro não se aplica: Vanguard e Ficep XP T6.\n- Nas outras 10, a sugestão dá igual com o valor certo, em qualquer das três horas. Todas têm muito mais carga do que capacidade (por exemplo, Serrote Disco pav 1 tem 607 h para 22,5 h; Peddi 8 tem 452 h para 22,5 h), e a sugestão já fica limitada ao máximo de 3 turnos.\n- Resultado: 0 máquinas, 0 dias e 0 turnos sugeridos a mais ou a menos.\n\nO único efeito visível é no texto \"mesmo com X turnos ficam a faltar Y h\". Nas 5 máquinas com 1 turno (Serrote Disco, Serrote Doall, MEBA, Peddi 6 e Peddi 8), depois das 21:30 de Lisboa, o \"Y\" aparece até 15 h abaixo do real (2 turnos × 7,5 h). Nas 5 com 2 turnos, a diferença é de até cerca de 1 h por hora de noite. Em teoria, o erro também pode atrasar uma sugestão de \"-1 turno\" na semana atual, mas hoje nenhuma máquina está nessa situação.\n\nFuso horário: o \"hoje\" passa a ser o dia seguinte só entre as 23:00 e as 24:00 de Lisboa (1 h por noite).\n- Nos dias de semana: o dia de Lisboa que está a acabar sai dos dias abertos e o `per_shift` desce 7,5 h nessa hora. Isto até aproxima o valor do real, porque a essa hora o 2.º turno do dia já acabou.\n- Ao domingo, entre as 23:00 e as 24:00: a lista de semanas salta para a semana seguinte. A semana que está a acabar desaparece do ecrã (na prática já não tinha capacidade) e a nova semana atual é calculada com capacidade completa, o que está correto.\n- A essa hora ninguém usa o ecrã, e a capacidade não é afetada, porque `now` é UTC.\n\nSeveridade real: baixa. É um defeito de código verdadeiro e deve ser corrigido como está proposto: data de Lisboa e, na semana atual, horas que faltam do turno seguinte. Mas hoje não muda nenhuma sugestão e só faz o texto de horas em falta parecer melhor do que é, à noite."
+    }
+   }
+  ],
+  "checks_passed": [
+   {
+    "check": "Feriados nacionais 2026/2027 (inclui Sexta-feira Santa, Páscoa e Corpo de Deus) iguais a uma lista independente (dateutil.easter)",
+    "numbers": "26 datas (13/ano) nos dois setores, 0 diferenças; 2026: 03/04, 05/04, 04/06; 2027: 26/03, 28/03, 27/05"
+   },
+   {
+    "check": "Calendários em planning_mtg.raw_objects kind=calendar: integridade",
+    "numbers": "624 ativos = 12 máquinas × 52 semanas (2026-W41 a 2027-W39), 0 duplicados, 0 antigos sem horários, 624 em Europe/Lisbon, 624 confirmed, 0 reservas, 0 manuais, 0 day_shifts"
+   },
+   {
+    "check": "Expansão independente (zoneinfo) das janelas guardadas vs horas esperadas a partir de shift_plan + feriados + template, por dia de Lisboa (3.º turno a atravessar a meia-noite)",
+    "numbers": "12 máquinas, todos os dias de 52 semanas: 0 diferenças; semanas normais 37,5/75/112,5 h para 1/2/3 turnos; semanas com feriado em dia útil (W41, W49, W50, W52, W53) 30/60/90 h"
+   },
+   {
+    "check": "GET /planeamento/api/setor/carga capacity por semana (semana atual só desde agora, 12:39:30 UTC)",
+    "numbers": "156 máquina-semanas (91 cantoneiras + 65 perfis), 0 diferenças; ex. W41 2 turnos = 52,5 h (turno 2 de hoje + 3 dias × 15 h)"
+   },
+   {
+    "check": "GET /planeamento/api/setor/quadro machines[].days",
+    "numbers": "812 máquina-dias (471 + 341, de 2026-10-06 a 2027-01-09), 0 diferenças, 0 dias em falta"
+   },
+   {
+    "check": "GET /planeamento/api/setor/quadro/dia shifts[].capacity e day.capacity em 17 dias (05/10, 06/10, 09/10, 10/10, 24/10, 25/10 com 25 h, 26/10, 30/11, 01/12, 07/12, 08/12, 24/12, 25/12, 31/12, 01/01, 02/01, 26/03/2027)",
+    "numbers": "204 máquina×dia; shifts: 0 diferenças; day.capacity: 2 diferenças, só fora da janela de 14 semanas (A10-F2); sábados após sexta com 3 turnos com 5,5 h de madrugada corretos"
+   },
+   {
+    "check": "Passagem de hora 25/10/2026 com funções da app (plano hipotético de 7 dias × 3 turnos)",
+    "numbers": "W43 week_hours app 153,0 h = o meu 153,0 h; dia 25/10 = 23,5 h (madrugada 00:00-05:30 = 6,5 h reais) igual ao meu cálculo"
+   },
+   {
+    "check": "Recomendações shifts.advise recalculadas (falta = carga - capacidade, +ceil(falta/(7,5 h × dias úteis abertos)), corte só nas 3 primeiras semanas, mínimo 1, máximo 3)",
+    "numbers": "156 células, 0 diferenças; nenhuma recomendação acima de 3 nem abaixo de 1 turno; cortes só em W41-W43 (W44+ mostra «carga ainda por chegar»)"
+   },
+   {
+    "check": "Calendários com área diferente do setor da máquina (catálogo members.rule)",
+    "numbers": "0 de 624 (7 máquinas cantoneiras × 52 com área cantoneiras; 5 perfis × 52 com área perfis)"
+   },
+   {
+    "check": "Máquinas do setor sem calendário",
+    "numbers": "cantoneiras 4 de 11 (Fresadora, Plasma manual, Saca bocados, Prensa: postos não confirmados, default 0; 525/3878/0/770 operações, todas com horas desconhecidas); perfis 8 de 13 (Abocardar 20 operações sem horas; Corte Tubo Laser, Corte Tubo Plasma, Disco automatico do conjunto direito pav.1, Fita do conjunto direito pav.1, Quinadora MTG2, Serrote Fita Maqfort Pav 3, Thomas IS639 sem carga); todas não confirmadas, por isso regenerate não lhes cria calendário"
+   }
+  ],
+  "not_checked": [
+   "POST de turnos (apply/save): não executado por ser só leitura; o problema do domingo (A10-F1) foi demonstrado só com funções puras (build/definition_for/calendar_days), sem gravar",
+   "Política de feriados em vésperas: o 3.º turno da véspera de um feriado continua até às 05:30 do feriado (ex. 01/12 com 5,5 h nas máquinas de 3 turnos); é coerente com «o turno conta no dia em que começa», mas não confirmei com o Luís se é o pretendido",
+   "Feriados municipais/locais e Carnaval (não nacionais) não estão na lista; não verificado se a fábrica os observa",
+   "Capacidade em páginas além das APIs pedidas (Definições mostra horas da semana inteira, sem 'a partir de agora'; vi 60/75 h coerentes mas não comparei célula a célula)",
+   "Carga (horas de trabalho) por célula: fora do domínio; usei a carga da API tal como vem para recalcular a recomendação",
+   "Cache do quadro (600 s): a comparação foi feita com a resposta do momento; não testei a invalidação depois de mudar turnos"
+  ]
+ },
+ {
+  "domain": "A11-gantt",
+  "findings": [
+   {
+    "id": "A11-1",
+    "title_pt": "MTG3: 14 operações seguintes desaparecem do Gantt sem caixa, sem lista e sem explicação",
+    "claim": "Na proposta automática de cantoneiras, 14 das 42 operações (12 CPIS:111 na Plasma manual e 2 CPIS:302 na Fresadora, das OF264219 e OF264094) estão bloqueadas e não têm previsão na Tabela. Por isso não aparecem em nenhuma caixa, nem em elsewhere, nem na lista vermelha, nem como pendente. O cabeçalho diz «28 de 42 operações com hora · as restantes no dia da Tabela», o que é falso para estas 14.",
+    "category": "code_bug",
+    "severity": "medium",
+    "screens": [
+     "/planeamento/gantt (quadro simples) setor=cantoneiras",
+     "/planeamento/api/setor/quadro?setor=cantoneiras"
+    ],
+    "magnitude": "14 de 42 operações (33%) de 2 OF escolhidas; saldo destas operações = None (por confirmar)",
+    "evidence": [
+     {
+      "command": "python3 /tmp/claude-1000/-home-luis-projects-planeamento/0504eb09-808f-4b62-bc4e-2bf3435e17de/scratchpad/audit/A11-gantt/confirm.py",
+      "result": "cantoneiras ops 42 barras 28 previsoes 28 sem barra nem previsão 14 Counter({('Plasma manual','CPIS:111','2026-08-17'): 12, ('Fresadora','CPIS:302','2026-08-17'): 1, ('Fresadora','CPIS:302','2026-08-07'): 1})"
+     },
+     {
+      "command": "python3 /tmp/claude-1000/-home-luis-projects-planeamento/0504eb09-808f-4b62-bc4e-2bf3435e17de/scratchpad/audit/A11-gantt/py_checks.py cantoneiras",
+      "result": "snapshot ops 42 estados {'ready': 28, 'blocked': 14}; motivos: 'Compatibilidade técnica por confirmar.', 'Saldo da operação por confirmar.', 'Sequência operacional por validar.'; ops não colocadas 14 com previsão (source_plan) 0"
+     },
+     {
+      "command": "python3 /tmp/claude-1000/-home-luis-projects-planeamento/0504eb09-808f-4b62-bc4e-2bf3435e17de/scratchpad/audit/A11-gantt/pend.py",
+      "result": "source_plan.pending = 14, todas 'Previsão da operação por indicar.'"
+     },
+     {
+      "command": "curl -s 'http://127.0.0.1:8113/planeamento/api/setor/quadro?setor=cantoneiras' | grep -o 'pending\\|blocked\\|CPIS:111' | sort | uniq -c",
+      "result": "(vazio): a resposta não tem nenhuma referência às 14 operações"
+     }
+    ],
+    "expected": "Cada operação escolhida aparece numa caixa, numa previsão ou numa lista de pendentes com o motivo (por exemplo «Saldo/compatibilidade/sequência por confirmar»), e o texto do cabeçalho bate certo com isso.",
+    "actual": "source.placed=28 e source.operations=42, mas as 14 restantes não aparecem em lado nenhum. O texto «as restantes no dia da Tabela» é falso, porque source_plan não tem entrada para elas.",
+    "root_cause": {
+     "file": "app/sector/board.py",
+     "line": 334,
+     "explanation": "_built junta só as barras da proposta e as entradas de source_plan; ignora plan['pending'] e as operações em estado 'blocked' (com blocking_reasons). O texto em app/web/static/plano.js:53 pressupõe que tudo o que não foi colocado tem previsão."
+    },
+    "fix": {
+     "kind": "code",
+     "summary": "Acrescentar ao resultado de _built uma lista de operações bloqueadas ou sem previsão (OF, referência, operação, máquina, motivos) e mostrá-la no quadro. Corrigir o texto do cabeçalho para «X com hora · Y no dia da Tabela · Z por resolver».",
+     "risk": "baixo; muda só o que se mostra (só leitura)",
+     "mutates_production": false
+    },
+    "domain": "A11-gantt",
+    "verdict": "confirmado",
+    "l1": {
+     "reproduced": true,
+     "numbers": "Cantoneiras, proposta automática: o snapshot tem 42 operações, das quais 28 têm barra na proposta (baseline.build). As 28 entradas de source_plan são exatamente essas mesmas 28 operações (entries == bars: True). Ficam 14 operações sem barra e sem previsão, todas em estado 'blocked', e o conjunto delas é igual a source_plan.pending (14, todas com «Previsão da operação por indicar.»). Repartição: 12 CPIS:111 da OF264219 na Plasma manual (alternativas: Plasma manual, Saca bocados), 1 CPIS:302 da OF264219 na Fresadora e 1 CPIS:302 da OF264094 na Fresadora. Têm todas os mesmos três motivos: «Compatibilidade técnica por confirmar.», «Saldo da operação por confirmar.» e «Sequência operacional por validar.»; planning_remaining=None e balance_origin='Excel provisório'. Na API ao vivo: source={kind:automatica, selected_orders:2, placed:28, operations:42}. Há 2 caixas (OF264094 na Ficep Rapid 20T -1 com 3 linhas, OF264219 na Ficep Rapid 25T com 25 linhas), ou seja, 28 operações. elsewhere.operations=0. Nenhuma das 14 chaves aparece na resposta (0 de 14). As duas OF não estão em unplanned.orders e a Plasma manual e a Fresadora não aparecem no quadro, porque não pertencem ao setor (0 de 14 em máquinas do setor). O cabeçalho em plano.js:53 mostra «28 de 42 operações com hora · as restantes no dia da Tabela».",
+     "notes": "Reproduzi o problema com código meu e confirmei-o duas vezes: uma recalculando a partir do snapshot, outra contra a API ao vivo. Script: /tmp/claude-1000/-home-luis-projects-planeamento/0504eb09-808f-4b62-bc4e-2bf3435e17de/scratchpad/audit/A11-gantt/repro/repro.py. Para reexecutar: curl -s 'http://127.0.0.1:8113/planeamento/api/setor/quadro?setor=cantoneiras' -o q.json && python3 repro.py, dentro dessa pasta. O script chama service.snapshot, baseline.build e source_plan.build, todos só de leitura.\n\nA causa está confirmada em app/sector/board.py, na função _built (por volta das linhas 324-340). As caixas resultam só das barras da proposta mais as entradas de source_plan; plan['pending'] e os blocking_reasons nunca chegam à resposta. O texto do cabeçalho está em app/web/static/plano.js:53.\n\nHá um pormenor que a correção tem de ter em conta: a Plasma manual e a Fresadora não são máquinas do setor cantoneiras. Mesmo que estas operações tivessem barra ou previsão, iriam para 'elsewhere' e não para uma caixa. A lista de pendentes deve por isso incluir também as operações bloqueadas que estão em máquinas de fora do setor.\n\nUma diferença pequena em relação à alegação: o campo 'deadline' do snapshot vem a None nestas 14 operações. As datas 2026-08-17 e 2026-08-07 da alegação são os 'due' das caixas de cada OF, não um campo da própria operação. Isto não muda a conclusão."
+    },
+    "l2": {
+     "intended": false,
+     "decision_ref": "Nenhuma decisão manda esconder estas operações. Está documentado só que elas continuam bloqueadas: docs/plano-carteira-perfis-2026-10-02/EXECUCAO.md:103 («As 14 operações seguintes da MTG3 continuam bloqueadas.»). As decisões escritas dizem o contrário de as esconder: docs/gantt-2026-09-24/EXECUCAO.md:5 («A ausência de um calendário horário confirmado mantém a operação visível como pendência.») e docs/gantt-integrado-2026-09-30/README.md:41 («... trabalho bloqueado e trabalho fora do horizonte são conservados.»); ver também README.md:15.",
+     "notes": "O bloqueio das 14 operações seguintes da MTG3 é um limite conhecido e aceite (EXECUCAO.md:103), por isso não é erro. O que não foi decidido é elas desaparecerem do quadro simples e o cabeçalho afirmar «as restantes no dia da Tabela». As regras do Gantt (gantt-2026-09-24/EXECUCAO.md:5 e gantt-integrado README.md:15 e :41) mandam manter o trabalho bloqueado visível como pendência. Confirmei no código: em app/sector/board.py, a função _built (linhas 303 a 371, ramo automático por volta das 325 a 336) junta só boxes_from_proposal e boxes_from_source_plan, e não usa nem plan['pending'] nem blocking_reasons. O texto está fixo em app/web/static/plano.js:53. Não encontrei teste nem comentário que justifique esconder estas operações. Conclusão: é um defeito real, não intencional. A correção proposta (lista de operações por resolver com o motivo e cabeçalho «X com hora · Y no dia da Tabela · Z por resolver») está de acordo com as decisões documentadas."
+    },
+    "l3": {
+     "severity": "medium",
+     "screens": [
+      "/planeamento/gantt (quadro simples) setor=cantoneiras",
+      "/planeamento/api/setor/quadro?setor=cantoneiras"
+     ],
+     "impact": "Confirmei duas vezes, a 06/10, só com leituras. Corri de novo confirm.py e fiz um script meu (impact.py) que recalcula tudo a partir de service.snapshot, baseline.build e source_plan.build. Também fiz um GET novo a /api/setor/quadro e a /api/setor/carga. Ficheiros: /tmp/claude-1000/-home-luis-projects-planeamento/0504eb09-808f-4b62-bc4e-2bf3435e17de/scratchpad/audit/A11-gantt/impact.py, q2.json e carga.json.\n\nO problema confirma-se. A proposta automática das cantoneiras tem 42 operações de 2 OF. A proposta dá hora a 28 e a Tabela não tem previsão para nenhuma das outras 14.\n\nAs 14 operações escondidas:\n- OF264219: 12 na Plasma manual (CPIS:111) e 1 na Fresadora (CPIS:302).\n- OF264094: 1 na Fresadora (CPIS:302).\n- Estão todas bloqueadas pelos mesmos três motivos: «Compatibilidade técnica por confirmar», «Saldo da operação por confirmar» e «Sequência operacional por validar».\n\nO que o quadro mostra:\n- Mostra 7 máquinas: Ficep Rapid 20T -1, Ficep Rapid 25T, Ficep Rapid 20T -2, Ficep XP T4, Ficep XP T6, Peddi 6 e Peddi 8.\n- Só há 2 caixas: OF264094 na Ficep 20T -1 (0,47 h) e OF264219 na Ficep 25T (12,2 h).\n- A lista «noutras máquinas» (elsewhere) vem vazia: 0 operações, 0 OF, 0 horas.\n- A resposta não tem nenhuma linha para a Plasma manual nem para a Fresadora, nem qualquer referência às 14 operações bloqueadas.\n- O cabeçalho diz «28 de 42 operações com hora · as restantes no dia da Tabela», o que é falso para estas 14.\n- A lista vermelha tem 109 OF, mas estas 2 OF não aparecem lá porque já estão escolhidas. Por isso nada avisa que lhes faltam operações.\n\nAchado novo: a Plasma manual e a Fresadora pertencem ao setor (members() tem 11 máquinas, entre elas estas duas, a Prensa e a Saca bocados). Mesmo assim não aparecem como linha no Gantt, porque _built só cria a linha de uma máquina quando ela tem caixas ou janelas. Quem olha para o quadro fica a pensar que a OF264219 só passa pela Ficep 25T, quando ainda lhe faltam 13 operações noutras duas máquinas. A OF264094 fica igualmente incompleta.\n\nTamanho do problema:\n- 2 máquinas (Plasma manual e Fresadora), 14 de 42 operações (33%), em 2 OF.\n- Datas de Excel destas operações: 17/08/2026 (13 operações) e 07/08/2026 (1 operação). Já passaram, por isso podem estar em atraso.\n- As horas não se sabem: as 14 operações não têm load_hours, ou seja, não há horas de carga calculadas para elas. Não dá para dizer quantas horas faltam no quadro.\n- O Excel continua a ser o plano oficial e isto é só uma proposta ainda não aceite. Por isso não muda nenhum plano gravado: o efeito é o planeador ficar com uma ideia errada da proposta.\n\nImpacto nos outros ecrãs:\n- Carga e turnos: não é afetado por este erro. A API da Carga mostra a Plasma manual em «elsewhere» com 3878 operações, todas sem horas («unknown»), e carga 0. Isso bate certo com a falta de horas e é outro assunto (dados de capacidade em falta, não este código).\n- Definições: não é afetado.\n\nSeveridade: média. É um erro de código só no que o Gantt mostra, sem perda de dados. Mas esconde em silêncio um terço das operações escolhidas e duas máquinas inteiras do setor, e o texto do cabeçalho afirma uma coisa falsa.\n\nA correção proposta mantém-se: _built (app/sector/board.py, ~linha 334) deve devolver as operações bloqueadas ou sem previsão, com OF, referência, operação, máquina e motivos, e mostrá-las no quadro. Deve também criar a linha das máquinas do setor que tenham operações escolhidas, mesmo sem caixas. Em app/web/static/plano.js:53, o cabeçalho deve passar a «X com hora · Y no dia da Tabela · Z por resolver»."
+    }
+   },
+   {
+    "id": "A11-2",
+    "title_pt": "MTG2: a proposta automática não coloca nenhuma operação (MEBA sem taxa) e a Carteira estima horas",
+    "claim": "Em perfis, as 6 operações Planeado (3 OF, todas no Serrote MEBA IS381 Pav 3) estão bloqueadas com «Duração admissível por confirmar». O candidato MEBA tem eligibility 'conditional' e 0 durações, porque não existe nenhum objeto 'rate' para este recurso. A Carteira (occurrences.load_hours) dá horas a estas mesmas operações (5,44 h; 5,44 h; 3,04 h), por isso o Gantt mostra só previsões da Tabela, sem hora nem turno. Duas dessas previsões já estão no passado (08/09 e 05/10).",
+    "category": "config",
+    "severity": "medium",
+    "screens": [
+     "/planeamento/gantt setor=perfis",
+     "/planeamento/api/setor/quadro?setor=perfis"
+    ],
+    "magnitude": "0 de 6 operações com hora (source.placed=0); 13,92 h só como previsão",
+    "evidence": [
+     {
+      "command": "python3 /tmp/claude-1000/-home-luis-projects-planeamento/0504eb09-808f-4b62-bc4e-2bf3435e17de/scratchpad/audit/A11-gantt/py_checks.py perfis",
+      "result": "snapshot ops 6 estados {'blocked': 6} ['Duração admissível por confirmar.'] assign be840b62; (7) barras 0; caixas previsão OF265771 09-08 5.44 h, OF265941 10-05 5.44 h, OF265943 10-30 3.04 h (todas hours_estimated)"
+     },
+     {
+      "command": "python3 /tmp/claude-1000/-home-luis-projects-planeamento/0504eb09-808f-4b62-bc4e-2bf3435e17de/scratchpad/audit/A11-gantt/dur.py",
+      "result": "cand be840b62 conditional ['confirmar_geometria_furacao_e_revisao'] durs 0; options 0; MEBA windows 57; SELECT ... kind='rate' AND resource_id=MEBA -> []"
+     }
+    ],
+    "expected": "Uma máquina com calendário (57 janelas) e trabalho Planeado tem taxa/duração confirmada, para a proposta a calendarizar; ou então a Carteira e o Gantt usam a mesma fonte de horas.",
+    "actual": "O motor do Gantt não tem duração para o MEBA, mas a Carteira tem uma estimativa. O quadro diz «proposta automática» com 0 de 6 operações com hora.",
+    "root_cause": {
+     "file": "app/gantt/integrated.py",
+     "line": 449,
+     "explanation": "options só vêm de durations do candidato. Sem rate confirmada para be840b62 e com eligibility conditional (não é escolha do planeador com durações), options=[] e a operação fica 'Duração admissível por confirmar'. A estimativa de occurrences não entra no motor."
+    },
+    "fix": {
+     "kind": "config",
+     "summary": "Configurar e confirmar a taxa (rate) do Serrote MEBA IS381 Pav 3 para perfis e rever a condição técnica 'confirmar_geometria_furacao_e_revisao'. Em alternativa, decidir se a estimativa da Carteira pode servir de duração provisória.",
+     "risk": "médio; muda a proposta de MTG2",
+     "mutates_production": true
+    },
+    "domain": "A11-gantt",
+    "verdict": "funciona_como_decidido",
+    "l1": {
+     "reproduced": true,
+     "numbers": "Perfis: 6 operações em 3 OF (OF265771, OF265941, OF265943 com 4 operações). Todas no Serrote MEBA IS381 Pav 3 (be840b62) e todas com state=blocked e a razão ['Duração admissível por confirmar.']. Em cada operação há um só candidato, be840b62, com eligibility 'conditional', a condição ['confirmar_geometria_furacao_e_revisao'], 0 durações e options=0. O MEBA tem 57 janelas de calendário. raw_objects com kind='rate' para o MEBA: 0. Com kind='rate' em toda a tabela: também 0. O quadro dá source={kind:'automatica', selected_orders:3, placed:0, operations:6}. Caixas de previsão do quadro: OF265771 a 2026-09-08 com 5.44 h; OF265941 a 2026-10-05 com 5.44 h; OF265943 a 2026-10-30 com 3.04 h. As três têm forecast=true, hours_estimated>0 e shifts=[]. Carteira (occurrences.load, load_basis='estimada'): OF265771 5.4427; OF265941 5.4427; OF265943 1.5700+0.4187+0.9420+0.1047=3.04. Total 13.92 h. Hoje é 2026-10-06, por isso as previsões de 08/09 e 05/10 já passaram.",
+     "notes": "Reproduzi tudo duas vezes com scripts meus, em /tmp/claude-1000/-home-luis-projects-planeamento/0504eb09-808f-4b62-bc4e-2bf3435e17de/scratchpad/audit/A11-gantt/repro2/:\n- r.py: usa service.snapshot(area='perfis'), a consulta SQL a planning_mtg.raw_objects e um GET a /planeamento/api/setor/quadro?setor=perfis.\n- r2.py: lê blocking_reasons e as caixas do quadro.\n- r3.py: lê occurrences.load('perfis') para as mesmas chaves de operação.\nComando: python3 <dir>/r.py; python3 <dir>/r3.py\n\nTrês precisões à afirmação:\n1. Não é só o MEBA que não tem objeto 'rate'. Na base de dados há 0 objetos kind='rate' não arquivados para todos os recursos. A falta é geral e o MEBA é apenas o único recurso com trabalho Planeado em perfis.\n2. O bloqueio vem de duas coisas ao mesmo tempo:\n   - o candidato tem 0 durações;\n   - em integrated.py, o filtro de options só aceita durações com eligibility 'admissible' quando não há escolha do planeador (planner).\n   Mesmo com durações, a eligibility 'conditional' do candidato deixaria a operação sem options. Também seria preciso resolver a condição 'confirmar_geometria_furacao_e_revisao' ou ter uma escolha do planeador.\n3. A estimativa da Carteira não vem de nenhum objeto 'rate'. O load_origin é «Estimativa: taxa Excel 48024 mm²/h de Serrote MEBA IS381 Pav 3 (sem fator ×3)», calculada em app/sector/estimates.py. Esta estimativa só entra no quadro através de board._estimates e boxes_from_source_plan, como previsão (forecast) sem turnos. Confirma-se que o motor do Gantt e a Carteira usam fontes de horas diferentes."
+    },
+    "l2": {
+     "intended": true,
+     "decision_ref": "docs/plano-carteira-perfis-2026-10-02/EXECUCAO.md:150 ; docs/plano-carteira-perfis-2026-10-02/EXECUCAO.md:20 ; app/sector/board.py:16 ; docs/plano-carteira-perfis-2026-10-02/PLANO.md:95",
+     "notes": "Sim, está documentado. Mas a decisão é sobre o comportamento da aplicação, não sobre a falta de dados do MEBA, que continua por resolver.\n\nCitações (confirmadas 2 vezes com grep -n):\n1. docs/plano-carteira-perfis-2026-10-02/EXECUCAO.md:150, na secção «Resultado» da proposta automática: «**MTG2:** as 6 linhas planeadas (perfil «80») não têm área de corte unitária no Excel, por isso não há duração.» É exatamente o resultado do A11-2: 6 operações, 0 com hora. Ficou registado como resultado conhecido, ao lado da MTG3 com 28 operações colocadas (linha 149).\n2. docs/plano-carteira-perfis-2026-10-02/EXECUCAO.md:20 (e o docstring de app/sector/board.py:16): «previsões sem horas recebem a estimativa da Carteira (`hours_estimated`)». Mostrar no Gantt só as previsões da Tabela com as horas estimadas da Carteira foi decidido assim.\n3. docs/plano-carteira-perfis-2026-10-02/PLANO.md:95 (GD06): uma duração desconhecida não conta como zero. app/gantt/integrated.py:455-456 só põe operações no calendário com uma duração admissível; sem ela, a operação fica «Duração admissível por confirmar». Não inventa duração, e isto está de acordo com a regra.\n\nRessalvas para quem decide:\n- A causa documentada (falta a área de corte unitária no Excel, app/sector/estimates.py:24 e :87) não é a mesma que a auditoria aponta (não existe nenhum objeto 'rate' para o MEBA, e o candidato be840b62 está 'conditional' com 0 durações). Podem ser as duas verdade. Não encontrei nenhuma decisão que explique porque é que a Carteira tem 5,44/5,44/3,04 h e o motor não, nem que proíba usar essa estimativa como duração provisória.\n- Duas das previsões já estão no passado (08/09 e 05/10). Nenhum documento trata disto.\n- EXECUCAO.md:136 diz que a máquina escolhida pelo planeador conta como confirmação técnica. Mesmo assim, com 0 durações, options fica vazio. A aplicação está coerente com o que está escrito.\n- A falta de taxa do MEBA é uma lacuna de dados que ainda não foi resolvida, não uma escolha para manter. Se o Luís quiser datas na MTG2, a correção de configuração continua a fazer sentido (mexe em produção, por isso precisa do OK dele).\n\nNada foi alterado. Só li ficheiros."
+    },
+    "l3": {
+     "severity": "medium",
+     "screens": [
+      "/planeamento/gantt setor=perfis",
+      "/planeamento/api/setor/quadro?setor=perfis",
+      "/planeamento/setor/carga setor=perfis (/planeamento/api/setor/carga?setor=perfis)",
+      "/planeamento/setor/definicoes setor=perfis (/planeamento/api/setor/definicoes?setor=perfis)"
+     ],
+     "impact": "Confirmei duas vezes hoje (06/10), com py_checks.py e dur.py e com GETs à API. Não escrevi nada.\n\nGANTT MTG2 (perfis): o Gantt de perfis não tem nenhuma barra. A API /setor/quadro?setor=perfis devolve source={kind:'automatica', selected_orders:3, operations:6, placed:0}. As 6 operações (OF265771 PR3, OF265941 PR3 e 4 da OF265943) são todas no Serrote MEBA IS381 Pav 3 (be840b62) e estão todas 'blocked' com «Duração admissível por confirmar.». O candidato é 'conditional' ['confirmar_geometria_furacao_e_revisao'], tem 0 durações e 0 opções. Na tabela não existe nenhuma linha com kind='rate' para o MEBA, mas há 57 janelas de calendário. Afeta 1 de 5 máquinas visíveis. Como é a única com trabalho Planeado, o efeito prático é que todo o Gantt MTG2 fica sem hora nem turno. Sobram apenas 3 caixas de previsão (13,92 h): OF265771 a 08/09 com 5,44 h, OF265941 a 05/10 com 5,44 h e OF265943 a 30/10 com 3,04 h. As duas primeiras datas já passaram. Para comparar: em cantoneiras, também sem objetos 'rate', são colocadas 28 de 42 operações. O problema é só de MTG2/MEBA.\n\nCARGA E TURNOS: as horas destas operações aparecem e coincidem com a Carteira. No MEBA, a semana 41 tem plan=10,9 h (5,44+5,44) e a semana 44 tem plan=3,0 h. Ou seja, a Carga diz que o trabalho cabe em horas concretas, mas o Gantt não o consegue calendarizar: os dois ecrãs não batem certo. O peso real é pequeno. Na semana 41 o MEBA já está muito sobrecarregado (load 270,5 h para 22,5 h de capacidade, 186,7 h em atraso, a Carga diz «faltam 248 h»), e as 10,9 h são cerca de 4% disso. O MEBA também tem 96 operações sem data e sem horas (no_date.unknown=96). Esse problema é diferente deste, mas tem a mesma origem: falta de taxa.\n\nDEFINIÇÕES: são enganadoras. Para o MEBA aparece rates=[] e rate_in_use='Velocidade do Excel' (48024 mm²/h). O planeador fica a pensar que existe uma velocidade em uso, mas o motor do Gantt ignora-a e exige uma taxa confirmada. A mesma situação (0 taxas e 'Velocidade do Excel') repete-se em POSTO_DISCO, DOALL, POSTO_FITA e VANGUARD. Hoje não há trabalho Planeado nessas máquinas, mas quando houver vão ficar bloqueadas da mesma forma. Há ainda 7 máquinas de perfis com 'Por definir'.\n\nSEVERIDADE REAL: média. O volume é pequeno (1 máquina, 3 OF, 6 operações, 13,92 h, 2 dias no passado). Pesa mais o que os ecrãs dizem do que as horas: o quadro diz «proposta automática» com 0 de 6 operações colocadas, a Carga e o Gantt usam fontes de horas diferentes, e as Definições indicam uma velocidade que o motor não usa. Corrigir obriga a configurar e confirmar a taxa do MEBA e a rever a condição técnica, o que muda a proposta de MTG2 em produção. A alternativa é decidir se a estimativa da Carteira pode servir de duração provisória.\n\nEvidência: /tmp/claude-1000/-home-luis-projects-planeamento/0504eb09-808f-4b62-bc4e-2bf3435e17de/scratchpad/audit/A11-gantt/py_checks.py (perfis|cantoneiras), dur.py e carga_perfis.json (GET /planeamento/api/setor/carga?setor=perfis)."
+    }
+   },
+   {
+    "id": "A11-3",
+    "title_pt": "Previsões sem hora: horas da caixa e do dia não aparecem nos turnos",
+    "claim": "Nas caixas de previsão, boxes[].shifts fica vazio porque só é calculado a partir dos segmentos com hora. Por isso hours = soma de days, mas a soma dos turnos dá 0. No Gantt do dia, day.planned inclui a previsão, mas os totais por turno (shifts[].planned) não, e o dia e os turnos deixam de bater certo.",
+    "category": "code_bug",
+    "severity": "low",
+    "screens": [
+     "/planeamento/api/setor/quadro?setor=perfis",
+     "/planeamento/api/setor/quadro/dia?setor=perfis&dia=2026-10-30"
+    ],
+    "magnitude": "3 de 3 caixas de perfis: 5,44/5,44/3,04 h sem turno; no dia 30/10 o MEBA tem day.planned=3,04 e a soma dos turnos 0",
+    "evidence": [
+     {
+      "command": "python3 /tmp/claude-1000/-home-luis-projects-planeamento/0504eb09-808f-4b62-bc4e-2bf3435e17de/scratchpad/audit/A11-gantt/api_checks.py",
+      "result": "(1) DIF Serrote MEBA OF265771 hours 5.44 sum_days 5.44 sum_shifts 0; OF265941 5.44/5.44/0; OF265943 3.04/3.04/0; (2) 2026-10-30 MEBA seg=0.00 prev_dia=3.04 day.planned=3.04 celula=3.04 soma_turnos=0.00"
+     },
+     {
+      "command": "python3 -c (resumo de q_perfis.json, 1.ª execução)",
+      "result": "OF265771 h 5.44 days [('09-08',5.44)] sh [] fc True; OF265943 h 3.04 sh [] est 4"
+     }
+    ],
+    "expected": "Ou as horas de previsão aparecem como «sem turno» nos totais, ou a interface diz explicitamente que hours inclui horas sem turno; e soma dos turnos + sem hora = day.planned.",
+    "actual": "A soma dos turnos dá 0 com o dia a 3,04 h. As caixas de cantoneiras (com hora) batem certo: 2 de 2.",
+    "root_cause": {
+     "file": "app/sector/board.py",
+     "line": 347,
+     "explanation": "box['shifts'] = _shift_hours(box['timed'], template): as previsões não têm 'timed', logo não têm turnos. Em day() (linhas 444/460) os totais por turno só somam pieces com hora, enquanto planned_day soma também os untimed de precisão 'day'."
+    },
+    "fix": {
+     "kind": "code",
+     "summary": "Acrescentar aos shifts das previsões uma entrada {date, shift: None, hours} e um total «sem hora» por dia em day(), para que turnos + sem hora = day.planned.",
+     "risk": "baixo",
+     "mutates_production": false
+    },
+    "domain": "A11-gantt",
+    "verdict": "confirmado",
+    "l1": {
+     "reproduced": true,
+     "numbers": "Quadro de perfis: 3 de 3 caixas (todas previsões do Serrote MEBA IS381 Pav 3, approximate=False, sem segmentos com hora). OF265771 hours 5,44 / soma dos dias 5,44 / soma dos turnos 0 (lista vazia); OF265941 5,44 / 5,44 / 0; OF265943 3,04 / 3,04 / 0. Cantoneiras (com hora) batem certo: OF264094 0,47 / 0,47 / 0,47; OF264219 12,2 / 12,2 / 12,2. Dia 30/10/2026, perfis, MEBA: segmentos 0, previsões sem hora de precisão «dia» 3,04 (OF265943, estimated=True), day.planned 3,04, soma de shifts[].planned 0.",
+     "notes": "Reproduzido. Fiz só GETs à API em execução, sem escrever em lado nenhum. Script: python3 /tmp/claude-1000/-home-luis-projects-planeamento/0504eb09-808f-4b62-bc4e-2bf3435e17de/scratchpad/audit/A11-gantt/repro_a11_3.py. Corri-o 2 vezes e o resultado foi o mesmo (md5 da 2.ª execução: e1cbf35659529ad5b759e6b0838c703d). Para cada caixa, o script soma por conta própria days[].hours e shifts[].hours. No dia, soma segments[].hours, untimed[].hours (precisão «dia») e shifts[].planned.\n\nCausa no código, confirmada a ler /home/luis/projects/planeamento/app/sector/board.py:\n- Linha 347: box[\"shifts\"] = _shift_hours(box[\"timed\"], template). As previsões vêm de boxes_from_source_plan e têm timed vazio, por isso shifts fica [].\n- Em day(), os totais por turno («planned») somam apenas os pieces, que saem de private[\"timed\"], ou seja, só do trabalho com hora. Já planned_day = soma dos clipped + soma de untimed[].hours com precision==\"day\".\nResultado: turnos + sem hora = day.planned só bate certo se as previsões contarem como «sem turno», e hoje a interface não mostra esse total.\n\nNota: as 3 caixas de perfis só existem porque o plano está em modo automático com previsões da Tabela. Gravidade baixa: é uma incoerência de totais na apresentação, não uma perda de horas, porque o hours da caixa e o day.planned estão certos."
+    },
+    "l2": {
+     "intended": false,
+     "decision_ref": "Não foi decidido assim. Pelo contrário: o critério de aceitação aprovado diz o oposto, em /home/luis/.claude/plans/esta-horrivel-n-o-existe-gleaming-clarke.md:233 «soma dos turnos = horas do dia = célula da semana». A única decisão relacionada é mostrar as previsões sem hora numa zona própria, não os totais: no mesmo plano, :71 «previsões sem hora à parte», :79 «faixa «Sem hora marcada»» e :238 «Previsões só com semana não têm hora; aparecem em «Sem hora marcada»». O mesmo está em docs/plano-carteira-perfis-2026-10-02/EXECUCAO.md:25 «linha «agora» e faixa «Sem hora marcada»».",
+     "notes": "Procurei a decisão em docs/*/EXECUCAO.md, docs/*/PLANO.md, nos testes, em app/sector/board.py e em app/web/static/plano.js. Também li o plano aprovado de 06/10, citado em EXECUCAO.md:7.\n\nConclusão: ficou decidido mostrar as previsões sem hora à parte, na faixa «Sem hora marcada» (plano.js:392-395). Nenhum documento diz que o total do dia deve incluir horas que os turnos não incluem. O plano pede de forma explícita a igualdade turnos = dia = célula (linha 233), e o código não a cumpre:\n- board.py:460 soma ao planned_day os untimed de precisão «day»;\n- board.py:444 só soma ao total de cada turno os pedaços com hora;\n- board.py:347 calcula box['shifts'] apenas a partir de box['timed'], e as previsões não têm timed;\n- o docstring de _shift_hours (board.py:268) só prevê turno None para horas «fora dos turnos do setor», não para previsões sem hora.\n\nNenhum teste cobre este caso. É um defeito de implementação face ao critério aprovado, não uma escolha. Não reexecutei as medições da API; a análise foi só documental e ao código."
+    },
+    "l3": {
+     "severity": "low",
+     "screens": [
+      "/planeamento/gantt (quadro simples, perfis): janela da caixa e vista do dia",
+      "/planeamento/api/setor/quadro?setor=perfis",
+      "/planeamento/api/setor/quadro/dia?setor=perfis&dia=2026-10-30 (também 2026-09-08 e 2026-10-05)"
+     ],
+     "impact": "Confirmei duas vezes, só com GET e saída idêntica nas duas execuções (md5 a25cf38c...). O comando é: python3 /tmp/claude-1000/-home-luis-projects-planeamento/0504eb09-808f-4b62-bc4e-2bf3435e17de/scratchpad/audit/A11-gantt/impact.py\n\nO que acontece: no setor perfis há 3 caixas, todas previsões sem hora e todas na mesma máquina, o Serrote MEBA IS381 Pav 3. São a OF265771 (5,44 h, a 08/09), a OF265941 (5,44 h, a 05/10) e a OF265943 (3,04 h, a 30/10). Nas três, hours = soma de days, mas shifts fica vazio (soma 0). Isto dá 13,92 h fora dos turnos. Na vista do dia, em 3 dias dessa máquina, day.planned é igual às horas sem hora (5,44, 5,44 e 3,04) e a soma de shifts[].planned é 0. A 08/09 e a 05/10 a capacidade é 0; a 30/10 é 7,5 h. Em cantoneiras, as 2 caixas que têm hora batem certo (0 de 2 com erro).\n\nA causa é a que foi apontada. Em app/sector/board.py, a linha 347 é box['shifts'] = _shift_hours(box['timed'], template), e as previsões não têm timed. Em day(), os totais por turno só somam as peças com hora, mas planned_day soma também os untimed com precisão de dia.\n\nSeveridade real: baixa, e mais um problema de coerência dos dados do que um erro que o utilizador veja.\n- No ecrã, app/web/static/plano.js trata estes casos bem. A janela da caixa esconde a linha «Turnos» quando shifts vem vazio e mostra «Horas 5,44 h · dd/mm 5,44 h» (linha 281). A vista do dia mostra os turnos com 0, o «Dia: 3,04 / 7,5 h» e, logo a seguir, a faixa «Sem hora marcada: OF265943 (3,04 h)» (linhas 377-378 e 395-399). Fica visível porque é que o dia não bate com os turnos, mas não há um total «sem turno» explícito.\n- Nenhum turno aparece a vermelho por engano nem fica escondido, porque as previsões não estão a ocupar nenhum turno.\n- Carga e turnos (setor_carga) e Definições não são afetados: o board e os seus shifts só são usados nas rotas do quadro (app/sector/routes.py:283/291). Nenhum outro módulo usa _shift_hours do board.\n- Quem pode ser apanhado é um consumidor da API, ou um teste futuro, que espere que a soma dos turnos dê day.planned. Há 3 máquina-dias afetados e 13,92 h, tudo numa só máquina.\n\nA correção proposta não toca na produção e tem risco baixo: acrescentar {shift: None, hours} ou um total «sem hora» por dia. Atenção que estes ficheiros web são servidos ao vivo, por isso qualquer mudança no plano.js tem de continuar a funcionar com o Python que está a correr."
+    }
+   }
+  ],
+  "checks_passed": [
+   {
+    "check": "(1) hours = soma por dia = soma por turno, caixas com hora",
+    "numbers": "cantoneiras 2/2 caixas certas (OF264094 0,47 h = 0,47 = turno 2 0,47; OF264219 12,2 h = 7,5+4,7 = turno 2 7,5 + turno 1 4,7). perfis: hours = soma dos dias em 3/3, mas turnos 0 (ver A11-3)"
+   },
+   {
+    "check": "(2) segmentos + previsões do dia = day.planned = célula da semana",
+    "numbers": "cantoneiras 06/10, 07/10 e dias com trabalho: Ficep 20T-1 06/10 0,47=0,47=0,47; Ficep 25T 06/10 7,5=7,5=7,5; 07/10 4,7=4,7=4,7; restantes máquinas 0=0=0. perfis 06/10, 07/10, 30/10 (3,04=3,04=3,04) e 08/09 (5,44=5,44=5,44): 0 diferenças"
+   },
+   {
+    "check": "(3) segmentos dentro das janelas do calendário e no turno certo",
+    "numbers": "3/3 segmentos dentro de janelas confirmadas e no turno certo (14:00-14:28 T2 06/10; 14:00-21:30 T2 06/10; 06:00-10:42 T1 07/10). Janelas da Vanguard a 07/10: 00:00-05:30 com o rótulo 3.º turno de 06/10 (certo)"
+   },
+   {
+    "check": "(4) linhas só com máquinas do setor; elsewhere",
+    "numbers": "perfis 5 linhas, todas entre as 13 máquinas de definicoes; cantoneiras 7 linhas, todas entre as 11. 0 fora do setor; elsewhere = 0 operações e 0 h nos dois setores (nenhuma operação escolhida em máquina de outro setor)"
+   },
+   {
+    "check": "(5) Planeado da Carteira (selected + máquina) aparece numa caixa, na lista ou como pendente",
+    "numbers": "perfis: 6 linhas / 3 OF Planeado, as 3 OF em caixas (4+1+1 linhas = lines das caixas); cantoneiras: 28 linhas / 2 OF, em caixas com 25 e 3 linhas. 0 Planeado sem caixa; 0 caixas de OF não Planeado; 0 selected sem máquina; scope.planning_lines 6 e 28 registos, 0 pendentes"
+   },
+   {
+    "check": "(6) hours_estimated = load_hours de occurrences pela chave v2",
+    "numbers": "perfis: 6/6 operações com facto; OF265771 5,44=5,44 (1 estimativa), OF265941 5,44=5,44 (1), OF265943 3,04=3,04 (4). cantoneiras: 0 caixas de previsão (42/42 operações com facto, 28 com load_hours)"
+   },
+   {
+    "check": "(7) proposta automática sem sobreposições e dentro das janelas",
+    "numbers": "cantoneiras: validation.valid=True, 28 barras, 29 segmentos, 0 sobreposições e 0 segmentos fora das janelas (recalculado por mim). perfis: valid=True, 0 barras"
+   }
+  ],
+  "not_checked": [
+   "O caminho do plano aceite (_accepted / boxes_from_proposal com cenário aceite): não existe nenhum cenário aceite neste momento",
+   "Segmentos reais entre 00:00 e 05:30 (3.º turno do dia anterior): nenhuma barra da proposta cai aí; só confirmei o rótulo das janelas da Vanguard",
+   "A mudança da hora a 25/10 (dia de 25 h) no Gantt do dia",
+   "Juntar numa caixa previsões de precisão 'week' com previsões de 'day' (nesse caso o Gantt do dia perderia as horas): não acontece nos dados atuais",
+   "A cache do quadro (10 min) a seguir uma mudança de seleção: não fiz POST para testar",
+   "A lista vermelha (unplanned) e not_in_plans em pormenor, além do cruzamento com Planeado; o campo planned_orders (161 em perfis) conta OF com máquina e não OF Planeado, mas a interface não o mostra",
+   "Trabalho em máquinas de outro setor (elsewhere): sem casos reais para validar"
+  ]
+ }
+]

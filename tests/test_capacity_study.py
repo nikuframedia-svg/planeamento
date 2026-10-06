@@ -189,3 +189,21 @@ def test_punching_machines_become_conditional_119_candidates_only_with_observed_
     assert "mudanca_112_para_119_requer_decisao" not in xp["conditions"] and xp["origin"] == "pratica_observada"
     assert machines.choose(list(found.values()), None, process="Punção")[0]["resource_code"] == "XPT4"
     assert machines.choose(list(found.values()), None, process="Broca")[0]["resource_code"] == "RAPID"
+
+
+def test_weeks_of_load_use_a_complete_week_not_what_is_left_of_the_current_one():
+    """C5-1: na terça 06/10 a semana atual só tem 22,5 h por fazer; as semanas de carga dividem por 37,5 h."""
+    from datetime import datetime, timedelta, timezone
+    windows = []
+    for week in range(4):  # 5 dias × 7,5 h, de 05/10 (segunda) em diante
+        for d in range(5):
+            day = datetime(2026, 10, 5, 7, tzinfo=timezone.utc) + timedelta(weeks=week, days=d)
+            windows.append({"start": day.isoformat(), "end": (day + timedelta(hours=7.5)).isoformat()})
+    now = datetime(2026, 10, 7, 7, tzinfo=timezone.utc)  # as janelas do calendário começam «a partir de agora»
+    windows = [w for w in windows if datetime.fromisoformat(w["end"]) > now]
+    res = resources(r1={"windows": windows})
+    data = {"cantoneiras": [need("n1", "cantoneiras", "r1", 75, "2026-10-09")]}
+    result = capacity.build(data, res, RELATIONS, [], [], {}, today=date(2026, 10, 6), horizon_weeks=4)
+    lane = next(l for l in result["units"]["cantoneiras"]["resources"] if l["resource_id"] == "r1")
+    assert lane["periods"][0]["capacity_hours"] == 22.5  # a célula da semana atual mantém só o que falta
+    assert lane["weekly_capacity_hours"] == 37.5 and lane["weeks_to_clear"] == 2.0

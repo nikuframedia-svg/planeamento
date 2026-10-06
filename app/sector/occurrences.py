@@ -100,13 +100,17 @@ def _hours(row, values, detail, area, remaining):
 
 
 RAW_FIELDS = ("Descrição", "Observações", "Observações Galvanização", "Designação", "Data Galvanização",
-              "Des. Material", "Equipa", "Área de Seção de Corte Unit. [mm2]", "Área de Seção de Corte Unit. [mm²]")
+              "Des. Material", "Equipa", "Área de Seção de Corte Unit. [mm2]", "Área de Seção de Corte Unit. [mm²]",
+              "Ser.", "Qtd em Falta", "Maq.", "Qtd falta",  # contadores: o saldo RAW mais recente ganha à pesquisa
+              "W")  # «2026/53» = linha estacionada no Excel (S53-1)
 # Only the parts of the stored detail that identity matching, balances and estimates read;
 # the full calculation rules and evidence would cost seconds of JSON decoding per rebuild.
 _DETAIL = ("jsonb_build_object('area',c.detail->'area','line',c.detail->'line','revision',c.detail->'revision',"
            "'selection_aliases',coalesce(c.detail->'selection_aliases','[]'::jsonb),"
            "'preparations',coalesce(c.detail->'preparations','[]'::jsonb),"
            "'sku_family_mapping',c.detail->'sku_family_mapping',"
+           # estados de todas as cópias CPIS: aberto/aberto em conflito não bloqueia a linha (auditoria A8-3)
+           "'status_values',coalesce(c.detail->'status_values','[]'::jsonb),"
            "'calculation',jsonb_build_object('compatible',c.detail->'calculation'->'compatible',"
            "'production_sources',coalesce(c.detail->'calculation'->'production_sources','[]'::jsonb),"
            "'operation_estimates',(SELECT jsonb_agg(e - 'history' - 'calculation') FROM jsonb_array_elements("
@@ -141,9 +145,12 @@ def stamp(c, area, today):
     from ..gantt import research
     from . import priority, assignments, scope, machine_choice
     g = query.generation(c, area)
+    # Os calendários entram no equilíbrio das sugestões dos perfis (PROP-7): uma mudança refaz as ocorrências.
+    calendars = tuple(c.execute("SELECT count(*) n, max(updated_at) m FROM planning_mtg.raw_objects WHERE kind='calendar' AND NOT archived"
+                                ).fetchone().values()) if area == "perfis" else None
     return (area, g["id"], research.head(c)["version_id"] if research.enabled() else None,
             sku_families.token(c, area), priority.digest(c), assignments.digest(c),
-            scope.digest(scope.read(c)), machine_choice.digests(c), today)
+            scope.digest(scope.read(c)), machine_choice.digests(c), calendars, today)
 
 
 def resources_context(c, start=None):
@@ -214,13 +221,13 @@ def build(c, area: str, today: date | None = None) -> dict:
         of, reference = row["ordem_codigo"], row["referencia_original"]
         designation = values.get("designation") or raw.get("Designação") or ""
         signals = signals_of(designation, raw.get("Descrição") or values.get("notes") or "",
-                             raw.get("Observações") or "", raw.get("Observações Galvanização") or "", values.get("status"))
-        marks = priority.milestones_from_values(
-            {**values, "cut_date": row.get("data_corte_prevista") or values.get("cut_date"),
-             "picking_week": row.get("semana_picking") or values.get("picking_week"),
-             "picking_year": row.get("ano_picking") or values.get("picking_year"),
-             "nao_galvaniza_indicado": row.get("nao_galvaniza_indicado")}, raw,
-            assumed_year=policies[area].get("assume_picking_year"))
+                             raw.get("Observações") or "", raw.get("Observações Galvanização") or "", values.get("status"),
+                             detail.get("status_values"))
+        # Mesma origem de prazo da Carteira e do Gantt (Picking atual da linha, Semana escolhida).
+        marks = priority.milestones_from_values(priority.engine_values(row, values), raw,
+                                                assumed_year=policies[area].get("assume_picking_year"))
+        # A coluna W da importação atual (não a da pesquisa) diz se a linha está estacionada (S53-1).
+        marks["parked"] = priority.parked_week((detail.get("raw") or raw).get("W"))
         due = priority.resolve(area, "principal" if principal else "following", marks, policy=policies[area],
                                override=priority.override_for(overrides, area, of, reference),
                                urgent=signals["prioridade"] is not None)
@@ -290,7 +297,10 @@ def build(c, area: str, today: date | None = None) -> dict:
     study = throughput.load(c) if package else None
     from . import machine_learning
     learned = machine_learning.model(area, conn=c) if package else None
-    balance_info = estimates.apply(facts, rows_by_key, codes=codes, by_id=by_id, package=package, study=study, learned=learned)
+    # MTG2 sem débito observado: o equilíbrio usa as horas dos calendários do setor (auditoria 06/10, PROP-7).
+    calendar = estimates.calendar_capacity(c, list(by_id), today) if package and area == "perfis" else None
+    balance_info = estimates.apply(facts, rows_by_key, codes=codes, by_id=by_id, package=package, study=study, learned=learned,
+                                   calendar=calendar)
     return {"area": area, "unit": UNITS[area], "generation": g["id"], "snapshot": snapshot,
             "imported_at": g["created_at"], "research_version": package["head"]["version_id"] if package else None,
             "today": today, "facts": facts, "resources": {rid: {k: r.get(k) for k in ("id", "code", "name", "type", "capacity")}

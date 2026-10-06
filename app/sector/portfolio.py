@@ -16,7 +16,7 @@ from collections import defaultdict
 from contextlib import nullcontext
 from datetime import date, datetime, timedelta
 
-from .. import planning, planning_needs as needs
+from .. import planning, planning_needs as needs, planning_population as population
 from . import decisions as resolution, planning_status
 from .references import UNRESOLVED, master_reference
 
@@ -28,14 +28,15 @@ WINDOWS = {  # ordem = urgência; prazo pela política do setor (MTG3: Data Cort
     "3_semanas": "Até ao fim da semana ISO +2",
     "mais_tarde": "Mais tarde",
     "sem_data": "Sem prazo",
+    "estacionada": "Estacionada no Excel (W 2026/53)",  # S53-1: fora do atraso e da carga das semanas
 }
 LEVELS = {
     "master": "Referência mestre",
     "reference": "Referência (SKU)",
     "of": "OF",
-    "work": "Obra / OV",
+    "work": "OV",
     "profile": "Perfil",
-    "family": "Família de Produto (CPIS)",
+    "family": "Família de Produto",
     "sku_family": "Família SKU",
     "customer": "Cliente",
 }
@@ -52,8 +53,8 @@ VIEW_LABELS = {  # a primeira é a vista por defeito do ecrã (esboço do Luís:
     "perfil": "Perfil → OF",
     "of_perfil": "OF → Perfil",
     "referencia": "Referência: modelo → SKU → OF",
-    "of": "OF, por obra / OV",
-    "familia": "Família de Produto (CPIS) → OF",
+    "of": "OV → OF",
+    "familia": "Família de Produto → OF",
     "familia_sku": "Família SKU → referência → OF",
     "cliente": "Cliente → OF",
 }
@@ -73,6 +74,7 @@ STATES = {  # decisão Planear de cada linha (informação da linha; o filtro Es
 }
 STATUS = planning_status.STATUS  # filtro Estado (plano de 02/10/2026)
 NO_WEEK = "sem"
+PARKED_WEEK = "estacionada"  # filtro de semanas: linhas estacionadas no Excel (S53-1), à parte de «Sem semana definida»
 BLOCKING = ("anulada", "eletrofer", "validacao", "estado_cpis")  # sinais que tiram uma linha da proposta
 WHOLE = resolution.WHOLE  # decisão antiga sobre a OF inteira
 
@@ -142,7 +144,21 @@ def window_of(cut_date: date | None, today: date) -> str:
     return "3_semanas" if cut_date <= end else "mais_tarde"
 
 
-def signals_of(designation: str, notes: str, observations: str, galvanising_notes: str, status: str | None) -> dict:
+def cpis_open(status: str | None, status_values: list | None = None) -> bool:
+    """Estado CPIS aberto para o planeamento, com a mesma lista da população (planning_population.CPIS_OPEN).
+
+    «Em Aberto», «Em Produção» e «Pronta» são abertas: «Pronta» não fecha a OF na população, por isso
+    a Carteira e «Sem peças nos planos» também não a tratam como fechada (auditoria 06/10/2026, A3-7).
+    Desde 06/10/2026 o estado já vem resolvido pela cópia CPIS mais recente (planning_hub._order_summary),
+    tal como vem. A lista de estados só serve gerações gravadas antes disso, sem estado único: aí a OF só
+    conta como aberta se todas as cópias disserem um estado aberto (regra antiga A8-3).
+    """
+    values = [status] if status else [s for s in (status_values or []) if s]
+    return bool(values) and all(population.token(s) in population.CPIS_OPEN for s in values)
+
+
+def signals_of(designation: str, notes: str, observations: str, galvanising_notes: str, status: str | None,
+               status_values: list | None = None) -> dict:
     text = " ".join(x for x in (designation, observations) if x)
     priority = _PRIORITY.search(designation or "")
     week = _WRITTEN_WEEK.search(designation or "")
@@ -151,7 +167,7 @@ def signals_of(designation: str, notes: str, observations: str, galvanising_note
         "anulada": bool(_CANCELLED.search(notes or "")),
         "eletrofer": bool(_ELETROFER.search(" ".join(x for x in (notes, galvanising_notes) if x))),
         "validacao": bool(_VALIDATION.search(text)),
-        "estado_cpis": status not in OPEN_STATES,
+        "estado_cpis": not cpis_open(status, status_values),
         "entrega_escrita": f"W{int(week.group(1))}" + (f"/{week.group(2)}" if week.group(2) else "") if week else None,
     }
 
@@ -190,7 +206,9 @@ def line_from_row(row: dict, today: date, *, policy: dict | None = None, overrid
     area = "perfis" if detail.get("area") == "perfis" else "cantoneiras"
     raw = detail.get("raw") or {}
     marks = priority.milestones_from_values(v, raw, assumed_year=(policy or {}).get("assume_picking_year"))
-    signals = signals_of(designation, row.get("notes"), row.get("observations"), row.get("galvanising_notes"), status)
+    status_values = detail.get("status_values") or []
+    signals = signals_of(designation, row.get("notes"), row.get("observations"), row.get("galvanising_notes"), status,
+                         status_values)
     due = priority.resolve(area, "principal", marks, policy=policy or priority.default(area),
                            override=priority.override_for(overrides or {}, area, v.get("of") or "", reference),
                            urgent=signals["prioridade"] is not None)
@@ -210,7 +228,9 @@ def line_from_row(row: dict, today: date, *, policy: dict | None = None, overrid
         "sku_family": v.get("sku_family") or "Sem família SKU",
         "sku_family_status": v.get("sku_family_status") or ("Sem catálogo" if area == "perfis" else "Sem família identificada"),
         "registered": _day(row.get("record_date")),
-        "status": status or "Sem estado CPIS",
+        # Gerações anteriores a 06/10/2026 podem ter estados diferentes sem estado único (A3-3); as novas
+        # já trazem o estado da cópia CPIS mais recente.
+        "status": status or ("Estado em conflito" if len(status_values) > 1 else "Sem estado CPIS"),
         "reference": reference or "Sem referência",
         "master": master_reference(reference) or UNRESOLVED,
         "profile": (v.get("profile") or "").strip() or "Sem perfil",
@@ -234,6 +254,7 @@ def line_from_row(row: dict, today: date, *, policy: dict | None = None, overrid
         "priority_day": priority_day,
         "iso_week": iso_week(priority_day),
         "priority_source": due["priority_source"] or due["missing_reason"],
+        "parked": bool(due.get("parked")),
         "delivery_date": _day(v.get("delivery_date")),
         "window": window,
         "signals": signals,
@@ -371,7 +392,7 @@ def matches(line: dict, filters: dict, decisions: dict | None = None) -> bool:
     if not isinstance(weeks, list):
         raise planning.PlanningError("Prazo inválido.")
     weeks = [w for w in weeks if isinstance(w, str) and w]
-    if weeks and (line.get("iso_week") or NO_WEEK) not in weeks:
+    if weeks and week_code(line) not in weeks:
         return False
     machine = filters.get("maquina")
     if machine == "sem" and line["machine"]:
@@ -557,7 +578,8 @@ def group_seal(lines: list[dict], decisions: dict | None) -> str:
 
 
 def members(sector: str, view: str, path: list[str], *, cursor: int = 0, limit: int = 200, q: str | None = None,
-            filters: dict | None = None, data: dict | None = None, decisions: dict | None = None, learned: dict | None = None) -> dict:
+            filters: dict | None = None, data: dict | None = None, decisions: dict | None = None, learned: dict | None = None,
+            checked: dict | None = None) -> dict:
     """Membros exatos de um grupo, com o total integral e todas as chaves.
 
     `keys` traz sempre todas as chaves do grupo (para «selecionar todos» nunca ficar limitado à página);
@@ -580,9 +602,10 @@ def members(sector: str, view: str, path: list[str], *, cursor: int = 0, limit: 
     except (TypeError, ValueError):
         raise planning.PlanningError("Página inválida.") from None
     visible = {x["key"] for x in universe if matches(x, filters or {}, decisions)} if filters else None
-    from .machine_learning import suggest
+    from .machine_learning import for_line
+    # `checked`: preferência já filtrada pela ficha técnica (machine_learning.technical, PROP-2).
     items = [{**member_view(x, decisions), "visible": visible is None or x["key"] in visible,
-              "suggested": None if x["machine"] else suggest(learned, x.get("sku_family"), x.get("profile"))}
+              "suggested": None if x["machine"] else for_line(learned, checked, x)}
              for x in shown[cursor:cursor + limit]]
     statuses = [planning_status.classify(effective(x, decisions), x["machine"]) for x in universe]
     return {
@@ -645,11 +668,11 @@ def weeks(sector: str, *, data: dict | None = None) -> list[dict]:
     data = data or current(sector)
     found = defaultdict(lambda: {"lines": 0, "metres": 0.0})
     for x in data["lines"]:
-        w = found[x.get("iso_week") or NO_WEEK]
+        w = found[week_code(x)]
         w["lines"] += 1
         w["metres"] += x["metres"]
     result = []
-    for code in sorted(k for k in found if k != NO_WEEK):
+    for code in sorted(k for k in found if k not in (NO_WEEK, PARKED_WEEK)):
         year, week = int(code[:4]), int(code[6:])
         start = date.fromisocalendar(year, week, 1)
         end = start + timedelta(days=6)
@@ -659,7 +682,16 @@ def weeks(sector: str, *, data: dict | None = None) -> list[dict]:
     if NO_WEEK in found:
         result.append({"code": NO_WEEK, "year": None, "week": None, "start": None, "end": None, "label": "Sem semana definida",
                        "lines": found[NO_WEEK]["lines"], "metres": round(found[NO_WEEK]["metres"], 1)})
+    if PARKED_WEEK in found:
+        result.append({"code": PARKED_WEEK, "year": None, "week": None, "start": None, "end": None,
+                       "label": WINDOWS["estacionada"], "lines": found[PARKED_WEEK]["lines"],
+                       "metres": round(found[PARKED_WEEK]["metres"], 1)})
     return result
+
+
+def week_code(line: dict) -> str:
+    """Código da semana do filtro: a semana ISO do prazo, «estacionada» ou «sem»."""
+    return line.get("iso_week") or (PARKED_WEEK if line.get("parked") else NO_WEEK)
 
 
 def families(sector: str, *, data: dict | None = None) -> list[dict]:

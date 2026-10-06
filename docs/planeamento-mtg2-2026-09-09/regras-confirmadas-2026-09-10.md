@@ -23,7 +23,9 @@ Como decisão técnica proposta, o incremento é aplicado quando o registo é va
 |---|---|---|
 | `Data Corte` | Data prevista de corte | Referência do planeamento atual; origem humana provável, ainda não confirmada |
 | `Picking` | Semana em que o setor seguinte demanda a obra/material pronto | Orientar a necessidade de entrega da MTG2 ao setor seguinte |
-| `Data Cpis` | Data fim prevista para a Produção entregar a obra no último setor | Avaliar o impacto futuro nos restantes setores e no compromisso final de produção |
+| `Data Cpis` | Data de entrega ao cliente no CPIS (`dataentregadl`) — corrigido e confirmado pelo Luís a 06/10/2026 | Avaliar o compromisso de entrega da obra |
+
+> Nota de 06/10/2026 (dados): no Excel dos perfis, `Data Cpis` (coluna K) é igual ao campo CPIS `dataentregadl` (data de entrega) em 7 590 de 7 762 linhas e ao `datafimprevdp` (fim previsto da Produção) só em 2 686. A app mostra-a como «Data de entrega». Confirmado pelo Luís a 06/10/2026: é a data de entrega ao cliente.
 
 Não se converte `Data Cpis` diretamente no prazo de corte nem se aplica uma antecedência fixa presumida. Para calendarizar o Picking, falta definir o ano e o dia limite dentro da semana. Também falta acordar o comportamento quando Picking e Data Corte não estão alinhados.
 

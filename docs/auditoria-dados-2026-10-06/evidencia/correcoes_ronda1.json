@@ -1,0 +1,431 @@
+[
+ {
+  "group": "G1-saldos",
+  "fixed": [
+   {
+    "id": "A4-01 / A2-F2 / A6-3 / A5-F3 (e A4-02 em perfis)",
+    "files": [
+     "/home/luis/projects/planeamento/app/planning_calculations.py"
+    ],
+    "test": "tests/test_planning_production_source_policy.py::test_blank_excel_counter_counts_zero_when_the_sheet_confirms_the_full_balance (cantoneiras e perfis; falha com o código antigo)",
+    "summary_pt": "Nova função excel_counter() usada em calculate(): quando a célula 'Maq.' (cantoneiras) ou 'Ser.' (perfis) está vazia, conta como 0 peças feitas, mas só se a própria folha o confirmar ('Qtd falta'/'Qtd em Falta' igual à quantidade). Se a coluna faltar, se tiver texto inválido ou se a «falta» for diferente, o saldo continua desconhecido. É a regra do Excel e da vista kanban_plan_lines (qtd_minus_maq_blank_zero). Nos dados reais, todas as linhas ativas com contador vazio cumprem a condição (1 237 em perfis e 17 885 em cantoneiras). Com isto o saldo base deixa de depender da camada de pesquisa e os campos derivados (metros, barras, peso, quantidade a planear, horas) saem logo do cálculo RAW.",
+    "numbers_before_after": "Cantoneiras: 2 511 linhas ativas (59 OF) passam de saldo desconhecido a saldo conhecido: +58 723 peças e +105 621,1 m. Carteira MTG3: 351 521,8 m antes, cerca de 457 142,9 m depois. Perfis: as 245 linhas com remaining NULL passam a ter remaining = Q, com origem 'Excel provisório' em vez de 'Saldo da macro provisório · Qtd em Falta'. Derivados em falta com saldo conhecido: 948 linhas em perfis e 15 256 em cantoneiras, preenchidos pela próxima projeção. Tudo isto só aparece depois da reprojeção, que é forçada pela subida do contrato."
+   },
+   {
+    "id": "A6-1 / A4-04 / A5-F2 / A2-F3",
+    "files": [
+     "/home/luis/projects/planeamento/app/gantt/research.py",
+     "/home/luis/projects/planeamento/app/sector/occurrences.py"
+    ],
+    "test": "tests/test_integrated_gantt.py::test_newer_excel_counter_keeps_the_raw_balance_over_the_research_snapshot e ::test_gantt_and_load_use_the_newer_excel_balance (caso OF256804 ZG-4001; ambos falham com o código antigo)",
+    "summary_pt": "Nova função excel_counters_changed(area, raw_pesquisa, raw_atual), que compara o contador (Ser./Maq.) e a coluna de falta entre o retrato da pesquisa (29/09) e o Excel atual (02/10). Se forem diferentes, houve produção registada depois do retrato e fica o saldo RAW. Aplica-se em dois sítios: (1) em overlay_rows, usado pela projeção e pela Carteira; (2) em application_balances, usado pela Carga e pelo Gantt, quando a fonte RAW não traz v2_evidence. As linhas com OCR validado continuam a ser tratadas antes, como até agora. Para a Carga ver os contadores, acrescentei 'Ser.', 'Qtd em Falta', 'Maq.' e 'Qtd falta' ao detalhe reduzido (RAW_FIELDS). Não mexi em scope.matches_current: é a função que liga as linhas à pesquisa, e mudá-la desligava também as operações seguintes. A comparação dos contadores fica só na decisão sobre o saldo.",
+    "numbers_before_after": "Perfis: 7 linhas, saldo total de 179 para 95 peças (−84 peças, −112,1 m). Exemplos: OF265549 7246 passa de 38 para 5, OF256804 748 de 8 para 1, OF256804 749 de 52 para 27. Cantoneiras: 4 linhas, −21 peças (−76,2 m), por exemplo OF262665 35544 de 80 para 71. A auditoria estimava cerca de −58,3 h na Carga de perfis (semana 41). Só aparece depois da reprojeção, porque as gerações publicadas guardam o saldo antigo com v2_evidence."
+   },
+   {
+    "id": "A5-F1",
+    "files": [
+     "/home/luis/projects/planeamento/app/gantt/research.py"
+    ],
+    "test": "tests/test_integrated_gantt.py::test_research_balance_recomputes_the_fields_that_depend_on_it (falha com o código antigo)",
+    "summary_pt": "Quando overlay_rows muda o saldo, a nova função _rederive() refaz remaining_m, section_pending, bars, weight e quantity_to_plan (esta só se não houver valor manual), com as mesmas fórmulas de calculate e as regras atualizadas. Depois da correção A4-01 este caminho quase não é usado, porque o saldo RAW já coincide com o da pesquisa. Fica como proteção.",
+    "numbers_before_after": "Com o código antigo havia 954 linhas em perfis e 15 256 em cantoneiras com saldo mas sem metros, barras nem quantidade a planear. Depois da reprojeção ficam preenchidas, pela correção A4-01 e por esta."
+   },
+   {
+    "id": "A8-1 / A7-5",
+    "files": [
+     "/home/luis/projects/planeamento/app/sector/scope.py"
+    ],
+    "test": "tests/test_integrated_gantt.py::test_application_only_line_keeps_the_portfolio_provisional_balance (falha com o código antigo)",
+    "summary_pt": "Em local_rows, quando select_balance não consegue saldo, usa-se o planning_remaining que a projeção já escolheu para a operação principal (por exemplo, 'Qtd em Falta'). O select_balance falhava porque o detalhe reduzido das ocorrências não traz 'original'. Assim a Carga e o Gantt passam a ter o mesmo saldo provisório da Carteira. Este efeito vê-se logo após o reinício, sem precisar de reprojeção.",
+    "numbers_before_after": "Medido só em leitura com occurrences.build, comparando o código antigo com o novo. Carga MTG2, operações principais com saldo conhecido: de 989 para 1 234 (+245). Peças: de 80 883 para 84 599 (+3 716). Metros: de 72 485,7 para 75 784,1 (+3 298,4). Horas: de 1 800,1 para 1 878,2 (+78,1 h); as restantes ainda ficam sem horas por causa dos códigos das máquinas (A5-F4, outro grupo). Operações sem horas: de 646 para 571. MTG3 sem alterações até à reprojeção."
+   },
+   {
+    "id": "A4-03",
+    "files": [
+     "/home/luis/projects/planeamento/app/web/static/carteira2.js"
+    ],
+    "test": "node --check (sintaxe). Não consegui correr o teste de browser: falta o Chromium 1194 em ~/.cache/ms-playwright.",
+    "summary_pt": "Na Carteira, os metros dos grupos, do subtotal e do resumo levam agora um « *» com a dica «N linha(s) com saldo por confirmar (não contam)», como já se fazia no peso. Usa campos que o Python atual já devolve (unknown_balances e metres_unknown). Mantive metres=0.0 no Python, porque há 46 sítios que somam esse campo e o JS conta com um número; mudar para None era arriscado com os serviços a correr. O ficheiro JS é servido diretamente, por isso a alteração já está ativa e é compatível com o Python em execução. A maior parte do efeito (as 2 511 linhas) desaparece com a correção A4-01.",
+    "numbers_before_after": "Antes: 2 511 linhas MTG3 contavam como 0 m sem aviso. Depois da reprojeção ficam cerca de 0 linhas com saldo desconhecido; se aparecer alguma, fica assinalada com o asterisco."
+   }
+  ],
+  "not_fixed": [
+   {
+    "id": "A4-08",
+    "reason_pt": "É um problema do próprio Excel: há 5 linhas fechadas com 'Qtd falta' desatualizada. Não afeta as linhas ativas e a auditoria não pede ação na app. Com a regra nova, essas linhas (contador preenchido) não mudam."
+   },
+   {
+    "id": "C4-06 (relacionado: QTD vs QTD [un,] em perfis)",
+    "reason_pt": "Fica fora deste grupo. É por causa disto que a regra do contador vazio exige 'falta = quantidade': quando QTD e QTD [un,] diferem, o saldo continua desconhecido em vez de se inventar um valor. Hoje nenhuma linha ativa está nesse caso."
+   },
+   {
+    "id": "A6-2 / A13-* (pesquisa parada desde 29/09)",
+    "reason_pt": "É um problema da origem e da sincronização da pesquisa, não deste código. Com as correções a app deixa de depender dela para o saldo base, e o saldo RAW ganha quando houve produção depois do retrato."
+   },
+   {
+    "id": "Gerações já publicadas",
+    "reason_pt": "Não escrevi na base de produção. Os números novos das cantoneiras e as 7+4 linhas só aparecem depois de uma nova projeção completa. Subi os contratos (o de cálculo e o do saldo da pesquisa) para a próxima ronda do worker refazer tudo depois do reinício. Também não corri a projeção em leitura (build_rows completo): os números de MTG3 são calculados a partir das linhas ativas e da regra nova."
+   },
+   {
+    "id": "Nota de execução",
+    "reason_pt": "Num passo intermédio, app/gantt/research.py ficou alguns segundos com um erro de indentação no disco, porque o editor gravou antes de eu corrigir. Corrigi logo e confirmei a sintaxe com ast.parse. A partir daí todas as edições foram atómicas: escritas num ficheiro temporário, verificadas e só depois trocadas com os.replace. Se algum processo tiver importado research.py nesses segundos, o pedido falhou uma vez e volta a funcionar no seguinte (o módulo não fica em cache com erro)."
+   }
+  ],
+  "tests_run": "Corri .venv/bin/python -m pytest -q -p no:cacheprovider sobre: tests/test_planning_production_source_policy.py, test_planning_integral_calculations.py, test_integrated_gantt.py, test_sector_portfolio.py, test_sector_carteira.py, test_planning_productivity.py, test_planning_calculation_details.py, test_sector_selection.py, test_sector_gantt_integration.py, test_planning_incremental.py, test_planning_macro_revisions.py, test_planning_original_associations.py, test_planning_description_deadline.py, test_gantt_source_plan.py, test_planning_gantt.py, test_sector_board.py, test_sector_decisions_db.py, test_sector_needs.py, test_sector_references.py, test_sector_shifts.py, test_planning_raw.py e test_raw_workspace.py (bases descartáveis em docker). Passam todos, excluindo os testes de browser. Há duas falhas de ambiente, que não vêm destas mudanças. (1) Os testes de browser falham porque falta o Chromium 1194 em ~/.cache/ms-playwright. (2) Com o .env a pôr MES_PLANNING_V2_ENABLED=1, 19 testes de base de dados falham com «UndefinedTable planning_mtg.gantt_source_heads», porque a base de teste não tem as tabelas da camada v2. Com MES_PLANNING_V2_ENABLED=0 passam todos. Os 6 testes novos falham numa cópia com o código de HEAD e passam com as correções.",
+  "needs_restart": [
+   "kanban-raw-worker (para carregar o novo planning_calculations e o novo research e reprojetar perfis e cantoneiras: os contratos subiram, por isso a próxima ronda faz uma projeção completa)",
+   "kanban-planning (Carteira, Carga e Gantt: scope.local_rows, occurrences.RAW_FIELDS, research.overlay_rows/application_balances)",
+   "carteira2.js não precisa de reinício (servido diretamente e já ativo)"
+  ],
+  "contract_bumps": [
+   "app/planning_calculations.py CONTRACT: planning-integral-20260925-v7 -> planning-integral-20260925-v8 (contador Excel vazio = 0 quando a folha o confirma)",
+   "app/gantt/research.py BALANCE_CONTRACT: research-balance-v2 -> research-balance-v3 (contador Excel mais recente ganha; derivados refeitos)"
+  ],
+  "reviewed": true
+ },
+ {
+  "group": "G2-producao",
+  "fixed": [
+   {
+    "id": "A12-F1",
+    "files": [
+     "/home/luis/projects/planeamento/app/planning_production.py",
+     "/home/luis/projects/planeamento/tests/test_planning_integral_calculations.py"
+    ],
+    "test": "tests/test_planning_integral_calculations.py::test_perfis_new_template_machines_count_as_cut (falhava antes da correção, passa agora)",
+    "summary_pt": "Em operation_for_record (perfis, kanban-mes-mtg2), acrescentei 'disco' e 'fita' à lista de palavras que contam como corte, com um comentário: os modelos de 22/09 (TPL290 'DISCO PAV1' e TPL292 'FITA PAV1') são as mesmas serras de disco e de fita. Em perfis, todas as máquinas atuais do MES são corte ou abocardar, por isso estas palavras não apanham mais nada por engano. Não foi preciso escrever aliases na base. Um nome desconhecido continua a dar 'operacao_por_confirmar'.",
+    "numbers_before_after": "Medido com dados reais, só leitura (build_rows + overlay de pesquisa, perfis, código antigo contra o novo). Mudam 115 linhas, 46 delas ativas, em 27 OF. Saldo das 46 ativas: de 2 091 para 863 peças. 38 linhas passam a 0. Origem: antes 41 'Excel provisório' e 5 indisponíveis; depois as 46 ficam 'OCR validado'. As 5 que estavam sem saldo passam a ter saldo real; por exemplo, OF265549/6133V016 fica com 23. Máquinas: Serrote Disco pav 1 (25 linhas), Serrote Fita Thomas IS639 Pav.1 (18), MEBA Pav 3 (2). Exemplo: OF265763/0641S008, Q=50, saldo de 50 para 0. 1 linha fica com OCR acima de Q; é um caso das linhas repetidas na folha (A12-F5), não deste erro."
+   },
+   {
+    "id": "A12-F3",
+    "files": [
+     "/home/luis/projects/planeamento/app/planning_production.py",
+     "/home/luis/projects/planeamento/app/raw/projection.py",
+     "/home/luis/projects/planeamento/tests/test_planning_integral_calculations.py"
+    ],
+    "test": "tests/test_planning_integral_calculations.py::test_cantoneiras_full_bar_child_with_second_operation_keeps_siblings (falhava antes da correção, passa agora)",
+    "summary_pt": "A regra documentada é por peça: aceita-se a única operação da peça identificada, e uma peça com 1.ª e 2.ª operação precisa de evidência. Passei a aplicá-la a cada filho de um registo com vários filhos. Quando nem todos os filhos têm uma só operação igual, o registo continua 'operacao_por_confirmar', mas ganha o campo novo operation_by_plan_key, com {plan_key: operação} para os filhos de uma só operação. A base fica 'sole_piece_operation_per_child'. Também funciona com 1.ªs operações diferentes, por exemplo 112 e 119 no registo 4268. A função nova record_operation(record, plan_key) é usada em attach_operation_evidence: na escolha dos registos, nos ocr_records e nos motivos. Em app/raw/projection.py, os eventos de produção de cada filho levam a operação desse filho, e o registo deixa de contar como pendente quando todos os filhos ficam decididos. Os filhos com 2.ª operação continuam por confirmar, com o motivo 'Registo N…'. Não mudei nenhuma assinatura: só acrescentei uma chave opcional e uma função. O caso em que todos os filhos concordam não muda.",
+    "numbers_before_after": "Medido com dados reais, só leitura (cantoneiras, build_rows + overlay de pesquisa). Mudam 372 linhas, 63 delas ativas, em 5 OF. O saldo das 63 ativas passa de 220 para 0 peças, e a origem passa de 'Excel provisório' para 'OCR validado'. Máquinas: Ficep Rapid 25T (48), Rapid 20T -2 (11), Rapid 20T -1 (4). Exemplo: OF264186/M207107 (op. 112, Q=4), saldo de 4 para 0. As linhas com 2.ª operação, como M207108 (112+111), não mudam."
+   }
+  ],
+  "not_fixed": [
+   {
+    "id": "A12-F3 (parte das linhas com 2.ª operação)",
+    "reason_pt": "Segundo a verificação L3, há mais 58 a 70 linhas ativas com 1.ª e 2.ª operação que também ficam sem a evidência da 1.ª operação. Não mexi nelas porque a regra decidida (PROGRESSO.md:29, correcoes-planeamento-2026-09-20.md) diz que uma peça com várias operações precisa de evidência ou decisão. Para dar a 1.ª operação a essas peças a partir de um registo de barra completa, é preciso uma decisão do Luís, por exemplo: «registo de barra completa numa Ficep = 1.ª operação de todos os filhos». Aviso de risco: os registos 4267 e 4268 da OF264186 sobrepõem-se. Se essa regra for aceite, algumas peças podem ser contadas duas vezes, e o L3 viu 4 linhas com OCR acima de Q."
+   },
+   {
+    "id": "A12-F2",
+    "reason_pt": "É um problema da origem: a mesma imagem foi validada duas vezes (sheet_no 505/506 contra 463/464). Corrigir obriga a anular validações no MES, o que mexe na produção e precisa de decisão humana. A guarda contra image_sha256 repetido fica em app/pg_store.py, do lado do MES. Isso está fora do âmbito deste grupo e não escrevo na base."
+   },
+   {
+    "id": "A12-F4",
+    "reason_pt": "Origem/decisão: as folhas MES de cantoneiras não têm código de operação. A regra «a máquina nunca é prova» está decidida. É preciso acrescentar a operação às folhas, ou o Luís definir uma regra máquina→operação. A correção do A12-F3 resolve só a parte das peças com uma só operação dentro de barras."
+   },
+   {
+    "id": "A12-F5",
+    "reason_pt": "Origem (validação OCR/humana): linhas repetidas na mesma folha. É preciso rever as imagens no MES, a começar por OF265710, OF265256 e OF265358. Não há regra de código segura para eliminar duplicados sem ver a imagem."
+   },
+   {
+    "id": "A12-F6",
+    "reason_pt": "Origem: OF mal lidas pelo OCR. Corrige-se no MES (são 10 registos com OF deduzível) e a validação de order_number fica no repositório kanban-mes."
+   }
+  ],
+  "tests_run": "Testes alvo: test_perfis_new_template_machines_count_as_cut e test_cantoneiras_full_bar_child_with_second_operation_keeps_siblings falhavam antes da correção e passam agora. Também corri, com -k 'not browser', estes ficheiros: test_planning_integral_calculations, test_planning_evidence, test_planning_original_associations, test_planning_original_production, test_planning_production_source_policy, test_planning_ocr_incremental, test_planning_incremental, test_planning_raw, test_planning_original_real_schema, test_free_registration, test_data_integration, test_planning_population, test_planning_original_hours, test_planning_integral_registration, test_raw_workspace e test_planning_actual_hours_audit. Resultado: 199 passaram e 9 falharam. As 9 falhas (2 em test_planning_original_hours por 'Histórico' e 7 em test_raw_workspace) já existiam: falham igual numa cópia do repositório com as versões HEAD de planning_production.py e projection.py, ou seja, sem as minhas alterações. Vêm de outras mudanças por commitar. Os testes de browser falham por falta do Chromium do Playwright em ~/.cache/ms-playwright (ambiente). As medições antes/depois foram só de leitura, com o script /tmp/claude-1000/-home-luis-projects-planeamento/0504eb09-808f-4b62-bc4e-2bf3435e17de/scratchpad/g2/measure.py e cmp.py.",
+  "needs_restart": [
+   "kanban-raw-worker.service (para republicar a RAW de perfis e de cantoneiras com a nova planning_production, que é importada e fica em cache)",
+   "kanban-planning.service (detalhe da OF / planning_hub usa attach_operation_evidence)",
+   "kanban-research-sync.service (se sincroniza a evidência de produção para a camada de pesquisa)"
+  ],
+  "contract_bumps": [],
+  "reviewed": true
+ },
+ {
+  "group": "G3-cpis",
+  "fixed": [
+   {
+    "id": "Revisão 2: status_values em falta no _DETAIL (A8-3)",
+    "files": [
+     "/home/luis/projects/planeamento/app/sector/occurrences.py",
+     "/home/luis/projects/planeamento/tests/test_sector_portfolio.py"
+    ],
+    "test": "tests/test_sector_portfolio.py::test_occurrence_detail_carries_every_cpis_status_to_the_signals",
+    "summary_pt": "Acrescentei 'status_values' (coalesce(c.detail->'status_values','[]'::jsonb), no mesmo padrão de selection_aliases) à projeção _DETAIL das ocorrências, com comentário. Assim, o detail.get(\"status_values\") passado a signals_of deixa de chegar sempre vazio. O resumo anterior passa a ser verdadeiro. Efeito nos ecrãs: nenhum. O sinal estado_cpis das ocorrências não é lido por nenhum consumidor; a Carteira usa portfolio.py. O SQL não foi corrido contra uma base real: o teste de base descartável (test_sector_decisions_db) substitui occurrences.load por um mock, e a leitura de produção, só de leitura, foi bloqueada pelo classificador de permissões. O fragmento repete um padrão que já existe na mesma expressão.",
+    "numbers_before_after": "Sem mudança nos números do Gantt, da Carga e da Carteira."
+   },
+   {
+    "id": "Revisão 1: hard link do planning_hub.js partido (C4-01 desfeito)",
+    "files": [
+     "/home/luis/projects/planeamento/app/web/static/planning_hub.js",
+     "/home/luis/projects/planeamento/tests/test_planning_registry.py"
+    ],
+    "test": "cmp planeamento/app/web/static/planning_hub.js kanban-mes-mtg2/app/web/static/planning_hub.js → IGUAIS",
+    "summary_pt": "Desfiz a minha alteração de texto do C4-01: a linha 34 volta a dizer «peça(s) no plano», e o conteúdo fica byte a byte igual à cópia do MES. Também retirei o teste test_order_list_counts_plan_lines_and_calls_them_lines, que eu tinha acrescentado. FALTA repor o hard link. Tentei `ln -f /home/luis/projects/kanban-mes-mtg2/app/web/static/planning_hub.js /home/luis/projects/planeamento/app/web/static/planning_hub.js`, que só muda a entrada na pasta do planeamento e não altera o conteúdo do MES, mas o classificador de permissões bloqueou o comando. O Luís tem de correr esse comando ou autorizá-lo, e depois confirmar com `stat -c '%i %h'` (inode 5250894 e nlink 2 nos dois). Enquanto não o fizer, os dois ficheiros têm conteúdo igual mas são independentes. A troca de texto «peça(s)» por «linha(s)» (C4-01) fica para depois de o link estar reposto e de haver OK para mudar o JS do MES.",
+    "numbers_before_after": "A lista de Ordens volta ao texto antigo: «N peça(s) no plano», em que N conta linhas e não peças."
+   }
+  ],
+  "not_fixed": [
+   {
+    "id": "C4-01 (texto «peça(s)» → «linha(s)» na lista de Ordens)",
+    "reason_pt": "Desfeito para não deixar o planeamento e o MES divergirem. O ficheiro é partilhado por hard link e mudar o texto mexe no JS do MES em produção. É uma alteração compatível, mas precisa do OK do Luís. Depois de repor o link, basta trocar o texto num dos ficheiros e os dois ficam com ele."
+   },
+   {
+    "id": "Revisão 1: repor o hard link",
+    "reason_pt": "O classificador de permissões bloqueou o `ln -f` (Modify Shared Resources). O conteúdo já está igual. Falta só o Luís correr: ln -f /home/luis/projects/kanban-mes-mtg2/app/web/static/planning_hub.js /home/luis/projects/planeamento/app/web/static/planning_hub.js e confirmar com stat -c %h, que deve dar 2."
+   },
+   {
+    "id": "Revisão 3: «Pronta» tratada como aberta (A3-7)",
+    "reason_pt": "Mantive a alteração, mas o Luís tem de a confirmar. É coerente com a população (planning_population.CPIS_OPEN já põe essas linhas ativas). O significado de «Pronta» continua marcado como por decidir no plano de 28/09 (linha 160). Efeito: as 3 linhas da OF266654 passam à proposta C na Carteira e entram 11 OF de Postes Treliçados em «Sem peças nos planos». Se o Luís decidir que «Pronta» quer dizer terminada, a mudança faz-se num só sítio: portfolio.cpis_open e board."
+   },
+   {
+    "id": "A3-4 / C4-03, A3-5 / C4-04, C4-02, A3-1 / A3-6 / C4-05 / A2-K5",
+    "reason_pt": "Ficam como antes: são decisões registadas ou problemas da origem dos dados. Os motivos estão no relatório anterior."
+   }
+  ],
+  "tests_run": ".venv/bin/python -m pytest -q -p no:cacheprovider tests/test_sector_board.py tests/test_sector_portfolio.py tests/test_sector_carteira.py tests/test_sector_needs.py tests/test_sector_gantt_integration.py tests/test_planning_population.py → 72 passaram. tests/test_sector_decisions_db.py (docker) → 12 passaram. Comparação com cmp: o planning_hub.js do planeamento é igual ao do MES. Não corri tests/test_planning_registry.py nesta volta, porque o comando foi bloqueado pelo classificador; só lhe retirei o teste que eu tinha acrescentado no fim do ficheiro. O ln -f e a leitura só de leitura da base de produção foram bloqueados pelo classificador de permissões.",
+  "needs_restart": [
+   "kanban-planning.service (app/sector/board.py, portfolio.py e occurrences.py só entram ao reiniciar; planning_hub.js já está ao vivo, com o texto antigo reposto)"
+  ],
+  "contract_bumps": [],
+  "review_problems": [
+   "Hard link partido (risco real, viola o critério). /home/luis/projects/planeamento/app/web/static/planning_hub.js estava ligado por hard link a /home/luis/projects/kanban-mes-mtg2/app/web/static/planning_hub.js (inode 5250894, criado a 24/09; é o único número que falta na sequência 5250884-5250900 dos estáticos ligados entre os dois projetos). A edição do G3 (C4-01) às 16:05:50 escreveu um ficheiro novo: o do planeamento passou ao inode 5246816, criado às 16:05:50 (stat %w), e o ctime da cópia do MES mudou nesse mesmo instante, com o nlink a descer de 2 para 1. Os dois ficheiros só diferem na linha 34 («peça(s)» vs «linha(s)»), por isso o MES continua a mostrar o texto antigo e as próximas edições vão divergir sem ninguém dar por isso. Correção sugerida, só com o OK do Luís porque muda o JS do MES em produção (é só texto e compatível): escrever o conteúdo novo por cima do inode do MES (por exemplo `cat planeamento/.../planning_hub.js > kanban-mes-mtg2/.../planning_hub.js`) e depois `ln -f kanban-mes-mtg2/app/web/static/planning_hub.js planeamento/app/web/static/planning_hub.js`. Confirmar no fim com `stat -c %h`, que deve dar 2.",
+   "Pequeno, sem risco: em app/sector/occurrences.py:219 passa-se detail.get(\"status_values\"), mas a projeção _DETAIL (linhas 107-115) não inclui 'status_values', por isso chega sempre None e esta parte não faz nada. O sinal estado_cpis das ocorrências também não é lido por nenhum consumidor (proposal_of só corre na Carteira), por isso Gantt e Carga não mudam. Mas o resumo «occurrences.py passa também os status_values» engana. Ou se acrescenta 'status_values' ao _DETAIL ou se reverte esta linha.",
+   "Decisão a assinalar, não é bloqueio de compatibilidade: tratar «Pronta» como aberta na Carteira e em «Sem peças nos planos» (A3-7) muda a proposta (3 linhas da OF266654 passam à C, +11 OF na lista). O significado de «Pronta» está registado como por decidir no plano de 28/09 (linha 160). É coerente com a população (CPIS_OPEN), mas o Luís deve confirmar.",
+   "Verificado sem problemas: as assinaturas só ganharam argumentos opcionais (signals_of(..., status_values=None), nova cpis_open, boxes_from_* com kwargs opcionais). Nada escreve na base de dados (not_in_plans usa planning.connect(readonly=True)). Os ficheiros partilhados com o MES não importam módulos novos (portfolio importa planning_population, que já existia, e app/sector não é partilhado). As mudanças de texto no JS funcionam com a resposta antiga da API. Testes alvo: 23 passaram (test_sector_board, test_sector_portfolio, test_order_list_counts_plan_lines_and_calls_them_lines). board.py, portfolio.py e occurrences.py têm nlink 1 e não têm cópia no MES. Precisam de reiniciar o kanban-planning.service."
+  ],
+  "retried": true
+ },
+ {
+  "group": "G4-prazos",
+  "fixed": [
+   {
+    "id": "A9-1",
+    "files": [
+     "/home/luis/projects/planeamento/app/sector/priority.py",
+     "/home/luis/projects/planeamento/app/gantt/integrated.py",
+     "/home/luis/projects/planeamento/app/sector/occurrences.py"
+    ],
+    "test": "tests/test_integrated_gantt.py::test_gantt_uses_the_current_picking_sheet_on_research_matched_perfis_lines (base descartável: a pesquisa não tem semana, a folha Picking atual diz W39 e o Gantt tem de dar Picking a 21/09 e não a Data Corte de 09/10; confirmei que falha com a lógica antiga) + tests/test_sector_needs.py::test_engine_uses_the_current_picking_of_the_line_like_the_portfolio (sem base de dados)",
+    "summary_pt": "Nova função priority.engine_values(row, values). O Picking vem dos valores atuais da linha, como na Carteira: semana e ano da folha Picking importada, decisão manual e conflito. A semana da camada de pesquisa só conta quando a linha não tem valores de Picking atuais. O ano continua a ser deduzido por planning_dates.infer_iso_year, com a Data Corte como referência. O Gantt técnico (integrated.capture) passa a ler os values_json das linhas escolhidas e usa esta função. O ano escolhido no cenário (picking_year_by_of) continua a prevalecer. A Carga (occurrences) usa a mesma função: antes dava prioridade à pesquisa e agora dá aos valores atuais. Hoje isto não muda nada na Carga, porque nas 47 linhas que têm semana nas duas origens a semana é igual. O Gantt passa também a respeitar picking_conflict.",
+    "numbers_before_after": "Dados reais, só leitura, perfis com 1 279 linhas ativas. Antes: 159 operações principais em 48 OF tinham no Gantt o prazo pela Data Corte, quando a Carteira mostra Picking. Em 142 delas o prazo do Gantt ficava mais tarde, até +32 dias. Depois: as 159 passam a Picking e ficam iguais à Carteira. Carga: 0 alterações. Cantoneiras: 0 alterações (a regra MTG3 é só pela Data Corte). Barras visíveis hoje: nenhuma muda, porque nenhuma destas 159 está em «Planear»."
+   },
+   {
+    "id": "A9-4",
+    "files": [
+     "/home/luis/projects/planeamento/app/sector/priority.py",
+     "/home/luis/projects/planeamento/app/gantt/integrated.py"
+    ],
+    "test": "tests/test_sector_needs.py::test_chosen_week_feeds_the_mtg2_policy_after_picking",
+    "summary_pt": "Nova função priority.chosen_period_end(values). Lê ano e semana de planeamento com a mesma regra da Tabela e do Gantt antigo (planning_dates.period + period_deadline). Só vale uma «Decisão local» válida: uma semana sem ano, ou uma data prevista que não coincide com a semana, não conta. milestones_from_values usa-a quando o chamador não passa planned_period_end. Assim o passo «Semana escolhida» da política MTG2 funciona na Carteira (portfolio), na Carga (occurrences) e no Gantt (integrated), que agora recebe os valores atuais da linha. A ordem é: Picking, depois Semana escolhida, depois Galvanização e por fim Data Corte. A MTG3 não muda. Não mudei a assinatura de nenhuma função.",
+    "numbers_before_after": "0 linhas com planned_week/planned_year hoje (perfis e cantoneiras), logo 0 prazos mudam. A correção fica pronta para quando alguém escrever uma «Semana de planeamento»."
+   }
+  ],
+  "not_fixed": [
+   {
+    "id": "A9-2 / C2-3",
+    "reason_pt": "Mesmo tema (prazos), mas outro código: planning_dates.period e raw/capacity_revision, ambos partilhados com o MES e com a Disponibilidade. Mudar o período MTG3 para a Data Corte e soltar a confirmação de ano do snapshot altera os baldes de capacidade de 22 614 peças. É uma decisão de regra e mexe em ficheiros partilhados, por isso deixei para quem trata a capacidade, com o OK do Luís."
+   },
+   {
+    "id": "A9-3 / A2-K9 / C2-4",
+    "reason_pt": "É um problema de dados na origem: a folha Picking tem 550 de 784 linhas com semana 0. A app trata o 0 como «sem semana», como ficou decidido. Não há nada a corrigir no código."
+   },
+   {
+    "id": "tests/test_planning_gantt.py::test_gantt_scenario_revision_and_idempotency_on_disposable_database",
+    "reason_pt": "Falha por uma razão que não tem a ver com esta correção: a tabela planning_mtg.gantt_source_heads não existe na base de teste, e o erro vem de projection.rebuild → research.head. Não mexi nisso. Os 2 testes de browser falham porque o Chromium da versão 1194 não está instalado."
+   }
+  ],
+  "tests_run": ".venv/bin/python -m pytest -q -p no:cacheprovider tests/test_planning_operation_hours.py tests/test_planning_gantt.py tests/test_sector_portfolio.py tests/test_sector_needs.py tests/test_sector_board.py tests/test_sector_gantt_integration.py tests/test_integrated_gantt.py tests/test_sector_decisions_db.py tests/test_sector_carteira.py tests/test_gantt_source_plan.py → 150 passaram, 3 falharam. As 3 falhas não vêm desta correção: 2 testes de browser sem o Chromium 1194 e 1 teste do Gantt antigo sem a tabela gantt_source_heads na base de teste. Corri também uma verificação à parte, no scratchpad, que confirma que o novo teste do Gantt falha com a lógica antiga. As medições com dados reais foram só de leitura e estão em scratchpad/g4/measure.py e both.py.",
+  "needs_restart": [
+   "kanban-planning.service (serviço web do planeamento: carrega app/sector/priority.py, app/sector/occurrences.py e app/gantt/integrated.py; a cache da Carga em memória também se refaz no reinício)"
+  ],
+  "contract_bumps": [],
+  "reviewed": true
+ },
+ {
+  "group": "G5-carga",
+  "fixed": [
+   {
+    "id": "A7-3",
+    "files": [
+     "/home/luis/projects/planeamento/app/sector/load.py",
+     "/home/luis/projects/planeamento/app/web/static/setor_carga.js"
+    ],
+    "test": "tests/test_sector_load.py::test_sector_machine_without_calendar_but_with_work_shows_with_zero_capacity",
+    "summary_pt": "Na Carga, uma máquina do setor sem calendário que tem trabalho (mesmo sem prazo nem horas) passa a aparecer como linha, com capacidade 0 e «Sem calendário». Antes, a regra só olhava para a carga nas 13 semanas e para o calendário. Uma máquina sem trabalho e sem calendário continua escondida. Ao lado do nome, «Sem prazo» diz agora também quantas operações não têm horas (o JS lê um campo que o Python já envia).",
+    "numbers_before_after": "Linhas na vista Semanas: perfis 5 -> 6 (Abocardar, 20 operações sem horas); cantoneiras 7 -> 10 (Fresadora 525, Plasma manual 3878, Prensa 770 operações sem horas)."
+   },
+   {
+    "id": "C5-1",
+    "files": [
+     "/home/luis/projects/planeamento/app/sector/capacity.py"
+    ],
+    "test": "tests/test_capacity_study.py::test_weeks_of_load_use_a_complete_week_not_what_is_left_of_the_current_one",
+    "summary_pt": "As semanas de carga e a capacidade por semana do painel Máquinas passam a usar uma semana completa: a mediana das semanas seguintes com capacidade (nova função _typical_week). Antes usavam a semana atual, com feriados e só as horas que ainda faltam. A célula da semana atual continua a mostrar só as horas que faltam. As propostas de equilíbrio (workbench.rebalance e after_rebalance_weeks) usam este mesmo valor, por isso também ficam corrigidas.",
+    "numbers_before_after": "Semanas de carga (06/10): Peddi 8 40,0 -> 24,0; Serrote Disco pav 1 28,9 -> 17,3; MEBA 17,6 -> 10,5; Vanguard 12,8 -> 9,4; Fita pav.1 2,5 -> 1,7; Rapid 25T 14,9 -> 10,4; Rapid 20T-1 14,5 -> 10,2; Rapid 20T-2 14,6 -> 10,2; XP T4 13,5 -> 9,4; XP T6 8,7 -> 6,4; Peddi 6 6,9 -> 4,1; Doall 3,6 -> 2,2. Capacidade por semana 22,5/52,5/82,5 h -> 37,5/75/112,5 h."
+   },
+   {
+    "id": "C5-3",
+    "files": [
+     "/home/luis/projects/planeamento/app/sector/load.py"
+    ],
+    "test": "tests/test_sector_load.py::test_late_is_a_deadline_before_today_like_the_carteira_and_the_panel",
+    "summary_pt": "«Atrasado» passa a ter uma só definição: prazo antes de hoje. É a regra da Carteira, das ocorrências e do painel Máquinas. load.classify recebe um argumento opcional today; quem o chama passa a dar-lho. O trabalho com prazo entre segunda e ontem continua na célula da semana atual, mas agora conta como atrasado.",
+    "numbers_before_after": "Atrasado na Carga (perfis): Vanguard 645,3 -> 720,0 h; MEBA 188,0 -> 193,4 h; Disco pav 1 559,4 -> 560,5 h. Passam a bater com o painel Máquinas. Nas outras máquinas não muda nada."
+   },
+   {
+    "id": "A8-5",
+    "files": [
+     "/home/luis/projects/planeamento/app/sector/planning_status.py",
+     "/home/luis/projects/planeamento/app/sector/portfolio_kpis.py",
+     "/home/luis/projects/planeamento/app/sector/load.py",
+     "/home/luis/projects/planeamento/app/web/static/carteira2.js"
+    ],
+    "test": "tests/test_sector_load.py::test_excluded_line_is_outside_the_three_states e ::test_excluded_line_does_not_count_in_the_load",
+    "summary_pt": "Uma linha excluída (decisão antiga «Excluir», que o backend mantém) fica fora dos três estados: planning_status.classify devolve os três a falso. O Resumo dos KPI salta-a (antes um next() sem valor por omissão contava-a como nesting). A Carga tira as ocorrências dessa linha, como já fazia a lista vermelha. Na Carteira, a linha mostra «Excluída» em vez de cair em «Sem máquina».",
+    "numbers_before_after": "0 -> 0: hoje não há nenhuma decisão 'excluded' gravada, por isso nenhum número no ecrã muda. A correção só conta numa exclusão futura."
+   },
+   {
+    "id": "A8-2",
+    "files": [
+     "/home/luis/projects/planeamento/app/sector/board.py",
+     "/home/luis/projects/planeamento/app/web/static/plano.js"
+    ],
+    "test": "tests/test_sector_board.py::test_past_forecast_is_late_and_blocked_operation_is_listed_with_its_reason",
+    "summary_pt": "(1) Uma caixa do quadro fica atrasada também quando o prazo já passou (antes de hoje). Antes, uma previsão da Tabela com data passada nunca ficava atrasada, porque o prazo era o próprio dia da caixa. (2) Nova função forecast_only: as operações que a proposta automática não coloca, mas que têm previsão da Tabela, entram em source.missing com forecast=true, o dia da previsão e o motivo do bloqueio. O plano.js diz-as à parte: «ficam fora da proposta automática (só previsão da Tabela)». Os argumentos today são opcionais em _merge, boxes_from_source_plan e boxes_from_proposal. Não mexi na regra de duração ou compatibilidade do Gantt (ver não corrigidos).",
+    "numbers_before_after": "Perfis: caixas atrasadas 0 -> 2 de 3 (OF265771, prevista para 08/09; OF265941, para 05/10). Operações listadas sem hora 0 -> 6, todas com «Duração admissível por confirmar.». Cantoneiras: nenhuma previsão fica só como previsão; continuam as 14 operações em falta e as caixas atrasadas que já existiam."
+   }
+  ],
+  "not_fixed": [
+   {
+    "id": "A8-2 (parte da duração)",
+    "reason_pt": "Não passei a duração estimada para o snapshot do Gantt. Mesmo com a duração, a operação continuaria bloqueada, porque a única máquina candidata (MEBA) é 'conditional' e app/gantt/integrated.py só aceita 'admissible', salvo escolha do planeador. Mudar isso é uma regra nova do Gantt, para decidir com o Luís: deve a Máquina da Tabela contar como escolha do planeador? A verificação L3 também recomendou a correção mais pequena, que foi a que apliquei. Também não mudei de dia as previsões que caem num dia sem capacidade (OF265941 a 05/10, feriado)."
+   },
+   {
+    "id": "C5-3 (rótulos)",
+    "reason_pt": "Escolhi um critério único (prazo antes de hoje), em vez de dar rótulos diferentes aos dois ecrãs. Por isso não mexi em capacity.py nem nos textos."
+   }
+  ],
+  "tests_run": ".venv/bin/python -m pytest -q -p no:cacheprovider tests/test_sector_board.py tests/test_capacity_study.py tests/test_sector_load.py tests/test_sector_needs.py tests/test_sector_portfolio.py tests/test_sector_carteira.py tests/test_sector_selection.py tests/test_sector_shifts.py tests/test_sector_gantt_integration.py tests/test_sector_decisions_db.py -> 129 passed. node --check em plano.js, carteira2.js e setor_carga.js: OK. Medições antes/depois só de leitura com dados reais: scripts em /tmp/claude-1000/-home-luis-projects-planeamento/0504eb09-808f-4b62-bc4e-2bf3435e17de/scratchpad/g5/m1.py (Carga), m2.py (semanas de carga) e m3.py (quadro). Ficheiro de teste novo: /home/luis/projects/planeamento/tests/test_sector_load.py; acrescentei testes a tests/test_sector_board.py e tests/test_capacity_study.py.",
+  "needs_restart": [
+   "kanban-planning.service (uvicorn app.web.planning_app, porta 8113): é preciso reiniciar para as alterações em app/sector/load.py, capacity.py, board.py, planning_status.py e portfolio_kpis.py entrarem. Os JS (plano.js, carteira2.js, setor_carga.js) já estão a ser servidos e funcionam com o Python em execução: usam campos que já existem ou que, enquanto faltarem, os deixam com o comportamento antigo."
+  ],
+  "contract_bumps": [],
+  "reviewed": true
+ },
+ {
+  "group": "G6-capacidade-raw",
+  "fixed": [
+   {
+    "id": "C1-1 / A9-2 / C2-3",
+    "files": [
+     "/home/luis/projects/planeamento/app/planning_dates.py",
+     "/home/luis/projects/planeamento/app/raw/capacity_revision.py",
+     "/home/luis/projects/planeamento/app/raw/productivity.py",
+     "/home/luis/projects/planeamento/app/planning_calculations.py",
+     "/home/luis/projects/planeamento/tests/test_capacity_revision.py"
+    ],
+    "test": "tests/test_capacity_revision.py: test_period_mtg3_uses_cut_date_and_keeps_scoped_confirmation_only_without_it (substitui test_period_requires_scoped_confirmation_and_uses_cut_date_only_for_perfis_cut, que fixava a regra de 22/09; o comentário explica a decisão do Luís de 01/10: prazo MTG3 = Data Corte) e test_mtg3_table_week_and_capacity_occupancy_follow_cut_date. Os dois falhavam antes da correção.",
+    "summary_pt": "Na MTG3, a semana e o ano passam a vir da Data Corte, como na Carga e na Carteira. A ordem fica: semana escolhida localmente, depois Data prevista, depois Data Corte. A semana W importada, com o ano confirmado à mão por versão, só fica para as linhas sem Data Corte. As operações seguintes não herdam a Data Corte (regra de 01/10: guardam o seu próprio marco). Para não partir os serviços que carregam módulos a pedido, não acrescentei nenhum argumento entre módulos. planning_dates.period aceita a Data Corte em MTG3 quando ela vem nos valores. capacity_revision.period (com o argumento opcional primary=True, interno) e productivity tiram-na nas operações seguintes. A Tabela (Semana prevista / Ano previsto) também passa a usar a Data Corte. Por isso subi os dois contratos. A data da taxa histórica das linhas MTG3 passa a ser a segunda-feira da semana da Data Corte (com teto em hoje), como já acontece nos Perfis.",
+    "numbers_before_after": "Leitura só de dados reais (gerações 5682/5686/5687 e depois 5798/5802/5803; dá o mesmo). Peças MTG3 em capacity_items com ano: antes 0 de 22 614, depois 12 143 (pela Data Corte). Ficam 9 539 'Por calendarizar' (sem Data Corte nem W, ou operações seguintes) e 932 com a W sem ano (sem Data Corte). Tabela MTG3, linhas ativas com Ano previsto: antes 0 de 17 902, depois 12 143; 5 721 por calendarizar e 38 com a W sem ano. Estimativa por balde, com as horas guardadas antes do recálculo: XP T4 S44 105,4 h / 75 h = 141 % (Carga: 144 %); Rapid 20T-1 S43 86 h / 75 h = 115 % (Carga: 152 %); Peddi 8 S45 166 %; XP T6 S42 9 %, S48 32 %, S49 36 %. Antes era 0 % em todos. Os baldes onde faltam horas a algumas linhas mostram 'por calcular', e não 0 %. Atenção: a maior parte da carga destas máquinas tem a Data Corte já passada (por exemplo, Rapid 20T-1: 833 de 968 linhas antes da S41; 20T-2: 729 de 729; Peddi 8: 753 de 855). Essa carga vai para os baldes das semanas passadas. Na Carga, o atrasado conta na semana atual. Ver not_fixed."
+   },
+   {
+    "id": "C2-6",
+    "files": [
+     "/home/luis/projects/planeamento/app/raw/workbooks.py",
+     "/home/luis/projects/planeamento/app/web/static/capacity.js",
+     "/home/luis/projects/planeamento/tests/test_capacity_revision.py"
+    ],
+    "test": "tests/test_capacity_revision.py::test_workbook_evidence_keeps_excel_dates_readable (cria um xlsx com uma célula em formato de data, um número simples e um decimal; falhava antes)",
+    "summary_pt": "workbooks.extract passa a ler os formatos de data do styles.xml (os formatos internos 14–22 e 45–47, e os formatos próprios com d/m/y/h/s). Nas células com formato de data junta 'date' em ISO ao lado do 'value', que continua igual ao do Excel (número de série). Na evidência do Excel, a coluna 'Valor guardado' (capacity.js) mostra dd/mm/aaaa quando há 'date'. Testado nos Excel reais: encontra exatamente as 1 040 células da auditoria (Plan_semanal G 72, Analise maq D 967, CapacidadeMáquinas E1 1), sem falsos positivos. Exemplo: G6 46231 → 2026-07-28. A evidência já guardada só se refaz com a próxima versão importada do Excel, porque é capturada uma vez por versão.",
+    "numbers_before_after": "1 040 células de data: antes número de série (46 231), depois data (28/07/2026), a partir da próxima importação de cada Excel."
+   }
+  ],
+  "not_fixed": [
+   {
+    "id": "A9-2 (confirmação de ano presa à versão)",
+    "reason_pt": "Não mexi. Com a Data Corte, a confirmação manual de ano da semana W só conta para as linhas MTG3 sem Data Corte (932 itens; 38 linhas ativas na Tabela). A regra de ligar a confirmação à versão da macro foi decidida a 22/09 (docs/capacidades-2026-09-22/ENTREGA.md:40). A decisão D01 de 02/10 diz para não inventar o ano. Tirá-la da versão, ou deduzir o ano da W, é uma decisão do Luís, não um erro de código. A confirmação órfã W39/2026 (snapshot mtg_79ca6d60785198f2) é um dado. Não toquei na base."
+   },
+   {
+    "id": "C1-1 (atrasados na semana atual)",
+    "reason_pt": "Fica para decisão. Pela Data Corte, a maior parte da carga das 7 máquinas MTG3 está atrasada (Data Corte antes da S41). No motor RAW vai para os baldes das semanas passadas, como já acontece nos Perfis. A Carga (app/sector/load.py) põe o atrasado na semana atual. Por isso, a S41 da Disponibilidade continua muito abaixo da Carga (por exemplo, Rapid 20T-1 S41: 2 linhas na RAW). Levar o atrasado para a semana atual mudaria também os Perfis e o significado do período. Não o fiz sem OK. Outra nota: em 4 313 das 4 393 linhas com W, a W do Plan_semanal é diferente da semana da Data Corte. É um tema da origem (Excel)."
+   },
+   {
+    "id": "Horas desconhecidas nos baldes MTG3",
+    "reason_pt": "Na geração medida, só 3 667 dos 22 614 itens MTG3 tinham horas planeadas. Os baldes com alguma linha sem horas ficam com a ocupação 'por calcular' (nunca 0 %). Isto é o problema 1 (códigos CPIS:/LOCAL:), tratado noutro grupo (contrato v30). Os números finais de ocupação só ficam certos depois do recálculo com as duas correções."
+   }
+  ],
+  "tests_run": ".venv/bin/python -m pytest -q -p no:cacheprovider tests/test_capacity_revision.py tests/test_planning_capacity_preview.py tests/test_planning_capacity_incremental.py tests/test_planning_productivity.py tests/test_planning_integral_calculations.py → 99 passed. Também corri tests/test_planning_gantt.py, tests/test_sector_load.py, tests/test_sector_needs.py, tests/test_capacity_study.py, tests/test_planning_hours_detail.py, tests/test_planning_operation_hours.py, tests/test_planning_original_hours.py, tests/test_planning_incremental.py, tests/test_planning_description_deadline.py, tests/test_planning_population.py, tests/test_planning_macro_revisions.py, tests/test_planning_picking_automatic.py e tests/test_raw_workspace.py. Passa tudo menos falhas que não vêm destas alterações: (a) na base descartável falta a tabela planning_mtg.gantt_source_heads (sql/041), chamada pelo código de outro grupo; (b) não há o Chromium do Playwright em ~/.cache/ms-playwright (chromium_headless_shell-1194). As falhas que vi numa corrida grande em simultâneo (ERROR em capacity_preview/incremental) desaparecem ao correr cada ficheiro sozinho (10/10 e 13/13 passam). Script de medição, só de leitura: /tmp/claude-1000/-home-luis-projects-planeamento/0504eb09-808f-4b62-bc4e-2bf3435e17de/scratchpad/g6/measure.py",
+  "needs_restart": [
+   "Serviço de planeamento (uvicorn app.web.planning_app:app, porta 8113) e o worker RAW que recalcula a capacidade e a Tabela: precisam de reiniciar para carregar o novo planning_dates.period e os contratos novos; depois disso recalculam capacity:* e planning:*.",
+   "capacity.js é servido ao vivo: mostra a data só quando o campo 'date' existe; é compatível com o Python em execução e não precisa de reinício."
+  ],
+  "contract_bumps": [
+   "app/raw/capacity_revision.py CONTRACT: capacity-20260925-integral-v30 → capacity-20260925-integral-v31 (MTG3 calendarizada pela Data Corte)",
+   "app/planning_calculations.py CONTRACT: planning-integral-20260925-v8 → planning-integral-20260925-v9 (Semana prevista MTG3 pela Data Corte; obriga a recalcular a Tabela/RAW)"
+  ],
+  "reviewed": true
+ },
+ {
+  "group": "G7-fontes",
+  "fixed": [
+   {
+    "id": "A14-F2 / A6-4",
+    "files": [
+     "/home/luis/projects/planeamento/app/gantt/research.py",
+     "/home/luis/projects/planeamento/tests/test_integrated_gantt.py"
+    ],
+    "test": "tests/test_integrated_gantt.py::test_version_ignores_reading_day_but_not_content (sem base) e ::test_new_reading_day_keeps_the_published_version (base descartável)",
+    "summary_pt": "Nova função version_digest(package): a assinatura da versão da pesquisa deixa de incluir metadata.as_of. O dia da leitura sozinho já não cria uma versão nova à meia-noite. Os eventos que o as_of filtra continuam no pacote, por isso produção nova continua a dar versão nova. publish() passa a usar version_digest. O as_of por omissão usa agora o dia de Lisboa (settings.display_timezone) e não date.today(), que seguia o fuso do servidor (Berlim). Nenhuma assinatura pública mudou.",
+    "numbers_before_after": "Dados reais (só leitura), últimas versões guardadas: 64f01c1f (as_of 04/10) e 6aebcd10 (as_of 06/10) reproduzem exatamente a assinatura antiga. Com a nova regra dão as duas 2bc6f233, ou seja a mesma versão. Antes: 1 versão nova por dia (39 477 operações copiadas de cada vez) e recálculo de planning/capacity às 22:00 UTC. Depois: zero versões enquanto as fontes não mudam. Fica 1 versão nova na primeira execução, porque a fórmula da assinatura mudou."
+   },
+   {
+    "id": "A1-F1 / A1-F2 (lado da app)",
+    "files": [
+     "/home/luis/projects/planeamento/app/raw/workbooks.py",
+     "/home/luis/projects/planeamento/app/web/static/raw_panels.js",
+     "/home/luis/projects/planeamento/app/web/static/capacity.js",
+     "/home/luis/projects/planeamento/tests/test_capacity_revision.py"
+    ],
+    "test": "tests/test_capacity_revision.py::test_drive_choice_sees_a_newer_plan_in_a_subfolder (sem base) e ::test_drive_observation_reports_newer_plan_in_subfolder (base descartável)",
+    "summary_pt": "observe_drive passa a listar o Drive com --recursive, usando --filter: exclui crm-backups/** e SAIDA/backups/** e só aceita os dois planos. Uma combinação --include/--exclude levava 38 s, perto do limite de 40 s; com --filter leva 1 s. A nova função drive_choice escolhe a cópia da raiz, a menos que haja numa subpasta uma cópia mais recente e com hash diferente. Nesse caso guarda o caminho em remote_filename, e newer_available fica verdadeiro porque o hash difere do importado. status() acrescenta o campo opcional newer_folder. O painel RAW e o de capacidade mostram «Versão mais recente na pasta «X»; a carga automática só lê a raiz». Se o campo faltar, o JS mostra o texto antigo, por isso é compatível com o Python que está a correr.",
+    "numbers_before_after": "Drive real hoje: perfis e cantoneiras continuam a apontar para a raiz de 02/10, por isso o ecrã não muda. Simulei o cenário de 30/09 (raiz de 29/09 e Kanban's MTG3 de 30/09): passa a ser escolhido «Kanban's MTG3/Met2_Plan_Perfis.xlsm» e aparece o aviso. Antes não aparecia nada."
+   },
+   {
+    "id": "A1-F1 / A1-F2 / A1-F4 (sync_drive.sh, repositório DATARESEARCHMTG)",
+    "files": [
+     "/home/luis/projects/DATARESEARCHMTG/scripts/sync_drive.sh",
+     "/home/luis/projects/DATARESEARCHMTG/scripts/plan_copies.py",
+     "/home/luis/projects/DATARESEARCHMTG/tests/test_plan_copies.py"
+    ],
+    "test": "DATARESEARCHMTG: .venv-sync/bin/python -m unittest tests.test_plan_copies (3 testes) e os restantes testes do repositório; todos OK",
+    "summary_pt": "O sync guarda os caminhos descarregados em cada ciclo. Depois do download chama o novo scripts/plan_copies.py, que regista no log uma linha «AVISO: <subpasta>/Met2|Met3… é mais recente do que a raiz; a carga automática só lê a raiz…» para cada cópia fora da raiz mais recente e diferente da raiz (ou quando não há cópia na raiz). O script só avisa: não copia nem carrega nada. Cópias antigas que já não estão no Drive não contam. Se a verificação falhar, fica um ERRO no log, mas o ciclo e as cargas seguem. Junto a has_changed ficou um comentário a explicar porque compara o caminho exato. Corrigi o cabeçalho: o download usa rclone autenticado na pasta partilhada, já não a «pasta pública», e o horário real é 08:15/14:15 de Berlim (06:15/12:15 UTC). Verifiquei que o sync não estava a correr quando editei o script. Ensaio com o espelho local: hoje não sai nenhum aviso, o que está certo."
+   }
+  ],
+  "not_fixed": [
+   {
+    "id": "A1-F4 (comentário do crontab)",
+    "reason_pt": "O comentário errado («07:15 e 13:15») está no crontab do luis, não em nenhum ficheiro do repositório. A auditoria diz que é o Luís que o corrige à mão, e não mexo na configuração do sistema. Linha certa: «# Ciclo MTG: Drive → DATARESEARCHMTG → Postgres (08:15 e 14:15 hora de Berlim)». O cabeçalho do sync_drive.sh já está corrigido."
+   },
+   {
+    "id": "A1-F1 (carregar sozinho a cópia da subpasta)",
+    "reason_pt": "Ficou de propósito como aviso, sem carga automática, como o pedido indicava. Uma cópia em SAIDA/ ou Kanban's MTG3/ pode ser rascunho ou export, por isso deve ser uma pessoa a pô-la na raiz ou a carregá-la à mão."
+   },
+   {
+    "id": "A1-F3 (crm-backups no download do sync)",
+    "reason_pt": "É do mesmo ficheiro mas não deste grupo. A auditoria marca-o como «ops» e pede uma decisão do Luís sobre onde ficam os backups do CRM. Não acrescentei o --exclude 'crm-backups/**' às chamadas rclone copy do sync_drive.sh. Do lado da app, observe_drive já exclui essa pasta."
+   },
+   {
+    "id": "A6-2 (pesquisa parada em 29/09 sem aviso)",
+    "reason_pt": "Precisa de comparar fontes_selecionadas.loaded_at com o snapshot RAW e de decidir o que fazer ao overlay. Isso mexe na ordem dos saldos, que fica para o grupo dos saldos e precisa do OK do Luís. Esta correção só trava as versões falsas."
+   }
+  ],
+  "tests_run": "planeamento: tests/test_integrated_gantt.py deu 34 passados e 1 falhado. A falha é test_browser_selection_manual_automatic: falta o Chromium do Playwright em ~/.cache e não tem a ver com estas alterações. tests/test_capacity_revision.py deu 13 passados. tests/test_sector_gantt_integration.py + tests/test_raw_workspace.py deram 16 passados e 10 falhados. Dessas 10 falhas, 3 são de browser (falta o Chromium). As outras 7 dão «relation planning_mtg.gantt_source_heads does not exist», levantado em research.head() a partir de projection.fingerprint quando a pesquisa está ligada no ambiente de teste. Não mexi em head()/enabled(); quis confirmar a variável no .env/conftest e a permissão foi recusada, por isso tratei estas falhas como já existentes, mas sem prova. DATARESEARCHMTG: .venv-sync/bin/python -m unittest tests.test_plan_copies tests.test_excel_errors tests.test_load_met2_to_postgres tests.test_kanban_plan_contract deu OK. bash -n scripts/sync_drive.sh e node --check aos dois JS sem erros. Verificações reais só de leitura: digests das versões guardadas e rclone lsjson ao Drive.",
+  "needs_restart": [
+   "kanban-raw-worker (para observe_drive passar a ver as subpastas e a preencher newer_folder; até lá o JS novo mostra o texto antigo)",
+   "planning-research-refresh não precisa de reinício: é oneshot e lê o código do disco em cada execução. A próxima execução vai criar uma versão nova, por causa da nova fórmula da assinatura, e provoca um recálculo; depois fica estável. Atenção: na mesma execução entra também o que outro agente alterou em research.py (BALANCE_CONTRACT research-balance-v3 / excel_counters_changed).",
+   "kanban-planning: não é preciso para estas correções (version_digest só é usado por publish, no refresh)",
+   "sync_drive.sh (cron): sem reinício; o próximo ciclo (08:15 ou 14:15 de Berlim) já usa o script novo"
+  ],
+  "contract_bumps": [],
+  "reviewed": true
+ }
+]

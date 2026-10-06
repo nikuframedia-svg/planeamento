@@ -144,7 +144,7 @@ def test_closing_reopening_sources_retains_identity_and_production(workspace, ar
     assert len(initial) == piece_count
     with planning.connect(readonly=True) as c:
         evidence_before = c.execute('SELECT * FROM mes_kanban.production_records ORDER BY id').fetchall()
-    # A CPIS closure from one of its copies wins over an open copy.
+    # The newest CPIS copy (loaded one second later) says Fechada: it decides (decisão de 06/10/2026).
     with psycopg.connect(workspace, row_factory=dict_row) as c: next_revision(c, 'closure', 'Fechada', False)
     closed_gen = projection.rebuild(area)
     assert query.listing({'area':area})['total'] == 0

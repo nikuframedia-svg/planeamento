@@ -75,3 +75,66 @@ def test_proposal_boxes_use_lisbon_days_of_segments():
 
 def test_order_numbers_compare_with_or_without_prefix():
     assert board._order_no("OF264095") == board._order_no("264095") == board._order_no("264095.0") == "264095"
+
+
+class _Rows:
+    def __init__(self, rows):
+        self.rows = rows
+
+    def fetchall(self):
+        return self.rows
+
+
+class _CpisConn:
+    """Ligação falsa: duas cópias CPIS (perfis e cantoneiras) e as OF que já estão nos planos."""
+
+    def __init__(self, cpis, planned=()):
+        self.cpis, self.planned = cpis, planned
+
+    def execute(self, sql, params=None):
+        if "raw_generations" in sql:
+            return _Rows([{"dataset": "planning:perfis", "id": 2, "snapshot": "p"},
+                          {"dataset": "planning:cantoneiras", "id": 1, "snapshot": "c"}])
+        if "plan_production_rows" in sql:
+            return _Rows([{"of": of} for of in self.planned])
+        return _Rows(self.cpis)
+
+
+def cpis(of, status, *, recorded=date(2026, 9, 20), newer=False):
+    from datetime import datetime
+    loaded = datetime(2026, 10, 2, 12, 53 if newer else 51)
+    return {"of": of, "customer_name": "Cliente", "work_type_description": "Postes", "record_date": datetime.combine(recorded, datetime.min.time()),
+            "status": status, "delivery_date": None, "copy_loaded_at": loaded}
+
+
+def test_not_in_plans_uses_the_newest_cpis_copy_and_treats_pronta_as_open():
+    # Decisão de 06/10/2026 (substitui A3-2/C06 «basta uma Fechada»): manda a cópia carregada mais tarde.
+    board._cache.clear()
+    conn = _CpisConn([
+        cpis("OF1", "Em Produção"), cpis("OF1", "Fechada", newer=True),   # a recente fecha: não aparece
+        cpis("OF2", "Fechada"), cpis("OF2", "Em Produção", newer=True),   # a antiga fechada já não esconde
+        cpis("OF3", "Pronta"),                                            # Pronta: aberta, como na população (A3-7)
+        cpis("OF4", "Em Aberto"), cpis("OF4", "Pronta", newer=True),
+        cpis("OF5", "Em Aberto"),                                         # já está num plano
+        cpis("OF6", "Em Aberto", recorded=date(2026, 5, 1)),              # fora dos 3 meses
+    ], planned=["OF5"])
+    result = board.not_in_plans(today=TODAY, conn=conn)
+    assert [r["of"] for r in result] == ["OF2", "OF3", "OF4"]
+    assert [r["status"] for r in result] == ["Em Produção", "Pronta", "Pronta"]
+
+
+def test_past_forecast_is_late_and_blocked_operation_is_listed_with_its_reason():
+    """A8-2: previsão da Tabela a 08/09 com prazo 08/09 está atrasada a 02/10; a operação bloqueada na proposta
+    aparece na lista das operações sem hora, com o motivo e o dia da previsão."""
+    plan = {"entries": [
+        {"key": "a", "resource_id": "m1", "start_date": "2026-09-08", "end_date_exclusive": "2026-09-09", "precision": "day"},
+        {"key": "b", "resource_id": "m1", "start_date": "2026-10-30", "end_date_exclusive": "2026-10-31", "precision": "day"}]}
+    ops = [op("a", "OF1", 52, "2026-09-08"), op("b", "OF2", 29, "2026-10-30")]
+    boxes = board.boxes_from_source_plan(plan, ops, today=TODAY)
+    assert [b["late"] for b in boxes] == [True, False]
+    assert not board.boxes_from_source_plan(plan, ops)[0]["late"]  # sem `today`, a regra antiga (só o fim da caixa)
+    ops[0]["blocking_reasons"] = ["Duração admissível por confirmar."]
+    ops[1]["blocking_reasons"] = ["Duração admissível por confirmar."]
+    found = board.forecast_only(plan, ops + [{**op("c", "OF3", 1), "blocking_reasons": ["Sem máquina."]}], placed={"b"})
+    assert found == [{"of": "OF1", "reference": None, "operation": None, "forecast": True, "forecast_day": "2026-09-08",
+                      "reasons": ["Duração admissível por confirmar."]}]

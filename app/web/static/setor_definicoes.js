@@ -53,7 +53,15 @@
     const items = [];
     if (m.excel_rate) items.push(el('div', {title: m.excel_rate.source}, `Excel: ${fmt.format(m.excel_rate.value)} ${m.excel_rate.unit}`));
     if (m.observed_week_hours) items.push(el('div', {class: 'muted'}, `Feito por semana: ${fmt.format(m.observed_week_hours)} h (mediana)`));
-    for (const r of m.rates) items.push(el('div', {class: 'rate'}, `Confirmada: ${fmt.format(r.value)} ${data.methods[r.method] || r.method}${r.profile ? ` · ${r.profile}` : ''}${r.operation ? ` · ${r.operation}` : ''}`));
+    for (const r of m.rates) {
+      const archive = el('button', {type: 'button', class: 'linklike', title: 'Deixa de contar; fica no histórico'}, 'Arquivar');
+      archive.addEventListener('click', () => {
+        if (!confirm('Arquivar esta taxa? Volta a valer a velocidade do Excel (ou outra taxa confirmada).')) return;
+        send({tipo: 'taxa', id: r.id, maquina: m.id, metodo: r.method, valor: r.value, operacao: r.operation, perfil: r.profile, desde: r.valid_from, arquivar: true})
+          .then(() => { notice(`Taxa de ${short(m.name)} arquivada.`); return load(); }).catch(error);
+      });
+      items.push(el('div', {class: 'rate'}, `Confirmada: ${fmt.format(r.value)} ${data.methods[r.method] || r.method}${r.profile ? ` · ${r.profile}` : ''}${r.operation ? ` · ${r.operation}` : ''}${r.valid_from ? ` · desde ${r.valid_from}` : ''} `, archive));
+    }
     if (m.profile_speeds && m.profile_speeds.length) {
       items.push(el('details', {}, el('summary', {}, `Por perfil (${m.profile_speeds.length})`),
         el('ul', {class: 'speeds'}, m.profile_speeds.map((p) => el('li', {}, `${p.profile}: ${fmt.format(p.value)} m/h (${p.lines})`)))));
@@ -64,10 +72,11 @@
     const value = el('input', {type: 'number', step: 'any', min: '0', placeholder: 'valor', 'aria-label': 'Valor da taxa'});
     const op = el('input', {placeholder: data.sector === 'perfis' ? 'corte' : '119', size: 6, 'aria-label': 'Operação'});
     const prof = el('input', {placeholder: 'perfil (opcional)', size: 12, 'aria-label': 'Perfil'});
+    const since = el('input', {type: 'date', 'aria-label': 'Válida desde', title: 'Válida desde (vazio = hoje)'});
     const ok = el('button', {type: 'button', class: 'small'}, 'Gravar');
-    ok.addEventListener('click', () => send({tipo: 'taxa', maquina: m.id, metodo: method.value, valor: Number(value.value), operacao: op.value, perfil: prof.value})
+    ok.addEventListener('click', () => send({tipo: 'taxa', maquina: m.id, metodo: method.value, valor: Number(value.value), operacao: op.value, perfil: prof.value, desde: since.value || undefined})
       .then(() => { notice(`Taxa de ${short(m.name)} gravada: passa a ter prioridade sobre o Excel.`); return load(); }).catch(error));
-    add.append(el('div', {class: 'rate-form'}, value, method, op, prof, ok));
+    add.append(el('div', {class: 'rate-form'}, value, method, op, prof, since, ok));
     items.push(add);
     return el('div', {class: 'rates'}, el('strong', {}, m.rate_in_use), items);
   }
@@ -80,8 +89,88 @@
     turns.value = String(m.default_shifts);
     turns.addEventListener('change', () => send({tipo: 'maquina', id: m.id, expected_revision: m.revision, turnos_padrao: Number(turns.value)})
       .then((r) => { notice(`${short(m.name)}: ${turns.value} turno(s) padrão; ${r.changed - 1} semana(s) atualizadas.`); return load(); }).catch(error));
-    return el('tr', {}, el('th', {scope: 'row'}, short(m.name), el('small', {class: 'muted'}, ` ${m.code || ''}`)),
+    return el('tr', {}, el('th', {scope: 'row'}, short(m.name), el('small', {class: 'muted'}, ` ${m.code || ''}`), namesCell(m)),
       el('td', {}, m.process || '—'), el('td', {}, confirm), el('td', {}, turns), el('td', {}, weeksCell(m)), el('td', {}, fichaCell(m)), el('td', {}, ratesCell(m)));
+  }
+
+  // Nomes da máquina no Excel e nas folhas OCR, operações e janela do histórico (antes em «Capacidades e horas»).
+  const UNIT = {perfis: 'MTG2', cantoneiras: 'MTG3'}, AREA = {MTG2: 'perfis', MTG3: 'cantoneiras'};
+  function namesCell(m) {
+    if (!('aliases' in m) || !m.has_object) return null;
+    const names = el('textarea', {rows: 3, 'aria-label': `Nomes de ${m.name}`});
+    names.value = m.aliases.map((a) => `${UNIT[a.area] || a.area}: ${a.name}`).join('\n');
+    const ops = el('input', {value: m.operations.join(', '), 'aria-label': `Operações de ${m.name}`});
+    const days = el('input', {type: 'number', min: 1, value: m.history_window_days || 90, 'aria-label': `Dias de histórico de ${m.name}`});
+    const save = el('button', {type: 'button', class: 'save small'}, 'Gravar nomes e operações');
+    save.addEventListener('click', () => {
+      try {
+        const nomes = names.value.split('\n').map((x) => x.trim()).filter(Boolean).map((x) => {
+          const i = x.indexOf(':'); if (i < 0) throw new Error('Usa «MTG2: nome» ou «MTG3: nome» em cada linha.');
+          return {area: AREA[x.slice(0, i).trim().toUpperCase()] || x.slice(0, i).trim().toLowerCase(), name: x.slice(i + 1).trim()};
+        });
+        send({tipo: 'maquina', id: m.id, expected_revision: m.revision, nomes, operacoes: ops.value.split(',').map((x) => x.trim()).filter(Boolean), janela_historico: Number(days.value)})
+          .then(() => { notice(`${short(m.name)}: nomes e operações gravados.`); return load(); }).catch(error);
+      } catch (e) { error(e); }
+    });
+    return el('details', {class: 'names'}, el('summary', {}, 'Nomes e operações'),
+      el('label', {}, 'Nomes no Excel e nas folhas (um por linha, «MTG2: nome» ou «MTG3: nome»)', names),
+      el('label', {}, 'Operações (separadas por vírgula, ex.: CPIS:112, CPIS:119)', ops),
+      el('label', {}, 'Dias de histórico para a produtividade', days), save);
+  }
+
+  // Horas reais corrigidas à mão (antes em «Capacidades e horas · Horas reais»): substituem ou completam as horas OCR.
+  async function renderWorked() {
+    const box = $('worked');
+    if (!box) return;
+    const own = new Map(data.machines.map((m) => [m.id, m]));
+    let items = [];
+    try {
+      const r = await fetch(`/planeamento/api/raw/objects/worked_hours`, {headers: {Accept: 'application/json'}});
+      if (r.ok) items = ((await r.json()).items || []).filter((o) => own.has(String(o.definition.resource_id)));
+    } catch { items = []; }
+    const machine = el('select', {'aria-label': 'Máquina'}, data.machines.filter((m) => m.confirmed).map((m) => el('option', {value: m.id}, short(m.name))));
+    const from = el('input', {type: 'date', 'aria-label': 'De'}), to = el('input', {type: 'date', 'aria-label': 'Até'});
+    const hours = el('input', {type: 'number', step: '0.1', min: 0, 'aria-label': 'Horas'}), operation = el('input', {'aria-label': 'Operação (opcional)'});
+    const origin = el('input', {value: 'Correção manual', 'aria-label': 'Origem'});
+    const replace = el('input', {type: 'checkbox'}), replaceLabel = el('label', {hidden: true}, replace, ' Substituir as horas das folhas OCR deste período');
+    const evidence = el('div', {class: 'muted'});
+    let basis = null;
+    const definition = () => ({resource_id: machine.value, mode: 'period', start_date: from.value, end_date: to.value, hours: hours.value,
+      operation: operation.value.trim(), operation_hours: [], replace_ocr: replace.checked, source: origin.value.trim() || 'Correção manual', basis_hash: basis, confirmed: true});
+    const check = el('button', {type: 'button'}, 'Conferir as folhas deste período');
+    check.addEventListener('click', async () => {
+      try {
+        const r = await fetch('/planeamento/api/raw/horas/prever', {method: 'POST', headers: {'Content-Type': 'application/json', Accept: 'application/json'},
+          body: JSON.stringify({request_id: crypto.randomUUID(), definition: definition()})});
+        const body = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(body.error || `Erro ${r.status}`);
+        basis = body.basis_hash;
+        const obs = body.observations || [];
+        replaceLabel.hidden = !obs.length;
+        evidence.textContent = obs.length ? `Folhas OCR neste período: ${obs.map((o) => `${o.date} ${fmt.format(o.hours)} h`).join(' · ')}` : 'Sem horas OCR neste período.';
+        if (body.scope_conflict) evidence.textContent += ` ${body.scope_conflict}`;
+      } catch (e) { error(e); }
+    });
+    const save = el('button', {type: 'button', class: 'save'}, 'Gravar horas reais');
+    save.addEventListener('click', async () => {
+      try {
+        if (!basis) throw new Error('Confere as folhas deste período antes de gravar.');
+        const m = own.get(machine.value);
+        const r = await fetch('/planeamento/api/raw/objects/worked_hours', {method: 'POST', headers: {'Content-Type': 'application/json', Accept: 'application/json'},
+          body: JSON.stringify({request_id: crypto.randomUUID(), expected_revision: 0, name: `${m.name} · ${from.value} a ${to.value}`, area: $('setor').value, definition: definition()})});
+        const body = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(body.error || `Erro ${r.status}`);
+        notice(`Horas reais gravadas para ${short(m.name)}.`);
+        basis = null;
+        await renderWorked();
+      } catch (e) { error(e); }
+    });
+    box.replaceChildren(
+      items.length ? el('ul', {}, items.map((o) => el('li', {}, `${short((own.get(String(o.definition.resource_id)) || {}).name || '')} · ${o.definition.start_date || ''} a ${o.definition.end_date || ''} · ${fmt.format(Number(o.definition.hours) || 0)} h${o.definition.replace_ocr ? ' · substitui OCR' : ''} · ${o.definition.source || ''}`)))
+        : el('p', {class: 'muted'}, 'Ainda não há horas corrigidas à mão neste setor.'),
+      el('div', {class: 'worked-form'}, el('label', {}, 'Máquina', machine), el('label', {}, 'De', from), el('label', {}, 'Até (mesma semana)', to),
+        el('label', {}, 'Horas', hours), el('label', {}, 'Operação (opcional)', operation), el('label', {}, 'Origem', origin)),
+      el('div', {class: 'worked-actions'}, check, replaceLabel, save), evidence);
   }
 
   function renderShifts(s) {
@@ -104,6 +193,7 @@
     $('machines').replaceChildren(...data.machines.map(machineRow));
     renderShifts(data.settings);
     $('rules').replaceChildren(...data.rules.map((t) => el('li', {}, t)));
+    renderWorked().catch(error);
   }
 
   async function saveShifts(event) {

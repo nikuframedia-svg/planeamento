@@ -1,0 +1,262 @@
+[
+ {
+  "group": "R2-G1-gantt-tecnico",
+  "fixed": [
+   {
+    "id": "GT-01",
+    "files": [
+     "app/gantt/integrated.py"
+    ],
+    "test": "tests/test_integrated_gantt.py::test_gantt_uses_the_application_section_or_derives_it_from_the_total; ::test_application_inputs_bring_the_published_section_and_estimate_of_the_line",
+    "summary_pt": "O Gantt técnico passa a usar a mesma área de corte unitária da Carteira e da Carga. Nova função section_unit(row): primeiro a section_unit publicada pela aplicação (que capture() junta às linhas da pesquisa através de _application_inputs); se não existir, a unitária do Excel da pesquisa; se esta vier vazia, a área total a dividir pela quantidade base. Uma linha só da aplicação sem área continua sem área, porque a aplicação a anula de propósito quando a peça mudou. Também resolve A7-4.",
+    "numbers_before_after": "Seleção real (gerações 5837/5838): perfis com horas iguais às da Carga passaram de 0 de 6 para 6 de 6 (antes as 6 ficavam 'Área unitária por confirmar'). Simulação com todas as OF marcadas: perfis sem duração no Gantt mas com horas na Carga passaram de 454 operações (850,4 h na Carga) para 0. Perfis com horas iguais à Carga passaram de 129 para 507."
+   },
+   {
+    "id": "GT-05",
+    "files": [
+     "app/gantt/integrated.py"
+    ],
+    "test": "tests/test_integrated_gantt.py::test_gantt_uses_the_published_excel_rate_only_on_the_machine_of_that_estimate",
+    "summary_pt": "Na máquina da estimativa publicada, o Gantt usa a mesma taxa do Excel que a Carga mostra. Isto vale agora também para as linhas que correspondem à camada de pesquisa, e não só para as linhas só da aplicação. A máquina da estimativa fica explícita (documentary_rate_resource), para essa taxa nunca passar para outra máquina, por exemplo uma escolhida na Carteira. A seleção ficou numa função própria, _documentary. O fator x3 da Thomas continua fora do Gantt, por decisão de 01/10.",
+    "numbers_before_after": "Simulação: cantoneiras sem duração no Gantt e com horas na Carga passaram de 77 operações (27,89 h) para 0. Ficep XP T6 com mediana de 100 m/h contra a taxa da linha passou de 38 operações (Gantt 34,4 h contra Carga 25,9 h) para 0. Cantoneiras com horas iguais à Carga passaram de 2571 para 2686. Ficam 6 linhas Thomas com rácio de 3, que é a decisão sobre o x3 (ver not_fixed)."
+   },
+   {
+    "id": "GT-04",
+    "files": [
+     "app/gantt/integrated.py"
+    ],
+    "test": "tests/test_integrated_gantt.py::test_gantt_history_follows_the_same_plausibility_and_window_as_the_load",
+    "summary_pt": "O Gantt passa a taxa do Excel desta máquina para Context.rate. Assim a regra H10 completa (amostra mínima, plausibilidade entre um quarto e 4 vezes o Excel) também se aplica no Gantt. A janela acaba hoje, no fuso de Lisboa/Berlim, como na Carga. Quando existe uma taxa histórica mas não é usada, o pressuposto da duração diz porquê. A diferença que sobra para a Carga (Vanguard 22 399 contra 9 200 mm²/h) desaparece quando a Carga for republicada com o C3-F6.",
+    "numbers_before_after": "Vanguard: o Histórico de 22 399 mm²/h é plausível face aos 9 200 do Excel (rácio 2,4) e mantém-se no Gantt. Na simulação, as diferenças Gantt Histórico contra Carga Excel são 106 linhas de perfis e 639 de cantoneiras. São todas linhas cuja estimativa publicada ainda foi feita com a janela antiga e alinham na próxima publicação."
+   },
+   {
+    "id": "C3-F6",
+    "files": [
+     "app/raw/productivity.py",
+     "app/raw/capacity_revision.py",
+     "app/raw/capacity.py"
+    ],
+    "test": "tests/test_planning_productivity.py::test_historical_window_ends_today_even_for_late_lines",
+    "summary_pt": "A janela histórica passa a acabar hoje (as_of=today) em apply_rows e em capacity_revision.calculate. A data prevista (when) serve só para a vigência das taxas manuais. Assim todas as linhas da mesma máquina, a Carga e o Gantt veem a mesma taxa. Subi ESTIMATE_CONTRACT (v2) e o CONTRACT de capacidade (v32), para forçar o recálculo.",
+    "numbers_before_after": "Medido só em leitura, com o código atual, sobre as estimativas principais ativas. Perfis: mudam 113 estimativas, 61 da Vanguard e 50 da Serrote Doall passam de Excel para Histórico, e 2 da Vanguard mudam de taxa histórica. O total de horas passa de 1792,9 h para 1562,1 h. Cantoneiras: 701 estimativas da Peddi 8 passam de Excel para Histórico e o total passa de 956,8 h para 967,9 h. Os números da Carga só mudam na próxima publicação feita pelo worker RAW."
+   },
+   {
+    "id": "GT-07",
+    "files": [
+     "app/gantt/service.py"
+    ],
+    "test": "tests/test_integrated_gantt.py::test_runtime_manifest_covers_the_modules_that_change_durations",
+    "summary_pt": "A lista de ficheiros do runtime_manifest ficou numa função própria, runtime_paths(). Passou a incluir raw/worked_hours.py, raw/capacity.py, planning_calculations.py, planning_needs.py, sector/priority.py, sector/estimates.py, sector/assignments.py, sector/occurrences.py e sector/portfolio.py. Uma mudança nas horas trabalhadas ou na regra das horas passa a deixar o plano obsoleto.",
+    "numbers_before_after": "Depois do reinício muda o code_sha256, e os cenários existentes aparecem como obsoletos. Hoje são 2, nenhum aceite."
+   },
+   {
+    "id": "GT-08",
+    "files": [
+     "app/raw/productivity.py",
+     "app/gantt/integrated.py",
+     "app/gantt/insights.py"
+    ],
+    "test": "tests/test_integrated_gantt.py::test_insights_keep_the_machine_and_operation_of_each_historical_evidence",
+    "summary_pt": "Context guarda em self.scopes a máquina, o recurso confirmado e a operação de cada taxa histórica. capture() junta essa informação a historical_evidence (scope_resource_id, scope_machine, scope_operation). insights.observed_productivity usa-a e devolve também 'machine'. Nos retratos antigos continua a inferir das opções e agora também das durações das candidatas.",
+    "numbers_before_after": "Retrato real: evidências com máquina e operação passaram de 0 de 8 para 8 de 8 (MEBA corte; Peddi 6, Rapid 20T-1/-2, Rapid 25T, XP T4, XP T6 e Peddi 8 na 119)."
+   },
+   {
+    "id": "C3-F5",
+    "files": [
+     "app/sector/load.py",
+     "app/web/static/setor_carga.js"
+    ],
+    "test": "Sem teste automático novo (texto de ecrã). O JS foi validado em sintaxe com node; as suítes test_sector_load e test_sector_* passam.",
+    "summary_pt": "A Carteira não mudou, por causa da decisão de 01/10. O detalhe das operações da Carga (load.operations) passa a devolver load_basis e load_origin. O ecrã mostra 'Origem das horas previstas'. Nas horas estimadas acrescenta que o Gantt técnico usa a taxa histórica da máquina quando é válida. Nas horas documentais (Manual, Histórico ou Excel publicado), a Carga e o Gantt usam agora a mesma regra H10 e a mesma janela (GT-04, GT-05, C3-F6). O JS só mostra a nota quando o Python reiniciado enviar estes campos.",
+    "numbers_before_after": "Não muda números. Em cantoneiras há 14 069 estimativas principais ativas sem taxa publicada, que na Carga usam a mediana do Excel; nestas o Gantt pode usar o Histórico."
+   },
+   {
+    "id": "GT-02",
+    "files": [
+     "app/gantt/integrated.py",
+     "app/sector/priority.py"
+    ],
+    "test": "tests/test_integrated_gantt.py::test_gantt_uses_the_current_picking_sheet_on_research_matched_perfis_lines; tests/test_sector_needs.py",
+    "summary_pt": "Já estava corrigido na ronda 1 (A9-1: priority.engine_values com o Picking atual da linha). Verifiquei e o teste existente passa; não mexi mais.",
+    "numbers_before_after": "Na simulação, os prazos do Gantt e da Carga já coincidem nos perfis: nenhum aparece em prazo_diff."
+   },
+   {
+    "id": "GT-03",
+    "files": [
+     "app/sector/scope.py",
+     "app/sector/occurrences.py"
+    ],
+    "test": "tests/test_integrated_gantt.py::test_application_only_line_keeps_the_portfolio_provisional_balance",
+    "summary_pt": "Já estava corrigido na ronda 1 (A8-1/A7-5: saldo provisório Qtd em Falta em scope.local_rows e RAW_FIELDS). Verifiquei e não mexi.",
+    "numbers_before_after": "Na simulação, saldo_diff entre o Gantt e a Carga é 0 nos dois setores."
+   }
+  ],
+  "not_fixed": [
+   {
+    "id": "GT-06",
+    "reason_pt": "Não é código, é um problema de dados: a correção é registar os aliases Ficep XP T7, T8 e T9 ou corrigir a Tabela, e isso exige escrever na base de produção. A OF266654 continua com 3 máquinas diferentes (maq_diff 3 em cada setor na simulação). Cabe ao Luís decidir se acrescenta os aliases nas Definições ou corrige o Excel."
+   },
+   {
+    "id": "C3-F8 / parte Thomas do GT-05",
+    "reason_pt": "Ficou de fora de propósito. O Gantt e a Carteira não aplicam o x3 da Thomas (decisão documentada em docs/capacidade-maquinas-2026-10-01/README.md:34,40 e em integrated). As horas documentais da Carga (theoretical_hours) aplicam-no porque vêm de select_rate. No Excel o x3 multiplica a taxa, por isso as horas ficam 3 vezes menores. Ficam 6 linhas com rácio de 3 (Gantt 18,9 h contra Carga 6,3 h). Precisa de uma regra única do Luís."
+   },
+   {
+    "id": "GT-08 (avaliação temporal)",
+    "reason_pt": "training_cohorts=0 é consequência dos dados e não um erro de código. O MES só tem registos desde 19/08 e o corte fica 30 dias antes do fim da janela (06/09), por isso quase não há coortes de treino. Resolve-se com o tempo, à medida que entram mais registos."
+   },
+   {
+    "id": "GT-04/C3-F6 (diferenças ainda visíveis)",
+    "reason_pt": "As 106 linhas de perfis e 639 de cantoneiras com Histórico no Gantt e Excel na Carga só alinham quando o worker RAW republicar as gerações com o código novo (ESTIMATE_CONTRACT v2 força o recálculo). Não escrevi na base para o forçar."
+   }
+  ],
+  "tests_run": "MES_PLANNING_V2_ENABLED=0 .venv/bin/python -m pytest -q -p no:cacheprovider tests/test_integrated_gantt.py tests/test_planning_productivity.py tests/test_planning_gantt.py tests/test_sector_shifts.py tests/test_sector_needs.py tests/test_gantt_source_plan.py tests/test_planning_capacity_incremental.py tests/test_sector_*.py tests/test_capacity*.py: 259 passed, 1 skipped. Sem a variável a 0, dois testes de test_planning_gantt.py (revision_and_idempotency e browser_generate) falham em projection.fingerprint/research.head ('gantt_source_heads' não existe). A causa é o ambiente da shell ter MES_PLANNING_V2_ENABLED ligado, não as minhas alterações: com a variável a 0 passam. Medições antes/depois só de leitura com scratchpad/g1/all1.py, cmpfull.py, drillh.py e asof.py (gerações 5837/5838 e 5829/5832).",
+  "needs_restart": [
+   "kanban-planning (uvicorn 8113): app/gantt/integrated.py, app/gantt/insights.py, app/gantt/service.py, app/sector/load.py",
+   "kanban-raw-worker (publicação RAW e capacidade): app/raw/productivity.py, app/raw/capacity_revision.py, app/raw/capacity.py",
+   "app/web/static/setor_carga.js é servido ao vivo; é compatível com o Python antigo (a nota só aparece quando load_basis vier no JSON)"
+  ],
+  "contract_bumps": [
+   "app/raw/capacity.py ESTIMATE_CONTRACT: planning-operation-hours-20260924-v1 -> v2 (entra no fingerprint da projeção; força o recálculo das estimativas com a janela até hoje)",
+   "app/raw/capacity_revision.py CONTRACT: capacity-20260925-integral-v31 -> v32",
+   "app/gantt/service.py runtime_manifest: code_sha256 muda (mais ficheiros); os cenários existentes passam a obsoletos depois do reinício"
+  ],
+  "reviewed": true
+ },
+ {
+  "group": "R2-G2-carteira-propostas",
+  "fixed": [
+   {
+    "id": "S53-1",
+    "files": [
+     "/home/luis/projects/planeamento/app/sector/priority.py",
+     "/home/luis/projects/planeamento/app/sector/portfolio.py",
+     "/home/luis/projects/planeamento/app/sector/tree.py",
+     "/home/luis/projects/planeamento/app/sector/occurrences.py"
+    ],
+    "test": "tests/test_sector_portfolio.py::test_week_2026_53_text_marks_parked_lines_out_of_late_and_weekly_load",
+    "summary_pt": "Na MTG3, o texto «2026/53» na coluna W (confirmado na evidência: escrito à mão, linhas sem máquina, Data Corte antiga, escondidas no Plan_semanal) passa a marcar a linha como estacionada. Fica sem prazo, com o motivo «Estacionada no Excel (W 2026/53)», numa janela própria («estacionada») e com um código próprio no filtro de semanas, fora do atraso e fora de «Sem semana definida». As regras estão em priority.parked_week/resolve/window e valem na Carteira, na Carga e no Gantt (este lê raw W). Nas ocorrências, a coluna W entra no detalhe reduzido (RAW_FIELDS) e manda a importação atual. Na Carga, estas linhas ficam como «sem data» e já não contam como atraso da semana atual. Não as tirei da Carga por completo: fica para o Luís confirmar.",
+    "numbers_before_after": "Carteira cantoneiras: as 2 892 linhas (48 529,7 m) saem das outras janelas e vão para «estacionada»: 1 754 vinham de atrasado, 1 135 de sem prazo e 3 de mais tarde. Hoje: atrasado 7 741 linhas e 106 738,1 m. As semanas W10/W19/W20/W22/W24/W25 do filtro desaparecem (antes 361/198/278/235/309/373 linhas). Carga: 3 797 ocorrências (689,2 h) com 0 atrasadas. Antes eram cerca de 424 h de atraso em W41. Exemplo: Peddi 8, atraso W41 de 441,0 h para 243,0 h. Atraso total W41 hoje: 1 661,5 h."
+   },
+   {
+    "id": "ORF-2",
+    "files": [
+     "/home/luis/projects/planeamento/app/sector/scope.py"
+    ],
+    "test": "tests/test_integrated_gantt.py::test_local_cantoneiras_line_with_composite_second_operation_gives_one_occurrence_per_operation",
+    "summary_pt": "Em scope.local_rows, uma 2.ª Oper. composta da MTG3 (ex. «111-1034») dá agora uma ocorrência por operação, como na pesquisa. O saldo e a preparação continuam a vir da operação composta, que é a única fonte. Não normalizei os zeros à esquerda (098→98) porque a própria pesquisa usa as duas grafias (CPIS:099 e CPIS:99), e normalizar criaria uma diferença nova. Não mexi em planning_calculations.py (partilhado com o MES). As chaves de ocorrência destas 70 linhas mudam; não tinham máquina.",
+    "numbers_before_after": "Operações seguintes de cantoneiras: de 5 941 (com 70 compostas sem máquina) para 6 011, que é o número esperado pelo Excel. Ficam 0 compostas."
+   },
+   {
+    "id": "PROP-2",
+    "files": [
+     "/home/luis/projects/planeamento/app/sector/estimates.py",
+     "/home/luis/projects/planeamento/app/sector/machine_learning.py",
+     "/home/luis/projects/planeamento/app/sector/routes.py",
+     "/home/luis/projects/planeamento/app/sector/portfolio.py"
+    ],
+    "test": "tests/test_sector_carteira.py::test_learned_machine_that_the_technical_sheet_excludes_is_not_proposed",
+    "summary_pt": "estimates.apply guarda em cada ocorrência por atribuir a preferência aprendida já filtrada pelas candidatas técnicas (fact['learned_preference']). Há duas funções novas: machine_learning.technical(área), que dá linha → essa preferência, e machine_learning.for_line. Tanto /carteira/sugestao como a coluna «sugerida» da lupa (/carteira/membros) passam a usá-las. Sem camada de pesquisa (sem ficha técnica) fica tudo como antes. A Carteira deixa de pré-escolher máquinas que a ficha exclui ou que não são candidatas.",
+    "numbers_before_after": "Linhas sem máquina com sugestão: cantoneiras de 8 881 para 8 767 (114 deixam de sugerir; 104 eram Ficep Rapid 25T). Perfis de 270 para 171 (99 deixam de sugerir: Vanguard 59, Fita 17, Disco 17, MEBA 6)."
+   },
+   {
+    "id": "PROP-4",
+    "files": [
+     "/home/luis/projects/planeamento/app/sector/assignments.py",
+     "/home/luis/projects/planeamento/app/sector/estimates.py"
+    ],
+    "test": "tests/test_sector_carteira.py::test_preview_alternatives_use_the_same_hours_as_the_portfolio_and_load",
+    "summary_pt": "A regra de horas da Carteira e da Carga passa para uma função única, estimates.hours_on: horas documentais do saldo, senão a estimativa da máquina. O apply usa-a, e assignments.alternatives também, em vez de integrated._duration (o motor do Gantt). Assim a previsão de máquinas (accept_suggestions, assign_each, totais por máquina) e o detalhe da ocorrência nas Necessidades mostram as mesmas horas que a Carteira e a Carga. O Gantt técnico continua com o seu próprio motor (é o tema C3-F5/GT-05 de outro grupo).",
+    "numbers_before_after": "Ocorrências sugeridas, horas da previsão contra horas da Carteira. Cantoneiras: antes 1 911 diferentes e 453 sem horas (3 580,5 h contra 3 906,7 h); agora 20 223 de 20 223 iguais (4 937,3 h = 4 937,3 h). Perfis: antes 84 sem horas (201,9 h contra 323,0 h); agora 318 de 318 iguais (560,1 h = 560,1 h)."
+   },
+   {
+    "id": "PROP-7",
+    "files": [
+     "/home/luis/projects/planeamento/app/sector/estimates.py",
+     "/home/luis/projects/planeamento/app/sector/occurrences.py"
+    ],
+    "test": "tests/test_sector_carteira.py::test_profiles_balance_load_with_calendar_hours_when_there_is_no_observed_throughput",
+    "summary_pt": "Função nova estimates.calendar_capacity: mediana das horas dos calendários do setor nas próximas 13 semanas. apply(calendar=...) usa-a como capacidade semanal das máquinas sem débito observado no Excel; só se liga nos perfis. Assim o critério 6 (equilíbrio de carga) passa a atuar na MTG2. O motivo diz «X semanas de calendário». Os calendários entram na chave de cache das ocorrências dos perfis, para uma mudança de turnos refazer as sugestões.",
+    "numbers_before_after": "Sugestões de perfis: motivo «débito desconhecido» de 319/319 para 19/318 (as 19 são Abocardar, sem calendário). Máquina sugerida antes: MEBA 146, Fita 65, Disco 58, Vanguard 30, Abocardar 19. Depois: Fita 183, Disco 58, Vanguard 30, MEBA 28, Abocardar 19. Horas sugeridas: MEBA de 100,1 para 21,6 h e Fita de 96,7 para 300,7 h (capacidade de calendário: Fita 75 h/semana, MEBA 37,5 h/semana)."
+   },
+   {
+    "id": "PROP-8",
+    "files": [
+     "/home/luis/projects/planeamento/app/sector/machine_learning.py"
+    ],
+    "test": "tests/test_sector_carteira.py::test_sem_perfil_marker_is_not_a_profile_for_learning",
+    "summary_pt": "Em machine_learning.contexts(), o marcador «Sem perfil» passa a ser tratado como perfil vazio, como já se fazia com «Sem família SKU». Deixa de haver contextos SEMPERFIL.",
+    "numbers_before_after": "Contextos SEMPERFIL: de 3 (134 + 55 + 79 escolhas da XP T4) para 0. Deixam de existir as 4 sugestões em estimates e a 1 linha da Carteira que se baseavam nesse marcador."
+   },
+   {
+    "id": "A4-07",
+    "files": [
+     "/home/luis/projects/planeamento/app/raw/capacity_views.py"
+    ],
+    "test": "tests/test_capacity_revision.py::test_rate_proposals_skip_cantoneiras_rows_without_machine",
+    "summary_pt": "Em capacity_views.proposals(), as linhas sem máquina deixam de gerar propostas de ritmo, como já acontecia em capacity.source_proposals.",
+    "numbers_before_after": "Propostas de ritmo de cantoneiras sem máquina: de 324 para 0. Ficam 1 317, todas com máquina."
+   }
+  ],
+  "not_fixed": [
+   {
+    "id": "S53-1 (parte)",
+    "reason_pt": "Não tirei as linhas estacionadas da Carga por completo: continuam em «sem data» (689,2 h). Também não lhes tirei a máquina sugerida, nem guardei a W em bruto na projeção RAW (planning_raw.py é partilhado com o MES). A interpretação «2026/53 = estacionada» vem da evidência e do enunciado, mas a l2 diz que não há decisão do Luís. 361 destas linhas (OF260260, Eletrofer) estão «Em Produção». É preciso o Luís confirmar o significado antes de as tirar da Carga."
+   },
+   {
+    "id": "ORF-2 (normalização)",
+    "reason_pt": "Não normalizei os zeros à esquerda (098→98): a pesquisa tem as duas grafias (CPIS:098/CPIS:98, CPIS:099/CPIS:99) e normalizar só aqui criava uma diferença nova. Também não mexi nas production_sources de planning_calculations.py (partilhado com o MES): a operação composta continua a ser uma só fonte de saldo, e as duas ocorrências herdam esse saldo."
+   }
+  ],
+  "tests_run": "Comando: .venv/bin/python -m pytest -q -p no:cacheprovider. Ficheiros: tests/test_sector_carteira.py, test_sector_portfolio.py, test_sector_load.py, test_capacity_revision.py, test_capacity_study.py, test_integrated_gantt.py, test_sector_gantt_integration.py, test_sector_board.py, test_sector_selection.py, test_sector_needs.py, test_sector_decisions_db.py, test_planning_excel_comparison.py e test_planning_operation_hours.py. Resultado: 327 passed, incluindo os 7 testes novos; a base é descartável em docker. tests/test_planning_gantt.py tem 2 falhas: test_gantt_scenario_revision_and_idempotency_on_disposable_database e test_gantt_browser_generate_accept_and_reopen. Ambas dão «relation planning_mtg.gantt_source_heads does not exist», uma falta de tabela no esquema da base descartável. Não tocam no código que mudei. tests/test_sector_machines_browser.py ficou skipped. As medições antes/depois foram feitas só com leitura da base real (scripts.audit_readonly + funções de leitura da app), com scripts em scratchpad/g2.",
+  "needs_restart": [
+   "kanban-planning.service (uvicorn app.web.planning_app na porta 8113): reiniciar logo. routes.py, portfolio.py, priority.py, occurrences.py, estimates.py, assignments.py, machine_learning.py, scope.py e tree.py só ficam ativos depois de reiniciar. Até lá há um risco: o assignments.py novo chama estimates.hours_on, que só existe no estimates.py novo. Se o processo carregar o assignments.py novo antes de reiniciar (por exemplo, na primeira previsão de máquinas) por cima do estimates.py antigo já em memória, a previsão pode falhar até ao reinício.",
+   "Serviço do MES (kanban-mes), só se servir as propostas de capacidade de app/raw/capacity_views.py: mudou só uma guarda (A4-07)."
+  ],
+  "contract_bumps": [],
+  "reviewed": true
+ },
+ {
+  "group": "R2-G3-carga-detalhe",
+  "fixed": [
+   {
+    "id": "CARGA-OPS-01",
+    "files": [
+     "/home/luis/projects/planeamento/app/sector/load.py",
+     "/home/luis/projects/planeamento/app/web/static/setor_carga.js",
+     "/home/luis/projects/planeamento/tests/test_sector_load.py"
+    ],
+    "test": "tests/test_sector_load.py::test_estimated_hours_show_the_estimate_calculation_not_the_engine_proof e ::test_operations_return_the_estimate_and_mark_the_engine_proof_as_unused",
+    "summary_pt": "Nova função load.estimate_calculation(fact). load.operations passa a devolver dois campos novos: 'estimate' (fórmula, peças em falta, comprimento ou área unitária, volume, taxa usada = volume ÷ horas, unidade, origem load_origin, horas) e 'proof_used' (fica false quando as horas são estimadas). No «Ver cálculo» (setor_carga.js), as operações estimadas mostram primeiro a conta da estimativa da Carteira, por exemplo «60 m ÷ 40 m/h = 1,5 h» com a origem «mediana Excel de Peddi 8 para L45X45X5…». A prova do motor de capacidade aparece por baixo, com a etiqueta «não usado nestas horas». As operações documentais ficam como estavam. O JS continua a funcionar com a API antiga: sem 'estimate', mostra o load_origin e marca a prova como não usada.",
+    "numbers_before_after": "Dados reais, só leitura: células das 2 primeiras semanas, até 15 OF por célula. Cantoneiras: 3 508 operações estimadas (761,8 h). Antes, nenhuma tinha explicação; depois, 3 508 têm a conta. Perfis: 82 operações (176,3 h), de 0 para 82. As horas da Carga não mudam, só a explicação."
+   },
+   {
+    "id": "CARGA-PROD-04",
+    "files": [
+     "/home/luis/projects/planeamento/app/sector/load.py",
+     "/home/luis/projects/planeamento/app/web/static/setor_carga.js",
+     "/home/luis/projects/planeamento/tests/test_sector_load.py"
+    ],
+    "test": "tests/test_sector_load.py::test_production_rows_get_the_hours_of_their_sheet_once",
+    "summary_pt": "load.production devolve um campo novo 'sheet_hours' = {sheet_uid: horas}. As horas vêm do conjunto production_hours, procurado pelas datas da semana e ligado a cada linha pelo sheet_uid; fica None quando a folha não tem horas. A coluna passa a chamar-se «Horas da folha» e o valor aparece só na primeira linha de cada folha, porque as horas são da folha e não de cada linha. Folha sem horas mostra «sem horas». Com a API antiga, o JS volta ao hours_worked (aparece «—», como antes). A conta de horas reais declaradas da semana, no topo, não mudou.",
+    "numbers_before_after": "Semanas S38 a S41, primeira página de cada máquina. Antes, a coluna estava vazia em 100% das linhas. Depois: cantoneiras 317 de 927 linhas (24 de 69 folhas) com horas da folha; perfis 95 de 615 linhas (22 de 131 folhas). As outras folhas não têm horas no OCR. Isso é o problema CARGA-PROD-02, que é de outro grupo e vem da origem dos dados."
+   }
+  ],
+  "not_fixed": [
+   {
+    "id": "C1-5",
+    "reason_pt": "A função está feita e testada, mas não está ligada a nada e não a corri, porque escreve na base de dados. O que existe: em app/sector/settings.py, missing_weeks(c, sector, today=None), só de leitura, e extend_horizon(sector, conn=None, today=None). A segunda cria apenas as semanas em falta das próximas 52, só para máquinas confirmadas, com os turnos padrão da máquina e os feriados do setor. Não mexe em semanas que já existem (manuais ou antigas), usa o mesmo lock de save(), grava tudo num só lote com um só sinal (shifts.finish_batch) e, se for repetida, não volta a gravar. Também se pode correr à mão: '.venv/bin/python -m app.sector.settings prolongar', que trata os dois setores. Leitura real de hoje: 0 semanas em falta. A 13/10 faltariam 7 nas cantoneiras e 5 nos perfis; a 12/07/2027 faltariam 280 e 200. Para ativar, depois de o Luís aprovar: criar e ativar um timer systemd semanal, por exemplo segunda às 05:00 (Europe/Lisbon), com um serviço oneshot igual ao planning-research-refresh e ExecStart=/home/luis/projects/planeamento/.venv/bin/python -m app.sector.settings prolongar. Alternativa: chamar extend_horizon(sector) uma vez por dia no worker app.raw.worker. Não criei as unidades systemd."
+   }
+  ],
+  "tests_run": ".venv/bin/python -m pytest -q -p no:cacheprovider tests/test_sector_load.py tests/test_sector_shifts.py: 28 passaram. tests/test_sector_*.py: 145 passaram, 1 ignorado. node --check app/web/static/setor_carga.js: OK. As medições com dados reais correram com PGOPTIONS default_transaction_read_only=on e scripts.audit_readonly.",
+  "needs_restart": [
+   "kanban-planning (para a API da Carga passar a devolver estimate/proof_used e sheet_hours; o setor_carga.js já está ao vivo e funciona com a API antiga até ao reinício)"
+  ],
+  "contract_bumps": [
+   "GET /planeamento/api/setor/carga/operacoes: campos novos por operação 'estimate' (objeto ou null) e 'proof_used' (bool); nada removido",
+   "GET /planeamento/api/setor/carga/producao: campo novo 'sheet_hours' {sheet_uid: horas|null}; nada removido",
+   "app.sector.settings: funções novas missing_weeks e extend_horizon (nenhuma assinatura existente mudou)",
+   "app.sector.load: funções novas estimate_calculation e _sheet_hours (nenhuma assinatura existente mudou)"
+  ],
+  "reviewed": true
+ }
+]

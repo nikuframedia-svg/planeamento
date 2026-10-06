@@ -29,7 +29,7 @@
         <form id="search-form" role="search"><label for="query">Pesquisar OF, cliente, designação ou referência</label><div class="search-row"><input id="query" type="search" placeholder="Ex.: 265760, cliente ou designação da obra" autocomplete="off"><button type="submit">Pesquisar</button></div></form>
         <div id="orders" class="order-results" aria-label="OF abertas na importação CPIS"></div>
         <div id="selected-order" hidden>
-          <dl class="order-context"><div><dt>OF / OV</dt><dd id="order-numbers"></dd></div><div><dt>Cliente</dt><dd id="order-customer"></dd></div><div class="wide"><dt>Designação da obra</dt><dd id="order-designation"></dd></div><div><dt>Estado CPIS</dt><dd id="order-status"></dd></div><div><dt>Fim previsto da Produção</dt><dd id="order-finish"></dd></div><div><dt>Data de entrega</dt><dd id="order-delivery"></dd></div></dl>
+          <dl class="order-context"><div><dt>OF / OV</dt><dd id="order-numbers"></dd></div><div><dt>Cliente</dt><dd id="order-customer"></dd></div><div class="wide"><dt data-nome="designation">Descrição da obra</dt><dd id="order-designation"></dd></div><div><dt>Estado CPIS</dt><dd id="order-status"></dd></div><div><dt data-nome="planned_finish_date">Fim previsto da Produção</dt><dd id="order-finish"></dd></div><div><dt data-nome="delivery_date">Data de entrega</dt><dd id="order-delivery"></dd></div></dl>
           <label for="reference">Referência e linha do ficheiro</label><select id="reference"></select>
           <button type="button" id="new-reference" class="quiet">Adicionar referência nova</button>
           <div id="source-line" class="source-line"></div>

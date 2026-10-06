@@ -88,3 +88,20 @@ def test_corte_and_abocardar_choose_independent_sources_and_excess():
     assert result['values']['remaining']==0 and result['values']['boc_remaining']==8
     assert result['values']['production_excess']==2
     assert [s['origin'] for s in result['operations']]==['OCR validado','Excel provisório']
+
+
+@pytest.mark.parametrize('area,counter,falta,values',[
+    ('cantoneiras','Maq.','Qtd falta',{'operation':'112'}),
+    ('perfis','Ser.','Qtd em Falta',{'abocardar':'-'})])
+def test_blank_excel_counter_counts_zero_when_the_sheet_confirms_the_full_balance(area,counter,falta,values):
+    # Auditoria 06/10 (A4-01/A4-02/A2-F2): 'Maq.'/'Ser.' vazio com «falta» = QTD era saldo
+    # desconhecido no RAW; só a pesquisa de 29/09 o preenchia, e só nas linhas que conhecia.
+    base={'quantity_required':10,'length_mm':1000,'stock_length_mm':6000,**values}
+    result=calculate(base,area=area,raw={counter:None,falta:10})
+    v=result['values']
+    assert v['remaining']==10 and v['quantity_to_plan']==10 and v['remaining_m']==10 and v['bars']==2
+    assert result['rules']['remaining']['source']=='Excel provisório'
+    # Folha contraditória, coluna ausente ou quantidade alterada: continua desconhecido.
+    assert calculate(base,area=area,raw={counter:'',falta:7})['values']['remaining'] is None
+    assert calculate(base,area=area,raw={falta:10})['values']['remaining'] is None
+    assert calculate({**base,'quantity_required':12},area=area,raw={counter:None,falta:10})['values']['remaining'] is None

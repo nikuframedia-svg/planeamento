@@ -392,16 +392,18 @@ def test_manual_ready_proposal_preserves_macro_and_detects_record_revision(regis
 
 @pytest.mark.pg_integration
 @pytest.mark.skipif(os.environ.get('RUN_PG_INTEGRATION')!='1', reason='PostgreSQL descartável opt-in')
-def test_list_preserves_conflicting_closed_copy_and_does_not_infer_area_from_cpis(registry):
+def test_list_shows_newest_copy_status_and_does_not_infer_area_from_cpis(registry):
+    # Decisão de 06/10/2026 (substitui 20/09): cópias em desacordo → manda a mais recente, sem conflito.
     with psycopg.connect(registry, autocommit=True) as conn:
         conn.execute("UPDATE raw_mtg.cpis_rows SET status='Pronta' WHERE snapshot_id='c1'")
+        conn.execute("UPDATE audit_mtg.snapshots SET loaded_at=loaded_at+interval '1 minute' WHERE snapshot_id='c1'")
         conn.execute('DELETE FROM analytics_mtg.kanban_plan_lines')
         conn.execute('DELETE FROM raw_mtg.plan_production_rows')
     item = planning_hub.list_orders()['orders'][0]
     detail = planning_hub.order_detail('4200')
-    assert set(item['status_values']) == {'Em Produção', 'Pronta'}
+    assert item['status_values'] == ['Pronta'] and item['cpis_status'] == 'Pronta'
     assert item['status_values'] == detail['context']['status_values']
-    assert item['conflicts'] and item['area'] == 'por_identificar'
+    assert item['conflicts'] == [] and item['area'] == 'por_identificar'
     assert item['sources'] == [] and detail['context']['sources'] == []
     assert not item['execution_complete']
     status = planning_hub.source_status()
@@ -488,3 +490,4 @@ def test_abocardar_preparation_uses_abocardar_balance_not_cut_balance(registry):
     request['values']['quantity_to_plan']=0
     with pytest.raises(planning.PlanningError, match='divergência'):
         planning.save_record(request)
+

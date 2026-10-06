@@ -35,3 +35,12 @@ button.small, .save { border: 1px solid #a9bbc4; background: #fff; color: #10384
 .notice { padding: .35rem .6rem; background: #e9f6ef; border: 1px solid #b6e2c6; border-radius: 8px; color: #1e6b3d; }
 .error { color: #9d2a26; }
 @media (max-width: 760px) { .defs { padding: .6rem 16px 2rem; } }
+
+/* Nomes e operações; horas reais corrigidas à mão (06/10/2026). */
+details.names { margin-top: .3rem; font-weight: normal; }
+details.names label { display: block; margin: .25rem 0; font-weight: normal; }
+details.names textarea, details.names input { display: block; width: 100%; max-width: 26rem; }
+.worked-form { display: flex; gap: .5rem; flex-wrap: wrap; margin: .4rem 0; }
+.worked-form label { display: flex; flex-direction: column; gap: .15rem; }
+.worked-actions { display: flex; gap: .6rem; align-items: center; flex-wrap: wrap; }
+button.linklike { border: 0; background: none; color: #1f6f8b; text-decoration: underline; padding: 0; width: auto; min-height: 0; }

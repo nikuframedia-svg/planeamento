@@ -5,6 +5,8 @@ Regra do Luís (02/10/2026), uma partição — cada linha tem um só estado:
 2. nesting: tem Máquina (já tem a informação de planeamento) mas ainda não foi planeada;
 3. sem_maquina: sem Máquina. Uma decisão antiga sem máquina também fica aqui: sem máquina não se planeia.
 A Máquina é a coluna Máquina da Tabela/Excel.
+Uma linha excluída (decisão antiga «Excluir», que o backend mantém) fica fora da partição: não é nenhum dos
+três estados, tal como já não conta na lista vermelha do quadro (auditoria 06/10/2026, A8-5).
 """
 from __future__ import annotations
 
@@ -21,7 +23,9 @@ ORIGINS = {
 
 
 def classify(effective: dict, machine: str | None) -> dict:
-    """{planeado, nesting, sem_maquina}: exatamente um verdadeiro."""
+    """{planeado, nesting, sem_maquina}: exatamente um verdadeiro; nenhum numa linha excluída."""
+    if effective.get("decision") == "excluded":
+        return {"planeado": False, "nesting": False, "sem_maquina": False}
     planned = bool(machine) and effective.get("decision") == "selected"
     return {"planeado": planned, "nesting": bool(machine) and not planned, "sem_maquina": not machine}
 

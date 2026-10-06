@@ -10,7 +10,7 @@
   const number = new Intl.NumberFormat('pt-PT', {maximumFractionDigits: 0});
   const hoursFmt = new Intl.NumberFormat('pt-PT', {maximumFractionDigits: 1});
   const metresFine = new Intl.NumberFormat('pt-PT', {maximumFractionDigits: 1}); // na lupa: uma peça curta não aparece como «0 m»
-  const STATE_LABEL = {planeado: 'Planeado', nesting: 'Nesting', sem_maquina: 'Sem máquina'};
+  const STATE_LABEL = {planeado: 'Planeado', nesting: 'Nesting', sem_maquina: 'Sem máquina', excluida: 'Excluída'};
   const SOURCE_LABEL = {carteira: 'Escolhida na Carteira', tabela: 'Coluna Máquina da Tabela', conjunto: 'Conjunto de famílias'};
 
   const state = {
@@ -37,6 +37,10 @@
   }
 
   const metres = (m) => `${number.format(m || 0)} m`;
+  // Linhas com saldo por confirmar não somam metros: diz-se com um asterisco, como no peso.
+  const metresKnown = (m, unknown) => unknown
+    ? el('span', {title: `${number.format(unknown)} linha(s) com saldo por confirmar (não contam)`}, metres(m), el('span', {class: 'muted'}, ' *'))
+    : metres(m);
   const hours = (h) => `${hoursFmt.format(h || 0)} h`;
   const tonnes = (t) => `${hoursFmt.format(t || 0)} t`;
   const pathId = (path) => JSON.stringify(path);
@@ -201,7 +205,7 @@
           el('input', {type: 'checkbox', class: 'group-pick'}), toggle,
           el('strong', {}, group.key), lupa, el('span', {class: 'pick-count'}))),
       planCell(st, [plan, clear]),
-      el('td', {class: 'num'}, metres(group.metres)),
+      el('td', {class: 'num'}, metresKnown(group.metres, group.unknown_balances)),
       el('td', {class: 'num'}, number.format(group.pieces)),
       el('td', {class: 'num'}, number.format(group.ofs)),
       el('td', {class: 'num'}, st.sem_maquina.metres ? metres(st.sem_maquina.metres) : '—'),
@@ -219,7 +223,7 @@
     $('subtotal').replaceChildren(el('tr', {class: 'subtotal'},
       el('th', {scope: 'row'}, 'Subtotal'),
       planCell(st, null),
-      el('td', {class: 'num'}, metres(t.metres)),
+      el('td', {class: 'num'}, metresKnown(t.metres, t.unknown_balances)),
       el('td', {class: 'num'}, number.format(t.pieces)),
       el('td', {class: 'num'}, number.format(t.ofs)),
       el('td', {class: 'num'}, metres(st.sem_maquina.metres)),
@@ -347,7 +351,8 @@
 
   function memberRow(m) {
     const st = m.status || {};
-    const code = st.planeado ? 'planeado' : st.nesting ? 'nesting' : 'sem_maquina';
+    // Linha excluída (decisão antiga) fica fora dos três estados: diz «Excluída», nunca «Sem máquina».
+    const code = st.planeado ? 'planeado' : st.nesting ? 'nesting' : st.sem_maquina === false && m.decision === 'excluded' ? 'excluida' : 'sem_maquina';
     const box = el('input', {type: 'checkbox', class: 'member-pick', value: m.key, checked: state.selected.has(m.key),
                              'aria-label': `Marcar ${m.of} ${m.reference} ${m.profile} ${m.length_mm || ''} mm`});
     box.addEventListener('change', () => {
@@ -533,7 +538,7 @@
       el('ul', {class: 'machines'}, p.machines.map(machineRow))));
     const rows = data.summary.map((s) => el('tr', {dataset: {state: s.code}},
       el('th', {scope: 'row'}, s.label),
-      el('td', {class: 'num'}, metres(s.metres)),
+      el('td', {class: 'num'}, metresKnown(s.metres, s.metres_unknown)),
       el('td', {class: 'num'}, s.code === 'sem_maquina' ? '—' : hours(s.hours)),
       el('td', {class: 'num', title: s.weight_unknown ? `${number.format(s.weight_unknown)} linha(s) sem peso unitário (não contam)` : null},
         tonnes(s.tonnes), s.weight_unknown ? el('span', {class: 'muted'}, ' *') : null)));

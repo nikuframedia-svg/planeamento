@@ -32,8 +32,8 @@ FIELDS = {
     "picking": "Picking",
     "galvanizing": "Galvanização",
     "planned_period": "Semana escolhida",
-    "planned_finish_date": "Fim Produção",
-    "delivery_date": "Entrega",
+    "planned_finish_date": "Fim previsto da Produção",
+    "delivery_date": "Data de entrega",
 }
 MILESTONES = {
     "conclusao_principal": "Conclusão da operação principal (corte/processamento)",
@@ -43,6 +43,17 @@ MILESTONES = {
 }
 # Picking pede a OF inteira pronta; os restantes marcos avaliam cada operação.
 ORDER_SCOPED = {"picking"}
+# Auditoria 06/10 (S53-1): «2026/53» escrito à mão na coluna W da Tabela MTG3 marca linhas estacionadas
+# (sem máquina, Data Corte de março a agosto, fora do Plan_semanal). Não é a semana ISO 53: a linha fica
+# sem prazo e numa janela própria, fora do atraso e da carga das semanas.
+PARKED_WEEKS = {"2026/53"}
+PARKED = "estacionada"
+
+
+def parked_week(value) -> str | None:
+    """O texto da coluna W quando é um marcador de linha estacionada; senão None."""
+    text = str(value or "").strip()
+    return text if text in PARKED_WEEKS else None
 
 DEFAULTS = {
     "cantoneiras": {
@@ -108,6 +119,36 @@ def _day(value):
         return None
 
 
+def engine_values(row: dict, values: dict | None) -> dict:
+    """Campos de prazo de uma operação do motor (Carga, Gantt), com a mesma origem da Carteira.
+
+    Auditoria 06/10 (A9-1): o Picking vem dos valores atuais da linha (folha Picking importada,
+    decisão manual, conflito), como na Carteira; a semana da camada de pesquisa, que pode estar
+    parada numa importação antiga, só vale quando a linha não tem valores atuais de Picking.
+    """
+    values = values or {}
+    current = "picking_week" in values
+    return {**values,
+            "cut_date": row.get("data_corte_prevista") or values.get("cut_date"),
+            "picking_week": values.get("picking_week") if current else row.get("semana_picking"),
+            "picking_year": values.get("picking_year") if current else row.get("ano_picking"),
+            "picking_conflict": values.get("picking_conflict") if current else None,
+            "nao_galvaniza_indicado": row.get("nao_galvaniza_indicado")}
+
+
+def chosen_period_end(values: dict):
+    """Fim exclusivo da «Semana escolhida» (ano + semana de planeamento) de uma linha, ou None.
+
+    Auditoria 06/10 (A9-4): a mesma leitura da Tabela e do Gantt antigo (`planning_dates.period`):
+    só conta uma decisão local válida; uma data prevista que não coincide com a semana anula-a.
+    """
+    if all(values.get(k) in (None, "") for k in ("planned_year", "planned_week")):
+        return None
+    year, week, origin = planning_dates.period(
+        {k: values.get(k) for k in ("expected_date", "planned_year", "planned_week")}, area="perfis")
+    return planning_dates.period_deadline(year, week) if origin == "Decisão local" else None
+
+
 def milestones_from_values(values: dict, raw: dict | None = None, *, picking_year=None, picking_at=None,
                            planned_period_end=None, assumed_year=None) -> dict:
     """Normalise the dated fields of one application/Excel line, without inventing a shift.
@@ -115,8 +156,12 @@ def milestones_from_values(values: dict, raw: dict | None = None, *, picking_yea
     A Picking week without year takes the policy's assumed year when one is configured; otherwise the
     year is deduced (regra do Luís, 06/10/2026): the year in which that week is nearest the line's
     Data Corte, or today without it — in December, week 1 is next year. It stays provisional.
+    Without an explicit `planned_period_end`, the line's own chosen week (planned_year/planned_week)
+    feeds the «Semana escolhida» step.
     """
     raw = raw or {}
+    if planned_period_end is None:
+        planned_period_end = chosen_period_end(values)
     picking = None
     week = values.get("picking_week")
     year = picking_year or values.get("picking_year")
@@ -137,6 +182,7 @@ def milestones_from_values(values: dict, raw: dict | None = None, *, picking_yea
                 picking = {"at": found["at"], "provisional": True, "origin": f"ano {found['year']} deduzido pela semana"}
     galvanizing = None if values.get("nao_galvaniza_indicado") else raw.get("Data Galvanização")
     return {"cut_date": _day(values.get("cut_date")), "picking": picking, "galvanizing": _day(galvanizing),
+            "parked": parked_week(raw.get("W")),
             "picking_week_without_year": planning_dates.positive_week(week) if week not in (None, "") and not picking and not year else None,
             "planned_period": planned_period_end, "planned_finish_date": _day(values.get("planned_finish_date")),
             "delivery_date": _day(values.get("delivery_date"))}
@@ -190,6 +236,9 @@ def resolve(area: str, phase: str, milestones: dict, *, policy: dict | None = No
                         "priority_field": field, "priority_scope": "order" if field in ORDER_SCOPED else "operation"}
             result["missing_reason"] = f"{FIELDS[definition['field']]} escolhida na substituição, mas sem data."
             return result
+    if area == "cantoneiras" and milestones.get("parked"):
+        return {**result, "parked": True,
+                "missing_reason": f"Estacionada no Excel (W {milestones['parked']}): fora do atraso e da carga das semanas."}
     fields = policy["principal"] if principal else policy["following"]
     for field in fields:
         found = _candidate(field, milestones)
@@ -214,6 +263,8 @@ def group(priority: dict) -> int:
 
 def window(priority: dict, today: date) -> str:
     """Carteira window, now from the sector's own priority date."""
+    if priority.get("parked"):
+        return PARKED
     day = _day(priority.get("priority_day"))
     if day is None:
         return "sem_data"

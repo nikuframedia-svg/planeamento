@@ -87,9 +87,11 @@ def test_mixed_order_counts_closed_copy_and_history_are_preserved(registry):
     assert planning.refresh_source(saved['id'])['source']['plan_key'] == 's1:10'
     with psycopg.connect(registry, autocommit=True) as conn:
         conn.execute("UPDATE raw_mtg.cpis_rows SET status='Fechada' WHERE snapshot_id='c1'")
+        # Decisão de 06/10/2026: manda a cópia CPIS mais recente; aqui é a de cantoneiras (c1).
+        conn.execute("UPDATE audit_mtg.snapshots SET loaded_at=loaded_at+interval '1 minute' WHERE snapshot_id='c1'")
     assert planning_hub.list_orders(state='open')['total'] == 0
     closed = planning_hub.list_orders(population='history')['orders'][0]
-    assert set(closed['status_values']) == {'Em Produção', 'Fechada'}
+    assert closed['status_values'] == ['Fechada'] and closed['conflicts'] == []
     assert closed['plan'] == {'perfis': 2, 'cantoneiras': 1}
     assert planning.get_record(saved['id'])['record']['id'] == saved['id']
     with psycopg.connect(registry, autocommit=True) as conn:

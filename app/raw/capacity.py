@@ -6,7 +6,7 @@ from .. import planning,planning_needs as needs,planning_raw as old
 from . import objects,projection,query
 
 METHODS={'area_hour':'mm²/h','metres_hour':'m/h','units_hour':'un./h','minutes_unit':'min/un.','fixed_minutes':'min'}
-ESTIMATE_CONTRACT='planning-operation-hours-20260924-v1'
+ESTIMATE_CONTRACT='planning-operation-hours-20260924-v2'  # v2 (06/10): janela histórica até hoje, amostra mínima e plausibilidade
 
 
 def hourly_rate(rate):
@@ -85,6 +85,20 @@ def estimate_inputs(values,rate):
             dimension=inputs['section_unit' if method=='area_hour' else 'length_mm']
             inputs['volume']=0 if q==0 else q*dimension/(1000 if method=='metres_hour' else 1) if dimension is not None and dimension>0 else None
     return inputs
+
+
+def operation_code(code):
+    """Código simples de uma operação: 'CPIS:119' → '119', 'LOCAL:PRINCIPAL' → 'corte', 'LOCAL:ABOCARDAR' → 'abocardar'."""
+    code=str(code or '')
+    return {'LOCAL:PRINCIPAL':'corte','LOCAL:ABOCARDAR':'abocardar'}.get(code,code.removeprefix('CPIS:'))
+
+
+def supports(resource,operation):
+    """O recurso confirmado faz esta operação? Aceita os dois formatos (simples e da camada de pesquisa, 06/10/2026).
+
+    As máquinas confirmadas a 05/10 guardam 'CPIS:119'/'LOCAL:PRINCIPAL'; o motor de horas usa '119'/'corte'.
+    """
+    return operation_code(operation) in {operation_code(x) for x in (resource or {}).get('definition',{}).get('operations') or []}
 
 
 def estimate_rule(values,applied):

@@ -10,7 +10,7 @@ from . import planning_dates
 import math
 import re
 
-CONTRACT = 'planning-integral-20260925-v7'
+CONTRACT = 'planning-integral-20260925-v9'  # v9 (06/10): semana prevista MTG3 pela Data Corte; v8: contador Excel vazio conta 0 quando a folha o confirma
 
 # Keep the attempted rule visible even when its operands are unavailable/invalid.
 GEOMETRY = {
@@ -54,6 +54,25 @@ def abocardar(value):
     if value is True or key(value).lstrip("'") in ('x', 'sim'): return True
     if value is False or key(value) in ('-', 'não', 'nao'): return False
     return None
+
+
+# Coluna de saldo do próprio Excel para cada contador (Qtd em falta = QTD − contador).
+EXCEL_REMAINING = {'Ser.': 'Qtd em Falta', 'Maq.': 'Qtd falta'}
+
+
+def excel_counter(raw, column, required):
+    """Contador do Excel; a célula vazia conta 0 quando a própria folha o confirma.
+
+    Regra de 06/10/2026: é o que o Excel faz (falta = QTD − contador) e o que a
+    vista kanban_plan_lines já fazia (qtd_minus_maq_blank_zero). Coluna ausente,
+    texto inválido ou uma «falta» diferente da quantidade continuam desconhecidos.
+    """
+    raw = raw or {}
+    value = raw.get(column)
+    if (column in raw and (value is None or str(value).strip() == '') and required is not None
+            and quantity(raw.get(EXCEL_REMAINING[column])) == required):
+        return 0
+    return value
 
 
 def production_source(operation, macro=None, *, local_initial=False, compatible=True):
@@ -145,14 +164,14 @@ def calculate(values, *, area='perfis', raw=None, operations=(), local_initial=F
     resolved = {}
     for code in dict.fromkeys(applicable):
         op = ops.get(code, {'operation': code})
-        macro = raw.get('Ser.') if code=='corte' else raw.get('Aboc.') if code=='abocardar' else op.get('macro_quantity')
+        macro = excel_counter(raw, 'Ser.', q) if code=='corte' else raw.get('Aboc.') if code=='abocardar' else op.get('macro_quantity')
         original_primary = str(raw.get('1ª Oper.') or '').strip()
         other_operation_excel = False
         if area=='cantoneiras' and code==primary and macro is None:
             # An explicit operation counter is already scoped by the evidence
             # producer. The unscoped legacy fallback belongs to the original
             # primary operation, even after the planner changes the sequence.
-            if not original_primary or original_primary==code:macro=raw.get('Maq.')
+            if not original_primary or original_primary==code:macro=excel_counter(raw, 'Maq.', q)
             else:other_operation_excel=quantity(raw.get('Maq.')) is not None
         result = production_source(op, macro, compatible=compatible, local_initial=local_initial)
         if other_operation_excel and result['value'] is None:

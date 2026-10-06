@@ -649,7 +649,8 @@
         for (const [col, c] of Object.entries(r.cells))
           flattened.push([
             c.cell,
-            fmt(c.value),
+            // Datas do Excel: mostra a data (dd/mm/aaaa) em vez do número de série guardado.
+            c.date ? c.date.slice(0, 10).split("-").reverse().join("/") : fmt(c.value),
             c.formula ? "=" + c.formula : "—",
             c.kind === "formula"
               ? "Fórmula"
@@ -818,7 +819,9 @@
           x.generation?.id || "Por preparar",
           x.drive?.error ||
             (x.newer_available
-              ? "Existe versão por importar"
+              ? x.newer_folder
+                ? `Versão mais recente na pasta «${x.newer_folder}»; a carga automática só lê a raiz`
+                : "Existe versão por importar"
               : x.drive?.checked_at
                 ? "Hash coincide"
                 : "Drive por verificar"),

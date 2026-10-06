@@ -126,17 +126,64 @@ def median_template(templates):
     return ordered[-1]
 
 
+def section_unit(row):
+    """Área de corte unitária (mm²) da operação, a mesma que a Carteira e a Carga usam.
+
+    Auditoria 06/10 (GT-01, A7-4): primeiro a área da linha da aplicação (`section_unit` publicada);
+    nas linhas só da camada de pesquisa, a unitária do Excel e, se vier vazia, a área total ÷ quantidade.
+    Uma linha da aplicação sem área fica sem área (a aplicação anula-a de propósito quando a peça mudou).
+    """
+    if row.get('section_unit') is not None or row.get('application_row_key'):
+        return row.get('section_unit')
+    raw = row.get('raw') or {}
+    unit = next((planning._number(raw.get(k)) for k in ('Área de Seção de Corte Unit. [mm2]', 'Área de Seção de Corte Unit. [mm²]') if planning._number(raw.get(k)) is not None), None)
+    if unit is not None and unit > 0:
+        return unit
+    total, q = planning._number(raw.get('Área de Seção de Corte [mm2]')), planning._number(row.get('quantidade_base'))
+    return total / q if total and total > 0 and q and q > 0 else None
+
+
+def _documentary(row, candidate, templates):
+    """Taxa documental (Excel) para esta máquina: a da própria linha publicada pela aplicação, senão a da folha.
+
+    Auditoria 06/10 (GT-05): na máquina da estimativa publicada (a mesma que a Carga mostra) usa-se essa
+    taxa do Excel, sem o fator ×3 da Thomas (decisão de 01/10: o Gantt não o aplica).
+    """
+    own_estimate = row.get('documentary_rate') or {}
+    machine = row.get('documentary_rate_resource', row.get('recurso_atual'))
+    if candidate['resource_code'] == machine and own_estimate.get('source') == 'Excel provisório' and (own_estimate.get('rate') or {}).get('value'):
+        own_rate = dict(own_estimate['rate'])
+        if own_estimate.get('factor', 1) > 1:
+            own_rate['value'] /= own_estimate['factor']
+        return [own_rate], None
+    rates = [r for r in templates.get((candidate['resource_code'], candidate['proposed_code']), [])
+             if not r.get('profile') or str(r['profile']).strip() == str(row.get('perfil') or '').strip()]
+    if len({r['value'] for r in rates}) > 1:
+        # The current row's rate describes its current machine only; for another machine the
+        # weighted median of what the workbook wrote for this profile is a stated estimate.
+        own = row.get('rate_m_per_hour') if candidate['resource_code'] == row.get('recurso_atual') else None
+        rates = [r for r in rates if r['value'] == own][:1] if own else [median_template(rates)]
+        if not own:
+            return rates, 'Velocidades divergentes no Excel para esta máquina e perfil: ' + rates[0]['divergent_values'] + '; usada a mediana.'
+    return rates, None
+
+
+def _history_note(history):
+    """Porque é que uma taxa histórica existente não foi usada (amostra pequena ou longe do Excel)."""
+    found = (history or {}).get('history') or {}
+    if found.get('value') is not None:
+        return [f"Taxa histórica {found['value']:.6g} {found.get('unit') or ''} fora do intervalo plausível face ao Excel; usada a taxa do Excel."]
+    return [found['reason']] if str(found.get('reason') or '').startswith('Amostra') else []
+
+
 def _duration(row, candidate, resource, configs, templates, started_at, context=None, *, rate_day=None):
     from .inputs import _option
     q = balance(row)['planning_remaining']
     if q is None or q <= 0:
         return None
-    raw = row.get('raw') or {}
     area = research.AREAS[row['setor']]
     op = row['operacao_codigo']
-    section = next((planning._number(raw.get(k)) for k in ('Área de Seção de Corte Unit. [mm2]', 'Área de Seção de Corte Unit. [mm²]') if planning._number(raw.get(k)) is not None), None)
-    if row.get('application_row_key'):
-        section = row.get('section_unit')
+    section = section_unit(row)
     values = {'quantity_to_plan':q, 'length_mm':row.get('comprimento_mm'), 'section_unit':section,
               'profile':row.get('perfil'), 'grade':row.get('qualidade'), 'material_type':row.get('material_type')}
     names = {op, op.removeprefix('CPIS:'), 'corte' if row['fase'] == 'principal' else op,
@@ -152,31 +199,23 @@ def _duration(row, candidate, resource, configs, templates, started_at, context=
     if len(rates) > 1:
         candidate['duration_reason'] = 'Taxas confirmadas sobrepostas.'; return None
     history = None
+    documentary, note = _documentary(row, candidate, templates)
     if not rates and context and resource['confirmed']:
         alias = next((a['name'] for a in resource.get('aliases',[]) if a['area']==area and (area,a['name']) in context.aliases),None)
         historical_op = ('corte' if row['fase']=='principal' else 'abocardar') if area=='perfis' and op.startswith('LOCAL:') else candidate['proposed_code'].removeprefix('CPIS:')
         if alias:
-            history = context.rate({**values,'machine':alias},area,historical_op,day,as_of=min(date.fromisoformat(day),date.fromisoformat(str(started_at)[:10])))
+            # Mesma regra H10 da Carga (auditoria 06/10, GT-04): janela até hoje, amostra mínima e taxa
+            # plausível face ao Excel desta máquina; fora disso fica a taxa do Excel.
+            from zoneinfo import ZoneInfo
+            today = utc(started_at).astimezone(ZoneInfo(planning.settings.display_timezone)).date()
+            history = context.rate({**values,'machine':alias},area,historical_op,day,excel=documentary[0] if documentary else None,
+                                   as_of=min(date.fromisoformat(day),today))
             if history.get('source')=='Histórico':
                 rates = [history['rate']]; source = 'Histórico'
     if not rates:
-        own_estimate=row.get('documentary_rate') or {}
-        if row.get('application_row_key') and candidate['resource_code']==row.get('recurso_atual') and own_estimate.get('source')=='Excel provisório' and own_estimate.get('rate'):
-            own_rate=dict(own_estimate['rate'])
-            if own_estimate.get('factor',1)>1:
-                own_rate['value']/=own_estimate['factor']
-            rates=[own_rate]
-            source='Excel provisório'
-    if not rates:
-        rates = [r for r in templates.get((candidate['resource_code'], candidate['proposed_code']), [])
-                 if not r.get('profile') or str(r['profile']).strip() == str(row.get('perfil') or '').strip()]
-        if len({r['value'] for r in rates}) > 1:
-            # The current row's rate describes its current machine only; for another machine the
-            # weighted median of what the workbook wrote for this profile is a stated estimate.
-            own = row.get('rate_m_per_hour') if candidate['resource_code'] == row.get('recurso_atual') else None
-            rates = [r for r in rates if r['value'] == own][:1] if own else [median_template(rates)]
-            if not own:
-                candidate['duration_note'] = 'Velocidades divergentes no Excel para esta máquina e perfil: ' + rates[0]['divergent_values'] + '; usada a mediana.'
+        rates = documentary
+        if note:
+            candidate['duration_note'] = note
         source = 'Excel provisório'
     if not rates:
         candidate['duration_reason'] = 'Taxa da máquina/operação por confirmar.'; return None
@@ -195,8 +234,30 @@ def _duration(row, candidate, resource, configs, templates, started_at, context=
             result.update(history_hash=history['history_hash'], history=history['history'], excluded_cohorts=history['excluded_cohorts'])
         elif source != 'Manual':
             result['assumptions'] = ['Taxa documental; preparação e movimentação por confirmar.'] + \
-                ([candidate['duration_note']] if candidate.get('duration_note') else [])
+                ([candidate['duration_note']] if candidate.get('duration_note') else []) + _history_note(history)
     return result
+
+
+def _application_inputs(row, record, aliases):
+    """Área de corte e taxa do Excel publicadas pela aplicação para esta operação (as da Carga).
+
+    Auditoria 06/10 (GT-01, GT-05): as linhas da camada de pesquisa (Excel de 29/09) recebem a área
+    unitária e a estimativa publicada da linha atual da aplicação; a máquina dessa estimativa fica
+    explícita, para a taxa do Excel nunca passar para outra máquina (ex. escolhida na Carteira).
+    """
+    area = research.AREAS[row['setor']]
+    if record is not None:
+        from ..sector.occurrences import _estimate_name
+        v = record.get('values_json') or {}
+        name = _estimate_name(row['operacao_codigo'], area, row['fase'] == 'principal')
+        found = [e for e in ((record.get('detail') or {}).get('calculation') or {}).get('operation_estimates') or []
+                 if str(e.get('operation')) == name]
+        row = {**row, 'section_unit': v.get('section_unit') if row.get('section_unit') is None else row['section_unit'],
+               'documentary_rate': found[0] if len(found) == 1 else None}
+    estimate = row.get('documentary_rate')
+    if estimate:
+        row = {**row, 'documentary_rate_resource': aliases.get((area, estimate.get('machine')))}
+    return row
 
 
 def member_selection_digest(c):
@@ -266,6 +327,8 @@ def capture(c, definition, started_at, *, expected_references=None):
     planning_lines, selection_pending = scope.planning_lines(c,selection,areas)
     # Chaves de cada linha (atual + importações anteriores) e máquina efetiva (Carteira → Tabela → conjunto).
     record_info = {r['row_key']: (scope.member_keys(r), r.get('effective_machine') or {}) for r in planning_lines}
+    record_values = {r['row_key']: r.get('values_json') or {} for r in planning_lines}
+    records_by_key = {r['row_key']: r for r in planning_lines}
     selected_rows, unmatched_lines = scope.research_rows(package['rows'],planning_lines)
     balances = research.application_balances(c,selected_rows, records=planning_lines)
     rows = [{**row,**balances.get(row['operacao_id'],{})} for row in selected_rows]
@@ -278,7 +341,8 @@ def capture(c, definition, started_at, *, expected_references=None):
         for area in planning.AREAS:
             aliases.setdefault((area,resource['name']),code)
     new_rows,new_dependencies = scope.local_rows(unmatched_lines,aliases)
-    rows += new_rows
+    rows = [_application_inputs(r, records_by_key.get(r.get('matched_application_key')), aliases) for r in rows]
+    rows += [_application_inputs(r, None, aliases) for r in new_rows]
     rows=[{**r,'documentary_source_machine':r.get('maquina_original'),'documentary_source_resource':r.get('recurso_atual'),
         **({'material_type':r['current_planning']['material_type']} if r.get('current_planning',{}).get('material_type') else {}),
         **({'maquina_original':r['current_planning']['machine'],'recurso_atual':aliases.get((research.AREAS[r['setor']],r['current_planning']['machine']))} if 'machine' in r.get('current_planning',{}) else {}),
@@ -338,10 +402,11 @@ def capture(c, definition, started_at, *, expected_references=None):
         source_rid = codes.get(row.get('recurso_atual'), {}).get('id')
         # One sector policy for every engine: MTG3 by Data Corte, MTG2 by usable Picking.
         # An unconfirmed Picking year stays out unless the scenario confirms it.
-        year = definition.get('picking_year_by_of', {}).get(row['ordem_codigo']) or row.get('ano_picking')
-        marks = priority.milestones_from_values(
-            {'cut_date': row.get('data_corte_prevista'), 'picking_week': row.get('semana_picking'),
-             'nao_galvaniza_indicado': row.get('nao_galvaniza_indicado')}, raw, picking_year=year,
+        year = definition.get('picking_year_by_of', {}).get(row['ordem_codigo'])
+        # Auditoria 06/10 (A9-1, A9-4): o Picking e a Semana escolhida vêm dos valores atuais da linha,
+        # como na Carteira e na Carga, e não só da camada de pesquisa (que pode estar parada).
+        values = record_values.get(row.get('matched_application_key') or row.get('application_row_key'))
+        marks = priority.milestones_from_values(priority.engine_values(row, values), raw, picking_year=year,
             picking_at=definition.get('picking_deadline_by_of', {}).get(row['ordem_codigo']),
             assumed_year=sector_policies[area].get('assume_picking_year'))
         principal = row['fase'] == 'principal'
@@ -531,4 +596,6 @@ def capture(c, definition, started_at, *, expected_references=None):
         'machine_overrides': overrides, 'override_transfers': override_transfers,
         'orphaned_overrides': override_orphans, 'weekly_availability': availability,
         'accepted_bars': definition.get('accepted_bars', {}), 'possible_duplicates': metadata['possible_duplicates'],
-        'historical_evidence': {context.history_hashes[k]:v for k,v in context.cache.items()}})
+        # Máquina e operação de cada evidência histórica (auditoria 06/10, GT-08), para os insights.
+        'historical_evidence': {context.history_hashes[k]:{**v,**{f'scope_{n}':x for n,x in getattr(context,'scopes',{}).get(k,{}).items()}}
+                                for k,v in context.cache.items()}})

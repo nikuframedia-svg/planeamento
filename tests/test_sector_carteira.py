@@ -240,3 +240,88 @@ def test_learned_preference_uses_the_most_specific_context_with_enough_choices()
     assert machine_learning.suggest(learned, "ZG", "L200X200X20")["machine"] == "Peddi 8"  # cai para a família
     assert machine_learning.suggest(learned, "DLT", "L45X45X4") is None  # só 2 escolhas: não chega
     assert machine_learning.suggest(None, "ZG", "L100X100X10") is None
+
+
+def test_sem_perfil_marker_is_not_a_profile_for_learning():
+    # Auditoria 06/10 (PROP-8): «Sem perfil» é o marcador de perfil vazio; não pode criar contextos de perfil.
+    from app.sector import machine_learning
+    assert machine_learning.contexts("D13", "Sem perfil") == [("familia", ("D13",))]
+    assert machine_learning.contexts("Sem família SKU", "Sem perfil") == []
+    assert ("perfil", ("L45X45X5",)) in machine_learning.contexts("D13", "L45X45X5")
+
+
+def _apply_world(monkeypatch, candidates):
+    """Uma ocorrência sem máquina e uma ficha técnica falsa com as candidatas dadas."""
+    from app.gantt import machines
+    from app.sector import estimates
+
+    class Index:
+        def __init__(self, metadata, rows):
+            pass
+
+        def candidates(self, row, codes):
+            return [dict(c) for c in candidates]
+    monkeypatch.setattr(machines, "EvidenceIndex", Index)
+    fact = {"key": "v2:a", "line_key": "k1", "area": "perfis", "phase": "principal", "of": "OF1", "reference": "R1",
+            "occurrence": 1, "operation": "LOCAL:PRINCIPAL", "profile": "HEA200", "sku_family": "VIGA",
+            "resource_id": None, "assigned_resource_id": None, "assigned_machine": "Sem máquina", "hours": None, "hours_origin": None,
+            "late_days": 0, "priority_day": "2026-10-10", "remaining": 10, "length_mm": 1000, "section_unit": 100.0,
+            "quantity_required": 10}
+    by_id = {"rid-v": {"id": "rid-v", "name": "Vanguard", "code": "VANGUARD"},
+             "rid-d": {"id": "rid-d", "name": "Disco", "code": "POSTO_DISCO"}}
+    package = {"metadata": {"rates": [{"unidade": "mm2/h", "valor": 100, "recurso_codigo": "VANGUARD"},
+                                      {"unidade": "mm2/h", "valor": 100, "recurso_codigo": "POSTO_DISCO"}]}, "rows": []}
+    study = {"summary": {}, "speeds": {}, "profile_speeds": {}}
+    return estimates, fact, by_id, package, study
+
+
+def _candidate(rid, code, eligibility="admissible"):
+    return {"resource_id": rid, "resource_code": code, "eligibility": eligibility, "proposed_code": "corte",
+            "conditions": [], "other_orders": 0, "process": None}
+
+
+def test_learned_machine_that_the_technical_sheet_excludes_is_not_proposed(monkeypatch):
+    # Auditoria 06/10 (PROP-2): a Carteira pré-escolhia a máquina aprendida mesmo excluída pela ficha técnica.
+    from app.sector import machine_learning
+    from collections import Counter
+    estimates, fact, by_id, package, study = _apply_world(monkeypatch, [_candidate("rid-d", "POSTO_DISCO"),
+                                                                       _candidate("rid-v", "VANGUARD", "excluded")])
+    ident = ("rid-v", "Vanguard")
+    learned = {"weighted": {("familia", ("VIGA",)): Counter({ident: 10})}, "raw": {("familia", ("VIGA",)): Counter({ident: 10})}}
+    estimates.apply([fact], {"v2:a": {"perfil": "HEA200"}}, codes={}, by_id=by_id, package=package, study=study, learned=learned)
+    assert fact["learned_preference"] is None and fact["planning_machine"] == "Disco"
+    line = {"key": "k1", "sku_family": "VIGA", "profile": "HEA200"}
+    assert machine_learning.for_line(learned, None, line)["machine"] == "Vanguard"  # sem ficha: como antes
+    assert machine_learning.for_line(learned, {"k1": fact["learned_preference"]}, line) is None
+    assert machine_learning.for_line(learned, {}, line) is None  # linha sem ocorrência principal verificada
+
+
+def test_profiles_balance_load_with_calendar_hours_when_there_is_no_observed_throughput(monkeypatch):
+    # Auditoria 06/10 (PROP-7): a MTG2 não tem débito observado; o equilíbrio usa as horas do calendário.
+    estimates, fact, by_id, package, study = _apply_world(monkeypatch, [_candidate("rid-d", "POSTO_DISCO"),
+                                                                       _candidate("rid-v", "VANGUARD")])
+    busy = {**fact, "key": "v2:b", "line_key": "k2", "of": "OF0", "assigned_resource_id": "rid-d",
+            "assigned_machine": "Disco", "hours": 80.0, "hours_origin": "documental"}
+    no_calendar = [dict(busy), dict(fact)]
+    estimates.apply(no_calendar, {"v2:a": {"perfil": "HEA200"}}, codes={}, by_id=by_id, package=package, study=study)
+    assert no_calendar[1]["planning_machine"] == "Disco" and "débito da máquina desconhecido" in no_calendar[1]["suggestion"]["reason"]
+    calendar = {"rid-d": {"hours_median": 40.0, "basis": "calendário"}, "rid-v": {"hours_median": 40.0, "basis": "calendário"}}
+    balanced = [dict(busy), dict(fact)]
+    estimates.apply(balanced, {"v2:a": {"perfil": "HEA200"}}, codes={}, by_id=by_id, package=package, study=study, calendar=calendar)
+    assert balanced[1]["planning_machine"] == "Vanguard"  # o Disco já tem 2 semanas de carga
+    assert "semanas de calendário" in balanced[1]["suggestion"]["reason"]
+
+
+def test_preview_alternatives_use_the_same_hours_as_the_portfolio_and_load(monkeypatch):
+    # Auditoria 06/10 (PROP-4): a previsão de máquinas mostrava horas do motor do Gantt, diferentes da Carteira.
+    from app.sector import assignments
+    estimates, fact, by_id, package, study = _apply_world(monkeypatch, [_candidate("rid-d", "POSTO_DISCO"),
+                                                                       _candidate("rid-v", "VANGUARD", "excluded")])
+    estimates.apply([fact], {"v2:a": {"perfil": "HEA200"}}, codes={}, by_id=by_id, package=package, study=study)
+    from app.gantt import machines
+    evidence = {"codes": {}, "by_id": by_id, "index": machines.EvidenceIndex(None, None),
+                "hours": {"by_id": by_id, "names": {r: {v["name"]} for r, v in by_id.items()}, "study": study,
+                          "rates": estimates.area_rates(package["metadata"])}}
+    options = {o["name"]: o for o in assignments.alternatives(None, {"_rows": {"v2:a": {"perfil": "HEA200"}}}, fact, evidence)}
+    assert options["Disco"]["hours"] == fact["load_hours"] == 10.0  # 10 peças × 100 mm² ÷ 100 mm²/h
+    assert options["Vanguard"]["hours"] is None  # excluída pela ficha

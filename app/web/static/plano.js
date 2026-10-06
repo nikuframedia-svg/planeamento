@@ -3,7 +3,7 @@
   const $ = id => document.getElementById(id);
   const DAYS = 7, FIRST_ROWS = 10;  // uma semana (seg–dom) por máquina, com os dias (pedido de 06/10/2026)
   const WEEKDAYS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
-  const state = {sector: "cantoneiras", data: null, offset: 0, showAll: false, showIdle: false, loading: 0};
+  const state = {sector: "cantoneiras", data: null, offset: 0, showAll: false, showIdle: false, loading: 0, day: null, dayMachine: null, dayData: null, dayLoading: 0};
 
   const el = (tag, text, cls) => {const n = document.createElement(tag); if (text != null) n.textContent = text; if (cls) n.className = cls; return n};
   const day = iso => new Date(iso.slice(0, 10) + "T12:00:00Z");
@@ -36,6 +36,7 @@
       if (!response.ok) throw Error(result.error || result.detail || `Erro ${response.status}`);
       state.data = result; notice("");
       render();
+      if (state.day) openDay(state.day, state.dayMachine, false);
     } catch (error) {
       if (serial !== state.loading) return;
       $("source").textContent = "";
@@ -145,6 +146,7 @@
     const busy = machines.filter(m => m.visible.length), idle = machines.filter(m => !m.visible.length);
     const total = machines.reduce((n, m) => n + m.boxes.length, 0);
     renderBehind(today);
+    renderElsewhere(); renderMissing();
     const gantt = $("gantt"), empty = $("empty");
     gantt.replaceChildren();
     const shown = state.showIdle ? [...busy, ...idle] : busy;
@@ -160,8 +162,13 @@
     grid.style.setProperty("--q-days", DAYS);
     grid.append(el("div", "Máquina", "corner"));
     for (let i = 0; i < DAYS; i++) {
-      const d = addDays(start, i), cell = el("div", WEEKDAYS[d.getUTCDay()]);
+      const d = addDays(start, i), cell = el(state.data.day_view ? "button" : "div", WEEKDAYS[d.getUTCDay()]);
       cell.append(el("b", short(iso(d))));
+      if (state.data.day_view) {  // ver o dia com as horas e os turnos de todas as máquinas do setor
+        cell.type = "button"; cell.className = "pq-day-link"; cell.dataset.day = iso(d);
+        cell.title = `Ver ${WEEKDAYS[d.getUTCDay()].toLowerCase()} ${short(iso(d))} hora a hora, por turno`;
+        cell.addEventListener("click", () => openDay(iso(d), null));
+      }
       if ([0, 6].includes(d.getUTCDay())) cell.classList.add("weekend");
       if (iso(d) === today) cell.classList.add("today");
       grid.append(cell);
@@ -200,6 +207,7 @@
     const rows = Math.max(1, lanes.length);
     const row = el("div", null, "pq-grid pq-row");
     row.style.setProperty("--q-days", DAYS);
+    row.dataset.id = machine.id;
     const label = el("div", null, "pq-machine");
     label.style.gridRow = `1 / span ${rows}`;
     const orders = new Set(machine.visible.map(b => b.of)).size;
@@ -210,6 +218,7 @@
       cell.style.gridColumn = String(i + 2); cell.style.gridRow = `1 / span ${rows}`;
       if ([0, 6].includes(d.getUTCDay())) cell.classList.add("weekend");
       if (iso(d) === today) cell.classList.add("today");
+      if (state.data.day_view) {cell.classList.add("clickable"); cell.title = `${machine.name} · ${short(iso(d))} hora a hora`; cell.addEventListener("click", () => openDay(iso(d), machine.id))}
       if (machine.days) {  // horas planeadas / horas do calendário nesse dia
         const date = iso(d), capacity = machine.days[date] || 0;
         const planned = machine.boxes.reduce((n, b) => n + ((b.days || []).find(x => x.date === date)?.hours || 0), 0);
@@ -267,14 +276,163 @@
       box.start === lastDay(box) ? `Dia ${short(box.start)}` : `De ${short(box.start)} a ${short(lastDay(box))}`;
     const whenText = passed ? `${when} · já passou e ainda falta fazer` : when;
     const perDay = (box.days || []).filter(x => x.hours).map(x => `${short(x.date)} ${hours(x.hours)} h`).join(" · ");
-    const rows = [["Cliente", box.customer || "—"], ["Obra", box.designation || "—"], ["Máquina", machine.name], ["Quando", whenText, passed ? "late" : ""],
-      ["Horas", box.hours ? `${hours(box.hours)} h${perDay ? ` (${perDay})` : ""}${box.hours_unknown ? ` · ${box.hours_unknown} sem horas` : ""}` : "Por calcular"],
+    const rows = [["Cliente", box.customer || "—"], ["Descrição da obra", box.designation || "—"], ["Máquina", machine.name], ["Quando", whenText, passed ? "late" : ""],
+      ["Horas", box.hours ? `${hours(box.hours)} h${box.hours_estimated ? " (estimativa)" : ""}${perDay ? ` · ${perDay}` : ""}${box.hours_unknown ? ` · ${box.hours_unknown} sem horas` : ""}` : "Por calcular"],
+      ...(box.shifts?.length ? [["Turnos", shiftText(box.shifts)]] : []),
       ["Faltam fazer", `${plural(box.pieces, "peça", "peças")}${box.lines > 1 ? ` (${box.lines} linhas)` : ""}`],
       ["Prazo", box.due ? `${short(box.due)}${box.late ? " · vai ficar atrasada" : ""}` : "Sem prazo", box.late ? "late" : ""]];
     for (const [label, value, cls] of rows) body.append(el("dt", label), el("dd", value, cls));
     const actions = $("dialog-actions"); actions.replaceChildren();
     const open = el("a", "Ver na Carteira");
     open.href = `/planeamento/carteira?setor=${encodeURIComponent(state.sector)}&vista=of&q=${encodeURIComponent(box.of)}`;
+    const close = el("button", "Fechar"); close.value = "close";
+    actions.append(open);
+    if (state.data?.day_view && !box.approximate && !state.day) {
+      const see = el("button", `Ver o dia ${short(box.start < todayIso() && lastDay(box) >= todayIso() ? todayIso() : box.start)}`); see.type = "button";
+      see.addEventListener("click", () => {$("dialog").close(); openDay(box.start < todayIso() && lastDay(box) >= todayIso() ? todayIso() : box.start, machine.id)});
+      actions.append(see);
+    }
+    actions.append(close);
+    $("dialog").showModal();
+  }
+
+  // «07/10 1.º 3,5 h · 2.º 7,5 h»: horas de uma caixa por dia e turno (turno vazio = fora do horário dos turnos)
+  function shiftText(list) {
+    const byDay = new Map();
+    for (const s of list) {if (!byDay.has(s.date)) byDay.set(s.date, []); byDay.get(s.date).push(s)}
+    return [...byDay].map(([d, items]) => `${short(d)} ${items.map(s => `${s.shift ? s.shift + ".º" : "sem hora"} ${hours(s.hours)} h`).join(" · ")}`).join(" | ");
+  }
+
+  function renderElsewhere() {
+    const box = $("elsewhere"), info = state.data?.elsewhere;
+    if (!box) return;
+    box.hidden = !info?.operations;
+    if (!info?.operations) return;
+    box.querySelector("summary").textContent = `${plural(info.operations, "operação deste setor está", "operações deste setor estão")} em máquinas de outro setor: ` +
+      info.machines.map(m => `${m.name} (${plural(m.orders, "OF", "OF")}, ${hours(m.hours)} h)`).join(" · ");
+    const list = box.querySelector("ul"); list.replaceChildren();
+    for (const m of info.machines) for (const it of m.items) list.append(el("li", `${it.of} · ${m.name} · ${short(it.start)}`));
+  }
+
+  // Operações escolhidas que não ficam em caixa nenhuma: ditas com o motivo, nunca escondidas.
+  function renderMissing() {
+    const box = $("missing"), list = state.data?.source?.missing || [];
+    if (!box) return;
+    box.hidden = !list.length;
+    if (!list.length) return;
+    // As que a proposta não coloca mas têm previsão da Tabela aparecem só como previsão: ditas à parte.
+    const forecast = list.filter(op => op.forecast), gone = list.length - forecast.length;
+    box.querySelector("summary").textContent = [
+      gone ? `${plural(gone, "operação planeada não aparece", "operações planeadas não aparecem")} no quadro (sem dia ou sem máquina)` : "",
+      forecast.length ? `${plural(forecast.length, "operação planeada fica", "operações planeadas ficam")} fora da proposta automática (só previsão da Tabela)` : ""].filter(Boolean).join(" · ");
+    const ul = box.querySelector("ul"); ul.replaceChildren();
+    for (const op of list) ul.append(el("li", `${op.of} · ${op.reference || ""} · ${op.operation || ""}: ${op.reasons.join("; ") || "motivo por indicar"}` +
+      (op.forecast ? ` (previsão a ${op.forecast_day ? short(op.forecast_day) : "—"})` : "")));
+  }
+
+  // --- Dia hora a hora (pedido de 06/10/2026): eixo 00–24, faixas dos turnos, trabalho com hora e totais por turno
+
+  const pxHour = () => innerWidth <= 600 ? 30 : 44;
+  const at = (value, start) => (Date.parse(value) - Date.parse(start)) / 3600000 * pxHour();
+  const clock = value => new Date(value).toLocaleTimeString("pt-PT", {timeZone: "Europe/Lisbon", hour: "2-digit", minute: "2-digit"});
+  const shiftName = (s, dayIso) => `${s.shift}.º turno${s.shift_date && s.shift_date !== dayIso ? ` de ${WEEKDAYS[day(s.shift_date).getUTCDay()].toLowerCase()} ${short(s.shift_date)}` : ""}`;
+
+  function setDayUrl(push) {
+    const url = new URL(location.href);
+    if (state.day) url.searchParams.set("dia", state.day); else url.searchParams.delete("dia");
+    if (state.day && state.dayMachine) url.searchParams.set("maquina", state.dayMachine); else url.searchParams.delete("maquina");
+    if (push) history.pushState(null, "", url); else history.replaceState(null, "", url);
+  }
+
+  async function openDay(dayIso, machineId, push = true) {
+    state.day = dayIso; state.dayMachine = machineId || null; setDayUrl(push);
+    $("week-board").hidden = true; $("day").hidden = false;
+    if (push) $("day").scrollIntoView({block: "start"});
+    const machine = state.data?.machines.find(m => m.id === machineId);
+    $("day-title").textContent = `${WEEKDAYS[day(dayIso).getUTCDay()]} ${short(dayIso)}${machine ? ` · ${machine.name}` : " · todas as máquinas do setor"}`;
+    $("day-all").hidden = !machineId;
+    $("day-content").replaceChildren(el("p", "A carregar o dia…", "pq-sub"));
+    const serial = ++state.dayLoading;
+    try {
+      const query = new URLSearchParams({setor: state.sector, dia: dayIso}); if (machineId) query.set("maquina", machineId);
+      const response = await fetch(`/planeamento/api/setor/quadro/dia?${query}`, {cache: "no-store"});
+      const result = await response.json().catch(() => ({}));
+      if (serial !== state.dayLoading) return;
+      if (response.status === 404 && !result.error) throw Error("A vista do dia precisa que o serviço do planeamento seja reiniciado.");
+      if (!response.ok) throw Error(result.error || result.detail || `Erro ${response.status}`);
+      state.dayData = result; renderDay();
+    } catch (error) {
+      if (serial !== state.dayLoading) return;
+      $("day-content").replaceChildren(el("p", error.message || "Não foi possível carregar o dia.", "pq-notice error"));
+    }
+  }
+
+  function closeDay(push = true) {
+    state.day = null; state.dayMachine = null; state.dayData = null; setDayUrl(push);
+    $("day").hidden = true; $("week-board").hidden = false;
+  }
+
+  function renderDay() {
+    const d = state.dayData, width = at(d.end, d.start), content = $("day-content");
+    content.replaceChildren();
+    const scroll = el("div", null, "pq-day-scroll"), table = el("div", null, "pq-day-grid");
+    table.style.setProperty("--q-track", `${Math.round(width)}px`);
+    const head = el("div", null, "pq-day-row pq-day-head"), corner = el("div", "Máquina", "pq-day-label"), axis = el("div", null, "pq-track");
+    for (const b of d.bands) {
+      const band = el("div", `${shiftName(b, d.day)} · ${b.from}–${b.to}`, "pq-band");
+      band.style.left = `${at(b.start, d.start)}px`; band.style.width = `${Math.max(2, at(b.end, d.start) - at(b.start, d.start))}px`;
+      axis.append(band);
+    }
+    for (const t of d.ticks) {const tick = el("span", t.label, "pq-tick"); tick.style.left = `${at(t.at, d.start)}px`; axis.append(tick)}
+    head.append(corner, axis); table.append(head);
+    const now = Date.now(), nowInside = now >= Date.parse(d.start) && now < Date.parse(d.end);
+    for (const m of d.machines) {
+      const row = el("div", null, "pq-day-row"); row.dataset.id = m.id;
+      const label = el("div", null, "pq-day-label");
+      label.append(el("strong", m.name));
+      for (const s of m.shifts) label.append(el("span", `${shiftName(s, d.day)}: ${hours(s.planned)} / ${hours(s.capacity)} h`, "pq-shift-total" + (s.planned > s.capacity + 0.05 ? " over" : "")));
+      if (m.day.untimed) label.append(el("span", `Sem hora marcada: ${hours(m.day.untimed)} h`, "pq-shift-total"));
+      label.append(el("span", `Dia: ${hours(m.day.planned)} / ${hours(m.day.capacity)} h`, "pq-day-total"));
+      const track = el("div", null, "pq-track");
+      for (const w of m.windows) {const win = el("div", null, "pq-window"); win.style.left = `${at(w.start, d.start)}px`; win.style.width = `${at(w.end, d.start) - at(w.start, d.start)}px`; win.title = `${w.shift ? w.shift + ".º turno" : "Fora de turno"} · ${clock(w.start)}–${clock(w.end)}`; track.append(win)}
+      for (const g of m.segments) {
+        const seg = el("button", null, "pq-seg" + (g.late ? " late" : "")); seg.type = "button";
+        seg.style.left = `${at(g.start, d.start)}px`; seg.style.width = `${Math.max(3, at(g.end, d.start) - at(g.start, d.start))}px`;
+        const refs = g.references.length === 1 ? g.references[0] : g.references.length ? `${g.references.length} ref.` : "";
+        seg.append(el("b", g.of), el("span", [refs, `${hours(g.hours)} h`].filter(Boolean).join(" · ")));
+        seg.title = `${g.of} · ${clock(g.start)}–${clock(g.end)} · ${g.shift ? shiftName(g, d.day) : "fora do horário dos turnos"} · ${hours(g.hours)} h`;
+        seg.addEventListener("click", () => openSegment(g, m, d));
+        track.append(seg);
+      }
+      if (nowInside) {const line = el("div", null, "pq-now"); line.style.left = `${at(new Date(now).toISOString(), d.start)}px`; line.title = "Agora"; track.append(line)}
+      row.append(label, track); table.append(row);
+      if (m.untimed.length) {
+        const strip = el("div", null, "pq-untimed");
+        const dayItems = m.untimed.filter(u => u.precision === "day"), weekItems = m.untimed.filter(u => u.precision === "week");
+        if (dayItems.length) strip.append(el("span", "Sem hora marcada: " + dayItems.map(u => `${u.of}${u.hours ? ` (${hours(u.hours)} h${u.estimated ? ", estimativa" : ""})` : ""}`).join(" · ")));
+        if (weekItems.length) strip.append(el("span", "Só se sabe a semana: " + weekItems.map(u => u.of).join(" · ")));
+        table.append(strip);
+      }
+    }
+    if (!d.machines.length) content.append(el("p", "Este setor não tem máquinas com calendário neste dia.", "pq-sub"));
+    scroll.append(table); content.append(scroll);
+    // Abrir já no trabalho (ou na hora atual, ou no 1.º turno), sobretudo no telemóvel.
+    const firstSeg = d.machines.flatMap(m => m.segments).map(g => g.start).sort()[0];
+    const firstWin = d.machines.flatMap(m => m.windows).map(w => w.start).sort()[0];
+    const target = firstSeg || (nowInside ? new Date(now).toISOString() : firstWin);
+    if (target) scroll.scrollLeft = Math.max(0, at(target, d.start) - 2 * pxHour());
+    if (d.elsewhere?.operations) content.append(el("p", `${plural(d.elsewhere.operations, "operação deste setor está", "operações deste setor estão")} em máquinas de outro setor (não aparecem aqui).`, "pq-sub"));
+  }
+
+  function openSegment(g, m, d) {
+    const title = $("dialog-title"); title.textContent = g.of; title.classList.toggle("late", g.late);
+    const body = $("dialog-body"); body.replaceChildren();
+    const rows = [["Cliente", g.customer || "—"], ["Máquina", m.name], ["Turno", g.shift ? shiftName(g, d.day) : "Fora do horário dos turnos"],
+      ["Hora", `${clock(g.start)}–${clock(g.end)}${g.cut_start ? " (começou antes)" : ""}${g.cut_end ? " (continua depois)" : ""}`],
+      ["Horas", `${hours(g.hours)} h`], ["Referências", g.references.join(", ") || "—"], ["Faltam fazer", plural(g.pieces, "peça", "peças")]];
+    for (const [label, value] of rows) body.append(el("dt", label), el("dd", value));
+    const actions = $("dialog-actions"); actions.replaceChildren();
+    const open = el("a", "Ver na Carteira"); open.href = `/planeamento/carteira?setor=${encodeURIComponent(state.sector)}&vista=of&q=${encodeURIComponent(g.of)}`;
     const close = el("button", "Fechar"); close.value = "close";
     actions.append(open, close);
     $("dialog").showModal();
@@ -298,8 +456,19 @@
   $("today").addEventListener("click", () => {state.offset = 0; if (state.data) renderBoard()});
   $("alert-more").addEventListener("click", () => {state.showAll = !state.showAll; renderAlert()});
   $("idle-toggle").addEventListener("click", () => {state.showIdle = !state.showIdle; renderBoard()});
+  const shiftDay = n => {const next = iso(addDays(day(state.day), n)); state.offset = Math.floor(between(monday(todayIso()), monday(next)) / 7); openDay(next, state.dayMachine)};
+  $("day-prev").addEventListener("click", () => shiftDay(-1));
+  $("day-next").addEventListener("click", () => shiftDay(1));
+  $("day-back").addEventListener("click", () => {closeDay(); if (state.data) renderBoard()});
+  $("day-all").addEventListener("click", () => openDay(state.day, null));
+  window.addEventListener("popstate", () => {
+    const q = new URLSearchParams(location.search), asked = q.get("dia");
+    if (asked && /^\d{4}-\d{2}-\d{2}$/.test(asked)) openDay(asked, q.get("maquina"), false); else if (state.day) {closeDay(false); if (state.data) renderBoard()}
+  });
+  const askedDay = new URLSearchParams(location.search).get("dia");
+  if (askedDay && /^\d{4}-\d{2}-\d{2}$/.test(askedDay)) {state.day = askedDay; state.dayMachine = new URLSearchParams(location.search).get("maquina"); state.weekStart = monday(askedDay)}
   const askedWeek = /^(\d{4})-W(\d{2})$/.exec(new URLSearchParams(location.search).get("semana") || "");
-  if (askedWeek) state.weekStart = mondayOf(Number(askedWeek[1]), Number(askedWeek[2]));
+  if (askedWeek && !state.weekStart) state.weekStart = mondayOf(Number(askedWeek[1]), Number(askedWeek[2]));
   let initial = new URLSearchParams(location.search).get("setor");
   if (!initial) try {initial = localStorage.getItem("plano.setor")} catch {}
   chooseSector(["cantoneiras", "perfis"].includes(initial) ? initial : "cantoneiras");

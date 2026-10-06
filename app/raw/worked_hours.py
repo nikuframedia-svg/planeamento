@@ -44,6 +44,14 @@ def observations(conn):
                     observed['hours']=None;observed['hours_reason']='Revisões de horas originais divergentes; aguarda atualização das áreas.'
                 originals[observed['key']]=observed
     result.extend(originals.values())
+    # Operador de cada folha MES: as páginas do mesmo turno repetem no rodapé as horas do turno inteiro (06/10/2026).
+    uids = [o['sheet_uid'] for o in result if o.get('origin') == 'OCR' and o.get('sheet_uid')]
+    if uids:
+        operators = {r['sheet_uid']: r['operator_name'] for r in conn.execute(
+            'SELECT sheet_uid, operator_name FROM mes_kanban.validated_sheets WHERE sheet_uid = ANY(%s)', (uids,)).fetchall()}
+        for o in result:
+            if o.get('origin') == 'OCR':
+                o['operator'] = (operators.get(o.get('sheet_uid')) or '').strip() or None
     return result
 
 
@@ -105,7 +113,8 @@ def normalize(conn, d):
     if hours > ((end-start).days+1)*24:
         raise planning.PlanningError('As horas reais excedem a duração do período da máquina.')
     operation = str(d.get('operation') or '').strip()
-    if operation and operation not in resource['definition']['operations']:
+    from .capacity import supports
+    if operation and not supports(resource, operation):
         raise planning.PlanningError('A operação não pertence à máquina. Deixa por repartir se abranger várias operações.')
     allocations=d.get('operation_hours') or []
     if not isinstance(allocations,list) or len(allocations)>40:
@@ -114,7 +123,7 @@ def normalize(conn, d):
     for allocation in allocations:
         if not isinstance(allocation,dict):raise planning.PlanningError('Repartição de horas inválida.')
         area=allocation.get('area');code=str(allocation.get('operation') or '').strip()
-        if area not in {a['area'] for a in resource['definition']['aliases']} or code not in resource['definition']['operations']:
+        if area not in {a['area'] for a in resource['definition']['aliases']} or not supports(resource, code):
             raise planning.PlanningError('Área ou operação da repartição não pertence à máquina.')
         if (area,code) in seen:raise planning.PlanningError('A repartição repete a mesma área/operação.')
         seen.add((area,code));normalized.append({'area':area,'operation':code,'hours':positive(allocation.get('hours'),zero=True)})
@@ -189,16 +198,31 @@ def resolve(resource, declarations, observed):
     for o in relevant:
         if o.get('date'):origins_by_date.setdefault(o['date'],set()).add(observation_origin(o))
     candidates=[o for o in relevant if o['key'] not in used]
+    # Um turno = uma declaração de horas: páginas da mesma máquina, dia e operador com as mesmas horas no rodapé
+    # contam uma vez, com o volume de todas as páginas (antes cada página contava o turno inteiro outra vez).
+    shifts_seen={}
+    grouped=[]
     for o in candidates:
+        same=(o.get('origin')=='OCR' and o.get('operator') and o.get('hours') is not None and o['machine'] is not None)
+        k=(o['machine'],o.get('date'),o.get('operator'),o.get('hours')) if same else None
+        if k and k in shifts_seen:
+            shifts_seen[k]['pages'].append(o)
+            continue
+        entry={'first':o,'pages':[o]}
+        if k:shifts_seen[k]=entry
+        grouped.append(entry)
+    for entry in grouped:
+        o=entry['first'];pages=entry['pages']
         if o['machine'] is None:
             continue
         unresolved_resource=(o.get('origin')=='OCR original' and o.get('area') is None
             and not observation_aliases(o).issubset(aliases))
         overlap=len(origins_by_date.get(o.get('date'),()))>1
-        cohorts.append({'key': o['key'], 'hours': None if overlap or unresolved_resource else o['hours'], 'origin': o['origin'],
+        cohorts.append({'key': o['key'] if len(pages)==1 else 'turno:'+'+'.join(sorted(p['key'] for p in pages)),
+            'hours': None if overlap or unresolved_resource else o['hours'], 'origin': o['origin'],
             **({'revision':o['revision']} if 'revision' in o else {}),
             'start_date': o['date'], 'end_date': o['date'], 'operation': None,
-            'sheets': [o['key']], 'sheet_evidence': [o],
+            'sheets': sorted(p['key'] for p in pages), 'sheet_evidence': pages,
             'reason': 'Sobreposição entre origens de horas por resolver.' if overlap else
                 'Área da folha original por confirmar; a máquina pode corresponder a recursos físicos distintos.' if unresolved_resource else
                 o.get('hours_reason') or ('Horas da folha desconhecidas.' if o['hours'] is None else None)})

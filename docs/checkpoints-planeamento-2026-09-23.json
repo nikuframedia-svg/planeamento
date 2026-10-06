@@ -3465,6 +3465,7 @@
     {
       "id": "C06",
       "titulo": "Fechados fora do ativo, intactos no histórico",
+      "nota_2026_10_06": "Regra substituída por decisão do Luís a 06/10/2026: quando as duas cópias CPIS importadas discordam, manda a cópia mais recente (Excel carregado mais tarde; em empate, maior data de registo), para todos os campos. Já não basta uma cópia dizer Fechada; vale o estado da cópia mais recente, mostrado tal como vem, sem conflito. Código: cpis_copies.latest_first e planning_hub._order_summary. O resto do C06 (histórico intacto, macro fechada) mantém-se.",
       "estado": "aprovado",
       "dependencias": [
         "C00"

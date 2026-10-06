@@ -65,6 +65,43 @@ def weekly_capacity(study, names):
     return None
 
 
+def calendar_capacity(c, resource_ids, today=None, weeks: int = 13) -> dict:
+    """{resource_id: {"hours_median", "basis"}} com as horas dos calendários do setor nas próximas semanas.
+
+    Auditoria 06/10 (PROP-7): a MTG2 não tem débito observado no Excel; sem isto o critério de equilíbrio
+    (6) nunca atuava nos perfis. Semanas sem calendário não entram na mediana.
+    """
+    from datetime import date, timedelta
+    from statistics import median
+    from . import shifts
+    ids = [str(r) for r in resource_ids if r]
+    if not ids:
+        return {}
+    today = today or date.today()
+    monday = today - timedelta(days=today.weekday())
+    horizon = {(monday + timedelta(weeks=i)).isocalendar()[:2] for i in range(weeks)}
+    hours = defaultdict(list)
+    for r in c.execute("SELECT definition FROM planning_mtg.raw_objects WHERE kind='calendar' AND NOT archived "
+                       "AND definition->>'resource_id' = ANY(%s)", (ids,)).fetchall():
+        d = r["definition"]
+        if (int(d["year"]), int(d["week"])) in horizon:
+            hours[str(d["resource_id"])].append(shifts.week_hours(d))
+    return {rid: {"hours_median": median(v), "basis": "calendário"} for rid, v in hours.items() if v and median(v) > 0}
+
+
+def hours_on(fact, rid, *, by_id, names, study, rates):
+    """(horas, base, origem) de uma ocorrência numa máquina: a regra única da Carteira, da Carga e da previsão.
+
+    Horas documentais do saldo quando existem; senão a estimativa (`estimate`) dessa máquina.
+    """
+    if fact["hours"] is not None:
+        return fact["hours"], "documental", fact["hours_origin"]
+    if not rid:
+        return None, None, None
+    hours, why = estimate(fact, by_id.get(rid), names.get(rid, set()), study, rates) if study else (None, None)
+    return (hours, "estimada", why) if hours is not None else (None, None, why)
+
+
 def estimate(fact, resource, names, study, area_rates):
     """Hours for one occurrence on one machine, or (None, reason)."""
     remaining = fact["remaining"]
@@ -154,24 +191,26 @@ def area_rates(metadata):
     return {code: next(iter(v)) for code, v in found.items() if len(v) == 1}
 
 
-def apply(facts, rows, *, codes, by_id, package, study, learned=None):
-    """Add suggested machine, planning machine and load hours to every occurrence (in place)."""
+def apply(facts, rows, *, codes, by_id, package, study, learned=None, calendar=None):
+    """Add suggested machine, planning machine and load hours to every occurrence (in place).
+
+    `calendar` ({resource_id: {"hours_median"}}, de `calendar_capacity`) é a capacidade semanal das máquinas
+    sem débito observado no Excel (MTG2).
+    """
     from ..gantt import machines
     names = throughput.aliases_to_names(by_id)
     rates = area_rates(package["metadata"]) if package else {}
     index = machines.EvidenceIndex(package["metadata"], package["rows"] + [r for r in rows.values() if r.get("application_row_key")]) if package else None
     capacity = {rid: weekly_capacity(study, names[rid]) for rid in by_id} if study else {}
+    for rid, found in (calendar or {}).items():
+        if not capacity.get(rid):
+            capacity[rid] = found
     load = defaultdict(float)
     processes = group_processes(facts)
     peers = defaultdict(lambda: defaultdict(int))  # (OF, operation, profile) → machine → lines
 
     def own_hours(fact, rid):
-        if fact["hours"] is not None:
-            return fact["hours"], "documental", fact["hours_origin"]
-        if not rid:
-            return None, None, None
-        hours, why = estimate(fact, by_id.get(rid), names.get(rid, set()), study, rates) if study else (None, None)
-        return (hours, "estimada", why) if hours is not None else (None, None, why)
+        return hours_on(fact, rid, by_id=by_id, names=names, study=study, rates=rates)
 
     for fact in facts:
         rid = fact["assigned_resource_id"]
@@ -195,6 +234,8 @@ def apply(facts, rows, *, codes, by_id, package, study, learned=None):
         preference = suggest(learned, fact.get("sku_family"), fact.get("profile")) if learned else None
         if preference and preference["resource_id"] not in {c["resource_id"] for c in candidates}:
             preference = None
+        # A preferência já filtrada pela ficha técnica: a mesma que a Carteira pré-escolhe (auditoria 06/10, PROP-2).
+        fact["learned_preference"] = preference
         options = []
         for c in candidates:
             rid = c["resource_id"]
@@ -214,7 +255,8 @@ def apply(facts, rows, *, codes, by_id, package, study, learned=None):
                  ("Mesma máquina das outras linhas da OF com este perfil e operação; " if rid == peer else "") + \
                  (f"{process.lower()} pela regra das séries ({'≥' if process == 'Punção' else '<'} {SERIES_PIECES} peças/linha ou geometria); " if process and chosen.get("process") == process else "") + \
                  (f"precedente em {chosen['other_orders']} OF" if chosen.get("other_orders") else "sem precedente da peça") + \
-                 (f"; carga prevista {weeks:.1f} semanas de débito observado" if weeks is not None else "; débito da máquina desconhecido") + \
+                 (f"; carga prevista {weeks:.1f} semanas de {'calendário' if (capacity.get(rid) or {}).get('basis') == 'calendário' else 'débito observado'}"
+                  if weeks is not None else "; débito da máquina desconhecido") + \
                  (f"; {len(options)} candidatas" if len(options) > 1 else "; única candidata")
         fact.update(planning_resource_id=rid, planning_machine=by_id[rid]["name"], machine_basis="sugerida",
                     suggestion={"resource_id": rid, "machine": by_id[rid]["name"], "proposed_code": chosen["proposed_code"],

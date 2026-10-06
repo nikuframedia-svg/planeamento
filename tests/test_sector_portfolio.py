@@ -34,13 +34,34 @@ def test_deadline_windows_count_from_today_to_end_of_iso_week_plus_two(cut, expe
     assert portfolio.window_of(cut, TODAY) == expected
 
 
+def test_occurrence_detail_carries_every_cpis_status_to_the_signals():
+    # occurrences.py passa detail["status_values"] a signals_of; sem isto no _DETAIL chegava sempre None (auditoria A8-3).
+    from app.sector import occurrences
+    assert "'status_values',coalesce(c.detail->'status_values'" in occurrences._DETAIL
+
+
 def test_signals_read_the_written_text():
     s = portfolio.signals_of("= POSTES YDT = 1 PRIORIDADE = ENTREGA W48/2026", "Anulada 28-01-2026",
                              "FAB. APÓS VALIDAÇÃO DO EP2633", "fabricado na Electrofer", "Em Produção")
     assert s == {"prioridade": 1, "anulada": True, "eletrofer": True, "validacao": True, "estado_cpis": False,
                  "entrega_escrita": "W48/2026"}
-    assert portfolio.signals_of("", "", "", "", "Pronta")["estado_cpis"] is True
+    # «Pronta» não fecha a OF na população, por isso também não fica «por confirmar» na Carteira (A3-7).
+    assert portfolio.signals_of("", "", "", "", "Pronta")["estado_cpis"] is False
     assert portfolio.signals_of("", "", "", "", None)["estado_cpis"] is True
+    # Gerações gravadas antes de 06/10/2026, sem estado único: só abertas nas duas é que contam como abertas (A8-3).
+    # As novas já trazem o estado da cópia CPIS mais recente (ver tests/test_cpis_latest_copy.py).
+    assert portfolio.signals_of("", "", "", "", None, ["Em Aberto", "Em Produção"])["estado_cpis"] is False
+    assert portfolio.signals_of("", "", "", "", None, ["Fechada", "Em Produção"])["estado_cpis"] is True
+    assert portfolio.signals_of("", "", "", "", None, ["Estranho", "Em Produção"])["estado_cpis"] is True
+
+
+def test_open_conflict_between_cpis_copies_stays_in_the_proposal_and_says_conflict():
+    r = raw("OF1", "DLT319", 24, 1500, status=None, cut="2026-10-10")
+    r["detail"] = {"status_values": ["Em Aberto", "Em Produção"]}
+    line = portfolio.line_from_row(r, TODAY)
+    assert line["status"] == "Estado em conflito" and line["proposal"] == "C"
+    r["detail"] = {"status_values": ["Fechada", "Em Produção"]}
+    assert portfolio.line_from_row(r, TODAY)["proposal"] is None
 
 
 def test_unreconciled_excel_and_mes_counters_leave_an_unknown_balance():
@@ -125,3 +146,32 @@ def test_pages_work_with_the_switch_on(client, monkeypatch):
     assert child["groups"][0]["key"] == "DLT319"
     assert client.get("/planeamento/api/carteira", params={"vista": "x"}).status_code == 422
     assert client.get("/planeamento/api/carteira/opcoes").json()["families"] == [{"code": "1", "label": "1 Postes Treliçados"}]
+
+
+def test_week_2026_53_text_marks_parked_lines_out_of_late_and_weekly_load():
+    # Auditoria 06/10 (S53-1): «2026/53» escrito à mão na coluna W marca linhas estacionadas no Excel.
+    from app.sector import priority
+    parked = raw("OF9", "ZD-1", 10, 1000, cut="2026-03-02", key="macro:s:plan:p")
+    parked["detail"] = {"raw": {"W": "2026/53"}}
+    undated = raw("OF9", "ZD-2", 10, 1000, cut=None, key="macro:s:plan:u")
+    undated["detail"] = {"raw": {"W": "2026/53"}}
+    normal = raw("OF8", "ZD-3", 10, 1000, cut="2026-09-20", key="macro:s:plan:n")
+    normal["detail"] = {"raw": {"W": 41}}
+    d = data(parked, undated, normal)
+    lines = {x["key"]: x for x in d["lines"]}
+    for key in ("macro:s:plan:p", "macro:s:plan:u"):
+        x = lines[key]
+        assert x["window"] == "estacionada" and x["parked"] and x["priority_day"] is None and x["proposal"] is None
+        assert "Estacionada no Excel" in x["priority_source"]
+    assert lines["macro:s:plan:n"]["window"] == "atrasado" and not lines["macro:s:plan:n"]["parked"]
+    weeks = {w["code"]: w["lines"] for w in portfolio.weeks("cantoneiras", data=d)}
+    assert weeks == {"2026-W38": 1, "estacionada": 2}
+    assert [x["key"] for x in d["lines"] if portfolio.matches(x, {"semanas": ["sem"]})] == []
+    assert len([x for x in d["lines"] if portfolio.matches(x, {"semanas": ["estacionada"]})]) == 2
+    # A Carga classifica pela data: sem prazo, nunca atrasado da semana atual.
+    marks = priority.milestones_from_values({"cut_date": "2026-03-02"}, {"W": "2026/53"})
+    due = priority.resolve("cantoneiras", "principal", marks)
+    assert due["priority_day"] is None and due["parked"] and priority.window(due, TODAY) == "estacionada"
+    # Só na MTG3, e só o marcador: a semana numérica e os perfis seguem a regra normal.
+    assert priority.resolve("perfis", "principal", priority.milestones_from_values({"cut_date": "2026-03-02"}, {"W": "2026/53"}))["priority_day"] == "2026-03-02"
+    assert priority.resolve("cantoneiras", "principal", priority.milestones_from_values({"cut_date": "2026-03-02"}, {"W": 53}))["priority_day"] == "2026-03-02"

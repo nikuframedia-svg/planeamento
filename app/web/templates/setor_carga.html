@@ -22,11 +22,23 @@
       <button type="button" id="apply-all" class="apply" hidden>Aplicar todas as recomendações</button>
       <a href="/planeamento/setor/definicoes">Definições →</a>
     </header>
-    <p class="legend muted">Cada célula: <b>turnos · capacidade</b>, carga (<span class="k plan">no plano</span> + <span class="k due">a vencer</span> + <span class="k sug">a vencer, máquina sugerida</span>) e a recomendação. O trabalho atrasado conta na semana atual. Clica numa célula para ver as OF e os turnos de cada dia.</p>
+    <div class="tabs" role="tablist" aria-label="Vista">
+      <button type="button" role="tab" id="tab-semanas" aria-selected="true">Semanas</button>
+      <button type="button" role="tab" id="tab-maquinas" aria-selected="false" hidden>Máquinas</button>
+    </div>
     <p id="notice" class="notice" role="status" hidden></p>
     <p id="error" class="error" role="alert" hidden></p>
-    <div class="grid-wrap"><table class="loadgrid"><thead id="head"></thead><tbody id="body"></tbody></table></div>
-    <section id="detail" class="detail" hidden></section>
+    <p id="elsewhere" class="elsewhere" hidden></p>
+    <div id="weeks-view">
+      <p class="legend muted">Cada célula: <b>turnos · capacidade</b>, carga (<span class="k plan">no plano</span> + <span class="k due">a vencer</span> + <span class="k sug">a vencer, máquina sugerida</span>) e a recomendação. O trabalho atrasado conta na semana atual. Clica numa célula para ver as OF, os turnos de cada dia, o cálculo e a produção registada.</p>
+      <div class="grid-wrap"><table class="loadgrid"><thead id="head"></thead><tbody id="body"></tbody></table></div>
+      <section id="detail" class="detail" hidden></section>
+    </div>
+    <div id="machines-view" hidden>
+      <p class="legend muted">Todo o trabalho aberto de cada máquina, em qualquer semana. Passa o cursor nos títulos para ver de onde vem cada número.</p>
+      <div class="grid-wrap"><table class="orders machines" id="machines-table"></table></div>
+      <p class="muted" id="machines-note"></p>
+    </div>
   </main>
 </body>
 </html>

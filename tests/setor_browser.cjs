@@ -67,6 +67,32 @@ const shots = process.env.SETOR_SHOTS;
     assert.equal(writes.length, n + 1, 'Aplicar envia um pedido');
   }
 
+  // Resumo da célula (o que as antigas Capacidades/Disponibilidade mostravam), cálculo de uma operação e produção.
+  await page.goto(`${base}/planeamento/setor/carga?setor=cantoneiras`);
+  await page.waitForSelector('#body tr td.c', {timeout: 120000});
+  await page.locator('#body tr').first().locator('td.c').first().click();
+  await page.waitForFunction(() => /Horas segundo o Excel/.test(document.getElementById('detail-summary')?.innerText || '') && !/…/.test(document.getElementById('detail-summary').innerText), null, {timeout: 120000});
+  for (const label of ['Capacidade', 'Horas previstas', 'Horas segundo o Excel', 'Horas reais declaradas', 'Peso (kg)']) assert.ok((await page.locator('#detail-summary').innerText()).includes(label), `resumo com ${label}`);
+  const firstOrder = page.locator('#detail-orders tr.clickable').first();
+  if (await firstOrder.count()) {
+    await firstOrder.click();
+    await page.waitForSelector('#detail-operations table', {timeout: 120000});
+    await page.locator('#detail-operations details summary').first().click();
+    assert.match(await page.locator('#detail-operations dl.proof').first().innerText(), /Fórmula/);
+  }
+  await page.click('#production-open');
+  await page.waitForFunction(() => /registos validados|Sem produção/.test(document.getElementById('detail-production').innerText), null, {timeout: 60000});
+  if (shots) await page.screenshot({path: `${shots}/carga-detalhe.png`, fullPage: true});
+  // Separador Máquinas: totais por máquina; a antiga «Capacidades das máquinas» abre aqui.
+  await page.goto(`${base}/planeamento/capacidades?area=perfis`);
+  assert.match(page.url(), /\/planeamento\/setor\/carga\?setor=perfis&vista=maquinas/);
+  await page.waitForSelector('#machines-table tbody tr', {timeout: 120000});
+  assert.ok(!(await page.locator('#machines-view').isHidden()), 'vista Máquinas aberta');
+  assert.match(await page.locator('#machines-table thead').innerText(), /Área por cortar \(mm²\)[\s\S]*Horas segundo o Excel/);
+  if (shots) await page.screenshot({path: `${shots}/carga-maquinas.png`, fullPage: true});
+  await page.goto(`${base}/planeamento/disponibilidade?area=cantoneiras`);
+  assert.match(page.url(), /\/planeamento\/setor\/carga\?setor=cantoneiras$/);
+
   // Definições do setor: máquinas, turnos, feriados, regras.
   await page.goto(`${base}/planeamento/setor/definicoes?setor=perfis`);
   await page.waitForSelector('#machines tr', {timeout: 60000});
@@ -74,6 +100,8 @@ const shots = process.env.SETOR_SHOTS;
   assert.equal(await page.locator('#template input').count(), 6, 'três turnos × início/fim');
   assert.match(await page.locator('#holidays').inputValue(), /2026-12-25/);
   assert.ok((await page.locator('#rules').innerText()).length > 20, 'regras do setor visíveis');
+  assert.ok(await page.locator('#machines details.names').count() >= 1, 'nomes e operações das máquinas');
+  await page.waitForSelector('#worked .worked-form', {timeout: 60000});
   if (shots) await page.screenshot({path: `${shots}/definicoes.png`, fullPage: true});
 
   // Gantt semanal: sete colunas (seg a dom), «planeado / capacidade h» por dia, ◀ ▶ mudam de semana.
@@ -92,9 +120,35 @@ const shots = process.env.SETOR_SHOTS;
   await page.click('#today');
   await page.waitForFunction((r) => document.getElementById('range').textContent === r, range);
 
+  // Só as máquinas do setor (Definições = mesma regra) no Gantt da semana e do dia.
+  const own = (await (await page.request.get(`${base}/planeamento/api/setor/definicoes?setor=cantoneiras`)).json()).machines.map((m) => m.id);
+  for (const id of await page.locator('#gantt .pq-row').evaluateAll((rows) => rows.map((r) => r.dataset.id))) assert.ok(own.includes(id), `máquina ${id} é do setor`);
+
+  // Dia hora a hora: 7 dias clicáveis; eixo com 23–25 horas; faixas e totais por turno; voltar à semana.
+  assert.equal(await page.locator('#gantt .pq-day-link').count(), 7, 'sete dias clicáveis');
+  await page.locator('#gantt .pq-day-link.today, #gantt .pq-day-link').first().click();
+  await page.waitForSelector('#day-content .pq-day-row', {timeout: 120000});
+  assert.match(page.url(), /[?&]dia=\d{4}-\d{2}-\d{2}/);
+  const ticks = await page.locator('#day-content .pq-tick').count();
+  assert.ok(ticks >= 23 && ticks <= 25, `horas do dia (${ticks})`);
+  assert.ok(await page.locator('#day-content .pq-band', {hasText: '1.º turno'}).count() >= 1, 'faixa do 1.º turno');
+  for (const t of await page.locator('#day-content .pq-shift-total').allInnerTexts()) assert.match(t, /^\d\.º turno( de \S+ \d\d\/\d\d)?: [\d,]+ \/ [\d,]+ h$/);
+  for (const id of await page.locator('#day-content .pq-day-row[data-id]').evaluateAll((rows) => rows.map((r) => r.dataset.id))) assert.ok(own.includes(id), `máquina ${id} do dia é do setor`);
+  if (shots) await page.screenshot({path: `${shots}/gantt-dia.png`, fullPage: true});
+  await page.click('#day-back');
+  await page.waitForFunction(() => !document.getElementById('week-board').hidden && !/dia=/.test(location.search));
+  // Uma máquina num dia, a partir da célula da semana.
+  await page.locator('#gantt .pq-row .pq-cell.clickable').first().click({position: {x: 5, y: 5}});
+  await page.waitForSelector('#day-content .pq-day-row', {timeout: 120000});
+  assert.equal(await page.locator('#day-content .pq-day-row[data-id]').count(), 1, 'só essa máquina');
+  assert.match(page.url(), /maquina=/);
+  await page.goBack();
+  await page.waitForFunction(() => !document.getElementById('week-board').hidden);
+
   // Telemóvel: sem deslocamento horizontal da página.
   await page.setViewportSize({width: 390, height: 900});
-  for (const url of ['/planeamento/setor/carga?setor=perfis', '/planeamento/setor/definicoes?setor=cantoneiras']) {
+  const todayIso = new Date().toISOString().slice(0, 10);
+  for (const url of ['/planeamento/setor/carga?setor=perfis', '/planeamento/setor/definicoes?setor=cantoneiras', `/planeamento/gantt?setor=cantoneiras&dia=${todayIso}`]) {
     await page.goto(base + url);
     await page.waitForTimeout(1500);
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), `sem scroll horizontal em ${url}`);

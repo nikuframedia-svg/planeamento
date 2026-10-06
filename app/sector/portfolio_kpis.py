@@ -164,7 +164,9 @@ def overview(sector: str, **kw) -> dict:
                                "type": None, "in_catalog": False}
             if b and status["planeado"]:
                 _add(base[b], f, line)
-        code = next(c for c, value in status.items() if value)
+        code = next((c for c, value in status.items() if value), None)
+        if code is None:  # linha excluída: fora do Resumo (planning_status, A8-5)
+            continue
         s = summary[code]
         s["pieces"] += line["pieces"] or 0
         s["ofs"].add(line["of"])

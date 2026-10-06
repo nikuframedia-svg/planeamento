@@ -74,6 +74,38 @@ def test_picking_without_year_deduces_the_nearest_year():
     assert chosen["priority_field"] == "picking" and chosen["priority_day"] == "2025-10-20"
 
 
+def test_engine_uses_the_current_picking_of_the_line_like_the_portfolio():
+    """Auditoria 06/10 (A9-1): pesquisa de 29/09 sem semana; a folha Picking atual diz W39."""
+    research_row = {"semana_picking": None, "ano_picking": None, "data_corte_prevista": "2026-10-09"}
+    values = {"picking_week": 39, "picking_year": None, "cut_date": "2026-10-09"}
+    due = priority.resolve("perfis", "principal", priority.milestones_from_values(priority.engine_values(research_row, values), {}))
+    portfolio = priority.resolve("perfis", "principal", priority.milestones_from_values(values, {}))
+    assert due["priority_field"] == portfolio["priority_field"] == "picking"
+    assert due["priority_day"] == portfolio["priority_day"] == "2026-09-21"
+    # Uma semana antiga da pesquisa não substitui o valor atual (aqui, Picking em conflito na folha).
+    stale = {**research_row, "semana_picking": 38}
+    conflict = priority.engine_values(stale, {"picking_week": None, "picking_conflict": True, "cut_date": "2026-10-09"})
+    assert priority.resolve("perfis", "principal", priority.milestones_from_values(conflict, {}))["priority_field"] == "cut_date"
+    # Sem valores atuais de Picking (linha sem registo), a pesquisa continua a valer.
+    assert priority.engine_values(stale, None)["picking_week"] == 38
+
+
+def test_chosen_week_feeds_the_mtg2_policy_after_picking():
+    """Auditoria 06/10 (A9-4): a «Semana escolhida» vale depois do Picking e antes da Data Corte."""
+    m = priority.milestones_from_values({"cut_date": "2026-10-30", "planned_year": 2026, "planned_week": 42}, {})
+    due = priority.resolve("perfis", "principal", m)
+    assert due["priority_field"] == "planned_period" and due["priority_day"] == "2026-10-18"
+    assert "Decisão local" in due["priority_source"]
+    with_picking = priority.milestones_from_values(
+        {"cut_date": "2026-10-30", "planned_year": 2026, "planned_week": 42, "picking_week": 41, "picking_year": 2026}, {})
+    assert priority.resolve("perfis", "principal", with_picking)["priority_field"] == "picking"
+    # Semana sem ano ou em desacordo com a data prevista não é decisão válida.
+    assert priority.chosen_period_end({"planned_week": 42}) is None
+    assert priority.chosen_period_end({"planned_year": 2026, "planned_week": 42, "expected_date": "2026-11-20"}) is None
+    # A MTG3 continua só pela Data Corte.
+    assert priority.resolve("cantoneiras", "principal", m)["priority_field"] == "cut_date"
+
+
 def test_overrides_are_keyed_by_sector():
     table = {("cantoneiras", "OF1", "*"): {"definition": {"due_date": "2026-10-02"}}}
     assert priority.override_for(table, "cantoneiras", "OF1", "REF") is not None

@@ -106,11 +106,21 @@ def historical(events, cohorts, *, area, operation, method, values, as_of, days=
         seen_events.update(distinct)
     volume=sum(r['volume'] for r in used);hours=sum(r['hours'] for r in used)
     value=volume/hours if hours>0 and volume>0 else None
+    # Amostra mínima (06/10/2026): uma taxa histórica precisa de pelo menos MIN_SHIFTS turnos em MIN_DAYS dias e
+    # MIN_HOURS horas; uma página com 2 linhas não chega para mudar as horas de centenas de linhas.
+    days_used={r['start_date'] for r in used}
+    small=value is not None and (len(used)<MIN_SHIFTS or len(days_used)<MIN_DAYS or hours<MIN_HOURS)
+    if small:value=None
     return {'source':'Histórico','method':method,'unit':UNITS.get(method),'value':value,
             'window':{'start':str(start),'end':str(as_of),'days':days},'volume':volume,'hours':hours,
             'sheet_count':len({s for r in used for s in r['sheets']}),'event_count':len(seen_events),
             'cohorts':used,'excluded':excluded,'scope':{k:values.get(k) for k in SCOPE_FIELDS} if method=='units_hour' else {'area':area,'operation':operation,'unit':UNITS.get(method),'compatibility':'Volume integral normalizado pela dimensão comprovada de cada peça.'},
-            'reason':None if value is not None else 'Sem coorte compatível com volume e horas positivos.'}
+            'reason':None if value is not None else (f'Amostra histórica insuficiente ({len(used)} turnos em {len(days_used)} dias, {hours:.1f} h); usa-se o Excel.' if small
+                     else 'Sem coorte compatível com volume e horas positivos.')}
+
+
+MIN_SHIFTS, MIN_DAYS, MIN_HOURS = 3, 2, 15.0
+PLAUSIBLE = (0.25, 4.0)  # taxa histórica aceite entre ¼ e 4 vezes a velocidade do Excel
 
 
 def select_rate(values, *, area, operation, resource_id, manual, historical_rate, excel, when):
@@ -124,7 +134,12 @@ def select_rate(values, *, area, operation, resource_id, manual, historical_rate
     if applicable:
         r=applicable[0]
         return {'source':'Manual','rate':r['definition'],'configuration':r,'reason':None,'factor':1}
-    if positive(historical_rate.get('value')):
+    historical_value=positive(historical_rate.get('value'))
+    plausible=True
+    if historical_value and excel and positive(excel.get('value')) and excel.get('method')==historical_rate.get('method'):
+        ratio=historical_value/excel['value']
+        plausible=PLAUSIBLE[0]<=ratio<=PLAUSIBLE[1]  # longe demais da velocidade do Excel: amostra suspeita, fica o Excel
+    if historical_value and plausible:
         return {'source':'Histórico','rate':{k:historical_rate[k] for k in ('method','value','unit','window') if k in historical_rate},'reason':None,'factor':1}
     if excel and positive(excel.get('value')):
         factor=3 if area=='perfis' and operation=='corte' and values.get('machine')=='Serrote Fita Thomas IS639 Pav.1' and (quantity(values.get('quantity_required')) or 0)>50 else 1
@@ -139,6 +154,7 @@ class Context:
         self.resources={r['id']:r for r in self.configs if r['kind']=='resource' and r['definition'].get('confirmed')}
         self.aliases={(a['area'],a['name']):r for r in self.resources.values() for a in r['definition']['aliases']}
         self.observed=worked_hours.observations(conn);self.events=[];self.cache={};self.time_cache={};self.history_hashes={}
+        self.scopes={}  # cache_key → máquina e operação da taxa histórica (insights do Gantt, auditoria GT-08)
         declarations=[r for r in self.configs if r['kind']=='worked_hours']
         self.declarations=declarations
         for area in planning.AREAS:
@@ -205,6 +221,8 @@ class Context:
         if cache_key not in self.cache:
             self.cache[cache_key]=historical(self.events,cohorts,area=area,operation=operation,method=method,values=values,as_of=as_of,days=days)
             self.history_hashes[cache_key]=needs.digest({'productivity':self.cache[cache_key]})
+            self.scopes[cache_key]={'resource_id':resource['id'] if resource['id'] in self.resources else None,
+                                    'machine':values.get('machine'),'area':area,'operation':str(operation)}
         history=self.cache[cache_key]
         chosen=select_rate(values,area=area,operation=operation,resource_id=resource['id'],manual=self.manual,historical_rate=history,excel=excel,when=when)
         digest=self.history_hashes[cache_key]
@@ -224,7 +242,8 @@ class Context:
         applied=self.rate(values,area,operation,when,excel=excel,as_of=as_of)
         resource=self.aliases.get((area,values.get('machine')))
         allowed=operation in ('corte','abocardar') if area=='perfis' else str(operation).isdigit() and str(operation)!='0'
-        if not allowed or resource and operation not in resource['definition']['operations']:
+        from .capacity import supports
+        if not allowed or resource and not supports(resource,operation):
             result={**applied,'source':None,'rate':None,'hours':None,'reason':'Operação por confirmar para este recurso.'}
             return {**result,'calculation':estimate_rule(values,result)}
         h,reason=estimate(values,applied['rate'],operation) if applied['rate'] else (None,applied['reason'])
@@ -264,13 +283,16 @@ def apply_rows(conn, area, rows, configs, *, persist=True, context=None, source=
             operation_values=preparations.get(op) or ({} if main else {'machine':None,'expected_date':None,'planned_week':None,'planned_year':None})
             vals={**v,**{k:x for k,x in operation_values.items() if k not in needs.PIECE_FIELDS}}
             vals['quantity_to_plan']=balance['planning_remaining'];vals['quantity_required']=v.get('quantity_required')
-            y,w,_=capacity_revision.period(vals,area,src['snapshot_id'],periods)
+            # Operação seguinte MTG3 não herda a Data Corte (mesma regra de capacity_revision.period).
+            y,w,_=capacity_revision.period({**vals,'cut_date':None} if area=='cantoneiras' and not main else vals,area,src['snapshot_id'],periods)
             when=str(vals.get('expected_date') or (date.fromisocalendar(y,w,1) if y and w else today))[:10]
             excel=None
             if main:
                 imported=excel_rates.get((area,vals.get('machine')))
                 excel={**imported,'method':'area_hour'} if area=='perfis' and imported else {'method':'metres_hour','value':number(row['raw'].get('Mt\\h')),'unit':'m/h','source':'Macro · Mt\\h'} if area=='cantoneiras' else None
-            result=context.estimate(vals,area,op,when,excel=excel,as_of=min(today,date.fromisoformat(when)))
+            # A janela histórica acaba hoje (auditoria 06/10, C3-F6), igual para todas as linhas e para o Gantt;
+            # a data prevista (when) só escolhe a vigência das taxas manuais.
+            result=context.estimate(vals,area,op,when,excel=excel,as_of=today)
             estimates.append({'operation':op,'machine':vals.get('machine'),'quantity':balance['planning_remaining'],
                               'balance':balance,**result})
             if main:

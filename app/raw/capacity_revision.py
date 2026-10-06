@@ -9,7 +9,7 @@ from pydantic_core import from_json, to_json
 from .. import planning, planning_needs as needs, planning_raw as raw, planning_catalogs as catalogs, planning_dates, planning_calendars
 from . import query, projection, objects, workbooks
 
-CONTRACT = 'capacity-20260925-integral-v28'
+CONTRACT = 'capacity-20260925-integral-v32'  # v32 (06/10): janela histórica até hoje (C3-F6); v31 (06/10): MTG3 calendarizada pela Data Corte; v30: códigos CPIS:/LOCAL: aceites; um turno = uma declaração; amostra mínima e plausibilidade do histórico
 NON_PHYSICAL = {'', 'sem máquina', 'mtg3', 'subcontrato', 'abocardar', 'serrote mtg2', 'serrote mtg3'}
 
 
@@ -39,7 +39,10 @@ def validate_period(c, area, id, d):
     return {**d,'year':year,'week':week,'confirmed':True}
 
 
-def period(v, area, snapshot, periods):
+def period(v, area, snapshot, periods, primary=True):
+    # MTG3: a Data Corte da operação principal dá o ano e a semana (decisão de 01/10/2026); a semana W
+    # com ano confirmado por versão só serve às linhas sem Data Corte e às operações seguintes.
+    if area=='cantoneiras' and not primary:v={**v,'cut_date':None}
     y,w,origin=planning_dates.period(v,area=area,operation=v.get('operation') or ('corte' if area=='perfis' else ''),cantoneiras_week=number(v.get('imported_week')))
     if y is not None or (area=='perfis' and origin!='Por calendarizar'):
         return y,w,origin
@@ -227,7 +230,7 @@ def calculate(c,configs,sources,gens,*,today,scope=None,rows_override=None,persi
                 if not is_local and closed and primary:continue
                 name=vals.get('machine')
                 if scope is not None and machine_key(area,name) not in scope['machines']:continue
-                y,w,period_source=period(vals,area,sources[area]['snapshot_id'],periods)
+                y,w,period_source=period(vals,area,sources[area]['snapshot_id'],periods,primary=primary)
                 bucket,b=ensure(area,name,y,w);mk=b['mk'];res=resources.get(mk)
                 ref,ref_reason,factor=reference_estimate({**vals,'speed_m_h':number(original.get('Mt\\h'))} if area=='cantoneiras' else vals,area,q,imported_rates.get((area,name))) if primary else (None,'Operação adicional: quantidade e parâmetros próprios por confirmar',1)
                 when=str(vals.get('expected_date') or '')[:10]
@@ -238,11 +241,12 @@ def calculate(c,configs,sources,gens,*,today,scope=None,rows_override=None,persi
                 if primary:
                     imported=imported_rates.get((area,name))
                     excel={**imported,'method':'area_hour'} if area=='perfis' and imported else {'value':number(original.get('Mt\\h')) if 'Mt\\h' in original else number(vals.get('speed_m_h')),'method':'metres_hour','unit':'m/h','source':'Velocidade da macro'} if area=='cantoneiras' else None
-                applied=rate_context.estimate(effective,area,str(op),when,excel=excel,as_of=min(today,date.fromisoformat(when)))
+                applied=rate_context.estimate(effective,area,str(op),when,excel=excel,as_of=today)  # janela histórica até hoje; when só dá a vigência manual (C3-F6)
                 hours,reason=applied['hours'],applied['reason']
                 if q==0:hours,reason=0,None
                 if is_local and not local.get('_compatible') and calculated_source is None:hours=None;reason='A preparação local exige revisão da quantidade ou da especificação técnica.'
-                if res and op not in res['definition']['operations']:hours=None;reason='Operação não confirmada para este recurso.'
+                from .capacity import supports
+                if res and not supports(res,op):hours=None;reason='Operação não confirmada para este recurso.'
                 from .capacity import estimate_rule
                 applied={**applied,'hours':hours,'reason':reason}
                 applied['calculation']=estimate_rule(effective,applied)

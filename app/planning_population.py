@@ -3,6 +3,8 @@
 CPIS states observed in the source inventory: Em Aberto, Em Produção,
 Fechada and Pronta. Only Fechada declares closure. Unknown states remain
 visible with their diagnostic; production percentage is not a closure source.
+When the two imported CPIS copies disagree, the newest copy decides
+(decisão de 06/10/2026, ver cpis_copies.latest_first).
 """
 from . import planning
 
