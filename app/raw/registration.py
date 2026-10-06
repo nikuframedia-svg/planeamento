@@ -13,6 +13,24 @@ def enabled():
     return os.getenv('MES_PLANNING_FREE_ENTRY', '0') == '1'
 
 
+def iso_date(value):
+    """AAAA-MM-DD, também a partir de dd/mm/aaaa ou dd-mm-aaaa (como se escreve na fábrica); None se não for data."""
+    if value in (None, ''):
+        return None
+    text = str(value).strip()
+    try:
+        return date.fromisoformat(text[:10] if len(text) > 10 and text[10] in 'T ' else text).isoformat()
+    except ValueError:
+        pass
+    parts = text.replace('-', '/').replace('.', '/').split('/')
+    if len(parts) == 3 and all(p.strip().isdigit() for p in parts) and len(parts[2].strip()) == 4:
+        try:
+            return date(int(parts[2]), int(parts[1]), int(parts[0])).isoformat()
+        except ValueError:
+            return None
+    return None
+
+
 def normalize(raw, cat, previous=None):
     from .. import planning_catalogs as catalogs
     previous = previous or {}
@@ -45,10 +63,8 @@ def normalize(raw, cat, previous=None):
                 data[name] = None
                 warnings.append({'field': name, 'message': 'Valor guardado; sem número utilizável para cálculo.'})
         elif kind == 'date':
-            try:
-                data[name] = date.fromisoformat(str(value)).isoformat() if value not in (None, '') else None
-            except (ValueError, TypeError):
-                data[name] = None
+            data[name] = iso_date(value)
+            if data[name] is None and value not in (None, ''):
                 warnings.append({'field': name, 'message': 'Valor guardado; data por interpretar.'})
         elif name == 'abocardar':
             data[name] = catalogs.abocardar_mark(value)
@@ -59,8 +75,11 @@ def normalize(raw, cat, previous=None):
     if data.get('custom_profile'):
         data['profile'] = data.get('special_profile') or data.get('profile') or ''
     # Catalogue and completeness checks describe applicability, not permission to save.
+    # As datas dd/mm/aaaa já convertidas não geram o aviso «data inválida» da validação do catálogo.
+    checked = {**raw, **{f['id']: data[f['id']] for f in catalogs.fields()
+                         if f['type'] == 'date' and f['id'] in raw and data.get(f['id'])}}
     try:
-        catalogs.validate(raw, cat, ready=True, previous=previous)
+        catalogs.validate(checked, cat, ready=True, previous=previous)
     except Exception as exc:
         from ..planning import PlanningError
         if not isinstance(exc, PlanningError):

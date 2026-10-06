@@ -10,9 +10,15 @@ const assert=require('node:assert/strict');
  assert.equal(await page.getByRole('button',{name:'Adicionar referência nova'}).count(),0);
  assert.equal(await page.getByRole('button',{name:'Origem e histórico',exact:true}).count(),0);
  assert.equal(await page.locator('#actor').count(),0);
- assert.deepEqual(await page.locator('#preparation h2').allTextContents(),['Dados da peça','Características de corte','Mais opções','Trabalho a preparar','Pré-visualização dos cálculos','Guardar']);
+ // Ecrã simples (06/10/2026): só «Dados da peça» aberta; o resto em blocos fechados; todas as colunas do Excel à vista.
+ assert.deepEqual(await page.locator('#preparation h2').allTextContents(),['Dados da peça','Características de corte']);
+ assert.deepEqual(await page.locator('#preparation details.section>summary').allTextContents(),['Mais opções','Trabalho a preparar','Pré-visualização dos cálculos','Produção e histórico']);
+ assert.deepEqual(await page.locator('#preparation details.section').evaluateAll(n=>n.map(d=>d.open)),[false,false,false,false]);
  assert.ok(await page.locator('#cut-section').isHidden(),'na MTG2 o corte está na primeira secção');
- assert.equal(await page.locator('#more-options').evaluate(n=>n.tagName),'SECTION');
+ assert.equal(await page.locator('#more-options').evaluate(n=>n.tagName),'DETAILS');
+ assert.deepEqual(await page.locator('#piece-fields > .field:not([hidden]) label').allTextContents(),['Data Corte','Referência','Tipo de Material','Designação Perfil','QTD','Ø Externo (mm)','Largura (mm)','Altura (mm)','Espessura (mm)','Comp. (mm)','Ang. (°)','Qual.','Abocardar','Picking semana','Picking ano','Equipa','Pav.','Máquina']);
+ assert.equal(await page.locator('#piece-fields p.help').count(),0,'sem textos de ajuda na primeira secção');
+ assert.equal(await page.locator('#field-cut_date').getAttribute('type'),'date');
  assert.equal(await page.locator('#material-forecast').count(),0,'a previsão de requisição de material saiu (06/10/2026)');
  assert.ok(!await page.locator('#field-abocardar').isChecked());
  await page.locator('#field-component_ref').fill('BROWSER-NEW');
@@ -31,6 +37,7 @@ const assert=require('node:assert/strict');
  for(const id of ['quantity_to_plan','chanfro','ponteira','finish_week','finish_year','weekly_capacity_hours','material_available_date','material_lot','material_request_date'])assert.equal(await page.locator('#field-'+id).count(),0);
  await page.locator('#field-machine').selectOption('MEBA');
  // Evidence/history must preserve in-progress edits without requiring a save.
+ await page.locator('#secondary-details>summary').click();
  await page.getByRole('button',{name:'Ver origem e alterações',exact:true}).click();
  await page.locator('#history-dialog').waitFor({state:'visible'});await page.locator('#history-dialog [data-close]').click();
  await page.getByRole('button',{name:'Ver produção registada',exact:true}).click();
@@ -39,8 +46,11 @@ const assert=require('node:assert/strict');
  // Changing mode needs an explicit choice; cancel retains all fields.
  await page.locator('#pdf-link').click();await page.locator('#leave-dialog').waitFor({state:'visible'});
  await page.getByRole('button',{name:'Continuar a editar',exact:true}).click();assert.equal(await page.locator('#field-length_mm').inputValue(),'1000');
- // Always-open supplementary fields and inline numeric validation.
+ // Supplementary fields in «Mais opções» and inline numeric validation.
+ await page.locator('#more-options>summary').click();
  await page.locator('#field-notes').fill('Conservar esta observação.');
+ await page.locator('#field-quantity_required').fill('2,5');await page.locator('#error-quantity_required').filter({hasText:'inteiro'}).waitFor();
+ await page.locator('#field-quantity_required').fill('100');assert.equal(await page.locator('#error-quantity_required').textContent(),'');
  await page.locator('#field-angle_deg').fill('não é número');
  await page.getByRole('button',{name:'Guardar rascunho',exact:true}).click();await page.locator('#error-angle_deg').filter({hasText:'número'}).waitFor();
  await page.locator('#field-angle_deg').fill('0');await page.locator('#field-abocardar').check();
@@ -78,18 +88,19 @@ const assert=require('node:assert/strict');
  await page.screenshot({path:proofFolder+'/pdf-desktop.png',fullPage:true});
  const list=await page.request.get(base+'/planeamento/api/necessidades/lista?of=OF4200').then(r=>r.json());assert.equal(list.needs.length,1);
  // Reopening a linked PDF presents human values, never overwrites them with raw OCR.
- await page.locator('#field-notes').fill('Decisão humana depois do PDF.');await page.getByRole('button',{name:'Guardar rascunho',exact:true}).click();
+ await page.locator('#more-options>summary').click();await page.locator('#field-notes').fill('Decisão humana depois do PDF.');await page.getByRole('button',{name:'Guardar rascunho',exact:true}).click();
  await page.waitForFunction(()=>document.querySelector('#status').textContent.includes('Rascunho guardado'));
  await page.goto(base+'/planeamento/preparar?document=browser-doc&piece=browser-piece');await page.locator('#field-component_ref').waitFor({state:'visible'});
  assert.equal(await page.locator('#field-notes').inputValue(),'Decisão humana depois do PDF.');
  await page.getByRole('button',{name:'Guardar rascunho',exact:true}).click();await page.getByRole('button',{name:'Abrir peça seguinte do PDF'}).waitFor({state:'visible'});await page.getByRole('button',{name:'Abrir peça seguinte do PDF'}).click();
  await page.waitForFunction(()=>document.querySelector('#field-component_ref')?.value==='SECOND-PIECE');
+ await page.locator('#more-options>summary').click();
  await page.locator('#field-material_type').selectOption('Perfil U');await page.locator('#field-profile').selectOption('__custom__');await page.locator('#field-special_profile').fill('Especial do desenho');assert.ok(await page.locator('#field-geometry').isVisible());
  await page.locator('#manual-link').click();await page.locator('#leave-dialog').waitFor({state:'visible'});await page.getByRole('button',{name:'Descartar alterações'}).click();
  await page.locator('#area').waitFor({state:'visible'});
- // Unknown area stays unselected when no document, plan or prior decision identifies it.
+ // Unknown area: the last sector used (or MTG3) is chosen at once, so the page never shows a different form.
  await page.route('**/api/ordens/OF4200',async route=>{const response=await route.fetch();const json=await response.json();json.context.sources=[];await route.fulfill({response,json})});
- await page.goto(base+'/planeamento/manual?of=OF4200&new=1');await page.locator('#area').waitFor({state:'visible'});assert.equal(await page.locator('#area').inputValue(),'');assert.ok(await page.locator('#catalog-fields').isHidden());
+ await page.goto(base+'/planeamento/manual?of=OF4200&new=1');await page.locator('#area').waitFor({state:'visible'});await page.locator('#catalog-fields').waitFor({state:'visible'});assert.equal(await page.locator('#area').inputValue(),'perfis');
  assert.ok(await page.locator('#field-angle_deg').isVisible());assert.ok(await page.locator('#field-grade').isVisible());assert.ok(await page.locator('#field-length_mm').isVisible());
  assert.deepEqual(errors,[]);console.log(JSON.stringify({manual:true,pdf:true,sharedNeed:true,conferenceWithoutPlan:true,history:true,cpisGuard:true,mobile:true,zoomReflow:true,unsavedGuard:true,pdfOfMismatch:true,unknownArea:true,errors}));await browser.close();
 })().catch(e=>{console.error(e);process.exit(1)});

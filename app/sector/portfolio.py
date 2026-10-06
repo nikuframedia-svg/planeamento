@@ -2,7 +2,8 @@
 
 Só leitura. Junta três fontes da mesma importação do Excel:
 - a projeção RAW da aplicação: linhas ativas, produção MES associada, máquina, prazo e estado CPIS;
-- a linha original do Excel (raw_mtg.plan_production_rows.row_data): notas «Descrição» e «P»;
+- a linha original do Excel (raw_mtg.plan_production_rows.row_data): notas «Descrição» e «P» (também nas peças
+  registadas a partir de uma linha do Excel, pela linha de origem);
 - a cópia do CPIS dentro do Excel (raw_mtg.cpis_rows): família e data de registo da OF.
 
 Saldo por operação segundo a mesma política de reconciliação do Gantt e da carga.
@@ -98,7 +99,10 @@ FROM g
 JOIN planning_mtg.raw_members m ON m.dataset = g.dataset AND m.first_generation <= g.id
      AND (m.last_generation IS NULL OR m.last_generation > g.id)
 JOIN planning_mtg.raw_resolved_contents c ON c.hash = m.content_hash
-LEFT JOIN raw_mtg.plan_production_rows p ON p.snapshot_id = g.snapshot AND p.source_line_id = substr(m.row_key, 7)
+-- Linha do Excel de origem: pela chave «macro:<linha>»; numa peça registada (chave = UUID do registo) pela
+-- linha do Excel de onde veio (detail.plan_key), para não perder Descrição, P e Observações (06/10/2026).
+LEFT JOIN raw_mtg.plan_production_rows p ON p.snapshot_id = g.snapshot
+     AND p.source_line_id = CASE WHEN m.row_key LIKE 'macro:%%' THEN substr(m.row_key, 7) ELSE c.detail->>'plan_key' END
 LEFT JOIN raw_mtg.cpis_rows cp ON cp.snapshot_id = g.snapshot AND cp.production_order_no = c.values_json->>'of'
 WHERE (c.values_json->>'planning_active')::boolean
 """

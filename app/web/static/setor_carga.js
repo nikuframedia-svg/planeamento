@@ -1,5 +1,6 @@
 'use strict';
-// Carga e turnos (06/10/2026): máquina × semana, − / + turno, recomendação e detalhe por OF.
+// Carga e turnos (06/10/2026; tabela simples 07/10): máquina × semana «carga / capacidade h», atrasado à parte,
+// recomendação por baixo; − / + turno no detalhe, com as OF.
 // Também mostra o que as antigas páginas Capacidades e Disponibilidade mostravam (separador Máquinas,
 // horas segundo o Excel, peso, horas reais declaradas, cálculo de cada operação, produção registada).
 (() => {
@@ -51,76 +52,117 @@
     await load();
   }
 
+  // Formato novo da API (07/10/2026): atrasado à parte (late_before) e capacidade da semana inteira (full_capacity).
+  // Com a resposta antiga (sem late_before) a semana atual mostra a carga com o atrasado, como antes.
+  const modern = () => data.machines.some((m) => m.late_before !== undefined);
+  const hasCalendar = (m) => m.has_calendar !== undefined ? m.has_calendar : m.weeks.some((w) => w.status !== 'sem_calendario');
+  const totalOf = (m) => (data.totals || []).find((t) => t.id === m.id) || null;
+  const capOf = (w) => w.full_capacity !== undefined ? w.full_capacity : w.capacity;
+  const turnos = (n) => `${n > 0 ? '+' : '−'}${Math.abs(n)} turno${Math.abs(n) > 1 ? 's' : ''}`;
+  const adviceTitle = (a) => `${a.text || ''}${a.still_missing && !/ficam a faltar/.test(a.text || '') ? ` · mesmo assim faltam ${h.format(a.still_missing)} h` : ''}`;
+  const isOpen = (m, w) => open && open.m === m.id && open.w === w.week && open.y === w.year;
+  const change = (m, w, n) => shiftsChange([{maquina: m.id, ano: w.year, semana: w.week, turnos: n}], `${short(m.name)} S${w.week}`).catch(error);
+
   function cell(m, w) {
-    const pct = w.capacity ? Math.min(100, Math.round(100 * w.load / w.capacity)) : (w.load ? 100 : 0);
-    const minus = el('button', {type: 'button', class: 'pm', 'aria-label': `Menos um turno ${m.name} S${w.week}`, disabled: w.shifts <= 0}, '−');
-    const plus = el('button', {type: 'button', class: 'pm', 'aria-label': `Mais um turno ${m.name} S${w.week}`, disabled: w.shifts >= 3}, '+');
-    minus.addEventListener('click', (e) => { e.stopPropagation(); shiftsChange([{maquina: m.id, ano: w.year, semana: w.week, turnos: w.shifts - 1}], `${short(m.name)} S${w.week}`).catch(error); });
-    plus.addEventListener('click', (e) => { e.stopPropagation(); shiftsChange([{maquina: m.id, ano: w.year, semana: w.week, turnos: w.shifts + 1}], `${short(m.name)} S${w.week}`).catch(error); });
     const advice = w.advice || {};
-    const apply = advice.delta ? el('button', {type: 'button', class: 'apply small', title: advice.text}, `${advice.delta > 0 ? '+' : ''}${advice.delta} · Aplicar`) : null;
-    if (apply) apply.addEventListener('click', (e) => { e.stopPropagation(); shiftsChange([{maquina: m.id, ano: w.year, semana: w.week, turnos: w.shifts + advice.delta}], `${short(m.name)} S${w.week}`).catch(error); });
-    const extra = [
-      w.excel_hours !== undefined ? `Horas segundo o Excel: ${h1.format(w.excel_hours)} h${w.excel_unknown ? ` (${w.excel_unknown} operações principais sem horas do Excel)` : ''}` : '',
-      w.actual_hours !== undefined && w.actual_hours !== null ? `Horas reais declaradas: ${h1.format(w.actual_hours)} h` : '',
-      w.excel_calendar_hours ? `Calendário do Excel: ${h1.format(w.excel_calendar_hours)} h` : ''].filter(Boolean).join('\n');
-    const td = el('td', {class: `c ${w.status}${open && open.m === m.id && open.w === w.week && open.y === w.year ? ' open' : ''}`, tabindex: 0,
-      title: `No plano ${h1.format(w.plan)} h · a vencer ${h1.format(w.due)} h · sugerida ${h1.format(w.suggested)} h${w.late ? ` · atrasado ${h1.format(w.late)} h` : ''}${w.unknown ? ` · ${w.unknown} operações sem horas` : ''}${extra ? '\n' + extra : ''}\n${advice.text || ''}`},
-      el('div', {class: 'top'}, minus, el('span', {class: 'cap'}, `${w.shifts} t · ${h.format(w.capacity)} h`, w.manual ? el('span', {class: 'man', title: 'Mudada à mão'}, ' ✎') : null), plus),
-      el('div', {class: 'bar'}, el('span', {class: 'fill', style: `width:${pct}%`})),
-      el('div', {class: 'nums'}, el('span', {class: 'k plan'}, h.format(w.plan)), ' + ', el('span', {class: 'k due'}, h.format(w.due)), ' + ', el('span', {class: 'k sug'}, h.format(w.suggested)),
-        ` = ${h.format(w.load)} h`, w.unknown ? el('span', {class: 'muted'}, ` · ${w.unknown}?`) : null),
-      el('div', {class: 'adv'}, apply || el('span', {class: 'muted'}, advice.text && !advice.delta ? (/^(Certo|Sobram)/.test(advice.text) ? 'Certo' : advice.text) : '')));
+    const apply = advice.delta ? el('button', {type: 'button', class: 'apply small', title: adviceTitle(advice)}, turnos(advice.delta)) : null;
+    if (apply) apply.addEventListener('click', (e) => { e.stopPropagation(); change(m, w, w.shifts + advice.delta); });
+    const td = el('td', {class: `c ${w.status}${isOpen(m, w) ? ' open' : ''}`, tabindex: 0, title: adviceTitle(advice) || null},
+      el('span', {class: 'load-cap'}, `${h.format(w.load)} / ${h.format(capOf(w))} h`), apply ? el('div', {class: 'adv'}, apply) : null);
     td.addEventListener('click', () => showDetail(m, w));
     td.addEventListener('keydown', (e) => { if (e.key === 'Enter') showDetail(m, w); });
     return td;
   }
 
-  function renderWeeks() {
-    $('head').replaceChildren(el('tr', {}, el('th', {scope: 'col'}, 'Máquina'),
-      ...data.weeks.map((w, i) => el('th', {scope: 'col'}, `S${w.week}`, el('small', {}, ` ${dm(w.monday)}`), i === 0 ? el('small', {class: 'muted'}, ' (atual)') : null))));
-    $('body').replaceChildren(...data.machines.map((m) => el('tr', {},
-      el('th', {scope: 'row'}, short(m.name), el('small', {class: 'muted'}, ` ${m.process || ''}`),
-        m.no_date.operations ? el('div', {class: 'muted small'}, `Sem prazo: ${h.format(m.no_date.hours)} h${m.no_date.unknown ? ` · ${m.no_date.unknown} operações sem horas` : ''}`) : null),
-      ...m.weeks.map((w) => cell(m, w)))));
-    const advice = data.machines.flatMap((m) => m.weeks.filter((w) => w.advice && w.advice.delta).map((w) => ({maquina: m.id, ano: w.year, semana: w.week, turnos: w.shifts + w.advice.delta})));
-    $('apply-all').hidden = !advice.length || view() !== 'semanas';
-    $('apply-all').textContent = `Aplicar todas as recomendações (${advice.length})`;
-    $('apply-all').onclick = () => { if (confirm(`Mudar os turnos em ${advice.length} semana(s)/máquina(s)?`)) shiftsChange(advice, 'Recomendações').catch(error); };
+  function hoursCell(v, extra = {}) {
+    return el('td', {class: `num ${extra.class || ''}`.trim(), title: extra.title || null}, v ? h.format(v) : '0');
   }
 
-  // Separador Máquinas: totais de todo o trabalho aberto por máquina (o que a antiga «Capacidades das máquinas» mostrava).
+  function noCalendarList(list) {
+    const box = $('no-calendar');
+    if (!box) return;
+    box.hidden = !list.length;
+    if (!list.length) { box.replaceChildren(); return; }
+    box.replaceChildren(el('details', {}, el('summary', {}, `Postos sem calendário: ${list.map((m) => short(m.name)).join(', ')}`),
+      el('ul', {}, list.map((m) => {
+        const t = totalOf(m);
+        const ops = t ? t.operations : m.no_date.operations + (m.late_before ? m.late_before.operations : 0) + m.weeks.reduce((a, w) => a + (w.operations || 0), 0);
+        const unknown = t ? t.unknown : m.no_date.unknown;
+        const hours = t ? t.load : 0;
+        const text = unknown >= ops ? `${h.format(ops)} operações sem horas` : `${h.format(ops)} operações · ${h1.format(hours)} h${unknown ? ` · ${h.format(unknown)} sem horas` : ''}`;
+        return el('li', {}, `${short(m.name)} · ${text}`);
+      })),
+      el('p', {class: 'muted'}, 'Sem calendário nas Definições do setor, por isso não têm capacidade nem turnos aqui.')));
+  }
+
+  function applyButton(id, list, label) {
+    const b = $(id);
+    if (!b) return;
+    b.hidden = !list.length || view() !== 'semanas';
+    b.textContent = `${label} (${list.length})`;
+    b.onclick = () => { if (confirm(`${label}: mudar os turnos em ${list.length} semana(s)/máquina(s)?`)) shiftsChange(list, label).catch(error); };
+  }
+
+  function renderWeeks() {
+    const late = modern();
+    const machines = data.machines.filter(hasCalendar);
+    $('head').replaceChildren(el('tr', {}, el('th', {scope: 'col'}, 'Máquina'),
+      late ? el('th', {scope: 'col', class: 'num', title: 'Horas com prazo antes desta semana'}, 'Atrasado (h)') : null,
+      ...data.weeks.map((w, i) => el('th', {scope: 'col', class: i === 0 ? 'now' : null, title: i === 0 ? 'Semana atual' : null}, `S${w.week}`, el('small', {}, ` ${dm(w.monday)}`))),
+      el('th', {scope: 'col', class: 'num'}, 'Sem prazo (h)'), el('th', {scope: 'col', class: 'num', title: 'Horas com prazo depois destas 13 semanas'}, 'Mais tarde (h)')));
+    $('body').replaceChildren(...machines.map((m) => {
+      const lateCell = late ? hoursCell(m.late_before.hours, {class: m.late_before.hours > 0 ? 'late clickable' : '',
+        title: `${h.format(m.late_before.operations)} operações com prazo antes desta semana${m.late_before.unknown ? ` · ${m.late_before.unknown} sem horas` : ''}${m.late_before.hours > 0 ? '. Clica para ver as OF.' : ''}`}) : null;
+      if (lateCell && m.late_before.hours > 0) lateCell.addEventListener('click', () => showDetail(m, m.weeks[0]));
+      const t = totalOf(m);
+      const after = m.after !== undefined ? m.after : t ? t.after : 0;
+      return el('tr', {},
+        el('th', {scope: 'row'}, short(m.name)), lateCell, ...m.weeks.map((w) => cell(m, w)),
+        hoursCell(m.no_date.hours, {title: `${h.format(m.no_date.operations)} operações sem prazo${m.no_date.unknown ? ` · ${m.no_date.unknown} sem horas` : ''}`}),
+        hoursCell(after));
+    }));
+    noCalendarList(data.machines.filter((m) => !hasCalendar(m)));
+    // «Aplicar todas» só junta recomendações do mesmo sentido.
+    const advice = machines.flatMap((m) => m.weeks.filter((w) => w.advice && w.advice.delta).map((w) => ({maquina: m.id, ano: w.year, semana: w.week, turnos: w.shifts + w.advice.delta, delta: w.advice.delta})));
+    const strip = (list) => list.map(({delta, ...x}) => x);
+    applyButton('apply-all', strip(advice.filter((x) => x.delta > 0)), 'Aplicar todas: mais turnos');
+    applyButton('apply-less', strip(advice.filter((x) => x.delta < 0)), 'Aplicar todas: menos turnos');
+  }
+
+  // Separador Máquinas: 6 colunas; o resto (peças, peso, Excel, horas reais) no cursor.
   function renderMachines() {
     const perfis = $('setor').value === 'perfis';
-    const head = ['Máquina', perfis ? 'Área por cortar (mm²)' : 'Metros por fazer', 'Peças por fazer', 'Peso (kg)', 'Horas previstas', 'Horas segundo o Excel', 'Atrasado (h)', 'Sem prazo (h)', 'Horas reais (4 semanas)', 'Operações sem horas'];
-    const keys = {'Horas previstas': 'previstas', 'Horas segundo o Excel': 'excel', 'Horas reais (4 semanas)': 'reais'};
+    const shiftHours = data.shift_hours || [];
+    const workdays = ((data.settings || {}).workdays || []).length;
+    const normal = (t) => {
+      if (t.week_capacity !== undefined) return t.week_capacity;
+      const m = data.machines.find((x) => x.id === t.id);
+      return m ? shiftHours.slice(0, m.default_shifts || 0).reduce((a, b) => a + b, 0) * workdays : 0;
+    };
+    const head = ['Máquina', perfis ? 'Por fazer (mm²)' : 'Por fazer (m)', 'Horas previstas', 'Atrasado (h)', 'Sem prazo (h)', 'Semanas de trabalho'];
+    const titles = {'Horas previstas': EXPLAIN.previstas, 'Atrasado (h)': 'Horas com prazo antes desta semana',
+      'Semanas de trabalho': 'Horas previstas ÷ capacidade de uma semana normal (turnos padrão da máquina)'};
     $('machines-table').replaceChildren(
-      el('thead', {}, el('tr', {}, ...head.map((x) => el('th', {scope: 'col', title: EXPLAIN[keys[x]] || null}, x)))),
+      el('thead', {}, el('tr', {}, ...head.map((x, i) => el('th', {scope: 'col', class: i ? 'num' : null, title: titles[x] || null}, x)))),
       el('tbody', {}, (data.totals || []).map((t) => {
         const recent = (t.actual_recent || []).filter((x) => x.hours !== null && x.hours !== undefined);
-        return el('tr', {class: t.id ? '' : 'nomachine'},
-          el('th', {scope: 'row'}, short(t.name), t.process ? el('small', {class: 'muted'}, ` ${t.process}`) : null),
-          el('td', {class: 'num'}, perfis ? h.format(t.area_mm2) : h.format(t.metres)), el('td', {class: 'num'}, h.format(t.pieces)),
-          el('td', {class: 'num'}, h.format(t.weight_kg), t.weight_unknown ? el('small', {class: 'muted'}, ` · ${t.weight_unknown}?`) : null),
-          el('td', {class: 'num'}, h1.format(t.load)), el('td', {class: 'num'}, h1.format(t.excel_hours), t.excel_unknown ? el('small', {class: 'muted', title: 'Operações principais sem horas do Excel (falta velocidade, comprimento ou área no Excel)'}, ` · ${t.excel_unknown}?`) : null),
-          el('td', {class: 'num'}, h1.format(t.late)), el('td', {class: 'num'}, h1.format(t.no_date)),
-          el('td', {class: 'num'}, recent.length ? recent.map((x) => `S${x.week} ${h1.format(x.hours)}`).join(' · ') : '—'),
-          el('td', {class: 'num'}, t.unknown ? h.format(t.unknown) : ''));
+        const cap = normal(t);
+        const title = [`Peças por fazer: ${h.format(t.pieces)}`, `Peso: ${h.format(t.weight_kg)} kg${t.weight_unknown ? ` (${t.weight_unknown} sem peso)` : ''}`,
+          `Horas segundo o Excel: ${h1.format(t.excel_hours)} h${t.excel_unknown ? ` (${t.excel_unknown} operações principais sem horas do Excel)` : ''}`,
+          `Horas reais (4 semanas): ${recent.length ? recent.map((x) => `S${x.week} ${h1.format(x.hours)}`).join(' · ') : '—'}`,
+          t.unknown ? `Operações sem horas: ${h.format(t.unknown)}` : '', cap ? `Semana normal: ${h1.format(cap)} h` : 'Sem turnos padrão'].filter(Boolean).join('\n');
+        return el('tr', {class: t.id ? '' : 'nomachine', title},
+          el('th', {scope: 'row'}, short(t.name)),
+          el('td', {class: 'num'}, perfis ? h.format(t.area_mm2) : h.format(t.metres)),
+          el('td', {class: 'num'}, h1.format(t.load)),
+          el('td', {class: 'num'}, h1.format(t.late_before !== undefined ? t.late_before : t.late)),
+          el('td', {class: 'num'}, h1.format(t.no_date)),
+          el('td', {class: 'num'}, cap && t.id ? h1.format(t.load / cap) : '—'));
       })));
-    $('machines-note').textContent = (data.totals || []).some((t) => (t.actual_recent || []).some((x) => x.hours)) ? '' :
-      'Horas reais: as folhas OCR validadas destas máquinas ainda não trazem horas trabalhadas; podem ser corrigidas à mão nas Definições do setor.';
-  }
-
-  function renderElsewhere() {
-    const e = data.elsewhere, box = $('elsewhere');
-    box.hidden = !e || !e.operations;
-    if (!e || !e.operations) return;
-    box.textContent = `${h.format(e.operations)} operações deste setor estão em máquinas de outro setor (não contam aqui): ` +
-      e.machines.map((m) => `${short(m.name)} ${h.format(m.operations)} op. · ${h1.format(m.hours)} h`).join(' · ');
+    $('machines-note').textContent = '';
   }
 
   function render() {
-    renderElsewhere();
     const v = view();
     $('tab-semanas').setAttribute('aria-selected', String(v === 'semanas'));
     $('tab-maquinas').setAttribute('aria-selected', String(v === 'maquinas'));
@@ -132,23 +174,31 @@
   }
 
   function summaryTable(m, w, d) {
+    const current = data.weeks.length && data.weeks[0].week === w.week && data.weeks[0].year === w.year;
+    const cap = capOf(w);
     const rows = [
-      [named('Capacidade', 'capacidade'), hrs(w.capacity)],
-      [named('Horas previstas', 'previstas'), `${hrs(w.load)} (no plano ${h1.format(w.plan)} · a vencer ${h1.format(w.due)} · sugerida ${h1.format(w.suggested)}${w.late ? ` · atrasado ${h1.format(w.late)}` : ''})`],
-      [named('Horas segundo o Excel', 'excel'), d && d.excel_hours !== undefined ? `${hrs(d.excel_hours)}${d.excel_unknown ? ` · ${d.excel_unknown} operações principais sem horas do Excel` : ''}` : '…'],
-      [named('Horas reais declaradas', 'reais'), d && d.actual_hours !== undefined ? hrs(d.actual_hours) : '…'],
-      ['Peso (kg)', d && d.weight_kg !== undefined ? h.format(d.weight_kg) : '…'],
+      [named('Capacidade', 'capacidade'), `${hrs(cap)} (${w.shifts} turno${w.shifts === 1 ? '' : 's'})${current && w.full_capacity !== undefined ? ` · faltam ${h1.format(w.capacity)} h desta semana` : ''}`],
+      [named('Carga', 'previstas'), `${hrs(w.load)} (no plano ${h1.format(w.plan)} + a vencer ${h1.format(w.due)} + sugerida ${h1.format(w.suggested)})${w.unknown ? ` · ${w.unknown} operações sem horas` : ''}`],
     ];
-    if (d && d.excel_calendar_hours) rows.push([named('Calendário do Excel', 'calendarioExcel'), hrs(d.excel_calendar_hours)]);
+    if (current && m.late_before) rows.push(['Atrasado', `${hrs(m.late_before.hours)} (prazo antes desta semana)${m.late_before.unknown ? ` · ${m.late_before.unknown} operações sem horas` : ''}`]);
+    else if (w.late) rows.push(['Atrasado', hrs(w.late)]);
+    rows.push([named('Horas segundo o Excel', 'excel'), d && d.excel_hours !== undefined ? `${hrs(d.excel_hours)}${d.excel_unknown ? ` · ${d.excel_unknown} operações principais sem horas do Excel` : ''}` : '…']);
     return el('table', {class: 'summary', id: 'detail-summary'}, el('tbody', {}, rows.map(([k, v]) => el('tr', {}, el('th', {scope: 'row'}, k), el('td', {}, v)))));
+  }
+
+  function elsewhereNote() {
+    const e = data.elsewhere;
+    if (!e || !e.hours) return null;  // a nota só aparece quando essas operações têm horas
+    return el('p', {class: 'muted elsewhere'}, `${h.format(e.operations)} operações deste setor estão em máquinas de outro setor e não contam aqui: ` +
+      e.machines.filter((x) => x.hours).map((x) => `${short(x.name)} ${h1.format(x.hours)} h`).join(' · '));
   }
 
   async function showDetail(m, w) {
     open = {m: m.id, w: w.week, y: w.year};
-    document.querySelectorAll('td.c.open').forEach((x) => x.classList.remove('open'));
     const t = ++ticket;
     const box = $('detail');
     box.hidden = false;
+    const current = data.weeks.length && data.weeks[0].week === w.week && data.weeks[0].year === w.year;
     const days = el('div', {class: 'days'}, w.days.map((d, i) => {
       const minus = el('button', {type: 'button', class: 'pm', disabled: d.shifts <= 0, 'aria-label': `Menos um turno ${DAYS[i]}`}, '−');
       const plus = el('button', {type: 'button', class: 'pm', disabled: d.shifts >= 3, 'aria-label': `Mais um turno ${DAYS[i]}`}, '+');
@@ -156,16 +206,26 @@
       plus.addEventListener('click', () => shiftsChange([{maquina: m.id, dia: String(d.date).slice(0, 10), turnos: d.shifts + 1}], `${short(m.name)} ${DAYS[i]} ${dm(d.date)}`).catch(error));
       return el('div', {class: 'day'}, el('span', {}, `${DAYS[i]} ${dm(d.date)}`), el('span', {class: 'n'}, minus, ` ${d.shifts} t `, plus));
     }));
+    const minus = el('button', {type: 'button', class: 'pm', 'aria-label': `Menos um turno ${m.name} S${w.week}`, disabled: w.shifts <= 0}, '−');
+    const plus = el('button', {type: 'button', class: 'pm', 'aria-label': `Mais um turno ${m.name} S${w.week}`, disabled: w.shifts >= 3}, '+');
+    minus.addEventListener('click', () => change(m, w, w.shifts - 1));
+    plus.addEventListener('click', () => change(m, w, w.shifts + 1));
+    const weekShifts = el('div', {class: 'week-shifts', id: 'week-shifts'}, minus, ` ${w.shifts} turno${w.shifts === 1 ? '' : 's'} `, plus,
+      w.manual ? el('span', {class: 'man muted', title: 'Mudada à mão'}, ' ✎ mudada à mão') : null);
     const week = `${w.year}-W${String(w.week).padStart(2, '0')}`;
-    box.replaceChildren(el('h2', {}, `${short(m.name)} · S${w.week} (${dm(w.monday)})`),
-      el('p', {}, el('b', {}, w.advice.text || '')),
+    const advice = w.advice && w.advice.text && w.status !== 'sem_calendario' ? adviceTitle(w.advice) : '';
+    box.replaceChildren(...[el('h2', {}, `${short(m.name)} · S${w.week} (${dm(w.monday)})`),
+      advice ? el('p', {}, el('b', {}, advice)) : null,
       summaryTable(m, w, null),
+      elsewhereNote(),
+      el('h3', {}, 'Turnos da semana'), weekShifts,
       el('h3', {}, 'Turnos por dia'), days,
-      el('h3', {}, 'OF nesta célula'), el('div', {id: 'detail-orders'}, el('p', {class: 'muted'}, 'A carregar…')),
+      el('h3', {}, current && m.late_before ? 'OF desta semana e atrasadas' : 'OF nesta semana'), el('div', {id: 'detail-orders'}, el('p', {class: 'muted'}, 'A carregar…')),
       el('div', {id: 'detail-operations'}),
       el('h3', {}, 'Produção registada nesta semana'), el('div', {id: 'detail-production'}, el('button', {type: 'button', id: 'production-open'}, 'Ver produção registada')),
-      el('p', {}, el('a', {href: `/planeamento/gantt?setor=${encodeURIComponent($('setor').value)}&semana=${week}`}, 'Ver no Gantt desta semana →')));
+      el('p', {}, el('a', {href: `/planeamento/gantt?setor=${encodeURIComponent($('setor').value)}&semana=${week}`}, 'Ver no Gantt desta semana →'))].filter(Boolean));
     $('production-open').addEventListener('click', () => showProduction(m, w, 1).catch(error));
+    renderWeeks();
     try {
       const d = await getJson(`/planeamento/api/setor/carga/celula?${new URLSearchParams({setor: $('setor').value, maquina: m.id, ano: w.year, semana: w.week})}`);
       if (t !== ticket) return;

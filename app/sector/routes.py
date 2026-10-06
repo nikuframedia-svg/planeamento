@@ -455,3 +455,16 @@ def machines_panel(areas: list[str] = Query(default=[]), cenario: str = "mediana
     _views()
     from . import workbench
     return _call(lambda: workbench.overview(areas or None, cenario))
+
+
+@router.get("/planeamento/api/ordens/{of}/sugestoes")
+def manual_suggestions(of: str, setor: str = "perfis", ref: str | None = None, perfil: str | None = None,
+                       equipa: str | None = None, material: str | None = None, cliente: str | None = None,
+                       designacao: str | None = None):
+    """Valores sugeridos para o registo manual (/planeamento/manual): Equipa, Pav., Data Corte, Máquina,
+    dimensões… cada um com a origem. Só leitura; o ecrã nunca escreve por cima do que o utilizador escreveu."""
+    _guard()
+    from .. import planning_suggestions
+    values = {k: v for k, v in (("team", equipa), ("material_type", material), ("customer", cliente),
+                                ("designation", designacao)) if v}
+    return _call(lambda: needs.serial(planning_suggestions.for_order(portfolio.check_sector(setor), of, ref, perfil, values)))

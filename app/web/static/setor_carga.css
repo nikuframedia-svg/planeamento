@@ -6,27 +6,30 @@
 .muted { color: #5d737a; }
 .small { font-size: inherit; }
 .legend { margin: .2rem 0 .5rem; }
-.k { font-weight: 700; }
-.k.plan { color: #15525c; } .k.due { color: #8a4f12; } .k.sug { color: #6b5aa5; }
 .grid-wrap { overflow-x: auto; background: #fff; border: 1px solid #dce6e8; border-radius: 10px; }
 table.loadgrid { border-collapse: collapse; width: 100%; }
 table.loadgrid th, table.loadgrid td { border-bottom: 1px solid #eef0f3; border-right: 1px solid #f1f4f5; padding: .25rem .35rem; text-align: left;
   vertical-align: top; text-transform: none; letter-spacing: normal; color: inherit; background: transparent; font-weight: normal; }
 table.loadgrid thead th { background: #f4f6f8; font-weight: 700; white-space: nowrap; position: sticky; top: 0; }
 table.loadgrid tbody th { font-weight: 700; white-space: nowrap; position: sticky; left: 0; background: #fff; z-index: 1; }
-td.c { min-width: 8.5rem; cursor: pointer; }
-td.c.folga { background: #f2faf5; } td.c.apertado { background: #fff8ec; } td.c.falta { background: #fdeeee; } td.c.sem_calendario { background: #f6f7f8; }
+td.c { min-width: 4.8rem; cursor: pointer; white-space: nowrap; }
+.load-cap { font-variant-numeric: tabular-nums; }
+table.loadgrid td.num, table.loadgrid th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+table.loadgrid thead th.num { white-space: normal; min-width: 4.2rem; }
+table.loadgrid thead th.now { background: #dce9ec; }
+table.loadgrid td.late { background: #fdeeee; color: #9d2a26; font-weight: 700; }
+table.loadgrid td.clickable { cursor: pointer; }
+.sw { display: inline-block; width: .8em; height: .8em; border-radius: 2px; vertical-align: -1px; border: 1px solid #c9d3d6; }
+.sw.folga { background: #dff2e6; } .sw.apertado { background: #fde9c8; } .sw.falta { background: #f8d4d4; }
+.no-calendar { margin-top: .5rem; } .no-calendar summary { cursor: pointer; color: #5d737a; } .no-calendar ul { margin: .3rem 0; }
+.week-shifts { white-space: nowrap; }
+td.c.folga { background: #dff2e6; } td.c.apertado { background: #fde9c8; } td.c.falta { background: #f8d4d4; } td.c.sem_calendario { background: #f6f7f8; }
 td.c.open { outline: 2px solid #216d7a; outline-offset: -2px; }
-.top { display: flex; align-items: center; gap: .25rem; white-space: nowrap; }
-.top .cap { flex: 1; text-align: center; font-weight: 700; }
 .man { color: #b66b20; }
 button.pm { width: 1.5rem; min-height: 1.4rem; padding: 0; border: 1px solid #a9bbc4; background: #fff; color: #10384b; border-radius: 5px; font-weight: 700; }
 button.pm:disabled { opacity: .35; }
-.bar { height: .35rem; background: #e5ebed; border-radius: 3px; margin: .2rem 0; overflow: hidden; }
-.bar .fill { display: block; height: 100%; background: #216d7a; }
-td.c.falta .bar .fill { background: #b23b3b; } td.c.apertado .bar .fill { background: #b66b20; }
-.nums { white-space: nowrap; }
-.adv { min-height: 1.4rem; }
+.adv { margin-top: .15rem; }
+button.apply.small { padding: 0 .35rem; min-height: 1.3rem; }
 button.apply { background: #10384b; color: #fff; border: 1px solid #10384b; padding: .05rem .5rem; width: auto; font-weight: 600; }
 .detail { background: #fff; border: 1px solid #dce6e8; border-radius: 10px; padding: .6rem .9rem; margin-top: .8rem; }
 .detail h2, .detail h3 { margin: .3rem 0; }
@@ -56,3 +59,11 @@ dl.proof dt { color: #5d737a; } dl.proof dd { margin: 0; }
 button.linklike { border: 0; background: none; color: #1f6f8b; text-decoration: underline; padding: 0; width: auto; min-height: 0; }
 .pager { display: flex; gap: .4rem; margin-top: .3rem; } .pager button { width: auto; }
 @media (max-width: 760px) { .load { padding: .6rem 16px 2rem; } dl.proof { grid-template-columns: 1fr; } }
+/* planning_hub.css transforma as tabelas em cartões abaixo de 720 px; aqui a tabela fica tabela e desliza dentro da caixa. */
+@media (max-width: 720px) {
+  .load table { display: table; } .load thead { display: table-header-group; } .load tbody { display: table-row-group; }
+  .load tr { display: table-row; border-bottom: 0; padding: 0; } .load th, .load td { display: table-cell; }
+  .load table.loadgrid td, .load table.loadgrid th { padding: .25rem .35rem; }
+  .load .grid-wrap, .load .scroll { overflow-x: auto; }
+  .load table tbody th { white-space: normal; min-width: 6.5rem; }
+}

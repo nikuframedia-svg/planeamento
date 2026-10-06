@@ -130,3 +130,86 @@ def test_production_rows_get_the_hours_of_their_sheet_once(monkeypatch):
     assert load._sheet_hours("cantoneiras", date(2026, 9, 28), rows) == {"s1": 7.5, "s2": None}
     assert calls[0]["filters"][0]["min"] == "2026-09-28" and calls[0]["filters"][0]["max"] == "2026-10-04"
     assert load._sheet_hours("cantoneiras", date(2026, 9, 28), []) == {} and len(calls) == 1
+
+
+def _overview_with_calendar(monkeypatch, facts, shifts_per_day=2):
+    """overview() com uma máquina «m1» com calendário em todas as semanas (turnos seg–sex) e os factos dados."""
+    from app.sector import load_sources, shifts
+    settings = sector_settings.default(TODAY)
+    machines = [{"id": "m1", "name": "Peddi 8", "code": "P8", "process": "Corte", "default_shifts": 2}]
+    plan = {str(d): (shifts_per_day if d <= 5 else 0) for d in range(1, 8)}
+    calendars = [{"definition": shifts.definition_for("m1", y, w, plan, {}, settings, manual=False)} for y, w in load.week_list(TODAY)]
+
+    class Conn:
+        def execute(self, sql, params=None):
+            return _Rows(calendars if "kind='calendar'" in sql else [])
+
+    @contextmanager
+    def connect(readonly=True):
+        yield Conn()
+
+    monkeypatch.setattr(load.planning, "check_area", lambda sector: None)
+    monkeypatch.setattr(load.planning, "connect", connect)
+    monkeypatch.setattr(load, "_context", lambda sector, today=None: ({"lines": []}, set(), {"facts": facts}))
+    monkeypatch.setattr(sector_settings, "read", lambda c, sector: settings)
+    monkeypatch.setattr(sector_settings, "machine_rows", lambda c, sector: machines)
+    monkeypatch.setattr(load_sources, "context", lambda c, sector: {"lines": {}, "actual": {}})
+    monkeypatch.setattr(load_sources, "fact_values", lambda f, lines: (None, None, False))
+    return load.overview("cantoneiras", today=TODAY, now=datetime(2026, 10, 6, 12, tzinfo=timezone.utc))
+
+
+def test_late_before_the_current_week_is_apart_from_the_current_week_load(monkeypatch):
+    """07/10: o atrasado (prazo antes de segunda) sai da carga da semana atual e vai para «late_before»."""
+    facts = [fact("old", "m1", "2026-09-30", 30.0), fact("mon", "m1", "2026-10-05", 4.0), fact("now", "m1", "2026-10-08", 6.0),
+             fact("next", "m1", "2026-10-14", 5.0), fact("nodate", "m1", None, 3.0), fact("far", "m1", "2027-06-01", 7.0)]
+    result = _overview_with_calendar(monkeypatch, facts)
+    [row] = result["machines"]
+    assert row["late_before"] == {"hours": 30.0, "unknown": 0, "operations": 1}
+    current, nxt = row["weeks"][0], row["weeks"][1]
+    assert current["load"] == 10.0 and current["late"] == 4.0  # segunda (ontem) fica na semana, marcada como atrasada
+    assert nxt["load"] == 5.0 and row["no_date"]["hours"] == 3.0 and row["after"] == 7.0 and row["has_calendar"] is True
+    # Semana inteira: 2 turnos × 7,5 h × 4 dias (05/10 é feriado); a que falta é menor (já passou meio dia de terça).
+    assert current["full_capacity"] == 60.0 and current["capacity"] < current["full_capacity"] and nxt["full_capacity"] == nxt["capacity"] == 75.0
+    [total] = result["totals"]
+    assert total["late_before"] == 30.0 and total["late"] == 34.0 and total["week_capacity"] == 75.0
+
+
+def test_current_week_advice_counts_the_late_work_against_the_hours_left(monkeypatch):
+    facts = [fact("old", "m1", "2026-09-30", 80.0), fact("now", "m1", "2026-10-08", 6.0)]
+    [row] = _overview_with_calendar(monkeypatch, facts)["machines"]
+    current = row["weeks"][0]
+    missing = 86.0 - current["capacity"]
+    assert current["advice"]["delta"] == 1 and current["advice"]["text"] == f"faltam {missing:.0f} h · +1 turno"
+    # A cor bate com o que a célula mostra («6 / 60 h»): o atrasado tem a sua coluna e não pinta a semana atual.
+    assert current["load"] == 6.0 and current["full_capacity"] == 60.0 and current["status"] == "folga"
+
+
+def test_week_colour_matches_the_numbers_in_the_cell(monkeypatch):
+    """Revisão 07/10: cor = carga da semana contra a capacidade da semana inteira (os números escritos)."""
+    for hours, status in ((50.0, "folga"), (55.0, "apertado"), (61.0, "falta")):
+        [row] = _overview_with_calendar(monkeypatch, [fact("now", "m1", "2026-10-08", hours)])["machines"]
+        current = row["weeks"][0]
+        assert current["full_capacity"] == 60.0 and current["status"] == status, (hours, current["status"])
+    # Mesmo com a semana quase vazia e muito atrasado, a célula não fica vermelha.
+    [row] = _overview_with_calendar(monkeypatch, [fact("old", "m1", "2026-09-30", 500.0)])["machines"]
+    assert row["weeks"][0]["load"] == 0 and row["weeks"][0]["status"] == "folga"
+
+
+def test_never_minus_one_shift_with_late_or_undated_work(monkeypatch):
+    """07/10: nunca «−1 turno» numa máquina com atrasado ou sem prazo, mesmo com a semana quase vazia."""
+    for extra in ([fact("old", "m1", "2026-09-30", 1.0)], [fact("nodate", "m1", None, 1.0)], [fact("nodate", "m1", None, None)]):
+        [row] = _overview_with_calendar(monkeypatch, [fact("next", "m1", "2026-10-14", 1.0), *extra])["machines"]
+        assert all(w["advice"]["delta"] >= 0 for w in row["weeks"]), extra
+        assert row["weeks"][1]["advice"]["text"] == "sobram 74 h"
+    # Sem atrasado nem sem prazo, a semana seguinte quase vazia com 2 turnos: −1 turno, com o texto simples.
+    [row] = _overview_with_calendar(monkeypatch, [fact("next", "m1", "2026-10-14", 1.0)])["machines"]
+    assert row["weeks"][1]["advice"]["delta"] == -1 and row["weeks"][1]["advice"]["text"] == "sobram 74 h · −1 turno"
+    assert all(w["advice"]["delta"] == 0 for w in row["weeks"][load.REDUCE_WEEKS:])  # mais à frente a carga ainda está a chegar
+
+
+def test_advice_text_is_short():
+    assert load.advice_text({"delta": 2}, 52.4)["text"] == "faltam 52 h · +2 turnos"
+    assert load.advice_text({"delta": -1}, -40.0)["text"] == "sobram 40 h · −1 turno"
+    assert load.advice_text({"delta": 0}, 20.0, 3)["text"] == "faltam 20 h · já tem 3 turnos"
+    assert load.advice_text({"delta": 0}, 20.0, 1)["text"] == "faltam 20 h"
+    assert load.advice_text({"delta": 0}, 0.0)["text"] == "certo"

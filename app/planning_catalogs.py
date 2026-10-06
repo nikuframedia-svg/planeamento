@@ -90,33 +90,41 @@ def fields():
     return result
 
 
-# Registo manual (pedido do Luís, 06/10/2026): a primeira secção tem as colunas do Excel de cada setor,
-# pela mesma ordem (fotos da Met2_Plan_Perfis a azul e da folha das cantoneiras). OF e OV ficam na
-# secção da ordem. O resto passa para «Mais opções»; Abocardar e Picking não existem nas cantoneiras.
+# Registo manual (pedido do Luís, 06/10/2026, noite): a primeira secção tem SEMPRE todas as colunas do
+# Excel de cada setor, pela mesma ordem (Met2_Plan_Perfis a azul; folha das cantoneiras com o X), sem
+# esconder nada pelo tipo de material. A Máquina entra porque sem ela a Carteira não deixa planear.
+# Perfil especial e geometria são auxiliares e vão para «Mais opções». OF e OV ficam na secção da ordem.
 FIRST_SECTION={
-    'perfis':['component_ref','cut_date','material_type','profile','custom_profile','special_profile','geometry',
-              'quantity_required','outer_diameter_mm','width_mm','height_mm','thickness_mm','length_mm','angle_deg',
-              'grade','abocardar','picking_week','picking_year'],
-    'cantoneiras':['cut_date','component_ref','material_type','quantity_required','profile','custom_profile',
-                   'special_profile','geometry','length_mm','operation','operation_detail','team','pavilion']}
-WORK_SECTION={'perfis':['operation','machine'],'cantoneiras':['machine']}
+    'perfis':['cut_date','component_ref','material_type','profile','quantity_required','outer_diameter_mm',
+              'width_mm','height_mm','thickness_mm','length_mm','angle_deg','grade','abocardar',
+              'picking_week','picking_year','team','pavilion','machine'],
+    'cantoneiras':['cut_date','component_ref','material_type','quantity_required','profile','length_mm',
+                   'operation','operation_detail','team','pavilion','machine']}
+WORK_SECTION={'perfis':['operation'],'cantoneiras':[]}
 HIDDEN_BY_AREA={'perfis':{'operation_detail'},'cantoneiras':{'abocardar','picking_week','picking_year'}}
 LABELS_BY_AREA={
-    'perfis':{'component_ref':'Referência','material_type':'Tipo de Material','profile':'Designação Perfil',
-              'quantity_required':'Quantidade','outer_diameter_mm':'Ø Externo','width_mm':'Largura',
-              'length_mm':'Comprimento','angle_deg':'Ângulo','grade':'Qualidade'},
-    'cantoneiras':{'component_ref':'Referência','material_type':'Tipo de material','profile':'Designação do material',
-                   'quantity_required':'Quantidade','length_mm':'Comprimento','operation':'1.ª Operação',
-                   'operation_detail':'2.ª Operação'}}
+    'perfis':{'cut_date':'Data Corte','component_ref':'Referência','material_type':'Tipo de Material',
+              'profile':'Designação Perfil','quantity_required':'QTD','outer_diameter_mm':'Ø Externo',
+              'width_mm':'Largura','height_mm':'Altura','thickness_mm':'Espessura','length_mm':'Comp.',
+              'angle_deg':'Ang.','grade':'Qual.','abocardar':'Abocardar','picking_week':'Picking semana',
+              'picking_year':'Picking ano','team':'Equipa','pavilion':'Pav.','machine':'Máquina'},
+    'cantoneiras':{'cut_date':'Data Corte','component_ref':'Ref.','material_type':'Tipo de material',
+                   'quantity_required':'QTD','profile':'Des. Material','length_mm':'Comp.',
+                   'operation':'1.ª Oper.','operation_detail':'2.ª Oper.','team':'Equipa','pavilion':'Pav.',
+                   'machine':'Máquina'}}
 
 
 def arrange(fields_list, area):
-    """Groups, order, labels and visibility of the editor fields for one sector."""
+    """Groups, order, labels and visibility of the editor fields for one sector.
+
+    Os campos da primeira secção ficam sempre visíveis (visibility='always'): as dimensões deixam de
+    depender do tipo de material, como no Excel.
+    """
     first,work=FIRST_SECTION.get(area),WORK_SECTION.get(area,[])
     if not first:return fields_list
     for f in fields_list:
         i=f['id']
-        if i in first:f.update(group='piece',order=first.index(i))
+        if i in first:f.update(group='piece',order=first.index(i),visibility='always')
         elif i in work:f.update(group='work',order=100+work.index(i))
         else:f.update(group='extra',order=200+f['order'])
         if i in HIDDEN_BY_AREA.get(area,()):f['editor_visible']=False

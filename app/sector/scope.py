@@ -224,7 +224,7 @@ def local_rows(records, resource_codes):
                 'estado_quantidade':'fonte_unica' if v.get('quantity_required') is not None else 'por_confirmar',
                 'estado_documental':'aberta','comprimento_mm':v.get('length_mm'),'recurso_atual':resource_codes.get((area,machine)),
                 'section_unit':v.get('section_unit'),
-                'maquina_original':machine,'contador_excel':None,'semana_picking':v.get('picking_week'),'ano_picking':v.get('picking_year'),
+                'maquina_original':machine,'equipa':v.get('team'),'contador_excel':None,'semana_picking':v.get('picking_week'),'ano_picking':v.get('picking_year'),
                 'data_corte_prevista':prepared.get('expected_date') or v.get('cut_date'), 'raw':detail.get('raw') or {},
                 'execution_started':bool(reconciled is not None and b['evidence']),
                 'application_balance_evidence':b,'application_row_key':key,'application_revision':detail.get('revision'),

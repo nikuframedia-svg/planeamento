@@ -1,7 +1,7 @@
 (() => {
 'use strict';
 const $=id=>document.getElementById(id), params=new URLSearchParams(location.search);
-const state={area:'',cat:null,need:null,op:null,source:null,of:null,detail:null,order:null,decisions:{},proof:null,pending:null,page:1,dirty:false,pdf:null,piece:null,raw:{},references:[],sourceStatus:null,opDrafts:{},operationCode:'',saving:false};
+const state={area:'',cat:null,need:null,op:null,source:null,of:null,detail:null,order:null,decisions:{},proof:null,pending:null,page:1,dirty:false,pdf:null,piece:null,raw:{},references:[],sourceStatus:null,opDrafts:{},operationCode:'',saving:false,suggested:{},areaAuto:false};
 function el(tag,text,cls){const e=document.createElement(tag);if(text!=null)e.textContent=text;if(cls)e.className=cls;return e}
 function fmt(v){return v==null||v===''?'Não disponível':Array.isArray(v)?v.join(', '):typeof v==='object'?JSON.stringify(v):String(v)}
 function safe(fn){return (...args)=>Promise.resolve().then(()=>fn(...args)).catch(fail)}
@@ -11,30 +11,37 @@ function openParents(node){for(let p=node?.parentElement;p;p=p.parentElement)if(
 function clearErrors(){$('error').hidden=true;for(const e of document.querySelectorAll('.field-error'))e.textContent='';for(const e of document.querySelectorAll('[aria-invalid]'))e.removeAttribute('aria-invalid')}
 function fail(error){$('error').textContent=error.message;$('error').hidden=false;let first;for(const [name,message] of Object.entries(error.fields||{})){const target=$('error-'+name),input=$('field-'+name)||$(name);if(target){target.textContent=message;openParents(target);if(target.closest('.field'))target.closest('.field').hidden=false}if(input){input.setAttribute('aria-invalid','true');first??=input}}(first||$('error')).scrollIntoView({block:'center'});first?.focus()}
 function fieldError(name,message){const e=new Error(message);e.fields={[name]:message};return e}
+// Registo manual (06/10/2026): datas também em dd/mm/aaaa; ajuda dos campos no cursor; setor lembrado.
+function isoDate(v){const s=String(v??'').trim();let m=s.match(/^(\d{4})-(\d{2})-(\d{2})/);if(m)return m[0];m=s.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})$/);return m?m[3]+'-'+m[2].padStart(2,'0')+'-'+m[1].padStart(2,'0'):null}
+function setHelp(id,text){const help=$('help-'+id);if(help)help.textContent=text;else{const input=$('field-'+id);if(input&&!input.classList.contains('suggested'))input.title=text}}
+const AREA_KEY='planeamento.manual.setor';
+function lastArea(){try{const v=localStorage.getItem(AREA_KEY);return ['perfis','cantoneiras'].includes(v)?v:''}catch{return ''}}
+function rememberArea(area){try{if(area)localStorage.setItem(AREA_KEY,area)}catch{}}
 function val(id){const node=$('field-'+id);if(id==='material_requested'&&node)return node.value===''?null:node.value==='true';if(id==='abocardar'&&node?.indeterminate)return state.raw.abocardar;return node?(node.type==='checkbox'?node.checked:node.value):state.raw[id]??null}
 const baseFields=JSON.parse($('field-contract').textContent);
 function values(){return {...state.raw,...Object.fromEntries((state.cat?.fields||baseFields).filter(f=>f.editor_visible).map(f=>[f.id,val(f.id)]))}}
 function fillOptions(node,options,current){node.replaceChildren(new Option('Por definir',''));for(const opt of options||[])node.add(new Option(typeof opt==='object'?opt.label:opt,typeof opt==='object'?opt.value:opt));if(current&&!Array.from(node.options).some(x=>x.value===String(current)))node.add(new Option(current+' — opção a rever',current));node.value=current??''}
 function key(v){return String(v||'').toLocaleLowerCase('pt-PT').replace('rectangular','retangular')}
-function mark(name,type){state.decisions[name]=type;state.dirty=true;$('after-save').hidden=true;schedulePreview()}
+function mark(name,type){state.decisions[name]=type;state.dirty=true;$('after-save').hidden=true;unsuggest(name);schedulePreview();if(['component_ref','profile','team','material_type'].includes(name))scheduleSuggest()}
 function showConditional(){if(!state.cat)return;const material=key(val('material_type')),custom=val('custom_profile'),geometry=val('geometry')||material,dims=state.cat.geometries[geometry]||[];
  $('wrap-custom_profile').hidden=true;$('wrap-special_profile').hidden=!custom||!state.cat.profiles[material]?.length;$('wrap-geometry').hidden=!custom&&(Boolean(state.cat.geometries[material])||!material||Boolean(state.cat.profiles[material]?.length));
- for(const name of ['outer_diameter_mm','width_mm','height_mm','thickness_mm'])$('wrap-'+name).hidden=!dims.includes(name)&&!val(name);
+ // Como no Excel: Ø, Largura, Altura e Espessura sempre visíveis, seja qual for o tipo de material.
+ for(const name of ['outer_diameter_mm','width_mm','height_mm','thickness_mm'])if($('wrap-'+name))$('wrap-'+name).hidden=false;
  $('wrap-identity_discriminator').hidden=!val('identity_discriminator');
 }
 function profileChange(){const input=$('field-profile'),custom=input.value==='__custom__';$('field-custom_profile').checked=custom;mark('custom_profile','write');mark('profile',input.tagName==='SELECT'?'select':'write');showConditional()}
-function profiles(){if(!state.cat)return;if(state.cat.free_entry){let input=$('field-profile');if(input.tagName!=='INPUT'){const n=el('input');n.id=input.id;n.name=input.name;n.value=input.value;input.replaceWith(n);input=n}input.type='text';input.disabled=false;input.oninput=()=>mark('profile','write');$('help-profile').textContent='Designação livre; o catálogo serve de referência.';showConditional();return;}const current=val('profile'),custom=val('custom_profile'),family=key(val('material_type')),options=state.cat.profiles[family]||[],manual=!options.length;
+function profiles(){if(!state.cat)return;if(state.cat.free_entry){let input=$('field-profile');if(input.tagName!=='INPUT'){const n=el('input');n.id=input.id;n.name=input.name;n.value=input.value;input.replaceWith(n);input=n}input.type='text';input.disabled=false;input.oninput=()=>mark('profile','write');setHelp('profile','Designação livre; o catálogo serve de referência.');showConditional();return;}const current=val('profile'),custom=val('custom_profile'),family=key(val('material_type')),options=state.cat.profiles[family]||[],manual=!options.length;
  let input=$('field-profile');const tag=manual?'INPUT':'SELECT';if(input.tagName!==tag){const next=el(tag.toLowerCase());next.id=input.id;next.name=input.name;next.setAttribute('aria-describedby','help-profile error-profile');input.replaceWith(next);input=next}
- if(manual){input.type='text';input.value=custom?(val('special_profile')||current||''):current||'';$('help-profile').textContent=family?'Preenchimento manual: esta família não tem uma lista no Excel.':'Escolhe primeiro o tipo de perfil nível 1.';input.disabled=!family}
- else{fillOptions(input,options,custom?null:current);input.add(new Option('Outra designação…','__custom__'));if(custom)input.value='__custom__';$('help-profile').textContent='Escolhe uma designação da família selecionada.'}
+ if(manual){input.type='text';input.value=custom?(val('special_profile')||current||''):current||'';setHelp('profile',family?'Preenchimento manual: esta família não tem uma lista no Excel.':'Escolhe primeiro o tipo de perfil nível 1.');input.disabled=!family}
+ else{fillOptions(input,options,custom?null:current);input.add(new Option('Outra designação…','__custom__'));if(custom)input.value='__custom__';setHelp('profile','Escolhe uma designação da família selecionada.')}
  input.oninput=()=>{if(manual){$('field-custom_profile').checked=false;mark('custom_profile','write');showConditional()}mark('profile',manual?'write':'select')};input.onchange=profileChange;showConditional();
 }
 function attention(field,message){const box=$('wrap-'+field);if(!box)return;box.hidden=false;box.classList.add('field-attention');box.append(el('p',message,'help'));openParents(box)}
 function render(raw={}){
- raw={...raw};if(state.area==='perfis'&&!raw.operation)raw.operation='corte';state.raw={...raw};state.operationCode=raw.operation||'';
+ raw={...raw};if(state.area==='perfis'&&!raw.operation)raw.operation='corte';state.raw={...raw};state.operationCode=raw.operation||'';state.suggested={};
  for(const id of ['cut-fields','piece-fields','operation-fields','extra-fields'])$(id).replaceChildren();
  const groups={cut:'cut-fields',piece:'piece-fields',work:'operation-fields',extra:'extra-fields'};
- for(const f of [...(state.cat?.fields||baseFields)].filter(f=>f.editor_visible&&(state.cat||f.group==='cut'||f.group==='extra')).sort((a,b)=>a.order-b.order)){if(!state.cat&&f.type==='select')continue;const box=el('div',null,'field');box.id='wrap-'+f.id;const label=el('label',f.label+(f.unit?' ('+f.unit+')':''));label.htmlFor='field-'+f.id;
+ for(const f of [...(state.cat?.fields||baseFields)].filter(f=>f.editor_visible&&(state.cat||f.group==='cut'||f.group==='extra')).sort((a,b)=>a.order-b.order)){if(!state.cat&&f.type==='select')continue;const box=el('div',null,'field');box.id='wrap-'+f.id;const label=el('label',f.label+(f.unit&&!(f.group==='piece'&&f.unit==='un.')?' ('+f.unit+')':''));label.htmlFor='field-'+f.id;
   const readonlyOperation=f.id==='operation'&&state.area==='perfis'&&!state.cat?.free_entry;let input=document.createElement(readonlyOperation?'input':(f.type==='select'||f.type==='tristate')?'select':f.type==='textarea'?'textarea':'input');input.id='field-'+f.id;input.name=f.id;
   if(readonlyOperation){input.type='hidden';input.value=raw.operation||'corte';}
   else if(f.type==='tristate'){fillOptions(input,[{value:'true',label:'Sim'},{value:'false',label:'Não'}],raw[f.id]===true?'true':raw[f.id]===false?'false':'')}
@@ -44,9 +51,11 @@ function render(raw={}){
    else fillOptions(input,options,raw[f.id]);
   }
   else if(f.type==='boolean'||f.type==='checkbox'){input.type='checkbox';input.checked=f.id==='abocardar'?(raw[f.id]===true||String(raw[f.id]).toUpperCase()==='X'):raw[f.id]===true;if(f.id==='abocardar'&&raw[f.id]!=null&&!['','X','-','true','false'].includes(String(raw[f.id]))){input.indeterminate=true;box.append(el('p','Indicação anterior: '+fmt(raw[f.id])+'. Confirma sim ou não.','help'));const no=el('button','Não abocardar');no.type='button';no.onclick=()=>{input.indeterminate=false;input.checked=false;mark(f.id,'write')};box.append(no)}}
-  else{if(f.type!=='textarea')input.type=f.type==='date'&&!state.cat?.free_entry?'date':'text';if(f.type==='number')input.inputMode='decimal';input.value=raw[f.id]??''}
-  box.append(label,input);if(readonlyOperation)box.append(el('p',input.value==='abocardar'?'Abocardar · ficha histórica preservada':'Corte'));const help=el('p',f.help||'','help');help.id='help-'+f.id;if(f.help)box.append(help);const error=el('span','','field-error');error.id='error-'+f.id;box.append(error);input.setAttribute('aria-describedby',[f.help?help.id:null,error.id].filter(Boolean).join(' '));
+  else if(f.type==='date'){const iso=isoDate(raw[f.id]),empty=raw[f.id]==null||raw[f.id]==='';input.type=empty||iso||!state.cat?.free_entry?'date':'text';input.value=input.type==='date'?(iso||''):raw[f.id]}
+  else{if(f.type!=='textarea')input.type='text';if(f.type==='number')input.inputMode=['quantity_required','quantity_to_plan','picking_week','picking_year'].includes(f.id)?'numeric':'decimal';input.value=raw[f.id]??''}
+  box.append(label,input);if(readonlyOperation)box.append(el('p',input.value==='abocardar'?'Abocardar · ficha histórica preservada':'Corte'));const inline=f.help&&f.group!=='piece';const help=el('p',f.help||'','help');help.id='help-'+f.id;if(inline)box.append(help);else if(f.help){input.title=f.help;label.title=f.help}const error=el('span','','field-error');error.id='error-'+f.id;box.append(error);input.setAttribute('aria-describedby',[inline?help.id:null,error.id].filter(Boolean).join(' '));
   input.addEventListener('input',()=>mark(f.id,input.type==='checkbox'?'write':input.value===''?'clear':f.type==='select'?'select':'write'));
+  if(['quantity_required','quantity_to_plan'].includes(f.id))input.addEventListener('input',()=>wholeNumber(f.id));
   $(groups[f.group]||'extra-fields').append(box);
   const suggestion=(state.detail?.fields||[]).find(s=>s.field===f.id&&(s.scope==='piece'||s.scope===state.op));
   if(suggestion?.requires_review){attention(f.id,'A origem mudou. Confirma o valor que queres utilizar.');const diff=el('div','Sugestão atual: '+fmt(suggestion.suggestion),'suggestion');
@@ -67,8 +76,38 @@ function render(raw={}){
  for(const issue of state.piece?.issues||[]){const name=({machine_group:'machine',material_description:'special_profile',operations:'operation_detail',variant:'identity_discriminator'})[issue.field]||issue.field;const chosen=state.detail?.fields.find(f=>f.field===name&&(f.scope==='piece'||f.scope===state.op));if(name&&(!chosen?.human_decision||chosen.requires_review))attention(name,issue.message);}
 
  $('history-field').replaceChildren(new Option('Todos os campos',''));for(const f of state.cat.fields)$('history-field').add(new Option(f.label,f.id));
- updateReady();schedulePreview();
+ updateReady();schedulePreview();scheduleSuggest();
 }
+function wholeNumber(id){const input=$('field-'+id),error=$('error-'+id);if(!input||!error)return;const v=input.value.trim().replace(',','.'),bad=v!==''&&!/^\d+(\.0+)?$/.test(v);error.textContent=bad?'Tem de ser um número inteiro (sem casas decimais), senão a linha não entra na Carteira.':'';if(bad)input.setAttribute('aria-invalid','true');else input.removeAttribute('aria-invalid')}
+// Preencher sozinho (06/10/2026): GET ordens/{of}/sugestoes. O valor sugerido fica com outro tom e o título
+// «sugerido: origem»; nunca escreve por cima do que o utilizador escreveu nem de valores já preenchidos.
+let suggestTimer,suggestSerial=0;
+function currentOf(){return state.localMode&&!state.need?$('local-of').value.trim():state.of}
+function scheduleSuggest(){clearTimeout(suggestTimer);if(!state.cat||!state.area||!currentOf())return;suggestTimer=setTimeout(()=>{suggestions().catch(()=>{})},350)}
+function unsuggest(name){const node=$('field-'+name);if(state.suggested[name]){delete state.suggested[name];if(node){node.classList.remove('suggested');node.removeAttribute('data-suggested-from');const f=(state.cat?.fields||[]).find(x=>x.id===name);node.title=f?.group==='piece'?(f.help||''):''}}}
+async function suggestions(){
+ const of=currentOf(),serial=++suggestSerial;if(!of||!state.area)return;
+ const q=new URLSearchParams({setor:state.area}),typed=n=>state.suggested[n]?'':String(val(n)??'').trim();
+ for(const [param,name] of [['ref','component_ref'],['perfil','profile'],['equipa','team'],['material','material_type']]){const v=typed(name);if(v&&v!=='__custom__')q.set(param,v)}
+ if(state.localMode&&!state.need){if($('local-customer').value.trim())q.set('cliente',$('local-customer').value.trim());if($('local-designation').value.trim())q.set('designacao',$('local-designation').value.trim())}
+ let data;try{const r=await fetch('/planeamento/api/ordens/'+encodeURIComponent(of)+'/sugestoes?'+q);if(!r.ok)return;data=await r.json()}catch{return}
+ if(serial!==suggestSerial||!state.cat)return;applySuggestions(data.fields||{});
+}
+function applySuggestions(fields){
+ let changed=false;
+ for(const f of state.cat.fields){if(!f.editor_visible)continue;const node=$('field-'+f.id);if(!node||node.type==='checkbox'||node.type==='hidden'||node.disabled||node.readOnly)continue;
+  const s=fields[f.id],mine=state.suggested[f.id];
+  if(!mine&&(state.decisions[f.id]||String(node.value??'')!==''))continue;
+  if(!s||s.value==null||s.value===''){if(mine){node.value='';unsuggest(f.id);changed=true}continue}
+  let value=f.type==='date'?(isoDate(s.value)||''):String(s.value);if(!value)continue;
+  if(node.tagName==='SELECT'&&!Array.from(node.options).some(o=>o.value===value))continue;
+  if(node.value!==value){node.value=value;changed=true}
+  state.suggested[f.id]=true;node.classList.add('suggested');node.dataset.suggestedFrom=s.source_pt||'';node.title='sugerido: '+(s.source_pt||'');
+ }
+ if(changed){showConditional();schedulePreview()}
+}
+function showCalculated(v){let host=$('piece-calc');if(!host&&$('catalog-fields')){host=el('p',null,'piece-calc');host.id='piece-calc';$('catalog-fields').append(host)}if(!host)return;const n=x=>typeof x==='number'&&isFinite(x)?x.toLocaleString('pt-PT',{maximumFractionDigits:x<10?3:1}):null,parts=[];
+ if(n(v?.section_unit))parts.push('Área de secção: '+n(v.section_unit)+' mm²');if(n(v?.weight_unit))parts.push('Peso por peça: '+n(v.weight_unit)+' kg');host.textContent=parts.join(' · ');host.hidden=!parts.length}
 function submittedValues(){const raw=Object.fromEntries(Object.entries(values()).filter(([id])=>state.cat.fields.some(f=>f.id===id&&f.editor_visible)));if(raw.custom_profile)raw.profile=raw.special_profile||'';for(const name of ['picking_week','picking_year'])if(!state.decisions[name])delete raw[name];return raw}
 let previewTimer,previewSerial=0;
 function schedulePreview(){
@@ -94,6 +133,7 @@ async function updatePreview(serial,of){
    ...(state.source?{source:state.source}:{}),catalog_version:state.cat.version,values:submittedValues(),decisions:state.decisions,
    ...(state.localMode?{local_order:{values:{delivery_date:$('local-delivery_date').value}}}:{})});
   if(serial!==previewSerial)return;
+  showCalculated(result.row?.values);
   if(result.needs_decision){$('preview-status').textContent=result.reason;$('picking-summary').textContent='Escolhe a peça correspondente para confirmar o Picking.';return}
   if(state.area==='perfis'){
    const v=result.row.values,host=$('picking-summary');host.hidden=false;host.replaceChildren();
@@ -118,7 +158,10 @@ async function updatePreview(serial,of){
  }catch(error){if(serial===previewSerial){$('preview-status').textContent=error.message;$('picking-summary').textContent='Picking por confirmar: '+error.message}}
 }
 for(const id of ['local-of','local-delivery_date'])$(id).addEventListener('input',schedulePreview);
-async function loadCatalog(area){state.area=['perfis','cantoneiras'].includes(area)?area:'';$('area').value=state.area;state.cat=state.area?await api('catalogos?contrato=3&area='+state.area):null;$('local-delivery_date').type=state.cat?.free_entry?'text':'date'}
+for(const id of ['local-customer','local-designation'])$(id).addEventListener('change',scheduleSuggest);
+async function loadCatalog(area){state.area=['perfis','cantoneiras'].includes(area)?area:'';$('area').value=state.area;state.cat=state.area?await api('catalogos?contrato=3&area='+state.area):null;rememberArea(state.area);const d=$('local-delivery_date'),v=d.value;d.type=!v||isoDate(v)||!state.cat?.free_entry?'date':'text';if(d.type==='date')d.value=isoDate(v)||''}
+// O setor escolhido automaticamente (último usado) segue a OF, o PDF ou a peça; o escolhido à mão fica.
+function areaFollows(areas){return (!state.area||state.areaAuto)&&areas.length===1&&areas[0]!==state.area}
 function modeLinks(){const suffix=state.of?'?of='+encodeURIComponent(state.of):'';$('manual-link').href='/planeamento/manual'+suffix;$('pdf-link').href='/planeamento/dossies'+suffix;for(const [id,pdf] of [['manual-link',false],['pdf-link',true]]){const a=$(id);if(Boolean(state.pdf||state.source?.kind==='pdf')===pdf)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current')}}
 function orderFields(context){for(const k of ['ov','customer','designation','delivery_date'])$('local-'+k).readOnly=Boolean(context);
  if(context){$('local-ov').value=(context.ovs||[]).join(', ');$('local-customer').value=context.customer_name||'';$('local-designation').value=context.observations||'';$('local-delivery_date').value=String(context.delivery_date||'').slice(0,10);state.orderFilled=true}
@@ -133,7 +176,7 @@ async function orderContext(of,order){state.of=of;modeLinks();$('order-facts').r
  }catch(error){state.order=null;$('order-facts').append(el('p',error.message));$('order-details').open=true}
 }
 function resetPiece(){state.need=null;state.op=null;state.detail=null;state.source=null;state.pdf=null;state.piece=null;state.raw={};state.decisions={};state.opDrafts={};state.dirty=false;state.proof=null;$('sources').replaceChildren();$('drawing-open').hidden=true;$('duplicates').hidden=true;$('after-save').hidden=true;$('pdf-conflict').hidden=true;$('quantity-notice').hidden=true;clearErrors()}
-async function selectOrder(of,order,keep={}){state.localMode=false;$('local-of').readOnly=false;resetPiece();await orderContext(of,order);if(!state.area&&state.order?.context.sources?.length===1)await loadCatalog(state.order.context.sources[0]);render(keep);state.dirty=Object.values(keep).some(v=>v!==''&&v!=null&&v!==false);$('preparation').hidden=false;$('next-step').textContent='Escolhe a peça desta OF ou preenche os dados.';await evidence();history.replaceState(null,'','/planeamento/manual?of='+encodeURIComponent(state.of)+(state.area?'&area='+state.area:''));await showPieces(true);}
+async function selectOrder(of,order,keep={}){state.localMode=false;$('local-of').readOnly=false;resetPiece();await orderContext(of,order);if(areaFollows(state.order?.context.sources||[]))await loadCatalog(state.order.context.sources[0]);render(keep);state.dirty=Object.values(keep).some(v=>v!==''&&v!=null&&v!==false);$('preparation').hidden=false;$('next-step').textContent='Escolhe a peça desta OF ou preenche os dados.';await evidence();history.replaceState(null,'','/planeamento/manual?of='+encodeURIComponent(state.of)+(state.area?'&area='+state.area:''));await showPieces(true);}
 async function showPieces(auto){$('order-pieces').hidden=true;if(!state.of||!state.area||state.localMode||state.need)return;await referenceList(false);$('order-pieces').hidden=!state.references.length;if(auto&&!state.dirty&&state.references.length===1)await state.references[0].open();}
 function cantoneirasLine(raw){const text=String(raw.other_operations||''),pick=(n,list)=>{const m=text.match(new RegExp(n+'ª Oper\\.:\\s*([^;]+)'));const v=m?m[1].trim():'';return (list||[]).some(o=>String(o.value)===v)?v:''};
  raw.operation=pick(1,state.cat.operations);raw.operation_detail=pick(2,state.cat.additional_operations);
@@ -159,7 +202,7 @@ async function referenceList(showDialog=true){
  renderReferences();
 }
 function renderReferences(){const q=key($('reference-query').value);$('references').replaceChildren();for(const item of state.references.filter(r=>key(r.label).includes(q))){const b=el('button',item.label);b.type='button';b.onclick=safe(async()=>{if(!await mayLeave())return;await item.open()});$('references').append(b)}if(!$('references').children.length)$('references').append(el('p','Não foram encontradas peças. Podes escrever uma nova referência no formulário.'))}
-async function loadNeed(id){state.need=id;state.detail=await api('necessidades/'+id);state.localMode=Boolean(state.detail.local_order);$('order-pieces').hidden=true;$('local-of').value=state.detail.need.production_order_no;$('local-of').readOnly=true;if(state.localMode){orderFields(null);for(const k of ['ov','customer','designation','delivery_date'])$('local-'+k).value=state.detail.local_order.values_json[k]||'';}const areas=[...new Set(state.detail.operations.map(o=>o.area))];if(!state.area&&areas.length===1)await loadCatalog(areas[0]);const record=state.detail.records.find(r=>r.area===state.area&&r.operation_id===state.op)||state.detail.records.find(r=>r.area===state.area);state.op=record?.operation_id||null;state.decisions={};state.opDrafts={};await orderContext(state.detail.need.production_order_no);render({...record?.values_json,...state.detail.need.specification,...record?.input_values,...state.detail.need.input_values});$('preparation').hidden=false;$('title').textContent=state.of+' · '+(state.detail.need.component_ref||'Nova peça');$('next-step').textContent='Confirma os dados e guarda as alterações.';renderSources();state.dirty=false;await evidence();history.replaceState(null,'','/planeamento/preparar?necessidade='+id+(state.area?'&area='+state.area:'')+(state.pdf?'&document='+encodeURIComponent(state.pdf.id)+'&piece='+encodeURIComponent(state.piece.id):'')+($('production-source').value==='original'?'&ocr_source=original':''));}
+async function loadNeed(id){state.need=id;state.detail=await api('necessidades/'+id);state.localMode=Boolean(state.detail.local_order);$('order-pieces').hidden=true;$('local-of').value=state.detail.need.production_order_no;$('local-of').readOnly=true;if(state.localMode){orderFields(null);for(const k of ['ov','customer','designation'])$('local-'+k).value=state.detail.local_order.values_json[k]||'';const d=$('local-delivery_date'),v=state.detail.local_order.values_json.delivery_date||'';d.type=!v||isoDate(v)?'date':'text';d.value=d.type==='date'?(isoDate(v)||''):v;}const areas=[...new Set(state.detail.operations.map(o=>o.area))];if(areaFollows(areas))await loadCatalog(areas[0]);const record=state.detail.records.find(r=>r.area===state.area&&r.operation_id===state.op)||state.detail.records.find(r=>r.area===state.area);state.op=record?.operation_id||null;state.decisions={};state.opDrafts={};await orderContext(state.detail.need.production_order_no);render({...record?.values_json,...state.detail.need.specification,...record?.input_values,...state.detail.need.input_values});$('preparation').hidden=false;$('title').textContent=state.of+' · '+(state.detail.need.component_ref||'Nova peça');$('next-step').textContent='Confirma os dados e guarda as alterações.';renderSources();state.dirty=false;await evidence();history.replaceState(null,'','/planeamento/preparar?necessidade='+id+(state.area?'&area='+state.area:'')+(state.pdf?'&document='+encodeURIComponent(state.pdf.id)+'&piece='+encodeURIComponent(state.piece.id):'')+($('production-source').value==='original'?'&ocr_source=original':''));}
 function renderSources(){$('sources').replaceChildren();const sources=state.detail?.sources||[];for(const s of sources){$('sources').append(el('p',s.kind==='pdf'?'PDF · revisão '+s.version:'Plano importado · versão '+s.version))}if(!sources.length)$('sources').append(el('p',state.pdf?state.pdf.filename:'Dados introduzidos manualmente.'));$('drawing-open').hidden=!state.pdf&&!sources.some(s=>s.kind==='pdf');modeLinks()}
 function pdfUrl(piece){return '/planeamento/preparar?document='+encodeURIComponent(state.pdf.id)+'&piece='+encodeURIComponent(piece.id)+(state.of?'&of='+encodeURIComponent(state.of):'')}
 async function sourcePdf(){state.pdf=await api('dossies/'+encodeURIComponent(params.get('document')));state.piece=state.pdf.pieces.find(p=>p.id===params.get('piece'));if(!state.piece)throw new Error('A peça não foi encontrada no PDF. Volta à lista de peças.');const requested=params.get('of');
@@ -168,7 +211,7 @@ async function sourcePdf(){state.pdf=await api('dossies/'+encodeURIComponent(par
 }
 async function acceptPdf(){const doc=state.pdf,piece=state.piece;$('pdf-conflict').hidden=true;if(!doc.production_order)throw new Error('Falta identificar a OF do PDF. Abre o PDF guardado e escolhe Resolver identificação.');
  if(['queued','indexing','extracting','matching'].includes(doc.status))throw new Error('A leitura do PDF está em curso. Volta à lista para acompanhar o progresso.');
- if(!state.area&&['Serrote','Vanguard'].includes(piece.machine_group))await loadCatalog('perfis');
+ if(['Serrote','Vanguard'].includes(piece.machine_group)&&areaFollows(['perfis']))await loadCatalog('perfis');
  state.source={kind:'pdf',id:doc.id+'/'+piece.id,document_id:doc.id,piece_id:piece.id,version:doc.revision+':'+piece.revision};
  const linked=await api('necessidades/por-origem?document='+encodeURIComponent(doc.id)+'&piece='+encodeURIComponent(piece.id));if(linked.need_id){await loadNeed(linked.need_id);return}
  await orderContext(doc.production_order);render({...piece.values,operation:piece.values.operation||(state.area==='perfis'?'corte':'')});$('preparation').hidden=false;renderSources();$('next-step').textContent='Os dados vieram do PDF. Confirma-os e preenche o que falta.';await evidence();
@@ -184,7 +227,7 @@ async function evidence(){state.proof=null;$('evidence').replaceChildren();$('co
  if(state.need&&state.op){state.proof=await api('necessidades/'+state.need+'/evidencia?operacao='+state.op);const p=state.proof.evidence;$('evidence-help').textContent=p.macro.length?'Quantidades da operação escolhida.':'Sem linha na macro. A quantidade em falta pode ser confirmada aqui.';$('evidence').append(metric('Quantidade total necessária',p.required),metric('Em falta no plano importado',p.macro_remaining),metric('Produção validada no OCR',p.ocr_quantity));if(p.ocr_quantity==null)$('evidence').append(el('p','Sem produção OCR associada. Isto não significa produção igual a zero.'));const conf=state.proof.conferences[0];if(conf)$('evidence').append(metric(conf.valid?'Quantidade em falta confirmada':'Confirmação a rever',conf.accepted_remaining));for(const warning of p.warnings)$('evidence').append(el('p',warning));$('conference-open').hidden=false}
  quantityNotice();updateReady();
 }
-function updateReady(){if(state.cat?.free_entry){$('preparation').elements.ready.disabled=false;$('preparation').elements.ready.textContent='Guardar registo';$('ready-reason').textContent='Os dados são guardados mesmo com campos por confirmar. Os avisos não impedem o registo.';return}const allowed=state.sourceStatus?.completion_allowed===true;$('preparation').elements.ready.disabled=!allowed;$('ready-reason').textContent=allowed?'Concluir confirma os dados para preparar a saída. Os campos obrigatórios e as quantidades são verificados.':'Podes guardar o rascunho. Para concluir, falta uma confirmação direta recente do CPIS.'}
+function updateReady(){const form=$('preparation').elements;if(state.cat?.free_entry){form.ready.disabled=false;form.ready.textContent='Guardar';if(form.draft)form.draft.hidden=true;$('ready-reason').textContent='';return}if(form.draft)form.draft.hidden=false;if(form.ready.textContent==='Guardar')form.ready.textContent='Concluir preparação';const allowed=state.sourceStatus?.completion_allowed===true;form.ready.disabled=!allowed;$('ready-reason').textContent=allowed?'Concluir confirma os dados para preparar a saída. Os campos obrigatórios e as quantidades são verificados.':'Podes guardar o rascunho. Para concluir, falta uma confirmação direta recente do CPIS.'}
 async function resolveCandidate(extra={}){const result=await api('necessidades/resolver',request({...state.pending,...extra}));if(result.needs_decision){$('duplicates').hidden=false;$('candidates').replaceChildren();for(const n of result.candidates){const b=el('button',n.component_ref+' · '+fmt(n.specification.profile)+' · '+fmt(n.specification.length_mm)+' mm · '+fmt(n.quantity_required)+' un.');b.type='button';b.onclick=safe(async()=>{if(await resolveCandidate({need_id:n.id,expected_revision:n.revision,reason:$('identity-reason').value}))await persist(state.pending.values,state.pendingStatus)});$('candidates').append(b)}$('duplicates').scrollIntoView({block:'center'});return false}state.need=result.need_id;state.detail=await api('necessidades/'+state.need);
  if(result.reused&&state.pending.source){const operation=state.detail.operations.find(o=>o.area===state.area&&o.code===state.pending.values.operation);for(const field of state.detail.fields){if(field.scope!=='piece'&&field.scope!==operation?.id)continue;if(state.cat.fields.some(f=>f.id===field.field&&f.editor_visible)&&!state.decisions[field.field]&&(field.human_decision||field.source?.kind==='manual'))state.pending.values[field.field]=field.value;}}
  $('duplicates').hidden=true;return true}
@@ -260,7 +303,7 @@ async function lookupOrder(){const typed=$('local-of').value.trim();if($('local-
  if(serial!==state.lookupSerial)return;
  if(order){const keep=state.dirty?values():{};await selectOrder(order.context.of,order,keep);return}
  state.localMode=true;state.of=null;state.order=null;orderFields(null);$('order-details').hidden=true;$('order-pieces').hidden=true;$('title').textContent='Registo de planeamento';
- $('of-status').textContent='OF nova: não está no Excel nem no CPIS. Preenche a OV, o cliente e a data de entrega.';schedulePreview();}
+ $('of-status').textContent='OF nova: não está no Excel nem no CPIS. Preenche a OV, o cliente e a data de entrega.';schedulePreview();scheduleSuggest();}
 let lookupTimer;
 $('local-of').addEventListener('input',()=>{clearTimeout(lookupTimer);if($('local-of').value.trim().length>=6)lookupTimer=setTimeout(safe(lookupOrder),700)});
 $('local-of').addEventListener('change',()=>{clearTimeout(lookupTimer);safe(lookupOrder)()});
@@ -288,7 +331,7 @@ for(const k of ['ov','customer','designation','delivery_date'])$('local-'+k).oni
 $('preparation').onsubmit=safe(async e=>{e.preventDefault();await save(e.submitter?.name==='ready'?'ready':'draft')});
 $('preparation').addEventListener('input',quantityNotice);
 $('reference-query').oninput=renderReferences;
-$('area').onchange=safe(async()=>{const area=$('area').value,previous=state.area;if(previous&&state.dirty&&!await mayLeave()){$('area').value=previous;return}await loadCatalog(area);if(state.need)await loadNeed(state.need);else{render(state.pdf?{...state.piece.values,operation:state.area==='perfis'?'corte':''}:{...values(),operation:state.area==='perfis'?'corte':''});await evidence();if(!state.pdf)await showPieces(false)}modeLinks()});
+$('area').onchange=safe(async()=>{const area=$('area').value,previous=state.area;if(previous&&state.dirty&&!await mayLeave()){$('area').value=previous;return}state.areaAuto=false;await loadCatalog(area);if(state.need)await loadNeed(state.need);else{render(state.pdf?{...state.piece.values,operation:state.area==='perfis'?'corte':''}:{...values(),operation:state.area==='perfis'?'corte':''});await evidence();if(!state.pdf)await showPieces(false)}modeLinks()});
 $('distinct').onclick=safe(async()=>{state.pending.values={...state.pending.values,identity_discriminator:$('distinct-variant').value};await atomicSave(state.pending.values,state.pendingStatus,{create_distinct:true,reason:$('identity-reason').value})});
 $('history-open').onclick=safe(showHistory);$('history-field').onchange=safe(showHistory);$('drawing-open').onclick=showDrawing;
 $('evidence-open').onclick=safe(async()=>{await evidence();fillOptions($('evidence-operation'),(state.detail?.operations||[]).filter(o=>o.area===state.area).map(o=>({value:o.id,label:o.code==='corte'?'Corte':o.code==='abocardar'?'Abocardar':o.code})),state.op);$('evidence-conference').hidden=true;if(state.op)await operationEvidence();$('evidence-dialog').showModal()});
@@ -299,7 +342,7 @@ $('keep-selected-order').onclick=safe(()=>selectOrder(params.get('of')));
 for(const b of document.querySelectorAll('[data-close]'))b.onclick=()=>b.closest('dialog').close();
 document.addEventListener('click',e=>{const a=e.target.closest('a[href]');if(!a||a.target||e.ctrlKey||e.metaKey||!state.dirty)return;const url=new URL(a.href,location.href);if(url.origin!==location.origin)return;e.preventDefault();safe(async()=>{if(await mayLeave())location.assign(a.href)})()});
 window.addEventListener('beforeunload',e=>{if(state.dirty){e.preventDefault();e.returnValue=''}});
-safe(async()=>{await loadCatalog(params.get('area'));try{state.sourceStatus=await api('fontes')}catch{state.sourceStatus=null}const originalOption=$('production-source').querySelector('option[value=original]');originalOption.disabled=!state.sourceStatus?.ocr_original?.human_association_supported;if(originalOption.disabled)$('production-source').value='mes';updateReady();
+safe(async()=>{const asked=['perfis','cantoneiras'].includes(params.get('area'))?params.get('area'):'';state.areaAuto=!asked;await loadCatalog(asked||lastArea()||'cantoneiras');try{state.sourceStatus=await api('fontes')}catch{state.sourceStatus=null}const originalOption=$('production-source').querySelector('option[value=original]');originalOption.disabled=!state.sourceStatus?.ocr_original?.human_association_supported;if(originalOption.disabled)$('production-source').value='mes';updateReady();
  if(params.get('document')&&params.get('piece'))await sourcePdf();
  else if(params.get('necessidade'))await loadNeed(params.get('necessidade'));
  else if(params.get('registo')){const response=await api('registos/'+params.get('registo')),record=response.record;if(record.need_id){await loadCatalog(record.area);state.op=record.operation_id;await loadNeed(record.need_id)}else throw new Error('Esta ficha histórica ainda precisa de ser ligada a uma peça.');}

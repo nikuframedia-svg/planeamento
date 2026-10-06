@@ -1,15 +1,21 @@
 """Carga e turnos por máquina e semana (pedido do Luís, 06/10/2026).
 
 Para cada máquina e semana ISO (a atual e as 12 seguintes):
-- capacidade = horas do calendário dessa semana (na semana atual, só as que faltam a partir de agora);
+- capacidade = horas do calendário dessa semana (na semana atual, só as que faltam a partir de agora;
+  a semana inteira fica em «full_capacity»);
 - no plano = horas das linhas «Planeado» (Planear + máquina) na sua máquina, na semana do prazo;
 - a vencer = trabalho aberto não planeado com prazo nessa semana: na máquina efetiva («com máquina») ou
-  na sugerida (à parte); o que tem prazo antes de hoje é «atrasado» (a mesma regra da Carteira e do
-  painel Máquinas) e conta na semana atual;
+  na sugerida (à parte);
+- atrasado = prazo antes da semana atual: fica à parte, por máquina («late_before»), e não entra na carga
+  da semana atual (07/10/2026); o que tem prazo entre segunda e ontem fica na semana atual, marcado como
+  atrasado (a mesma regra da Carteira e do painel Máquinas);
 - linhas excluídas na Carteira não contam (como na lista vermelha do quadro);
 - máquinas do setor sem calendário que têm trabalho aparecem com capacidade 0 e «Sem calendário»;
-- recomendação de turnos (shifts.advise) sobre no plano + a vencer; tirar turnos só nas 3 primeiras semanas
-  (mais à frente a carga ainda está a chegar);
+- recomendação de turnos (shifts.advise): na semana atual, atrasado + carga da semana contra as horas que
+  faltam; nas outras, a carga da semana. Tirar turnos só nas 3 primeiras semanas (mais à frente a carga ainda
+  está a chegar) e nunca numa máquina com trabalho atrasado ou sem prazo;
+- cor da célula (status): carga da semana contra a capacidade da semana inteira, os mesmos números que a
+  célula mostra; o atrasado não pinta a semana atual (tem a sua coluna);
 - ao lado, o que as antigas páginas Capacidades/Disponibilidade mostravam (load_sources.py): horas segundo o
   Excel, peso, horas reais declaradas, calendário do Excel; e totais por máquina (separador Máquinas).
 Prazo pela política do setor (MTG3 Data Corte; MTG2 Picking, depois Data Corte). As horas são as mesmas da
@@ -75,10 +81,42 @@ def _empty_cell():
 
 def _empty_total():
     return {"operations": 0, "unknown": 0, "pieces": 0.0, "metres": 0.0, "area_mm2": 0.0, "weight_kg": 0.0, "weight_unknown": 0,
-            "load": 0.0, "late": 0.0, "after": 0.0, "no_date": 0.0, "excel_hours": 0.0, "excel_unknown": 0}
+            "load": 0.0, "late": 0.0, "late_before": 0.0, "after": 0.0, "no_date": 0.0, "excel_hours": 0.0, "excel_unknown": 0}
 
 
-def _add_total(t: dict, f: dict, week, late: bool, excel, weight, applies: bool) -> None:
+def _before_week(fact: dict, monday: date) -> bool:
+    """Prazo antes da segunda-feira da semana atual: atrasado à parte (coluna Atrasado), fora da semana atual."""
+    day = fact.get("priority_day")
+    return bool(day) and str(day)[:10] < monday.isoformat()
+
+
+def advice_text(advice: dict, missing: float, shifts_now: int | None = None) -> dict:
+    """Texto simples da recomendação: «faltam 52 h · +1 turno» / «sobram 40 h · −1 turno» (07/10/2026)."""
+    delta = advice.get("delta") or 0
+    if delta > 0:
+        text = f"faltam {missing:.0f} h · +{delta} turno{'s' if delta > 1 else ''}"
+    elif delta < 0:
+        text = f"sobram {-missing:.0f} h · −{-delta} turno{'s' if delta < -1 else ''}"
+    elif missing > 0.05:
+        full = shifts_now is not None and shifts_now >= shifts.MAX_SHIFTS
+        text = f"faltam {missing:.0f} h · já tem {shifts.MAX_SHIFTS} turnos" if full else f"faltam {missing:.0f} h"
+    elif missing < -0.05:
+        text = f"sobram {-missing:.0f} h"
+    else:
+        text = "certo"
+    return {**advice, "text": text}
+
+
+def recommend(load_hours: float, capacity: float, n: int, settings: dict, *, workdays: int, can_reduce: bool) -> dict:
+    """Recomendação de turnos (shifts.advise) com o texto simples; −1 só quando `can_reduce`."""
+    advice = shifts.advise(load_hours, capacity, n, settings, workdays_in_week=workdays)
+    missing = load_hours - capacity
+    if advice["delta"] < 0 and not can_reduce:
+        advice = {"delta": 0}
+    return advice_text(advice, missing, n)
+
+
+def _add_total(t: dict, f: dict, week, late: bool, excel, weight, applies: bool, before: bool = False) -> None:
     t["operations"] += 1
     if f.get("phase", "principal") == "principal":
         t["pieces"] += f.get("pieces") or 0
@@ -101,6 +139,8 @@ def _add_total(t: dict, f: dict, week, late: bool, excel, weight, applies: bool)
     t["load"] += hours
     if late:
         t["late"] += hours
+    if before:
+        t["late_before"] += hours
     if week == "depois":
         t["after"] += hours
     elif week == "sem_data":
@@ -139,6 +179,8 @@ def overview(sector: str, *, today: date | None = None, now: datetime | None = N
     cal = {(str(r["definition"]["resource_id"]), int(r["definition"]["year"]), int(r["definition"]["week"])): r["definition"] for r in calendars}
     cells = defaultdict(_empty_cell)
     no_date = defaultdict(_empty_cell)
+    late_before = defaultdict(_empty_cell)  # prazo antes da semana atual: coluna Atrasado, fora da semana atual
+    monday_now = date.fromisocalendar(*current, 1)
     totals = defaultdict(_empty_total)
     own = set(ids)
     elsewhere = defaultdict(lambda: {"operations": 0, "hours": 0.0, "unknown": 0})
@@ -155,10 +197,12 @@ def overview(sector: str, *, today: date | None = None, now: datetime | None = N
             e["unknown"] += f.get("load_hours") is None
             continue
         kind, week, late = found
-        _add_total(totals[f["planning_resource_id"]], f, week, late, excel, weight, applies)
+        before = week == current and _before_week(f, monday_now)
+        _add_total(totals[f["planning_resource_id"]], f, week, late, excel, weight, applies, before)
         if week == "depois":
             continue
-        target = no_date[f["planning_resource_id"]] if week == "sem_data" else cells[(f["planning_resource_id"], *week)]
+        target = (no_date[f["planning_resource_id"]] if week == "sem_data" else late_before[f["planning_resource_id"]] if before
+                  else cells[(f["planning_resource_id"], *week)])
         target["operations"] += 1
         if applies:
             if excel is None:
@@ -180,10 +224,17 @@ def overview(sector: str, *, today: date | None = None, now: datetime | None = N
         has_work = bool((totals.get(m["id"]) or {}).get("operations"))
         if not (has_load or has_calendar or has_work):
             continue
+        lb = late_before.get(m["id"]) or _empty_cell()
+        lb_hours = lb[PLAN] + lb[DUE] + lb[SUGGESTED]
+        nd = no_date.get(m["id"]) or _empty_cell()
+        nd_hours = nd[PLAN] + nd[DUE] + nd[SUGGESTED]
+        # Nunca propor tirar turnos a uma máquina com trabalho atrasado ou sem prazo (07/10/2026).
+        can_reduce = not (lb["operations"] or nd["operations"])
         out = []
         for index, (y, w) in enumerate(weeks):
             d = cal.get((m["id"], y, w))
             cell = cells.get((m["id"], y, w)) or _empty_cell()
+            full = shifts.week_hours(d) if d else 0.0
             capacity = shifts.week_hours(d, after=now if (y, w) == current else None) if d else 0.0
             base, days = shifts.decode(d, settings["template"]) if d else ({}, {})
             n = max([base.get(str(x), 0) for x in settings["workdays"]] or [0])
@@ -191,15 +242,19 @@ def overview(sector: str, *, today: date | None = None, now: datetime | None = N
             workdays = [monday + timedelta(days=x - 1) for x in settings["workdays"]]
             open_days = [x for x in workdays if x.isoformat() not in set(settings["holidays"]) and (x >= today if (y, w) == current else True)]
             load = cell[PLAN] + cell[DUE] + cell[SUGGESTED]
-            advice = shifts.advise(load, capacity, n, settings, workdays_in_week=len(open_days)) if d else {"delta": 0, "text": "Sem calendário"}
-            if advice["delta"] < 0 and index >= REDUCE_WEEKS:
-                # Mais à frente a carga ainda está a chegar: mostrar a folga, sem propor cortar turnos.
-                advice = {"delta": 0, "text": f"Sobram {capacity - load:.0f} h (carga ainda por chegar)"}
-            balance = capacity - load
-            status = "falta" if balance < -0.05 else "apertado" if capacity and balance < 0.15 * capacity else "folga"
+            # Na semana atual a recomendação conta o atrasado + a carga da semana contra as horas que faltam.
+            # Mais à frente (index >= REDUCE_WEEKS) a carga ainda está a chegar: mostrar a folga, sem propor cortar.
+            need = load + (lb_hours if index == 0 else 0.0)
+            advice = (recommend(need, capacity, n, settings, workdays=len(open_days), can_reduce=can_reduce and index < REDUCE_WEEKS)
+                      if d else {"delta": 0, "text": "Sem calendário"})
+            balance = capacity - need
+            # A cor bate com o que a célula mostra («carga / capacidade da semana inteira»): o atrasado tem a sua
+            # coluna e não pinta a semana atual; só a recomendação o conta (revisão 07/10/2026).
+            room = full - load
+            status = "falta" if room < -0.05 else "apertado" if full and room < 0.15 * full else "folga"
             extra = src["actual"].get((m["id"], y, w)) or {}
             out.append({"year": y, "week": w, "monday": monday, "shifts": n, "manual": bool((d or {}).get("manual")),
-                        "day_changes": len(days), "capacity": round(capacity, 1), "plan": round(cell[PLAN], 1),
+                        "day_changes": len(days), "capacity": round(capacity, 1), "full_capacity": round(full, 1), "plan": round(cell[PLAN], 1),
                         "due": round(cell[DUE], 1), "suggested": round(cell[SUGGESTED], 1), "late": round(cell["late"], 1),
                         "unknown": cell["unknown"], "operations": cell["operations"], "load": round(load, 1),
                         "balance": round(balance, 1), "status": status if d else "sem_calendario", "advice": advice,
@@ -208,16 +263,22 @@ def overview(sector: str, *, today: date | None = None, now: datetime | None = N
                         "excel_calendar_hours": extra.get("excel_calendar_hours"),
                         "days": [{"date": monday + timedelta(days=i), "shifts": _day_shifts(base, days, settings, monday + timedelta(days=i))}
                                  for i in range(7)] if d else []})
-        nd = no_date.get(m["id"]) or _empty_cell()
+        after = (totals.get(m["id"]) or {}).get("after", 0.0)
         rows.append({"id": m["id"], "name": m["name"], "code": m["code"], "process": m["process"], "default_shifts": m["default_shifts"],
-                     "weeks": out, "no_date": {"hours": round(nd[PLAN] + nd[DUE] + nd[SUGGESTED], 1), "unknown": nd["unknown"],
-                                               "operations": nd["operations"]}})
+                     "has_calendar": has_calendar, "weeks": out,
+                     "no_date": {"hours": round(nd_hours, 1), "unknown": nd["unknown"], "operations": nd["operations"]},
+                     "late_before": {"hours": round(lb_hours, 1), "unknown": lb["unknown"], "operations": lb["operations"]},
+                     "after": round(after, 1)})
     names = {rid: (r.get("name") or rid) for rid, r in (occ.get("resources") or {}).items()}
     recent = [(today - timedelta(weeks=i)).isocalendar()[:2] for i in range(4, 0, -1)]  # 4 semanas completas antes desta
     machine_totals = []
+    per_shift = shifts.shift_hours(settings["template"])
     for m in machines:
         t = totals.get(m["id"]) or _empty_total()
+        # Capacidade de uma semana normal (turnos padrão × horas do turno × dias de trabalho): «Semanas de trabalho».
+        normal = sum(per_shift[:int(m.get("default_shifts") or 0)]) * len(settings["workdays"])
         machine_totals.append({"id": m["id"], "name": m["name"], "process": m["process"], **_round_total(t),
+                               "week_capacity": round(normal, 1),
                                "actual_recent": [{"year": y, "week": w, "hours": (src["actual"].get((m["id"], y, w)) or {}).get("actual_hours")} for y, w in recent]})
     if totals.get(None):
         machine_totals.append({"id": None, "name": "Sem máquina", "process": None, **_round_total(totals[None]), "actual_recent": []})

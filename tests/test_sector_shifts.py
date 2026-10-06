@@ -95,16 +95,16 @@ def test_first_section_follows_the_excel_columns_of_each_sector():
     def first(area):
         fields = planning_catalogs.arrange(planning_catalogs.fields(), area)
         return [f["id"] for f in sorted(fields, key=lambda f: f["order"]) if f["group"] == "piece" and f["editor_visible"]]
-    perfis = first("perfis")
-    assert perfis[:4] == ["component_ref", "cut_date", "material_type", "profile"]
-    assert perfis[-3:] == ["abocardar", "picking_week", "picking_year"]
-    cantoneiras = first("cantoneiras")
-    assert cantoneiras[:2] == ["cut_date", "component_ref"]
-    assert cantoneiras[-4:] == ["operation", "operation_detail", "team", "pavilion"]
+    # Pedido do Luís (06/10/2026, noite): todas as colunas do Excel, pela ordem do Excel, e a Máquina.
+    assert first("perfis") == ["cut_date", "component_ref", "material_type", "profile", "quantity_required",
+                               "outer_diameter_mm", "width_mm", "height_mm", "thickness_mm", "length_mm", "angle_deg",
+                               "grade", "abocardar", "picking_week", "picking_year", "team", "pavilion", "machine"]
+    assert first("cantoneiras") == ["cut_date", "component_ref", "material_type", "quantity_required", "profile",
+                                    "length_mm", "operation", "operation_detail", "team", "pavilion", "machine"]
     hidden = {f["id"] for f in planning_catalogs.arrange(planning_catalogs.fields(), "cantoneiras") if not f["editor_visible"]}
     assert {"abocardar", "picking_week", "picking_year"} <= hidden
     labels = {f["id"]: f["label"] for f in planning_catalogs.arrange(planning_catalogs.fields(), "cantoneiras")}
-    assert labels["operation"] == "1.ª Operação" and labels["operation_detail"] == "2.ª Operação"
+    assert labels["operation"] == "1.ª Oper." and labels["operation_detail"] == "2.ª Oper." and labels["profile"] == "Des. Material"
 
 
 class _Conn:
