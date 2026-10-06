@@ -1,5 +1,5 @@
 // Cumulative V06 on the same two needs, with the real isolated worker.
-const {chromium}=require('/home/luis/.npm/_npx/fd3bca3c548369c0/node_modules/playwright-core');
+const {chromium}=require('./playwright_core.cjs');
 const fs=require('node:fs'),assert=require('node:assert/strict'),crypto=require('node:crypto');
 const {execFile}=require('node:child_process'),{promisify}=require('node:util');
 const execute=promisify(execFile),base=process.env.PLANNING_CHECK_BASE,F='docs/validacao-planeamento-integral/20260923-execucao';
@@ -13,7 +13,7 @@ const priorFile=previous?F+'/t10-v06-attempt-'+Date.now()+'.json':null;
 if(previous)fs.copyFileSync(F+'/t10-v06-browser.json',priorFile);
 (async()=>{
  const context=JSON.parse(fs.readFileSync(process.env.PLANNING_V06_CONTEXT||F+'/t9-v06-context.json'));assert.equal(context.scope,'V06 isolated acceptance only');
- browser=await chromium.launch({executablePath:'/home/luis/.cache/ms-playwright/chromium-1243/chrome-linux64/chrome',headless:true,args:['--no-sandbox','--disable-background-timer-throttling']});
+ browser=await chromium.launch({executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE,headless:true,args:['--no-sandbox','--disable-background-timer-throttling']});
  for(const area of ['perfis','cantoneiras']){
   const fixture=context.areas[area],page=await browser.newPage({viewport:{width:1440,height:1000}}),form=await browser.newPage({viewport:{width:1440,height:1000}});
   for(const p of [page,form])p.on('pageerror',e=>report.errors.push(e.message));

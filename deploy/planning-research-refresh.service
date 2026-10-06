@@ -1,0 +1,10 @@
+[Unit]
+Description=Atualiza a camada documental de planeamento MTG2/MTG3
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/luis/projects/planeamento
+EnvironmentFile=/home/luis/projects/planeamento/.env
+ExecStart=/home/luis/projects/planeamento/.venv/bin/python -m app.gantt.research
+TimeoutStartSec=300

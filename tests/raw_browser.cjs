@@ -1,7 +1,7 @@
-const {chromium}=require(process.env.PLAYWRIGHT_CORE_PATH||'/home/luis/.npm/_npx/fd3bca3c548369c0/node_modules/playwright-core');
+const {chromium}=require('./playwright_core.cjs');
 const assert=require('node:assert/strict');
 (async()=>{
-const browser=await chromium.launch({executablePath:'/home/luis/.cache/ms-playwright/chromium-1243/chrome-linux64/chrome',headless:true,args:['--no-sandbox']});const page=await browser.newPage({viewport:{width:1440,height:1000}});const errors=[];page.on('pageerror',e=>errors.push(e.message));
+const browser=await chromium.launch({executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE,headless:true,args:['--no-sandbox']});const page=await browser.newPage({viewport:{width:1440,height:1000}});const errors=[];page.on('pageerror',e=>errors.push(e.message));
 await page.goto(process.env.PLANNING_CHECK_BASE+'/planeamento/raw');await page.waitForFunction(()=>document.querySelector('#count').textContent.includes('linhas'));
 assert.equal(await page.locator('#sheet th').count(),43);
 const headers=await page.locator('#sheet th').allTextContents();const notes=headers.findIndex(h=>h.startsWith('Observações locais'));

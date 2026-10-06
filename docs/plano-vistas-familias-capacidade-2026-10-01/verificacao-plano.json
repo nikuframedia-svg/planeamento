@@ -1,0 +1,15 @@
+{
+  "plano": "/home/luis/projects/planeamento/docs/plano-vistas-familias-capacidade-2026-10-01/PLANO.md",
+  "palavras": 7605,
+  "linhas": 487,
+  "ligacoes_locais_verificadas": 22,
+  "seccoes": 18,
+  "numeros_e_exportacoes_reconciliados": true,
+  "exemplos_capacidade": {
+    "200h_80_40_20": {
+      "ocupacao_pct": 70.0,
+      "m1_capacidade_pct": 40.0,
+      "m1_carga_pct": 57.1
+    }
+  }
+}

@@ -11,6 +11,7 @@ from urllib.parse import urlsplit
 from fastapi import APIRouter, Request, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Response
 from fastapi.templating import Jinja2Templates
+from .templates_env import install
 from pydantic import BaseModel
 from starlette.concurrency import run_in_threadpool
 
@@ -21,7 +22,7 @@ from ..dossiers import DossierError, macro, pdf, pipeline, provider, store, inbo
 
 router = APIRouter()
 DIR = Path(__file__).parent
-templates = Jinja2Templates(directory=str(DIR / "templates"))
+templates = install(Jinja2Templates(directory=str(DIR / "templates")))
 
 
 def _result(function, *args, **kwargs):

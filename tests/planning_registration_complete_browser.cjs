@@ -1,5 +1,5 @@
 // C03 end-to-end registration, scoped strictly to the full isolated copy.
-const {chromium}=require('/home/luis/.npm/_npx/fd3bca3c548369c0/node_modules/playwright-core');
+const {chromium}=require('./playwright_core.cjs');
 const fs=require('node:fs'),assert=require('node:assert/strict');
 const base=process.env.PLANNING_CHECK_BASE,folder='docs/validacao-planeamento-integral/20260923-execucao';
 if(base!=='http://127.0.0.1:18113'||process.env.PLANNING_TEST_ISOLATED!=='1')throw Error('Isolated Planeamento required');
@@ -39,7 +39,7 @@ async function verifyResults(raw,id,area,q,length){
  return row;
 }
 (async()=>{
- browser=await chromium.launch({executablePath:'/home/luis/.cache/ms-playwright/chromium-1243/chrome-linux64/chrome',headless:true,args:['--no-sandbox','--disable-background-timer-throttling']});
+ browser=await chromium.launch({executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE,headless:true,args:['--no-sandbox','--disable-background-timer-throttling']});
  for(const [i,area] of ['perfis','cantoneiras'].entries()){
   const entry=fixture.areas[area]||={order:'OF98'+String(fixture.run).slice(-6)+i,pieces:[]};checkpoint();
   const context=await browser.newContext({viewport:{width:1440,height:1050}}),form=await context.newPage(),raw=await context.newPage();

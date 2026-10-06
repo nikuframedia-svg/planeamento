@@ -5,20 +5,20 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>RAW · Planeamento</title>
     <link rel="stylesheet" href="/static/raw_workspace.css" />
-    <script src="/static/raw_workspace.js" defer></script>
+    <script src="/static/raw_workspace.js?v=20261002" defer></script>
     <script src="/static/raw_charts.js" defer></script>
     <script src="/static/raw_panels.js" defer></script>
   <link rel="stylesheet" href="/static/planning_typography.css">
+<link rel="stylesheet" href="/static/planeamento_ui.css?v=20261002">
 </head>
-  <body>
-    <header class="appbar">
-      <a href="/planeamento" class="brand">RAW <span>Planeamento</span></a>
-      <nav>
-        <a id="manual" href="/planeamento/manual">Preencher manualmente</a
-        ><a id="pdf" href="/planeamento/dossies">Carregar PDF</a
-        ><a href="/planeamento/gantt">Gantt · MTG2 Perfis</a><button id="sources">Fontes</button>
-      </nav>
-    </header>
+  <body class="pl-fill">
+    {% set active = 'raw' %}{% include "_app_nav.html" %}
+<nav class="pl-page-actions" aria-label="Acrescentar trabalho">
+      <a id="manual" href="/planeamento/manual">Preencher manualmente</a>
+      <a id="pdf" href="/planeamento/dossies">Carregar PDF</a>
+      <span class="pl-spacer"></span>
+      <button id="sources">Fontes</button>
+    </nav>
     <main>
       <div class="toolbar">
         <select id="area" aria-label="Setor">

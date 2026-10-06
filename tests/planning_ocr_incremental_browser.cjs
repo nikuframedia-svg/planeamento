@@ -1,4 +1,4 @@
-const {chromium}=require('/home/luis/.npm/_npx/fd3bca3c548369c0/node_modules/playwright-core');
+const {chromium}=require('./playwright_core.cjs');
 const fs=require('node:fs'),assert=require('node:assert/strict'),{execFileSync,spawn}=require('node:child_process');
 const base=process.env.PLANNING_CHECK_BASE,folder='docs/validacao-planeamento-integral/20260923-execucao';
 const prefix=process.env.PLANNING_PROOF_PREFIX||'c05';
@@ -14,7 +14,7 @@ function observe(area,initial,remaining,hours){
  return {ready,result};
 }
 (async()=>{
- const browser=await chromium.launch({executablePath:'/home/luis/.cache/ms-playwright/chromium-1243/chrome-linux64/chrome',headless:true,args:['--no-sandbox','--disable-background-timer-throttling']});
+ const browser=await chromium.launch({executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE,headless:true,args:['--no-sandbox','--disable-background-timer-throttling']});
  const report={at:new Date().toISOString(),base,areas:[],errors:[],method:'Synthetic central OCR commit to open RAW and capacity view without reload; capacity item queried from the same browser. Real worker polling, no direct rebuild call.'};
  try{
   for(const area of ['perfis','cantoneiras']){

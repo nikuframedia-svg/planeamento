@@ -1,0 +1,299 @@
+{
+  "read_only": true,
+  "selection_was_not_changed": true,
+  "cases": [
+    {
+      "ordem_codigo": "OF264754",
+      "referencia_original": "CI5221A4006",
+      "operacao_codigo": "LOCAL:PRINCIPAL",
+      "ocorrencia": 1,
+      "estado_documental": "aberta",
+      "estado_quantidade": "coerente",
+      "saldo_documental": 105.0,
+      "recurso_atual": "MEBA",
+      "alternatives": [
+        {
+          "resource_code": "MEBA",
+          "proposed_code": "LOCAL:PRINCIPAL",
+          "eligibility": "conditional",
+          "conditions": [
+            "confirmar_geometria_furacao_e_revisao"
+          ],
+          "other_orders": 0,
+          "mes_orders": 0,
+          "code_change": false
+        }
+      ]
+    },
+    {
+      "ordem_codigo": "OF264754",
+      "referencia_original": "CI5221A4006",
+      "operacao_codigo": "LOCAL:ABOCARDAR",
+      "ocorrencia": 2,
+      "estado_documental": "aberta",
+      "estado_quantidade": "coerente",
+      "saldo_documental": null,
+      "recurso_atual": null,
+      "alternatives": [
+        {
+          "resource_code": "ABOCARDAR",
+          "proposed_code": "LOCAL:ABOCARDAR",
+          "eligibility": "conditional",
+          "conditions": [
+            "limites_por_validar",
+            "revisao_tecnica_por_validar"
+          ],
+          "other_orders": 0,
+          "mes_orders": 0,
+          "code_change": false
+        }
+      ]
+    },
+    {
+      "ordem_codigo": "OF264754",
+      "referencia_original": "CI5221A4006",
+      "operacao_codigo": "LOCAL:PRINCIPAL",
+      "ocorrencia": 1,
+      "estado_documental": "aberta",
+      "estado_quantidade": "coerente",
+      "saldo_documental": 105.0,
+      "recurso_atual": "MEBA",
+      "alternatives": [
+        {
+          "resource_code": "MEBA",
+          "proposed_code": "LOCAL:PRINCIPAL",
+          "eligibility": "conditional",
+          "conditions": [
+            "confirmar_geometria_furacao_e_revisao"
+          ],
+          "other_orders": 0,
+          "mes_orders": 0,
+          "code_change": false
+        }
+      ]
+    },
+    {
+      "ordem_codigo": "OF265844",
+      "referencia_original": "CDPTM001",
+      "operacao_codigo": "CPIS:112",
+      "ocorrencia": 1,
+      "estado_documental": "aberta",
+      "estado_quantidade": "coerente",
+      "saldo_documental": 0.0,
+      "recurso_atual": "PEDDI8",
+      "alternatives": [
+        {
+          "resource_code": "PEDDI6",
+          "proposed_code": "CPIS:112",
+          "eligibility": "excluded",
+          "conditions": [
+            "confirmar_cliente_nacional",
+            "confirmar_graminho_ferramentas_e_desenho",
+            "revisao_tecnica_por_validar"
+          ],
+          "other_orders": 0,
+          "mes_orders": 0,
+          "code_change": false
+        },
+        {
+          "resource_code": "PEDDI8",
+          "proposed_code": "CPIS:112",
+          "eligibility": "conditional",
+          "conditions": [
+            "confirmar_graminho_ferramentas_e_desenho",
+            "revisao_tecnica_por_validar"
+          ],
+          "other_orders": 71,
+          "mes_orders": 0,
+          "code_change": false
+        },
+        {
+          "resource_code": "XPT4",
+          "proposed_code": "CPIS:112",
+          "eligibility": "conditional",
+          "conditions": [
+            "confirmar_graminho_ferramentas_e_desenho",
+            "perfil_por_interpretar",
+            "revisao_tecnica_por_validar"
+          ],
+          "other_orders": 0,
+          "mes_orders": 0,
+          "code_change": false
+        },
+        {
+          "resource_code": "XPT6",
+          "proposed_code": "CPIS:112",
+          "eligibility": "conditional",
+          "conditions": [
+            "confirmar_graminho_ferramentas_e_desenho",
+            "confirmar_numero_de_diametros_da_peca",
+            "perfil_por_interpretar",
+            "revisao_tecnica_por_validar"
+          ],
+          "other_orders": 0,
+          "mes_orders": 0,
+          "code_change": false
+        },
+        {
+          "resource_code": "PEDDI6",
+          "proposed_code": "CPIS:119",
+          "eligibility": "excluded",
+          "conditions": [
+            "confirmar_cliente_nacional",
+            "confirmar_graminho_ferramentas_e_desenho",
+            "mudanca_112_para_119_requer_decisao",
+            "revisao_tecnica_por_validar"
+          ],
+          "other_orders": 0,
+          "mes_orders": 0,
+          "code_change": true
+        },
+        {
+          "resource_code": "RAPID20_1",
+          "proposed_code": "CPIS:119",
+          "eligibility": "conditional",
+          "conditions": [
+            "confirmar_graminho_ferramentas_e_desenho",
+            "mudanca_112_para_119_requer_decisao",
+            "perfil_por_interpretar",
+            "revisao_tecnica_por_validar"
+          ],
+          "other_orders": 0,
+          "mes_orders": 0,
+          "code_change": true
+        },
+        {
+          "resource_code": "RAPID20_2",
+          "proposed_code": "CPIS:119",
+          "eligibility": "conditional",
+          "conditions": [
+            "confirmar_graminho_ferramentas_e_desenho",
+            "mudanca_112_para_119_requer_decisao",
+            "perfil_por_interpretar",
+            "revisao_tecnica_por_validar"
+          ],
+          "other_orders": 0,
+          "mes_orders": 0,
+          "code_change": true
+        },
+        {
+          "resource_code": "RAPID25",
+          "proposed_code": "CPIS:119",
+          "eligibility": "excluded",
+          "conditions": [
+            "confirmar_graminho_ferramentas_e_desenho",
+            "mudanca_112_para_119_requer_decisao",
+            "revisao_tecnica_por_validar"
+          ],
+          "other_orders": 0,
+          "mes_orders": 0,
+          "code_change": true
+        }
+      ]
+    },
+    {
+      "ordem_codigo": "OF266558",
+      "referencia_original": "DLR477D",
+      "operacao_codigo": "CPIS:119",
+      "ocorrencia": 1,
+      "estado_documental": "divergente",
+      "estado_quantidade": "coerente",
+      "saldo_documental": 1.0,
+      "recurso_atual": null,
+      "alternatives": [
+        {
+          "resource_code": "PEDDI6",
+          "proposed_code": "CPIS:119",
+          "eligibility": "conditional",
+          "conditions": [
+            "confirmar_cliente_nacional",
+            "confirmar_graminho_ferramentas_e_desenho",
+            "perfil_por_interpretar",
+            "revisao_tecnica_por_validar"
+          ],
+          "other_orders": 0,
+          "mes_orders": 0,
+          "code_change": false
+        },
+        {
+          "resource_code": "RAPID20_1",
+          "proposed_code": "CPIS:119",
+          "eligibility": "conditional",
+          "conditions": [
+            "confirmar_graminho_ferramentas_e_desenho",
+            "perfil_por_interpretar",
+            "revisao_tecnica_por_validar"
+          ],
+          "other_orders": 0,
+          "mes_orders": 0,
+          "code_change": false
+        },
+        {
+          "resource_code": "RAPID20_2",
+          "proposed_code": "CPIS:119",
+          "eligibility": "conditional",
+          "conditions": [
+            "confirmar_graminho_ferramentas_e_desenho",
+            "perfil_por_interpretar",
+            "revisao_tecnica_por_validar"
+          ],
+          "other_orders": 0,
+          "mes_orders": 0,
+          "code_change": false
+        },
+        {
+          "resource_code": "RAPID25",
+          "proposed_code": "CPIS:119",
+          "eligibility": "conditional",
+          "conditions": [
+            "confirmar_graminho_ferramentas_e_desenho",
+            "perfil_por_interpretar",
+            "revisao_tecnica_por_validar"
+          ],
+          "other_orders": 0,
+          "mes_orders": 0,
+          "code_change": false
+        }
+      ]
+    },
+    {
+      "ordem_codigo": "OF266558",
+      "referencia_original": "DLR477D",
+      "operacao_codigo": "CPIS:111",
+      "ocorrencia": 2,
+      "estado_documental": "divergente",
+      "estado_quantidade": "coerente",
+      "saldo_documental": null,
+      "recurso_atual": null,
+      "alternatives": [
+        {
+          "resource_code": "SACA_BOCADOS",
+          "proposed_code": "CPIS:111",
+          "eligibility": "conditional",
+          "conditions": [
+            "limites_por_validar",
+            "revisao_tecnica_por_validar"
+          ],
+          "other_orders": 0,
+          "mes_orders": 0,
+          "code_change": false
+        },
+        {
+          "resource_code": "PLASMA_MANUAL",
+          "proposed_code": "CPIS:111",
+          "eligibility": "conditional",
+          "conditions": [
+            "limites_por_validar",
+            "revisao_tecnica_por_validar"
+          ],
+          "other_orders": 0,
+          "mes_orders": 0,
+          "code_change": false
+        }
+      ]
+    }
+  ],
+  "source_digest": "0bf40024dd7c69adc152671c2a728bf4f691f616c6d4f0e17d4c89f93016ff87",
+  "seconds": 1.541,
+  "note": "Estas OFs não foram adicionadas ao plano. A calendarização depende da seleção explícita na Carteira e da informação ativa da app."
+}

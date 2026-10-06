@@ -65,3 +65,47 @@ def working_offset(available, instant, *, end=False):
             return counted + instant - low
         counted += high - low
     return None
+
+
+def option_windows(snapshot, option):
+    result = windows(snapshot, option['resource_id'])
+    for pool in option.get('shared_demands', {}):
+        if pool not in snapshot['resources']:
+            return []
+        available = windows(snapshot, pool)
+        result = [(max(a, c), min(b, d)) for a, b in result for c, d in available
+                  if max(a, c) < min(b, d)]
+    return sorted(result)
+
+
+def shared_conflicts(snapshot, option, segments, occupied):
+    """Sweep actual wall-clock segments, not machine-specific working offsets."""
+    for pool, demand in option.get('shared_demands', {}).items():
+        capacity = snapshot['resources'][pool].get('capacity', 1)
+        events = []
+        for left, right in segments:
+            events.extend([(left, demand), (right, -demand)])
+        for left, right, amount in occupied.get(pool, []):
+            events.extend([(left, amount), (right, -amount)])
+        used = 0
+        for _, delta in sorted(events, key=lambda x: (x[0], x[1])):
+            used += delta
+            if used > capacity:
+                return True
+    return False
+
+
+def option_fit(snapshot, option, earliest, occupied, shared, fixed=None):
+    available = option_windows(snapshot, option)
+    candidates = {max(earliest, start) for start, end in available if end > earliest}
+    candidates.update(max(earliest, end) for _, end in occupied)
+    for pool in option.get('shared_demands', {}):
+        candidates.update(max(earliest, end) for _, end, _ in shared.get(pool, []))
+    for start in ([fixed] if fixed is not None else sorted(candidates)):
+        if start is None or start < earliest:
+            continue
+        found = consume(available, start, option['duration_minutes'], occupied)
+        if found and not shared_conflicts(snapshot, option, found['segments'], shared):
+            if option.get('latest_minute') is None or found['end'] <= option['latest_minute']:
+                return found
+    return None

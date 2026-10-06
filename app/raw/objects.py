@@ -57,7 +57,8 @@ def normalize_view(d,area):
     return d
 
 
-def save(p,kind,conn=None):
+def save(p,kind,conn=None,*,signal=True):
+    """signal=False: o chamador grava vários objetos e sinaliza uma só vez no fim (lotes de calendários)."""
     if kind not in KINDS:raise planning.PlanningError('Tipo desconhecido.')
     with (planning.connect() if conn is None else nullcontext(conn)) as c:
         _,actor,old=needs.command(c,p)
@@ -117,8 +118,9 @@ def save(p,kind,conn=None):
         c.execute('''INSERT INTO planning_mtg.raw_objects(id,kind,name,area,revision,definition,archived,actor) VALUES(%s,%s,%s,%s,%s,%s,%s,%s)
             ON CONFLICT(id) DO UPDATE SET name=excluded.name,area=excluded.area,revision=excluded.revision,definition=excluded.definition,archived=excluded.archived,actor=excluded.actor,updated_at=now()''',(id,kind,name,area,revision,Jsonb(d),archived,actor))
         c.execute('INSERT INTO planning_mtg.raw_object_versions(object_id,revision,definition,name,archived,actor) VALUES(%s,%s,%s,%s,%s,%s)',(id,revision,Jsonb(d),name,archived,actor))
-        projection.signal(c,kind)
-        if kind in ('resource','calendar','rate','period','worked_hours'):projection.mark_aggregates_pending(c,p['request_id'])
+        if signal:
+            projection.signal(c,kind)
+            if kind in ('resource','calendar','rate','period','worked_hours'):projection.mark_aggregates_pending(c,p['request_id'])
         return needs.finish(c,p,{'id':str(id),'revision':revision,'definition':d})
 
 

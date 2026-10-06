@@ -1,5 +1,5 @@
 // Repeat only the outstanding V06 timing paths on the retained identities.
-const {chromium}=require('/home/luis/.npm/_npx/fd3bca3c548369c0/node_modules/playwright-core');
+const {chromium}=require('./playwright_core.cjs');
 const fs=require('node:fs'),assert=require('node:assert/strict');
 const {execFile}=require('node:child_process'),{promisify}=require('node:util');
 const execute=promisify(execFile),base=process.env.PLANNING_CHECK_BASE,F='docs/validacao-planeamento-integral/20260923-execucao';
@@ -10,7 +10,7 @@ const report={at:new Date().toISOString(),scope:'V06 retained Perfis/Cantoneiras
 let browser;
 async function source(action,area,id){return JSON.parse((await execute('.venv/bin/python',['-m','scripts.planning_v06_context',action,'--area',area,'--need-id',id],{maxBuffer:8*1024*1024})).stdout);}
 (async()=>{
- browser=await chromium.launch({executablePath:'/home/luis/.cache/ms-playwright/chromium-1243/chrome-linux64/chrome',headless:true,args:['--no-sandbox','--disable-background-timer-throttling']});
+ browser=await chromium.launch({executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE,headless:true,args:['--no-sandbox','--disable-background-timer-throttling']});
  for(const area of (macroOnly?['cantoneiras']:['perfis','cantoneiras'])){
   const fixture=context.areas[area],id=fixture.need_id,page=await browser.newPage({viewport:{width:1440,height:1000}});
   page.on('pageerror',e=>report.errors.push(e.message));

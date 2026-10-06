@@ -100,6 +100,7 @@ def historical(events, cohorts, *, area, operation, method, values, as_of, days=
                              'reasons':sorted(set(reasons))})
             continue
         used.append({'key':ident,'sheets':sorted(cohort.get('sheets',[])),'events':sorted(distinct),'hours':h,'volume':volume,
+                     'orders':sorted({e['of'] for e in distinct.values() if e.get('of')}),
                      'start_date':str(first),'end_date':str(last),'hours_origin':cohort.get('origin'),
                      'hours_revision':cohort.get('revision'),'allocation':cohort.get('allocation')})
         seen_events.update(distinct)
@@ -238,6 +239,8 @@ def apply_rows(conn, area, rows, configs, *, persist=True, context=None, source=
     from datetime import datetime
     from . import workbooks, capacity_revision
     from .. import planning_estimates
+    from ..gantt.research import overlay_rows
+    overlay_rows(conn,area,rows)
     context=context or Context(conn,configs,rows_override={area:rows})
     if source is None and persist:workbooks.capture(conn,area)
     src=source or workbooks.source(conn,area)

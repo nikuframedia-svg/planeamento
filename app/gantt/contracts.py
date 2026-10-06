@@ -28,3 +28,9 @@ def timestamp(value, origin):
 
 def operation_by_key(snapshot):
     return {item['key']: item for item in snapshot['operations']}
+
+
+def predecessors(job):
+    """v1 singular dependency and v2 repeated/multiple occurrences."""
+    return list(dict.fromkeys(job.get('predecessor_keys') or
+                             ([job['predecessor_key']] if job.get('predecessor_key') else [])))

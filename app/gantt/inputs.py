@@ -23,10 +23,12 @@ def effective_digest(snapshot):
               'observations','options','state','blocking_reasons','priority_group',
               'deadline','milestones','source_machine','source_duration','source_resource_id')
     jobs = [{field:op.get(field) for field in fields} |
-            {'has_predecessor':bool(op.get('predecessor_key'))}
+            {'predecessors':op.get('predecessor_keys') or [op.get('predecessor_key')],
+             'assignment':op.get('assignment')}
             for op in snapshot['operations']]
     jobs.sort(key=needs.digest)
-    physical = {rid:{'windows':resource['windows'],'operations':resource['operations']}
+    physical = {rid:{'windows':resource['windows'],'operations':resource['operations'],
+                    'capacity':resource.get('capacity'), 'shared_demands':resource.get('shared_demands')}
                 for rid,resource in snapshot['resources'].items()}
     return needs.digest({'jobs':jobs,'physical':physical,
                          'horizon_minutes':snapshot['horizon_minutes'],
@@ -34,13 +36,14 @@ def effective_digest(snapshot):
                          'weekly_availability':snapshot.get('weekly_availability',[])})
 
 
-def reconcile_pins(operations, incoming_pins, bindings):
+def reconcile_decisions(operations, incoming, bindings, *, require_ready=False):
     """Transfer only unique same-OF, same-operation, same-geometry decisions."""
     by_key = {item['key']:item for item in operations}
     pins = {}
     transfers = {}
     orphaned = []
-    for old_key,pin in incoming_pins.items():
+    claimed = set()
+    for old_key,pin in incoming.items():
         binding = bindings.get(old_key)
         direct = by_key.get(old_key)
         if direct and (not binding or direct['technical_signature']==binding.get('technical_signature')):
@@ -48,23 +51,38 @@ def reconcile_pins(operations, incoming_pins, bindings):
         elif binding:
             candidates = [candidate for candidate in operations
                 if candidate['of']==binding['of'] and candidate['operation']==binding['operation']
-                and candidate['technical_signature']==binding['technical_signature']]
+                and candidate['technical_signature']==binding['technical_signature']
+                and all(binding.get(field) is None or candidate.get(field)==binding[field]
+                        for field in ('area','occurrence'))]
             aliases = set(binding.get('selection_aliases') or []) | {binding.get('planning_key')}
             aliased = [candidate for candidate in candidates if candidate['planning_key'] in aliases
                        or aliases.intersection(candidate.get('selection_aliases') or [])]
             target = aliased[0] if len(aliased)==1 else candidates[0] if not aliased and len(candidates)==1 else None
         else:
             target = None
-        if not target or target['state']!='ready' or target['key'] in pins:
+        if not target or require_ready and target['state']!='ready' or target['key'] in claimed:
+            if target and target['key'] in claimed:
+                prior = next((old for old, new in transfers.items() if new == target['key']), target['key'])
+                orphaned.append(prior)
+                pins.pop(target['key'], None)
+                transfers.pop(prior, None)
             orphaned.append(old_key)
             continue
+        claimed.add(target['key'])
         pins[target['key']] = pin
         if target['key']!=old_key:
             transfers[old_key]=target['key']
     return pins,transfers,sorted(orphaned)
 
 
+def reconcile_pins(operations, incoming_pins, bindings):
+    return reconcile_decisions(operations, incoming_pins, bindings, require_ready=True)
+
+
 def references(conn):
+    from . import research, integrated
+    if research.enabled():
+        return integrated.references(conn)
     planning_gen = query.generation(conn, 'perfis')
     try:
         capacity_gen = query.generation(conn, 'perfis', dataset='capacity')
@@ -73,9 +91,12 @@ def references(conn):
             raise
         capacity_gen = None
     configs = conn.execute("SELECT id,kind,revision,definition,name,area FROM planning_mtg.raw_objects WHERE kind=ANY(%s) AND NOT archived ORDER BY id",(list(CONFIG_KINDS),)).fetchall()
+    from ..sector import scope
+    import os
+    selection = scope.read(conn) if os.getenv('MES_PLANNING_SELECTION_ENABLED')=='1' else None
     return {'planning_generation': planning_gen['id'],
             'capacity_generation': capacity_gen['id'] if capacity_gen else None,
-            'configuration_digest': needs.digest(needs.serial(configs)),
+            'configuration_digest': needs.digest(needs.serial(configs)), 'selection_digest':scope.digest(selection),
             'sources_pending': bool(planning_gen['metadata'].get('aggregates_pending') or planning_gen['metadata'].get('source_refresh_pending'))}
 
 
@@ -122,6 +143,9 @@ def _option(resource_id, estimate, origin, started_at):
 
 
 def capture(conn, definition, started_at, *, expected_references=None):
+    from . import research, integrated
+    if research.enabled():
+        return integrated.capture(conn, definition, started_at, expected_references=expected_references)
     refs = references(conn)
     if expected_references and refs != expected_references:
         raise planning.PlanningError('As fontes mudaram antes do cálculo. Volta a gerar a proposta.',409)
@@ -165,6 +189,9 @@ def capture(conn, definition, started_at, *, expected_references=None):
     gen = query.generation(conn, 'perfis', refs['planning_generation'])
     base,args = query.source(gen)
     rows = conn.execute('SELECT m.row_key,c.detail,c.values_json'+base+' AND '+planning_population.active_sql()+' ORDER BY m.row_key',args).fetchall()
+    from ..sector import scope
+    import os
+    selection = scope.read(conn) if os.getenv('MES_PLANNING_SELECTION_ENABLED')=='1' else None
     operations = []
     orders = defaultdict(list)
     manual_years = definition.get('picking_year_by_of') or {}
@@ -175,11 +202,14 @@ def capture(conn, definition, started_at, *, expected_references=None):
         row = {**record['detail'],'key':record['row_key'],'values':record['values_json']}
         row.setdefault('area','perfis')
         v = row['values'];of = v.get('of') or 'Sem OF:' + str(row['key'])
+        if selection is not None and scope.decision(selection,'perfis',v.get('of'),v.get('component_ref'),
+                                                    [record['row_key'],*(row.get('selection_aliases') or [])])!='selected':
+            continue
         mark = abocardar(v.get('abocardar'))
         op_names = ['corte'] + (['abocardar'] if mark is not False else [])
         estimators = {e['operation']: e for e in row.get('calculation',{}).get('operation_estimates') or []}
         preparations = {p.get('values_json',{}).get('operation'):p.get('values_json',{}) for p in row.get('preparations') or []}
-        picking = (planning_dates.picking_deadline(v.get('picking_week'),manual_years.get(of) or v.get('picking_year'))
+        picking = (planning_dates.picking_deadline(v.get('picking_week'),manual_years.get(of) or v.get('picking_year'),anchor=v.get('cut_date'))
                    if not v.get('picking_conflict') else None)
         picking_at = manual_deadlines.get(of) or (picking['at'] if picking else None)
         if picking_at:
@@ -293,6 +323,13 @@ def capture(conn, definition, started_at, *, expected_references=None):
             priority = 0 if key in urgencies or of in urgencies else 1 if picking_at else 2
             source = next((s for s in row.get('calculation',{}).get('production_sources') or [] if s.get('operation')==op),{})
             state = 'complete' if remaining == 0 else 'blocked' if reasons else 'ready'
+            override = (definition.get('machine_overrides') or {}).get(key)
+            override_rid = override.get('resource_id') if isinstance(override, dict) else override
+            if override_rid:
+                options = [o for o in options if o['resource_id'] == override_rid]
+                if not options and remaining != 0:
+                    reasons.append('Escolha manual incompatível ou sem duração utilizável.')
+                    state = 'blocked'
             operation = {'key':key,'planning_key':str(row['key']),'operation_id':op,'of':of,
                          'reference':v.get('component_ref'),'line':v.get('id'),
                          'source_machine':machine, 'source_resource_id':resource_id,
@@ -308,8 +345,16 @@ def capture(conn, definition, started_at, *, expected_references=None):
                          'provisional':balance['provisional'] or any(x['provisional'] for x in options),
                          'evidence':balance['evidence'],'observations':source.get('records') or [],
                          'options':options,'state':state,'blocking_reasons':list(dict.fromkeys(reasons)),
+                         'assignment':{'mode':'manual' if override_rid else 'automatic',
+                                       'resource_id':override_rid or resource_id,
+                                       'reason':'Escolha manual' if override_rid else 'Atribuição documentada'},
                          'predecessor_key':str(row['key'])+':corte' if op=='abocardar' else None,
                          'priority_group':priority,'deadline':deadline,
+                         # Legacy v1 meaning, made explicit for the shared engine: only
+                         # Picking is an order milestone; other dates judge the operation.
+                         'priority':{'priority_date':deadline,'priority_scope':'order' if picking_at else 'operation',
+                                     'priority_field':'picking' if picking_at else 'planned_period' if period_origin == 'Decisão local' else 'cut_date' if deadline else None,
+                                     'policy_version':'mtg2-v1-legado','urgent':priority==0},
                          'milestones':{'operation_forecast':target,'cut_date':v.get('cut_date'),
                                        'period_year':period_year,'period_week':period_week,
                                        'period_origin':period_origin,

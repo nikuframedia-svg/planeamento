@@ -40,6 +40,7 @@ def abocardar_mark(value):
 
 
 def fields():
+    from .raw.registration import enabled as free_entry
     specs=[
         ('component_ref','Referência','text',None,'piece'),('identity_discriminator','Variante','text',None,'piece'),
         ('material_type','Tipo de material','select',None,'piece'),('profile','Perfil normalizado','select',None,'piece'),
@@ -81,12 +82,46 @@ def fields():
         result.append(dict(id=i,label=names.get(i,l),type=t,unit=u,scope=s,help=help_text.get(i,''),
             group='cut' if i in ('angle_deg','grade','length_mm') else 'piece' if i in main_piece or i=='identity_discriminator' else 'work' if i in ('operation','machine','operation_detail') else 'extra',
             order={'angle_deg':0,'grade':1,'length_mm':2,'abocardar':0}.get(i,index+10),
-            editor_visible=i not in RETIRED_FIELDS and i!='quantity_to_plan',
+            editor_visible=i not in RETIRED_FIELDS and (i!='quantity_to_plan' or free_entry()),
             representation={'checked':'X','unchecked':'-'} if i=='abocardar' else None,
             required_on_ready=i in ('component_ref','material_type','profile','operation','quantity_required','quantity_to_plan'),
             visibility={'special_profile':'custom_profile','geometry':'unresolved_geometry',
                         'outer_diameter_mm':'geometry','width_mm':'geometry','height_mm':'geometry','thickness_mm':'geometry'}.get(i,'always')))
     return result
+
+
+# Registo manual (pedido do Luís, 06/10/2026): a primeira secção tem as colunas do Excel de cada setor,
+# pela mesma ordem (fotos da Met2_Plan_Perfis a azul e da folha das cantoneiras). OF e OV ficam na
+# secção da ordem. O resto passa para «Mais opções»; Abocardar e Picking não existem nas cantoneiras.
+FIRST_SECTION={
+    'perfis':['component_ref','cut_date','material_type','profile','custom_profile','special_profile','geometry',
+              'quantity_required','outer_diameter_mm','width_mm','height_mm','thickness_mm','length_mm','angle_deg',
+              'grade','abocardar','picking_week','picking_year'],
+    'cantoneiras':['cut_date','component_ref','material_type','quantity_required','profile','custom_profile',
+                   'special_profile','geometry','length_mm','operation','operation_detail','team','pavilion']}
+WORK_SECTION={'perfis':['operation','machine'],'cantoneiras':['machine']}
+HIDDEN_BY_AREA={'perfis':{'operation_detail'},'cantoneiras':{'abocardar','picking_week','picking_year'}}
+LABELS_BY_AREA={
+    'perfis':{'component_ref':'Referência','material_type':'Tipo de Material','profile':'Designação Perfil',
+              'quantity_required':'Quantidade','outer_diameter_mm':'Ø Externo','width_mm':'Largura',
+              'length_mm':'Comprimento','angle_deg':'Ângulo','grade':'Qualidade'},
+    'cantoneiras':{'component_ref':'Referência','material_type':'Tipo de material','profile':'Designação do material',
+                   'quantity_required':'Quantidade','length_mm':'Comprimento','operation':'1.ª Operação',
+                   'operation_detail':'2.ª Operação'}}
+
+
+def arrange(fields_list, area):
+    """Groups, order, labels and visibility of the editor fields for one sector."""
+    first,work=FIRST_SECTION.get(area),WORK_SECTION.get(area,[])
+    if not first:return fields_list
+    for f in fields_list:
+        i=f['id']
+        if i in first:f.update(group='piece',order=first.index(i))
+        elif i in work:f.update(group='work',order=100+work.index(i))
+        else:f.update(group='extra',order=200+f['order'])
+        if i in HIDDEN_BY_AREA.get(area,()):f['editor_visible']=False
+        f['label']=LABELS_BY_AREA.get(area,{}).get(i,f['label'])
+    return fields_list
 
 
 GEOMETRIES={'tubo redondo':['outer_diameter_mm','thickness_mm'],
@@ -196,12 +231,13 @@ def catalog(area, conn=None):
                   profiles={k:sorted(v,key=key) for k,v in profiles.items()},operations=primary,additional_operations=secondary,picking=picking,picking_evidence=picking_evidence,geometries=GEOMETRIES)
     result['profile_modes']={key(name):'select' if result['profiles'].get(key(name)) else 'manual' for name in result['material_types']}
     result['level1_source']='AreaSecaoCorte!A3:A700' if area=='perfis' else 'Dados!E3:E6'
+    from .raw.registration import enabled as free_entry
+    result['free_entry']=free_entry()
     result['validations']=workbook['validations']
     result['contract_version']=3
-    result['fields']=fields()
+    result['fields']=arrange(fields(),area)
     for f in result['fields']:
         f.update(catalog_version=result['version'],catalog_source=result['source'])
-        if f['id']=='operation_detail' and area=='perfis':f['editor_visible']=False
         if f['id']=='profile':f['mode_by_family']=result['profile_modes']
         opts={'material_type':result['material_types'],'machine':result['machines'],'team':result['teams'],
               'operation':primary,'operation_detail':secondary,'geometry':list(GEOMETRIES)}

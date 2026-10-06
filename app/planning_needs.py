@@ -169,6 +169,7 @@ def refresh(conn,need,actor='sistema',*,kinds=None):
 
 
 def resolve(payload, conn=None):
+    from .raw import registration as free
     area=planning.check_area(payload.get('area','perfis'))
     with (planning.connect() if conn is None else nullcontext(conn)) as conn:
         _,actor,old=command(conn,payload)
@@ -189,17 +190,22 @@ def resolve(payload, conn=None):
         if payload.get('need_id'):
             need=load(conn,payload['need_id'],payload.get('expected_revision'))
             if need['production_order_no']!=of:raise planning.PlanningError('A necessidade pertence a outra OF.',409)
-            if not payload.get('reason'):raise planning.PlanningError('Justifica a associação à necessidade existente.')
+            if not payload.get('reason') and not free.enabled():raise planning.PlanningError('Justifica a associação à necessidade existente.')
         elif len(exact)==1 and exact[0]['quantity_required']==planning._number(values.get('quantity_required')):need=exact[0]
-        elif similar and not payload.get('create_distinct'):
+        elif similar and not payload.get('create_distinct') and not (free.enabled() and payload.get('_allow_unresolved')):
             return {'needs_decision':True,'candidates':serial(similar),'suggestion':values,'source':src,'production_order_no':of}
         else:
-            if similar and (not values.get('identity_discriminator') or not payload.get('reason')):raise planning.PlanningError('Indica variante e justificação para uma necessidade adicional semelhante.')
+            if not free.enabled() and similar and (not values.get('identity_discriminator') or not payload.get('reason')):raise planning.PlanningError('Indica variante e justificação para uma necessidade adicional semelhante.')
             need_id=uuid.uuid4();spec={k:values.get(k) for k in PIECE_FIELDS}
             qty=planning._number(values.get('quantity_required'))
-            if qty is not None and (qty<0 or not qty.is_integer()):raise planning.PlanningError('Quantidade necessária inválida.')
+            if qty is not None and (qty<0 or not qty.is_integer()):
+                if free.enabled():qty=None
+                else:raise planning.PlanningError('Quantidade necessária inválida.')
             conn.execute('INSERT INTO planning_mtg.needs(id,production_order_no,original_order,component_ref,discriminator,specification,quantity_required,actor) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)',
                 (need_id,of,str(src['of'] if src else payload.get('production_order_no')),catalogs.clean(values.get('component_ref')),catalogs.clean(values.get('identity_discriminator')),Jsonb(spec),qty,actor))
+            if free.enabled() and similar:
+                conn.execute('UPDATE planning_mtg.needs SET identity_pending=true,identity_candidates=%s WHERE id=%s',
+                    (Jsonb([{'kind':'need','id':str(n['id'])} for n in similar]),need_id))
             need=load(conn,need_id)
             event(conn,need,'created',actor,{'specification':spec,'source':src})
         if src:
@@ -272,6 +278,8 @@ def detail(need_id):
 
 
 def save(payload, conn=None, source_defaults=None):
+    from .raw import registration as free
+    free_entry=free.enabled()
     area=planning.check_area(payload.get('area'))
     with (planning.connect() if conn is None else nullcontext(conn)) as conn:
         request,actor,old=command(conn,payload)
@@ -279,13 +287,13 @@ def save(payload, conn=None, source_defaults=None):
         need=refresh(conn,load(conn,payload.get('need_id')))
         load(conn,need['id'],expected_revision(payload))
         cat=catalogs.catalog(area,conn)
-        if payload.get('catalog_version')!=cat['version']:raise planning.PlanningError('O catálogo mudou. Atualiza as opções antes de guardar.',409)
+        if payload.get('catalog_version')!=cat['version'] and not free_entry:raise planning.PlanningError('O catálogo mudou. Atualiza as opções antes de guardar.',409)
         status=payload.get('record_status','draft')
         if status not in ('draft','ready'):raise planning.PlanningError('Estado de preparação inválido.')
         raw=dict(payload.get('values') or {}); code=str(raw.get('operation') or (source_defaults or {}).get('operation') or ('corte' if area=='perfis' else ''))
         raw['operation']=code
         if not code:
-            if status=='ready':raise planning.PlanningError('Seleciona a operação antes de concluir.')
+            if status=='ready' and not free_entry:raise planning.PlanningError('Seleciona a operação antes de concluir.')
             code='por_definir';raw['operation']=code
         if code=='por_definir' and status=='draft':cat['operations'].append({'value':code,'label':'Por definir','countable':False,'sequence':1})
         op=conn.execute('SELECT * FROM planning_mtg.need_operations WHERE need_id=%s AND area=%s AND code=%s',(need['id'],area,code)).fetchone()
@@ -293,12 +301,17 @@ def save(payload, conn=None, source_defaults=None):
         previous={**(source_defaults or {}),**(oldrecord['values_json'] if oldrecord else {}),**need['specification']}
         # Removed controls are omission-preserving. Current preparation quantity is
         # determined by evidence only on an explicit new conclusion.
-        raw.pop('quantity_to_plan',None)
-        if status=='ready':raw['quantity_to_plan']=None
+        if not free_entry:
+            raw.pop('quantity_to_plan',None)
+            if status=='ready':raw['quantity_to_plan']=None
         if code=='abocardar' and oldrecord:
             cat['operations'].append({'value':'abocardar','label':'Abocardar (ficha histórica)','countable':True,'sequence':2})
-        vals=catalogs.validate(raw,cat,ready=status=='ready',previous=previous)
-        if status=='ready':
+        registration_warnings=[]
+        if free_entry:
+            entered={**previous,**((oldrecord or {}).get('input_values') or {}),**(need.get('input_values') or {}),**raw}
+            vals,registration_warnings=free.normalize(entered,cat,previous)
+        else:vals=catalogs.validate(raw,cat,ready=status=='ready',previous=previous)
+        if status=='ready' and not free_entry:
             from .planning_hub import require_operational_orders
             require_operational_orders([need['production_order_no']],conn=conn)
         decisions=payload.get('decisions') or {}
@@ -308,8 +321,11 @@ def save(payload, conn=None, source_defaults=None):
         technical_changed=any(before.get(k)!=spec.get(k) for k in TECH_FIELDS)
         if complete(spec):
             peers=conn.execute('SELECT * FROM planning_mtg.needs WHERE production_order_no=%s AND id<>%s',(need['production_order_no'],need['id'])).fetchall()
-            if any(signature(p['specification'])==signature(spec) for p in peers):
-                raise planning.PlanningError('Já existe uma necessidade com esta identidade técnica. Associa a origem à existente ou identifica uma variante distinta.',409)
+            duplicates=[p for p in peers if signature(p['specification'])==signature(spec)]
+            if duplicates:
+                if not free_entry:raise planning.PlanningError('Já existe uma necessidade com esta identidade técnica. Associa a origem à existente ou identifica uma variante distinta.',409)
+                conn.execute('UPDATE planning_mtg.needs SET identity_pending=true,identity_candidates=%s WHERE id=%s',
+                    (Jsonb([{'kind':'need','id':str(p['id'])} for p in duplicates]),need['id']))
         need['revision']+=1
         if technical_changed:need['technical_revision']+=1
         conn.execute('UPDATE planning_mtg.needs SET component_ref=%s,discriminator=%s,specification=%s,quantity_required=%s,revision=%s,technical_revision=%s,actor=%s,updated_at=now() WHERE id=%s',
@@ -326,7 +342,7 @@ def save(payload, conn=None, source_defaults=None):
             # Separate evidence scope, not a second physical need or production event.
             conn.execute("INSERT INTO planning_mtg.need_operations(id,need_id,area,code,sequence) VALUES (%s,%s,'perfis','abocardar',2) ON CONFLICT(need_id,area,code) DO NOTHING",(uuid.uuid4(),need['id']))
         automatic=None
-        if status=='ready':
+        if status=='ready' and not free_entry:
             from . import planning_associations as associations
             evidence=associations.evidence(conn,need,op)
             if evidence['warnings']:raise planning.PlanningError('Resolve as origens ou associações assinaladas antes de concluir.',409)
@@ -343,12 +359,12 @@ def save(payload, conn=None, source_defaults=None):
         for f in cat['fields']:
             name=f['id']; scope='piece' if f['scope']=='piece' else str(op['id'])
             if name in catalogs.RETIRED_FIELDS and name not in raw and source_defaults is None:continue
-            if name=='quantity_to_plan':continue
+            if name=='quantity_to_plan' and not free_entry:continue
             state=conn.execute('SELECT * FROM planning_mtg.field_state WHERE need_id=%s AND scope=%s AND field=%s',(need['id'],scope,name)).fetchone()
             action=decisions.get(name)
             if action not in (None,'accept','write','select','clear'):raise planning.PlanningError('Decisão de campo desconhecida.')
             if status=='ready' and state and not action and not state['human_decision'] and equal_value(vals[name],state['suggestion']):action='accept'
-            if action=='accept':
+            if action=='accept' and not free_entry:
                 if not state or not equal_value(vals[name],state['suggestion']):raise planning.PlanningError('A sugestão mudou. Revê o campo '+name+'.',409)
             if action=='clear' and vals[name] not in ('',None,False):raise planning.PlanningError('Limpar exige um valor vazio.')
             # A RAW cell edit is not acceptance of every other imported cell.
@@ -376,7 +392,7 @@ def save(payload, conn=None, source_defaults=None):
                 human_decision=NULL,actor='Sistema',decided_at=now(),revision=excluded.revision,requires_review=false,decision_source=excluded.decision_source''',
                 (need['id'],str(op['id']),Jsonb(vals['quantity_to_plan']),Jsonb(automatic),need['revision'],Jsonb(automatic)))
             event(conn,need,'preparation_quantity_calculated','Sistema',{'changes':[{'field':'quantity_to_plan','before':previous.get('quantity_to_plan'),'after':vals['quantity_to_plan'],'source':automatic}]})
-        if status=='ready':
+        if status=='ready' and not free_entry:
             # Source differences require an explicit choice, including quantity disagreements.
             for state in conn.execute("SELECT * FROM planning_mtg.field_state WHERE need_id=%s AND scope='piece'",(need['id'],)).fetchall():
                 if state['requires_review'] or (not equal_value(state['suggestion'],state['value']) and state['source'].get('kind')!='manual' and not state['human_decision']):
@@ -398,11 +414,24 @@ def save(payload, conn=None, source_defaults=None):
         conn.execute('''INSERT INTO planning_mtg.record_versions(request_id,request_hash,record_id,revision,source_payload,values_json,actor,source_kind,source_id,source_version,record_status,provenance_json)
             VALUES (%s,%s,%s,%s,%s,%s,%s,'need',%s,%s,%s,%s)''',
             (request,digest(payload),rid,revision,Jsonb({'need_id':str(need['id'])}),values_json,actor,str(need['id']),version,status,Jsonb(provenance)))
+        if free_entry:
+            inputs={**((oldrecord or {}).get('input_values') or {}),**(payload.get('values') or {})}
+            piece_inputs={**(need.get('input_values') or {}),**{k:v for k,v in (payload.get('values') or {}).items() if k in PIECE_FIELDS}}
+            conn.execute('UPDATE planning_mtg.needs SET input_values=%s WHERE id=%s',(Jsonb(piece_inputs),need['id']))
+            conn.execute('UPDATE planning_mtg.records SET input_values=%s,registration_warnings=%s WHERE id=%s',
+                (Jsonb(inputs),Jsonb(registration_warnings),rid))
+            conn.execute('UPDATE planning_mtg.record_versions SET input_values=%s,registration_warnings=%s WHERE record_id=%s AND revision=%s',
+                (Jsonb(inputs),Jsonb(registration_warnings),rid,revision))
+            event(conn,need,'input_saved',actor,{'entered':payload.get('values') or {},'warnings':registration_warnings,
+                'changes':[{'field':k,'scope':'piece' if k in PIECE_FIELDS else str(op['id']),
+                    'before':((oldrecord or {}).get('input_values') or {}).get(k),'after':v} for k,v in (payload.get('values') or {}).items()]})
+        from .raw import sku_families
+        sku_families.ensure(conn,area,[vals['component_ref']],source='manual_registration')
         event(conn,need,'preparation_saved',actor,{'changes':changes,'operation_id':str(op['id']),'technical_changed':technical_changed,'status':status})
         first=registration.read(need['production_order_no'],conn)
         registered=registration.register(conn,need['production_order_no'])
         if not first:event(conn,need,'material_request_forecast','Sistema',registered)
-        return finish(conn,payload,{'need_id':need['id'],'revision':need['revision'],'record_id':rid,'record_revision':revision,'operation_id':op['id'],'record_status':status,'registration':registered,'quantity_to_plan':vals['quantity_to_plan'],'_compatibility_hash':payload.get('_compatibility_hash')})
+        return finish(conn,payload,{'need_id':need['id'],'revision':need['revision'],'record_id':rid,'record_revision':revision,'operation_id':op['id'],'record_status':status,'registration':registered,'registration_warnings':registration_warnings,'identity_pending':bool(need.get('identity_pending')),'quantity_to_plan':vals['quantity_to_plan'],'_compatibility_hash':payload.get('_compatibility_hash')})
 
 
 def history(need_id):

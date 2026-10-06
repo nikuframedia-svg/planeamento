@@ -1,0 +1,96 @@
+{
+  "started": "2026-10-02T09:04:27.411Z",
+  "actions": [
+    {
+      "at": "2026-10-02T09:04:37.314Z",
+      "cmd": {
+        "action": "inspect",
+        "wait": 1500,
+        "label": "ordens-inicial"
+      },
+      "screenshot": "/home/luis/projects/planeamento/docs/auditoria-browser-2026-10-02/001-ordens-inicial.png",
+      "url": "https://louise-pest-performed-atom.trycloudflare.com/planeamento",
+      "result": {
+        "url": "https://louise-pest-performed-atom.trycloudflare.com/planeamento",
+        "title": "Planeamento · Ordens de fabrico",
+        "text": "METALOGALVA\nPlaneamento\nOrdens de fabrico\nCarteira\nGantt\nTabela\nMais\n\nFILA DE TRABALHO\n\nOrdens de fabrico\n\nSeleciona uma OF, prepara as peças e confere o que já foi registado na produção.\n\nAtualizar lista\n\nAtualizar lista consulta os dados disponíveis; não força uma consulta direta ao CPIS.\n\nLIGAÇÃO INDISPONÍVEL\nCPIS importado da macro — sem confirmação direta\nCópia importada: 30/09/2026, 13:23 · Europe/Lisbon · tentativa falhada: 20/09/2026, 18:21 · Europe/Lisbon\nIMPORTADA\nMacro de Perfis\n29/09/2026, 13:20 · Europe/Lisbon\nIMPORTADA\nMacro de Cantoneiras\n30/09/2026, 13:23 · Europe/Lisbon\nPRODUÇÃO VALIDADA\nOCR Perfis\nÚltima produção: 01/10/2026 · validação: 02/10/2026, 09:04 · Europe/Lisbon\nPRODUÇÃO VALIDADA\nOCR Cantoneiras\nÚltima produção: 30/09/2026 · validação: 01/10/2026, 11:26 · Europe/Lisbon\nPesquisar\nPopulação\nAtivos\nHistórico / fechados\nTodos\nEstado CPIS\nTodos os estados\nAbertas e em produção\nFechadas\nProntas\nPor fazer\nPesquisar\n\n1693 ordens · Ativos · cópia importada da macro\n\nSem confirmação direta do CPIS\n\nOF / OV\tCLIENTE E OBRA\tSETOR\tPREPARAÇÃO\tEXECUÇÃO\t\n\nOF266622\nOV2606574\nEm Aberto\t\nETF\nCATENÁRIAS ROUND CONICAL | LYON - BHNS | C2H3 = 50X\n\tSetor por identificar\nSem linha no plano\n\tSem ficha de preparação\tSem registos OCR encontrados\tAbrir\n\nOF266621\nOV2606574\nEm Aberto\t\nETF\nCATENÁRIAS ROUND CONICAL | LYON - BHNS | C3H3.V2 = 1X\n\tSetor por identificar\nSem linha no plano\n\tSem ficha de preparação\tSem registos OCR encontrados\tAbrir\n\nOF266620\nOV2608208\nEm Aberto\t\nFIMO SAS\nACESSÓRIOS EXTRA TORRE PINHEIRO\n\tSetor por identificar\nSem linha no plano\n\tSem ficha de preparação\tSem registos OCR encontrados\tAbrir\n\nOF266619\nOV2600699\nEm Aberto\t\nTECPOLES GMBH\nTECPOLES | MCA - POSTES EN - DUERO 25K + ARMADO T646C + ARMADO D546C =\n\tSetor por identificar\nSem linha no plano\n\tSem ficha de preparação\tSem registos OCR encontrados\tAbrir\n\nOF266618\nOV2607887\nEm Aberto\t\nDTE -INSTALAÇÕES ESPECIAIS, S.A.\n--- CONJUNTO DE CHUMBADOUROS PARA CAS4 25M | 5UN\n\tSetor por identificar\nSem linha no plano\n\tSem ficha de preparação\tSem registos OCR encontrados\tAbrir\n\nOF266617\nOV2605311\nEm Aberto\t\nRTE – RéSEAU DE TRANSPORT D’ELECTRICITé\nRTE | PRIO 1 | F10TR1 - 3M (10UN) | ACESSÓRIOS\n\tSetor por identificar\nSem linha no plano\n\tSem ficha de preparação\tSem registos OCR encontrados\tAbrir\n\nOF266616\nOV2608292\nEm Aberto\t\nSTRADA, LDA\nBRAÇOS KC SIMPLES Ø60 0.25M 5º INC | 3UN\n\tSetor por identificar\nSem linha no plano\n\tSem ficha de preparação\tSem registos OCR encontrados\tAbrir\n\nOF266615\nOV2605311\nEm Aberto\t\nRTE – RéSEAU DE TRANSPORT D’ELECTRICITé\nRTE | PRIO 1 | F10TR1 - 3M (10UN) | POSTE\n\tSetor por identificar\nSem linha no plano\n\tSem ficha de preparação\tSem registos OCR encontrados\tAbrir\n\nOF266614\nOV2608302\nEm Aberto\t\nPLURALUZ - COMERCIO E MONT.DE\nCOLUNAS CLC6 10M FE DRV (15UN)\n\tSetor por identificar\nSem linha no plano\n\tSem ficha de preparação\tSem registos OCR encontrados\tAbrir\n\nOF266613\nOV2605311\nEm Aberto\t\nRTE – RéSEAU DE TRANSPORT D’ELECTRICITé\nRTE | PRIO 1 | F10TR1 - 3M (10UN) | CHUMBADOUROS\n\tSetor por identificar\nSem linha no plano\n\tSem ficha de preparação\tSem registos OCR encontrados\tAbrir\n\nOF266612\nOV2608249\nEm Aberto\t\nN.V. METALOGALVA BELUX S.A\nBRAÇOS SIMPLES 1.25M 5º |15UN\n\tSetor por identificar\nSem linha no plano\n\tSem ficha de preparação\tSem registos OCR encontrados\tAbrir\n\nOF266611\nOV2608481\nEm Aberto\t\nSONERES ILUMINAÇÃO PÚBLICA, S.A.\nCOLUNAS CFC5 3M FF DRT (9UN)\n\tSetor por identificar\nSem linha no plano\n\tSem ficha de preparação\tSem registos OCR encontrados\tAbrir\n\nOF266610\nOV2608411\nEm Aberto\t\nSICE - SUCURSAL PORTUGAL\nCOLUNA CAO8 12M FF P/ BRAÇO (1UN)\n\tSetor por identificar\nSem linha no plano\n\tSem ficha de preparação\tSem registos OCR encontrados\tAbrir\n\nOF266609\nOV2608383\nEm Aberto\t\nRUIFER-INST. REPARAÇÕES ELÉCT., LDA\nCOLUNAS CAO7 8M FF DRT (4UN)\n\tSetor por identificar\nSem linha no plano\n\tSem ficha de preparação\tSem registos OCR encontrados\tAbrir\n\nOF266608\nOV2608132\nEm Aberto\t\nEMPREITEL FIGUEIREDO, SA\nTERMINAL SOS ESPECIAL - 6UN\n\tSetor por identificar\nSem linha no plano\n\tSem ficha de preparação\tSem registos OCR encontrados\tAbrir\n\nOF266607\nOV2401295\nEm Aberto\t\nPROEF EURICO FERREIRA PORTUGAL, S.A.\n= FALTAS MATERIAL PRF = DQ63-242 =\n\tSetor por identificar\nSem linha no plano\n\tSem ficha de preparação\tSem registos OCR encontrados\tAbrir\n\nOF266606\nOV2401295\nPronta\t\nPROEF EURICO FERREIRA PORTUGAL, S.A.\n= FALTAS MATERIAL POSTES =_x000D_ = RECLAMAÇÃO DQ63-242 =\n\tSetor por identificar\nSem linha no plano\n\tSem ficha de preparação\tSem registos OCR encontrados\tAbrir\n\nOF266605\nOV2401298\nEm Produção\t\nOMNINSTAL - ELECTRICIDADE, SA.\n= FALTAS MATERIAL POSTES =_x000D_ = RECLAMAÇÃO DQ63-239 =\n\tMTG3 Cantoneiras\n3 peça(s) no plano\n\tSem ficha de preparação\tSem registos OCR encontrados\tAbrir\n\nOF266604\nOV2604748\nEm Aberto\t\nEDA-ELECTRICIDADE DOS AÇORES, SA\nCOLUNAS CCA1 8M FF P/ BRAÇO (14UN)\n\tSetor por identificar\nSem linha no plano\n\tSem ficha de preparação\tSem registos OCR encontrados\tAbrir\n\nOF266603\nOV2604750\nEm Aberto\t\nEDA-ELECTRICIDADE DOS AÇORES, SA\nCOLUNAS CCA1 8M FF P/ BRAÇO (10UN)\n\tSetor por identificar\nSem linha no plano\n\tSem ficha de preparação\tSem registos OCR encontrados\tAbrir\n\nOF266602\nEI260026\nEm Aberto\t\nMETALOGALVA- IRMÃOS SILVAS, S.A.\nEI260026 - EQIP.GALV.MTG7\n\tSetor por identificar\nSem linha no plano\n\tSem ficha de preparação\tSem registos OCR encontrados\tAbrir\n\nOF266601\nOV2410600\nEm Produção\t\nC.M.E.-CONST. E\n= FALTAS MATERIAL POSTES =_x000D_ = RECLAMAÇÃO DQ63-238 =\n\tMTG3 Cantoneiras\n1 peça(s) no plano\n\tSem ficha de preparação\tSem registos OCR encontrados\tAbrir\n\nOF266600\nOV não disponível\nEm Aberto\t\nCliente não disponível\n= FALTAS MATERIAL POSTES =_x000D_ = RECLAMAÇÃO DQ63-235 =\n\tSetor por identificar\nSem linha no plano\n\tSem ficha de preparação\tSem registos OCR encontrados\tAbrir\n\nOF266599\nOV2608439\nEm Aberto\t\nN.V. METALOGALVA BELUX S.A\n--- CONJUNTO DE CHUMBADOUROS PARA COE1 14M | 3UN\n\tSetor por identificar\nSem linha no plano\n\tSem ficha de preparação\tSem registos OCR encontrados\tAbrir\n\nOF266598\nOV2608439\nEm Aberto\t\nN.V. METALOGALVA BELUX S.A\n--- TRAVESSA 2M | 3UN\n\tSetor por identificar\nSem linha no plano\n\tSem ficha de preparação\tSem registos OCR encontrados\tAbrir\n\nOF266597\nOV2608439\nEm Aberto\t\nN.V. METALOGALVA BELUX S.A\n--- COLUNAS COE1 14M ELIA (3UN)\n\tSetor por identificar\nSem linha no plano\n\tSem ficha de preparação\tSem registos OCR encontrados\tAbrir\n\nOF266596\nOV2509448\nEm Produção\t\nRTE – RéSEAU DE TRANSPORT D’ELECTRICITé\nRTE | RECLAMAÇÃO | DQ63-191\n\tSetor por identificar\nSem linha no plano\n\tSem ficha de preparação\tSem registos OCR encontrados\tAbrir\n\nOF266595\nOV2608348\nEm Aberto\t\nSIGNIFY FRANCE\nPLACA DE BASE + BRANDOM + BRAÇO SIMPLES 0.2M 5º |3UN\n\tSetor por identificar\nSem linha no plano\n\tSem ficha de preparação\tSem registos OCR encontrados\tAbrir\n\nOF266594\nOV2500707\nEm Produção\t\nTECPOLES GMBH\n= FALTAS MATERIAL POSTES =_x000D_ = RECLAMAÇÃO DQ63-240 =\n\tMTG3 Cantoneiras\n13 peça(s) no plano\n\tSem ficha de preparação\tSem registos OCR encontrados\tAbrir\n\nOF266593\nOV2606869\nEm Aberto\t\nEDA-ELECTRICIDADE DOS AÇORES, SA\nCOLUNAS CCA1 4M FF DRT (4UN)\n\tSetor por identificar\nSem linha no plano\n\tSem ficha de preparação\tSem registos OCR encontrados\tAbrir\n\nOF266591\nOV2606868\nEm Aberto\t\nEDA-ELECTRICIDADE DOS AÇORES, SA\nCOLUNAS COA1 8M/10M FF P/ BRAÇO (14UN)\n\tSetor por identificar\nSem linha no plano\n\tSem ficha de preparação\tSem registos OCR encontrados\tAbrir\n\nOF266590\nOV2606868\nEm Aberto\t\nEDA-ELECTRICIDADE DOS AÇORES, SA\nCOLUNAS CCA1 8M FF P/ BRAÇO (2UN)\n\tSetor por identificar\nSem linha no plano\n\tSem ficha de preparação\tSem registos OCR encontrados\tAbrir\n\nOF266589\nOV2500707\nEm Produção\t\nTECPOLES GMBH\n= FALTAS MATERIAL POSTES =_x000D_ = RECLAMAÇÃO DQ63-212 =\n\tMTG3 Cantoneiras\n16 peça(s) no plano\n\tSem ficha de preparação\tSem registos OCR encontrados\tAbrir\n\nOF266588\nCT2601420\nEm Aberto\t\nFIMO SAS\nACESSÓRIOS PINHEIRO P/ STOCK\n\tSetor por identificar\nSem linha no plano\n\tSem ficha de preparação\tSem registos OCR encontrados\tAbrir\n\nOF266587\nOV2608208\nEm Aberto\t\nFIMO SAS\nTORRE PINHEIRO 19M - MOD. CA22O\n\tSetor por identificar\nSem linha no plano\n\tSem ficha de preparação\tSem registos OCR encontrados\tAbrir\n\nOF266586\nOV2607937\nEm Aberto\t\nENEL COLOMBIA S.A. ESP.\nENEL | 2026 |CONTRACTO 2024-2026 | ACESSÓRIOS | S1 (5UN)\n\tSetor por identificar\nSem linha no plano\n\tSem ficha de preparação\tSem registos OCR encontrados\tAbrir\n\nOF266585\nOV2607937\nEm Aberto\t\nENEL COLOMBIA S.A. ESP.\nENEL | 2026 |CONTRACTO 2024-2026 | CHUMBADOUROS | S1 (5UN)\n\tSetor por identificar\nSem linha no plano\n\tSem ficha de preparação\tSem registos OCR encontrados\tAbrir\n\nOF266584\nOV2607937\nEm Aberto\t\nENEL COLOMBIA S.A. ESP.\nENEL | 2026 |CONTRACTO 2024-2026 | POSTE | S1 (5UN)\n\tSetor por identificar\nSem linha no plano\n\tSem ficha de preparação\tSem registos OCR encontrados\tAbrir\n\nOF266583\nOV2410600\nEm Produção\t\nC.M.E.-CONST. E\n= FALTAS MATERIAL POSTES =_x000D_ = RECLAMAÇÃO DQ63-170 =\n\tMTG3 Cantoneiras\n3 peça(s) no plano\n\tSem ficha de preparação\tSem registos OCR encontrados\tAbrir\n\nOF266582\nOV2607578\nEm Aberto\t\nMETALOGALVA GMBH\nC-RAIL 300MM - 64UN\n\tSetor por identificar\nSem linha no plano\n\tSem ficha de preparação\tSem registos OCR encontrados\tAbrir\n\nOF266581\nOV2608438\nEm Aberto\t\nALVES RIBEIRO, S.A.\nESTRIBO BS08R011G - 8UN\n\tSetor por identificar\nSem linha no plano\n\tSem ficha de preparação\tSem registos OCR encontrados\tAbrir\n\nOF266580\nOV2607605\nEm Aberto\t\nMETALOGALVA GMBH\n--- CONJUNTO DE CHUMBADOUROS COLUNA DE 25M | 3UN\n\tSetor por identificar\nSem linha no plano\n\tSem ficha de preparação\tSem registos OCR encontrados\tAbrir\n\nOF266579\nOV2607605\nEm Aberto\t\nMETALOGALVA GMBH\n--- TRAVESSA 1.5M | 3UN\n\tSetor por identificar\nSem linha no plano\n\tSem ficha de preparação\tSem registos OCR encontrados\tAbrir\n\nOF266578\nOV2604749\nEm Aberto\t\nEDA-ELECTRICIDADE DOS AÇORES, SA\nCOLUNA CCA1 4M FF DRT (1UN)\n\tSetor por identificar\nSem linha no plano\n\tSem ficha de preparação\tSem registos OCR encontrados\tAbrir\n\nOF266577\nOV2604749\nEm Aberto\t\nEDA-ELECTRICIDADE DOS AÇORES, SA\nCOLUNAS COA1 10M/8M FF P/BRAÇO (26UN)\n\tSetor por identificar\nSem linha no plano\n\tSem ficha de preparação\tSem registos OCR encontrados\tAbrir\n\nOF266576\nEI260004\nEm Aberto\t\nMETALOGALVA- IRMÃOS SILVAS, S.A.\nCALHA BSBCA021G/044G - 30UN\n\tSetor por identificar\nSem linha no plano\n\tSem ficha de preparação\tSem registos OCR encontrados\tAbrir\n\nOF266575\nOV2608092\nEm Aberto\t\nELECTRO MINHO,LDA.\nCOLUNAS CAO8_V 8M FE P/ BRAÇO (3UN)\n\tSetor por identificar\nSem linha no plano\n\tSem ficha de preparação\tSem registos OCR encontrados\tAbrir\n\nOF266574\nOV2608092\nEm Aberto\t\nELECTRO MINHO,LDA.\nBRAÇOS CAO8 SIMPLES 0.15M 5º |6UN\n\tSetor por identificar\nSem linha no plano\n\tSem ficha de preparação\tSem registos OCR encontrados\tAbrir\n\nOF266573\nOV2607896\nEm Aberto\t\nTEIXEIRA DUARTE-ENGEN.E CONST.,S.A.\nESTRIBO BS08R011G - 4UN\n\tSetor por identificar\nSem linha no plano\n\tSem ficha de preparação\tSem registos OCR encontrados\tAbrir\n\nOF266572\nOV2509068\nEm Aberto\t\nCANAS - ENGENHARIA E CONSTRUçãO, SA\nCOLUNA CAO7_V 10M FE DRT (1UN)\n\tSetor por identificar\nSem linha no plano\n\tSem ficha de preparação\tSem registos OCR encontrados\tAbrir\nAnterior\nPágina 1 de 34\nSeguinte\nOF\nEscolhe uma ordem\n\nAqui vais ver os dados do CPIS, as referências, os PDFs e a produção já validada.",
+        "layout": {
+          "width": 1440,
+          "scrollWidth": 1440
+        },
+        "links": [
+          {
+            "text": "Ordens de fabrico",
+            "href": "/planeamento"
+          },
+          {
+            "text": "Carteira",
+            "href": "/planeamento/carteira"
+          },
+          {
+            "text": "Gantt",
+            "href": "/planeamento/gantt"
+          },
+          {
+            "text": "Tabela",
+            "href": "/planeamento/raw"
+          },
+          {
+            "text": "",
+            "href": "/planeamento/capacidades"
+          },
+          {
+            "text": "",
+            "href": "/planeamento/disponibilidade"
+          },
+          {
+            "text": "",
+            "href": "/planeamento/dossies"
+          },
+          {
+            "text": "",
+            "href": "/planeamento/manual"
+          },
+          {
+            "text": "",
+            "href": "/planeamento/ocr-original"
+          }
+        ]
+      }
+    },
+    {
+      "at": "2026-10-02T09:05:12.102Z",
+      "cmd": {
+        "action": "click",
+        "x": 167,
+        "y": 423
+      },
+      "screenshot": "/home/luis/projects/planeamento/docs/auditoria-browser-2026-10-02/002-click.png",
+      "url": "https://louise-pest-performed-atom.trycloudflare.com/planeamento"
+    },
+    {
+      "at": "2026-10-02T09:05:12.348Z",
+      "cmd": {
+        "action": "type",
+        "text": "OF265844"
+      },
+      "screenshot": "/home/luis/projects/planeamento/docs/auditoria-browser-2026-10-02/003-type.png",
+      "url": "https://louise-pest-performed-atom.trycloudflare.com/planeamento"
+    },
+    {
+      "at": "2026-10-02T09:05:14.019Z",
+      "cmd": {
+        "action": "key",
+        "key": "Enter",
+        "wait": 1600,
+        "label": "of-pesquisa"
+      },
+      "screenshot": "/home/luis/projects/planeamento/docs/auditoria-browser-2026-10-02/004-of-pesquisa.png",
+      "url": "https://louise-pest-performed-atom.trycloudflare.com/planeamento"
+    }
+  ],
+  "errors": [],
+  "responses": [],
+  "failedRequests": [],
+  "writes": []
+}

@@ -7,16 +7,17 @@
   <link rel="stylesheet" href="/static/dossiers.css?v={{ version }}">
   <script src="/static/dossiers.js?v={{ version }}" defer></script>
 <link rel="stylesheet" href="/static/planning_typography.css">
+<link rel="stylesheet" href="/static/planeamento_ui.css?v=20261002">
 </head>
 <body>
-  <header class="app-header">
-    <a class="brand" href="/planeamento">METALOGALVA <span>MTG2 / Planeamento</span></a>
-    <nav aria-label="Planeamento">
-      <a id="manual-entry" class="nav-tab" href="/planeamento/manual">Preencher manualmente</a><button id="tab-documents" class="nav-tab" aria-current="page">Carregar PDF</button>
-      <button id="tab-needs" class="nav-tab">Linhas preparadas</button>
-      <button id="open-model" class="model-button"><span id="model-dot" class="status-dot"></span>Configuração</button>
-    </nav>
-  </header>
+  {% set active = 'pdf' %}{% include "_app_nav.html" %}
+<nav class="pl-page-actions" aria-label="Carregar PDF">
+    <button id="tab-documents" class="nav-tab" aria-current="page">Carregar PDF</button>
+    <button id="tab-needs" class="nav-tab">Linhas preparadas</button>
+    <a id="manual-entry" class="nav-tab" href="/planeamento/manual">Preencher manualmente</a>
+    <span class="pl-spacer"></span>
+    <button id="open-model" class="model-button"><span id="model-dot" class="status-dot"></span>Configuração</button>
+  </nav>
   <main>
     <div class="title-row">
       <div><h1>Carregar PDF</h1>

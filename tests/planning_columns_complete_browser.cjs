@@ -1,5 +1,5 @@
 // C07: real browser layout actions; fixtures and writes restricted to port 18113.
-const {chromium}=require('/home/luis/.npm/_npx/fd3bca3c548369c0/node_modules/playwright-core');
+const {chromium}=require('./playwright_core.cjs');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const base=process.env.PLANNING_CHECK_BASE;
@@ -48,7 +48,7 @@ async function nativeDrag(page,source,target,last){
  await page.mouse.move(end.x+6,end.y+(last?end.height-2:2));await page.mouse.up();
 }
 (async()=>{
- browser=await chromium.launch({executablePath:'/home/luis/.cache/ms-playwright/chromium-1243/chrome-linux64/chrome',headless:true,args:['--no-sandbox']});
+ browser=await chromium.launch({executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE,headless:true,args:['--no-sandbox']});
  const context=await browser.newContext({viewport:{width:1440,height:1000}});
  const page=await context.newPage();
  page.on('pageerror',e=>report.errors.push(e.message));

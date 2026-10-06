@@ -1,11 +1,11 @@
-const {chromium}=require('/home/luis/.npm/_npx/fd3bca3c548369c0/node_modules/playwright-core');
+const {chromium}=require('./playwright_core.cjs');
 const fs=require('node:fs'),assert=require('node:assert/strict'),{execFileSync}=require('node:child_process');
 const base=process.env.PLANNING_CHECK_BASE,folder='docs/validacao-planeamento-integral/20260923-execucao';
 if(base!=='http://127.0.0.1:18113'||process.env.PLANNING_TEST_ISOLATED!=='1')throw Error('Full isolated clone required');
 const mutate=(area,action)=>JSON.parse(execFileSync('.venv/bin/python',['scripts/planning_original_live_trial.py',area,action,'--local-c03'],{env:{...process.env,PYTHONPATH:'.'},encoding:'utf8'}));
 async function settled(area){const end=Date.now()+30000;while(!mutate(area,'inspect').settled){assert(Date.now()<end);await new Promise(r=>setTimeout(r,200));}}
 (async()=>{
- const browser=await chromium.launch({executablePath:'/home/luis/.cache/ms-playwright/chromium-1243/chrome-linux64/chrome',headless:true,args:['--no-sandbox','--disable-background-timer-throttling']});
+ const browser=await chromium.launch({executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE,headless:true,args:['--no-sandbox','--disable-background-timer-throttling']});
  const report={at:new Date().toISOString(),base,areas:[],errors:[]};
  try{
   for(const area of ['perfis','cantoneiras']){

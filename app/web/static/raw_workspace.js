@@ -240,6 +240,14 @@ window.Raw = (() => {
       if (saved && !state.view) Object.assign(state, saved);
       normalizeColumns();
     }
+    // ?mostrar=machine,expected_date (botão «Dar máquina» do Plano das máquinas): colunas à vista logo à chegada.
+    if (!state.shownFromLink) {
+      state.shownFromLink = true;
+      const wanted = (new URLSearchParams(location.search).get("mostrar") || "").split(",")
+        .filter((id) => state.fields.some((f) => f.id === id) && !state.columns.includes(id));
+      const at = state.columns.indexOf("component_ref") + 1;
+      state.columns.splice(at, 0, ...wanted);
+    }
     $("area").value = state.area;
     $("manual").href = "/planeamento/manual?area=" + state.area;
     $("pdf").href = "/planeamento/dossies?area=" + state.area;
@@ -887,7 +895,7 @@ window.Raw = (() => {
     );
   }
   async function editCell(row, f) {
-    if (row.values.planning_active === false) return evidence(row);
+    if (row.values.planning_active === false && !state.cat?.free_entry) return evidence(row);
     state.editing = { row, f };
     $("edit-title").textContent = f.label + " · " + row.values.of;
     $("edit-error").textContent = "";
@@ -908,6 +916,10 @@ window.Raw = (() => {
         ],
         val == null ? "" : String(val),
       );
+    } else if (f.type === "select" && state.cat?.free_entry) {
+      control=input(val);const list=el('datalist');list.id='raw-edit-options';
+      for(const choice of selectOptions(f,row)){const option=el('option');option.value=choice.value??choice;list.append(option)}
+      control.setAttribute('list',list.id);box.append(list);
     } else if (f.type === "select") {
       const options = selectOptions(f, row);
       if (f.id === "profile" && !options.length) control = input(val);
@@ -934,7 +946,7 @@ window.Raw = (() => {
           control.append(opt);
         }
       }
-    } else control = input(val, f.type === "date" ? "date" : "text");
+    } else control = input(val, f.type === "date" && !state.cat?.free_entry ? "date" : "text");
     control.id = "edit-value";
     box.append(field(f.label, control));
     const extra = input("");
@@ -951,7 +963,7 @@ window.Raw = (() => {
       year.id = "edit-year";
       box.append(field("Ano ISO do picking (vazio: desconhecido)", year));
     }
-    if (f.id === "material_type") {
+    if (f.id === "material_type" && !state.cat?.free_entry) {
       const dependent = el("div");
       box.append(dependent);
       control.onchange = () => {
@@ -1409,7 +1421,7 @@ window.Raw = (() => {
         throw Error(
           "A colagem ultrapassa as linhas desta página. Aumenta o tamanho da página.",
         );
-      if (row.values.planning_active === false)
+      if (row.values.planning_active === false && !state.cat?.free_entry)
         throw Error("A colagem inclui uma peça fechada. Consulta-a no histórico.");
       const values = {};
       for (let j = 0; j < rows[i].length; j++) {
@@ -1419,7 +1431,7 @@ window.Raw = (() => {
             "A colagem inclui uma coluna de consulta. Seleciona apenas campos locais editáveis.",
           );
         let val = rows[i][j];
-        if (f.type === "checkbox") {
+        if (f.type === "checkbox" && !state.cat?.free_entry) {
           if (
             !["X", "-", "sim", "não", "nao", "true", "false"].includes(
               val.toLowerCase(),

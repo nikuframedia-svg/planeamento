@@ -1,10 +1,10 @@
 /* Real read-only workbook checks; mutations allowed only on the disposable test service. */
 const assert=require('node:assert/strict');
-const {chromium}=require(process.env.PLAYWRIGHT_CORE||'/home/luis/.npm/_npx/fd3bca3c548369c0/node_modules/playwright-core');
+const {chromium}=require('./playwright_core.cjs');
 const base=process.env.CAPACITY_TEST_BASE||'http://127.0.0.1:8119';
 assert.match(base,/^http:\/\/127\.0\.0\.1:8119$/);
 (async()=>{
- const b=await chromium.launch({executablePath:process.env.CHROME_PATH||'/home/luis/.cache/ms-playwright/chromium-1243/chrome-linux64/chrome',headless:true,args:['--no-sandbox']});
+ const b=await chromium.launch({executablePath:process.env.CHROME_PATH||process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE,headless:true,args:['--no-sandbox']});
  const p=await b.newPage({viewport:{width:1440,height:920}}),errors=[];p.on('pageerror',e=>errors.push(e.message));p.on('dialog',d=>d.accept());
  await p.goto(base+'/planeamento/raw?area=cantoneiras&q=DLR777');await p.locator('#sheet tbody tr').first().waitFor();
  const heads=await p.locator('#sheet th').allTextContents();assert.deepEqual(heads.map(x=>x.replace('⌄','').trim()),['OF','OV','Referência','Data de corte','Tipo de material','QTD','Descrição do material','Comp. (mm)','1.ª op.','2.ª op.','Equipa','Pavilhão']);

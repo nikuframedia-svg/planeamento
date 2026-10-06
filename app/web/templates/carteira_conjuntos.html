@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="pt">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Planeamento · Conjuntos de famílias</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/static/planning_hub.css">
+  <link rel="stylesheet" href="/static/planning_typography.css">
+  <link rel="stylesheet" href="/static/conjuntos.css?v={{ version }}">
+  <script src="/static/conjuntos.js?v={{ version }}" defer></script>
+  <link rel="stylesheet" href="/static/planeamento_ui.css?v=20261002">
+</head>
+<body>
+  {% set active = 'carteira' %}{% include "_app_nav.html" %}
+  <main class="sets">
+    <header class="sets-head">
+      <h1>Conjuntos de famílias</h1>
+      <a href="/planeamento/carteira">← Carteira</a>
+      <label>Setor
+        <select id="setor">{% for key, label in sectors.items() %}<option value="{{ key }}"{% if key == 'cantoneiras' %} selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+      </label>
+      <button type="button" id="novo" class="primary" disabled>Novo conjunto</button>
+    </header>
+    <p id="error" class="error" role="alert" hidden></p>
+    <p id="notice" class="notice" role="status" hidden></p>
+
+    <form id="editor" class="editor" hidden>
+      <label>Nome <input id="nome" maxlength="120" required autocomplete="off"></label>
+      <label>Máquina <select id="maquina" required></select></label>
+      <fieldset>
+        <legend>Famílias <input id="filtro" type="search" placeholder="Procurar família" aria-label="Procurar família"></legend>
+        <div id="familias" class="families"></div>
+      </fieldset>
+      <div class="editor-actions">
+        <button type="submit" class="primary">Gravar</button>
+        <button type="button" id="cancelar">Cancelar</button>
+      </div>
+    </form>
+
+    <div class="sets-table">
+      <table>
+        <thead><tr><th scope="col">Nome</th><th scope="col">Famílias</th><th scope="col">Máquina</th><th scope="col" class="num">Linhas abertas</th><th scope="col" class="num">Metros</th><th scope="col"></th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+      <p id="empty" class="empty" hidden>Ainda não há conjuntos. Cria um com «Novo conjunto».</p>
+      <p id="sem-familias" class="empty" hidden>Este setor ainda não tem famílias SKU: os conjuntos só se aplicam à MTG3.</p>
+    </div>
+  </main>
+</body>
+</html>

@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="pt">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Planeamento · Carteira</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/static/planning_hub.css">
+  <link rel="stylesheet" href="/static/planning_typography.css">
+  <link rel="stylesheet" href="/static/carteira2.css?v={{ version }}">
+  <script src="/static/carteira2.js?v={{ version }}" defer></script>
+  <link rel="stylesheet" href="/static/planeamento_ui.css?v=20261002">
+</head>
+<body>
+  {% set active = 'carteira' %}{% include "_app_nav.html" %}
+
+  <main class="cart">
+    <header class="cart-head"><h1>Carteira</h1><span id="source" class="muted" aria-live="polite">A carregar…</span>
+      <a class="sets-link" href="/planeamento/carteira/conjuntos">Conjuntos de famílias</a></header>
+
+    <form id="controls" class="cart-filters" role="search">
+      <div class="cart-row">
+        <label>Setor
+          <select id="setor">{% for key, label in sectors.items() %}<option value="{{ key }}"{% if key == 'cantoneiras' %} selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+        </label>
+        <label>Família de Produto
+          <select id="familia"><option value="">Todas</option></select>
+        </label>
+        <label>Família SKU
+          <select id="familia_sku"><option value="">Todas</option></select>
+        </label>
+        <label>Ver por
+          <select id="vista">{% for key, label in views.items() %}<option value="{{ key }}">{{ label }}</option>{% endfor %}</select>
+        </label>
+      </div>
+      <div class="cart-row">
+        <label class="grow">Pesquisar
+          <input id="q" type="search" placeholder="OF, referência, perfil, cliente" autocomplete="off">
+        </label>
+        <label>Máquina
+          <select id="maquina"><option value="">Todas</option><option value="sem">Sem máquina</option><option value="com">Com máquina</option></select>
+        </label>
+        <div class="field">
+          <span id="prazo-label">Prazo</span>
+          <details id="semanas" class="weeks">
+            <summary aria-labelledby="prazo-label semanas-resumo"><span id="semanas-resumo">Todas</span></summary>
+            <div id="semanas-lista" class="weeks-list" role="group" aria-labelledby="prazo-label"></div>
+          </details>
+        </div>
+        <label>Ordem
+          <select id="ordem"><option value="urgencia">Mais urgente primeiro</option><option value="metros">Mais metros primeiro</option></select>
+        </label>
+        <label>Estado
+          <select id="estado"><option value="">Todos</option>{% for key, label in status.items() %}<option value="{{ key }}">{{ label }}</option>{% endfor %}</select>
+        </label>
+        <button type="button" id="limpar-filtros" class="clear">Limpar filtros</button>
+      </div>
+    </form>
+
+    <section id="kpis" class="panels" aria-label="Máquinas e resumo do planeamento" aria-live="polite">
+      <p class="muted">A calcular a carga das máquinas…</p>
+    </section>
+
+    <p id="notice" class="notice" role="status" hidden></p>
+    <p id="error" class="error" role="alert" hidden></p>
+
+    <div class="cart-table">
+      <table class="tree">
+        <thead>
+          <tr>
+            <th scope="col" id="level-title">Perfil</th>
+            <th scope="col">Planear</th>
+            <th scope="col" class="num">Metros</th>
+            <th scope="col" class="num">Peças</th>
+            <th scope="col" class="num">OF</th>
+            <th scope="col" class="num">Sem máquina</th>
+            <th scope="col" class="num">Em nesting</th>
+          </tr>
+        </thead>
+        <tbody id="subtotal"></tbody>
+        <tbody id="rows"></tbody>
+      </table>
+      <p id="empty" class="empty" hidden>Nada corresponde aos filtros. As linhas marcadas continuam marcadas.</p>
+    </div>
+  </main>
+</body>
+</html>

@@ -9,7 +9,7 @@ from app.sector import portfolio
 TODAY = date(2026, 9, 28)  # segunda-feira; fim da semana ISO +2 = domingo 18/10
 
 
-def raw(of, ref, quantity, length, *, made=None, mes=None, machine="", cut="2026-09-20", status="Em Produção",
+def raw(of, ref, quantity, length, *, made=0, mes=None, machine="", cut="2026-09-20", status="Em Produção",
         designation="", notes="", family=("1", "Postes Treliçados"), key=None):
     return {"row_key": key or f"macro:s:plan:{of}:{ref}", "notes": notes, "p_value": "12", "observations": None,
             "galvanising_notes": None, "work_type_code": family[0] if family else None,
@@ -43,11 +43,15 @@ def test_signals_read_the_written_text():
     assert portfolio.signals_of("", "", "", "", None)["estado_cpis"] is True
 
 
-def test_balance_uses_the_larger_of_excel_counter_and_mes_and_drops_finished_lines():
+def test_unreconciled_excel_and_mes_counters_leave_an_unknown_balance():
     line = portfolio.line_from_row(raw("OF1", "DLT319", 24, 1500, made=4, mes=10), TODAY)
-    assert line["pieces"] == 14 and line["metres"] == pytest.approx(21.0) and line["master"] == "DLT"
-    assert portfolio.line_from_row(raw("OF1", "DLT319", 24, 1500, mes=24), TODAY) is None
+    assert line["pieces"] is None and line['balance_unknown'] and line["master"] == "DLT"
+    assert portfolio.line_from_row(raw("OF1", "DLT319", 24, 1500, mes=24), TODAY)['pieces'] is None
+    assert portfolio.line_from_row(raw("OF1", "DLT319", 24, 1500, made=24), TODAY) is None
     assert portfolio.line_from_row(raw("OF1", "DLT319", None, 1500), TODAY) is None
+    r=raw('OF1','DLT319',24,1500,made=4,mes=10)
+    r['v'].update(planning_remaining=14,planning_balance_origin='Reconciliado')
+    assert portfolio.line_from_row(r,TODAY)['pieces']==14
 
 
 def test_default_view_goes_model_then_sku_then_of_with_priority_first():
@@ -79,9 +83,19 @@ def test_filters_family_machine_window_signal_and_search():
     assert portfolio.groups("cantoneiras", "referencia", filters={"q": "dlr"}, data=d)["totals"]["ofs"] == 1
 
 
-def test_only_mtg3_for_now():
-    with pytest.raises(portfolio.planning.PlanningError, match="MTG3"):
-        portfolio.check_sector("perfis")
+def test_both_sectors_share_the_portfolio_policy():
+    assert portfolio.check_sector('perfis')=='perfis'
+    assert portfolio.check_sector('cantoneiras')=='cantoneiras'
+
+
+def test_finishing_primary_keeps_the_following_operation_selectable():
+    r=raw('OF1','PART',10,1000,made=10)
+    r['v']['planning_remaining']=0
+    r['detail']={'calculation':{'integrated_operations':[{'operation':'CPIS:111','occurrence':2,'remaining':None}]}}
+    line=portfolio.line_from_row(r,TODAY)
+    assert line['pieces']==0 and line['pending_following_operations']==1
+    result=portfolio.groups('cantoneiras','of',data=data(r),decisions={('OF1','*'):{'decision':'selected'}})
+    assert result['totals']['state_counts']['selecionado']==1
 
 
 @pytest.fixture()
@@ -89,6 +103,8 @@ def client(monkeypatch):
     from app.web.planning_app import app
     from app.sector import selection
     monkeypatch.setattr(portfolio, "load", lambda sector, **kw: data(raw("OF1", "DLT319", 10, 1000)))
+    from app.sector import machine_choice
+    monkeypatch.setattr(machine_choice, "context", lambda area, conn=None: machine_choice.empty(area))
     monkeypatch.setattr(selection, "current", lambda sector, conn=None: {})
     return TestClient(app)
 

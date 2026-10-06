@@ -1,5 +1,5 @@
 // Read-only acceptance at the published Planning address. No production edits.
-const {chromium}=require('/home/luis/.npm/_npx/fd3bca3c548369c0/node_modules/playwright-core');
+const {chromium}=require('./playwright_core.cjs');
 const fs=require('node:fs'),assert=require('node:assert/strict');
 const base=process.env.PLANNING_PUBLIC_BASE,F=process.env.PLANNING_PUBLIC_EVIDENCE_DIR||'docs/separacao-2026-09-24';
 fs.mkdirSync(F,{recursive:true});
@@ -7,7 +7,7 @@ if(!base||(!base.startsWith('https://')&&base!=='http://127.0.0.1:8113'))throw E
 const report={at:new Date().toISOString(),base,mode:'Read-only browser; column changes stay in this browser session',areas:[],pages:[],errors:[],console_errors:[],request_failures:[],network_retries:[]};let browser;
 async function navigate(page,url){for(let attempt=1;attempt<=3;attempt++){try{return await page.goto(url)}catch(e){if((!String(e).includes('net::ERR_NETWORK_CHANGED')&&!String(e).includes('chrome-error://chromewebdata/'))||attempt===3)throw e;report.network_retries.push({url,attempt,error:e.message});await page.waitForTimeout(250);}}}
 (async()=>{
- browser=await chromium.launch({executablePath:'/home/luis/.cache/ms-playwright/chromium-1243/chrome-linux64/chrome',headless:true,args:['--no-sandbox']});
+ browser=await chromium.launch({executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE,headless:true,args:['--no-sandbox']});
  const page=await browser.newPage({viewport:{width:1440,height:1000}});page.on('pageerror',e=>report.errors.push(e.message));page.on('console',m=>{if(m.type()==='error')report.console_errors.push(m.text())});page.on('requestfailed',r=>report.request_failures.push({url:r.url(),error:r.failure()?.errorText}));
  for(const area of ['perfis','cantoneiras']){
   console.log('Checking area',area);

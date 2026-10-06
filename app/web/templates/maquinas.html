@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="pt">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Máquinas · Planeamento</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/static/planning_typography.css">
+  <link rel="stylesheet" href="/static/maquinas.css?v={{ version }}">
+  <script src="/static/maquinas.js?v={{ version }}" defer></script>
+<link rel="stylesheet" href="/static/planeamento_ui.css?v=20261002">
+</head>
+<body>
+  {% set active = 'maquinas' %}{% include "_app_nav.html" %}
+
+  <main>
+    <section class="head">
+      <div>
+        <h1>Máquinas</h1>
+        <p class="lead">Quanto trabalho tem cada máquina, que máquina dar ao trabalho que ainda não tem, e onde aliviar as filas mais longas. Nada muda sem carregares num botão, e tudo se pode desfazer.</p>
+      </div>
+      <div class="filters">
+        <div class="seg" role="radiogroup" aria-label="Setor">
+          <button type="button" data-area="" aria-pressed="true">Todos</button>
+          <button type="button" data-area="cantoneiras" aria-pressed="false">MTG3 Cantoneiras</button>
+          <button type="button" data-area="perfis" aria-pressed="false">MTG2 Perfis</button>
+        </div>
+        <label>Capacidade
+          <select id="scenario">
+            <option value="mediana">Ritmo normal (mediana)</option>
+            <option value="prudente">Ritmo prudente (semanas fracas)</option>
+            <option value="confirmada">Só calendários confirmados</option>
+          </select>
+        </label>
+      </div>
+    </section>
+
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+    <p id="status" class="status" aria-live="polite">A carregar…</p>
+
+    <section class="kpis" id="kpis" aria-label="Resumo"></section>
+
+    <nav class="tabs" role="tablist" aria-label="Secções">
+      <button role="tab" id="tab-load" aria-controls="panel-load" aria-selected="true">Carga por máquina</button>
+      <button role="tab" id="tab-suggest" aria-controls="panel-suggest" aria-selected="false">Sugestões de máquina <span class="count" id="count-suggest"></span></button>
+      <button role="tab" id="tab-balance" aria-controls="panel-balance" aria-selected="false">Equilibrar carga <span class="count" id="count-balance"></span></button>
+      <button role="tab" id="tab-history" aria-controls="panel-history" aria-selected="false">Histórico</button>
+    </nav>
+
+    <section role="tabpanel" id="panel-load" aria-labelledby="tab-load">
+      <p class="help">Cada barra mostra quantas <b>semanas de trabalho</b> a máquina tem à frente, ao ritmo da capacidade escolhida. A marca cinzenta mostra como fica se aplicares todas as propostas de equilíbrio. Toca numa máquina para ver de onde vem a carga.</p>
+      <div id="machines" class="machines"></div>
+    </section>
+
+    <section role="tabpanel" id="panel-suggest" aria-labelledby="tab-suggest" hidden>
+      <p class="help">Trabalho sem máquina no Excel, agrupado por lote (mesma OF, perfil e operação, que partilham preparação). A sugestão segue a regra que o planeador já usa (séries → punção, séries baixas, chapa grossa e abas grandes → broca) e o equilíbrio de carga. Aceitar grava a escolha; não retira trabalho a ninguém.</p>
+      <div class="toolbar">
+        <label>Máquina sugerida <select id="suggest-machine"><option value="">Todas</option></select></label>
+        <label class="check"><input type="checkbox" id="suggest-late"> Só em atraso</label>
+        <label>Procurar <input id="suggest-q" type="search" placeholder="OF, perfil ou cliente"></label>
+        <span class="spacer"></span>
+        <button type="button" id="suggest-select-all">Selecionar as visíveis</button>
+        <button type="button" id="suggest-accept-selected" class="primary" disabled>Aceitar selecionadas</button>
+      </div>
+      <div class="list" id="suggestions"></div>
+      <button type="button" id="suggest-more" class="more" hidden>Mostrar mais</button>
+    </section>
+
+    <section role="tabpanel" id="panel-balance" aria-labelledby="tab-balance" hidden>
+      <p class="help">Propostas para mudar lotes das máquinas com mais semanas de trabalho para outras com folga que também os podem fazer. O trabalho não é retirado: muda só a máquina. Cada proposta mostra as semanas de carga antes → depois nas duas máquinas.</p>
+      <div class="toolbar">
+        <label>Tirar de <select id="balance-from"><option value="">Todas</option></select></label>
+        <span class="spacer"></span>
+        <button type="button" id="balance-select-all">Selecionar as visíveis</button>
+        <button type="button" id="balance-apply-selected" class="primary" disabled>Aplicar selecionadas</button>
+      </div>
+      <div class="list" id="balance"></div>
+    </section>
+
+    <section role="tabpanel" id="panel-history" aria-labelledby="tab-history" hidden>
+      <p class="help">Todas as decisões de máquina gravadas. «Desfazer» repõe o estado anterior das ocorrências que ninguém mudou depois.</p>
+      <div class="list" id="history"></div>
+    </section>
+  </main>
+
+  <dialog id="choose" class="dialog">
+    <form method="dialog" id="choose-form">
+      <h2 id="choose-title">Escolher máquina</h2>
+      <p id="choose-info" class="help"></p>
+      <div id="choose-options" class="choices" role="radiogroup"></div>
+      <label>Motivo (opcional)<input id="choose-reason" maxlength="300" placeholder="Ex.: ferramentas já montadas"></label>
+      <p id="choose-error" class="error" role="alert"></p>
+      <div class="actions"><button type="button" id="choose-cancel">Cancelar</button><button class="primary" id="choose-ok">Gravar</button></div>
+    </form>
+  </dialog>
+</body>
+</html>

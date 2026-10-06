@@ -1,11 +1,11 @@
-const {chromium}=require('/home/luis/.npm/_npx/fd3bca3c548369c0/node_modules/playwright-core');
+const {chromium}=require('./playwright_core.cjs');
 const assert=require('node:assert/strict');
 (async()=>{
-  const browser=await chromium.launch({executablePath:'/home/luis/.cache/ms-playwright/chromium-1243/chrome-linux64/chrome',headless:true,args:['--no-sandbox']});
+  const browser=await chromium.launch({executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE||chromium.executablePath(),headless:true,args:['--no-sandbox']});
   const page=await browser.newPage({viewport:{width:1440,height:940}}),errors=[],bad=[];
   page.on('pageerror',error=>errors.push(error.message));
   page.on('response',response=>{if(response.url().includes('/api/raw/gantt')&&response.status()>=400)bad.push(response.status()+' '+response.url())});
-  await page.goto(process.env.PLANNING_CHECK_BASE+'/planeamento/gantt');
+  await page.goto(process.env.PLANNING_CHECK_BASE+'/planeamento/gantt/detalhe');
   await page.waitForFunction(()=>document.querySelector('#source-state').textContent.includes('Fontes publicadas'));
   await page.waitForFunction(()=>document.querySelector('#pending-count').textContent.includes('operações'));
   assert.ok((await page.locator('#pending-count').innerText()).includes('operações'));

@@ -1,0 +1,37 @@
+/* Definições do setor (06/10/2026). Letra de planning_typography.css. */
+.defs { max-width: 1400px; margin: 0 auto; padding: .8rem 1.25rem 2.5rem; }
+.defs-head { display: flex; gap: .9rem; align-items: center; flex-wrap: wrap; margin-bottom: .6rem; }
+.defs-head h1 { margin: 0; margin-right: auto; }
+.defs-head label { display: flex; gap: .4rem; align-items: center; }
+.block { background: #fff; border: 1px solid #dce6e8; border-radius: 10px; padding: .6rem .9rem; margin-bottom: .8rem; }
+.block h2 { margin: 0 0 .3rem; }
+.muted { color: #5d737a; }
+.scroll { overflow-x: auto; }
+table.grid { width: 100%; border-collapse: collapse; }
+table.grid th, table.grid td { padding: .35rem .45rem; border-bottom: 1px solid #eef0f3; text-align: left; vertical-align: top;
+  text-transform: none; letter-spacing: normal; color: inherit; background: transparent; font-weight: normal; }
+table.grid thead th { font-weight: 700; background: #f4f6f8; white-space: nowrap; }
+table.grid tbody th { font-weight: 700; white-space: nowrap; }
+.weeks { display: flex; gap: .2rem; flex-wrap: wrap; max-width: 15rem; }
+.wk { border: 1px solid #c9d4d7; border-radius: 6px; padding: 0 .3rem; white-space: nowrap; }
+.wk.manual { background: #fff4e5; border-color: #f0cf9f; }
+.ficha-row { white-space: nowrap; margin-bottom: .2rem; }
+.ficha-row input { border: 1px solid #c9d4d7; padding: .1rem .3rem; width: 8.5rem; }
+.ficha .op { display: inline-block; min-width: 7rem; color: #3d4f56; }
+.rates { display: grid; gap: .15rem; min-width: 14rem; }
+.speeds { margin: .2rem 0; padding-left: 1rem; max-height: 10rem; overflow-y: auto; }
+.rate-form { display: flex; gap: .3rem; flex-wrap: wrap; margin-top: .2rem; }
+.rate-form input, .rate-form select { border: 1px solid #c9d4d7; padding: .1rem .3rem; }
+button.small, .save { border: 1px solid #a9bbc4; background: #fff; color: #10384b; padding: .1rem .6rem; width: auto; }
+.save { background: #10384b; color: #fff; padding: .3rem .9rem; }
+.shift-form { display: grid; gap: .6rem; max-width: 40rem; }
+.shift { display: flex; gap: .4rem; align-items: center; }
+.shift span { min-width: 5.5rem; }
+.shift input { border: 1px solid #c9d4d7; padding: .15rem .3rem; }
+.days { border: 1px solid #dce6e8; border-radius: 8px; }
+.days > div { display: flex; gap: .8rem; flex-wrap: wrap; }
+.holidays { display: flex; flex-direction: column; gap: .2rem; }
+.holidays textarea { border: 1px solid #c9d4d7; max-width: 14rem; }
+.notice { padding: .35rem .6rem; background: #e9f6ef; border: 1px solid #b6e2c6; border-radius: 8px; color: #1e6b3d; }
+.error { color: #9d2a26; }
+@media (max-width: 760px) { .defs { padding: .6rem 16px 2rem; } }

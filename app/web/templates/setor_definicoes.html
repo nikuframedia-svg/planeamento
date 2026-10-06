@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="pt">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Planeamento · Definições do setor</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/static/planning_hub.css">
+  <link rel="stylesheet" href="/static/planning_typography.css">
+  <link rel="stylesheet" href="/static/setor_definicoes.css?v={{ version }}">
+  <script src="/static/setor_definicoes.js?v={{ version }}" defer></script>
+  <link rel="stylesheet" href="/static/planeamento_ui.css?v=20261002">
+</head>
+<body>
+  {% set active = 'definicoes' %}{% include "_app_nav.html" %}
+  <main class="defs">
+    <header class="defs-head">
+      <h1>Definições do setor</h1>
+      <label>Setor
+        <select id="setor">{% for key, label in sectors.items() %}<option value="{{ key }}"{% if key == 'cantoneiras' %} selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+      </label>
+      <a href="/planeamento/setor/carga">Carga e turnos →</a>
+      <a href="/planeamento/carteira/conjuntos">Conjuntos de famílias →</a>
+    </header>
+    <p id="notice" class="notice" role="status" hidden></p>
+    <p id="error" class="error" role="alert" hidden></p>
+
+    <section class="block">
+      <h2>Máquinas</h2>
+      <p class="muted">Turnos padrão = turnos de uma semana normal (as semanas mudadas em «Carga e turnos» ficam como estão). A ficha de capacidades vem do ficheiro da fábrica; podes corrigir o intervalo aqui.</p>
+      <div class="scroll"><table class="grid">
+        <thead><tr><th scope="col">Máquina</th><th scope="col">Processo</th><th scope="col">Confirmada</th><th scope="col">Turnos padrão</th><th scope="col">Próximas semanas</th><th scope="col">Ficha de capacidades (perfil mín. – máx.)</th><th scope="col">Tempos</th></tr></thead>
+        <tbody id="machines"></tbody>
+      </table></div>
+    </section>
+
+    <section class="block">
+      <h2>Turnos</h2>
+      <form id="shift-form" class="shift-form">
+        <div id="template"></div>
+        <fieldset class="days"><legend>Dias de trabalho</legend><div id="workdays"></div></fieldset>
+        <label class="holidays">Feriados (um por linha, AAAA-MM-DD)<textarea id="holidays" rows="6"></textarea></label>
+        <p class="muted">Gravar reescreve os calendários das próximas 52 semanas com estas horas e feriados, mantendo os turnos de cada semana.</p>
+        <button type="submit" class="save">Gravar turnos e feriados</button>
+      </form>
+    </section>
+
+    <section class="block">
+      <h2>Regras do setor</h2>
+      <ul id="rules"></ul>
+    </section>
+  </main>
+</body>
+</html>

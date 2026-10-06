@@ -1,0 +1,11 @@
+[Unit]
+Description=Consulta horária das fontes de planeamento
+
+[Timer]
+OnCalendar=hourly
+Persistent=true
+RandomizedDelaySec=30
+Unit=planning-research-refresh.service
+
+[Install]
+WantedBy=timers.target

@@ -7,15 +7,14 @@
   <link rel="stylesheet" href="/static/planning.css?v={{ version }}">
   <script src="/static/planning.js?v={{ version }}" defer></script>
 <link rel="stylesheet" href="/static/planning_typography.css">
+<link rel="stylesheet" href="/static/planeamento_ui.css?v=20261002">
 </head>
 <body>
-  <header class="app-head">
-    <a class="brand" href="/planeamento">METALOGAL<span>Planeamento</span></a>
-    <nav aria-label="Setor">
-      <button type="button" id="new-record" aria-current="page">Nova ficha</button>
-      <button type="button" id="show-records">Registos</button>
-    </nav>
-  </header>
+  {% set active = 'ordens' %}{% include "_app_nav.html" %}
+<nav class="pl-page-actions" aria-label="Fichas">
+    <button type="button" id="new-record" aria-current="page">Nova ficha</button>
+    <button type="button" id="show-records">Registos</button>
+  </nav>
   <main>
     <div class="heading"><div><h1>Perfis e cantoneiras</h1><p>Preparação das necessidades de produção</p></div>
       <label class="area-choice" for="area">Setor<select id="area"><option value="perfis">MTG2 Perfis</option><option value="cantoneiras">MTG3 Cantoneiras</option></select></label>

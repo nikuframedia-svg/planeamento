@@ -1,0 +1,255 @@
+{
+ "motivo": "Planeadas antes de 02/10 sem máquina; regra «sem máquina não se planeia» (aprovado pelo Luís a 05/10/2026).",
+ "linhas": [
+  {
+   "key": "macro:mtg_cdd4dda73e0856f6:plan:9148",
+   "of": "OF260028",
+   "reference": "CF150E",
+   "profile": "L120X120X12",
+   "length_mm": 160.0,
+   "pieces": 4.0,
+   "metres": 0.64,
+   "tabela_machine": ""
+  },
+  {
+   "key": "macro:mtg_cdd4dda73e0856f6:plan:56101",
+   "of": "OF264345",
+   "reference": "CF150E",
+   "profile": "L120X120X12",
+   "length_mm": 160.0,
+   "pieces": 12.0,
+   "metres": 1.92,
+   "tabela_machine": ""
+  },
+  {
+   "key": "macro:mtg_cdd4dda73e0856f6:plan:65735",
+   "of": "OF265247",
+   "reference": "CF150E",
+   "profile": "L120X120X12",
+   "length_mm": 160.0,
+   "pieces": 4.0,
+   "metres": 0.64,
+   "tabela_machine": ""
+  },
+  {
+   "key": "macro:mtg_cdd4dda73e0856f6:plan:66984",
+   "of": "OF265285",
+   "reference": "CF150E",
+   "profile": "L120X120X12",
+   "length_mm": 160.0,
+   "pieces": 4.0,
+   "metres": 0.64,
+   "tabela_machine": ""
+  },
+  {
+   "key": "macro:mtg_cdd4dda73e0856f6:plan:22967",
+   "of": "OF262138",
+   "reference": "CF150E",
+   "profile": "L120X120X12",
+   "length_mm": 160.0,
+   "pieces": 8.0,
+   "metres": 1.28,
+   "tabela_machine": ""
+  },
+  {
+   "key": "macro:mtg_cdd4dda73e0856f6:plan:65495",
+   "of": "OF265246",
+   "reference": "CF150E",
+   "profile": "L120X120X12",
+   "length_mm": 160.0,
+   "pieces": 8.0,
+   "metres": 1.28,
+   "tabela_machine": ""
+  },
+  {
+   "key": "macro:mtg_cdd4dda73e0856f6:plan:9389",
+   "of": "OF260030",
+   "reference": "CF150E",
+   "profile": "L120X120X12",
+   "length_mm": 160.0,
+   "pieces": 6.0,
+   "metres": 0.96,
+   "tabela_machine": ""
+  },
+  {
+   "key": "macro:mtg_cdd4dda73e0856f6:plan:9906",
+   "of": "OF260031",
+   "reference": "CF150E",
+   "profile": "L120X120X12",
+   "length_mm": 160.0,
+   "pieces": 6.0,
+   "metres": 0.96,
+   "tabela_machine": ""
+  },
+  {
+   "key": "macro:mtg_cdd4dda73e0856f6:plan:51745",
+   "of": "OF264160",
+   "reference": "G111D",
+   "profile": "L100X100X10",
+   "length_mm": 4429.0,
+   "pieces": 8.0,
+   "metres": 35.432,
+   "tabela_machine": ""
+  },
+  {
+   "key": "macro:mtg_cdd4dda73e0856f6:plan:51746",
+   "of": "OF264160",
+   "reference": "G111E",
+   "profile": "L100X100X10",
+   "length_mm": 4429.0,
+   "pieces": 8.0,
+   "metres": 35.432,
+   "tabela_machine": ""
+  },
+  {
+   "key": "macro:mtg_cdd4dda73e0856f6:plan:51751",
+   "of": "OF264160",
+   "reference": "G211D",
+   "profile": "L100X100X10",
+   "length_mm": 662.0,
+   "pieces": 8.0,
+   "metres": 5.296,
+   "tabela_machine": ""
+  },
+  {
+   "key": "macro:mtg_cdd4dda73e0856f6:plan:64581",
+   "of": "OF265286",
+   "reference": "CF150E",
+   "profile": "L120X120X12",
+   "length_mm": 160.0,
+   "pieces": 4.0,
+   "metres": 0.64,
+   "tabela_machine": ""
+  },
+  {
+   "key": "macro:mtg_cdd4dda73e0856f6:plan:9653",
+   "of": "OF260032",
+   "reference": "CF150E",
+   "profile": "L120X120X12",
+   "length_mm": 160.0,
+   "pieces": 2.0,
+   "metres": 0.32,
+   "tabela_machine": ""
+  },
+  {
+   "key": "macro:mtg_cdd4dda73e0856f6:plan:55102",
+   "of": "OF264347",
+   "reference": "CF150E",
+   "profile": "L120X120X12",
+   "length_mm": 160.0,
+   "pieces": 8.0,
+   "metres": 1.28,
+   "tabela_machine": ""
+  },
+  {
+   "key": "macro:mtg_cdd4dda73e0856f6:plan:66722",
+   "of": "OF265249",
+   "reference": "CF150E",
+   "profile": "L120X120X12",
+   "length_mm": 160.0,
+   "pieces": 12.0,
+   "metres": 1.92,
+   "tabela_machine": ""
+  },
+  {
+   "key": "macro:mtg_cdd4dda73e0856f6:plan:65161",
+   "of": "OF265263",
+   "reference": "G111D",
+   "profile": "L100X100X10",
+   "length_mm": 4429.0,
+   "pieces": 2.0,
+   "metres": 8.858,
+   "tabela_machine": ""
+  },
+  {
+   "key": "macro:mtg_cdd4dda73e0856f6:plan:65162",
+   "of": "OF265263",
+   "reference": "G111E",
+   "profile": "L100X100X10",
+   "length_mm": 4429.0,
+   "pieces": 2.0,
+   "metres": 8.858,
+   "tabela_machine": ""
+  },
+  {
+   "key": "macro:mtg_cdd4dda73e0856f6:plan:65167",
+   "of": "OF265263",
+   "reference": "G211D",
+   "profile": "L100X100X10",
+   "length_mm": 662.0,
+   "pieces": 4.0,
+   "metres": 2.648,
+   "tabela_machine": ""
+  },
+  {
+   "key": "macro:mtg_cdd4dda73e0856f6:plan:66240",
+   "of": "OF265251",
+   "reference": "CF150E",
+   "profile": "L120X120X12",
+   "length_mm": 160.0,
+   "pieces": 6.0,
+   "metres": 0.96,
+   "tabela_machine": ""
+  },
+  {
+   "key": "macro:mtg_cdd4dda73e0856f6:plan:23730",
+   "of": "OF262139",
+   "reference": "CF150E",
+   "profile": "L120X120X12",
+   "length_mm": 160.0,
+   "pieces": 14.0,
+   "metres": 2.24,
+   "tabela_machine": ""
+  },
+  {
+   "key": "macro:mtg_cdd4dda73e0856f6:plan:66450",
+   "of": "OF265252",
+   "reference": "CF150E",
+   "profile": "L120X120X12",
+   "length_mm": 160.0,
+   "pieces": 2.0,
+   "metres": 0.32,
+   "tabela_machine": ""
+  },
+  {
+   "key": "macro:mtg_cdd4dda73e0856f6:plan:67948",
+   "of": "OF265257",
+   "reference": "CF150E",
+   "profile": "L120X120X12",
+   "length_mm": 160.0,
+   "pieces": 2.0,
+   "metres": 0.32,
+   "tabela_machine": ""
+  },
+  {
+   "key": "macro:mtg_cdd4dda73e0856f6:plan:66000",
+   "of": "OF265250",
+   "reference": "CF150E",
+   "profile": "L120X120X12",
+   "length_mm": 160.0,
+   "pieces": 4.0,
+   "metres": 0.64,
+   "tabela_machine": ""
+  },
+  {
+   "key": "macro:mtg_cdd4dda73e0856f6:plan:56368",
+   "of": "OF264346",
+   "reference": "CF150E",
+   "profile": "L120X120X12",
+   "length_mm": 160.0,
+   "pieces": 8.0,
+   "metres": 1.28,
+   "tabela_machine": ""
+  },
+  {
+   "key": "macro:mtg_cdd4dda73e0856f6:plan:55852",
+   "of": "OF264344",
+   "reference": "CF150E",
+   "profile": "L120X120X12",
+   "length_mm": 160.0,
+   "pieces": 10.0,
+   "metres": 1.6,
+   "tabela_machine": ""
+  }
+ ]
+}

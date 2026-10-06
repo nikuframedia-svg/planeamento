@@ -3,7 +3,7 @@ from contextlib import nullcontext
 import uuid
 from .. import planning,planning_needs as needs,planning_catalogs as catalogs
 from ..dossiers.models import order_number
-from . import query,projection,incremental
+from . import query,projection,incremental,registration as free
 
 
 class Candidates(Exception):
@@ -49,16 +49,20 @@ def prepare(p):
                 matches=[r for r in possible if r['exact'] and r['same_quantity']]
                 chosen=next((r for r in possible if r['plan_key']==p.get('selected_plan_key')),None)
                 if p.get('selected_plan_key') and not chosen:raise planning.PlanningError('A linha escolhida mudou. Atualiza as candidatas.',409)
-                if chosen and not str(p.get('reason') or '').strip():raise planning.PlanningError('Justifica a associação à linha escolhida.')
+                if chosen and not free.enabled() and not str(p.get('reason') or '').strip():raise planning.PlanningError('Justifica a associação à linha escolhida.')
                 if not chosen and len(matches)==1:chosen=matches[0]
-                elif not chosen and possible and not p.get('create_distinct'):
+                elif not chosen and possible and not p.get('create_distinct') and not free.enabled():
                     raise Candidates({'needs_decision':True,'candidates':possible,'suggestion':values,'production_order_no':of})
-                if p.get('create_distinct') and possible and (not values.get('identity_discriminator') or not p.get('reason')):raise planning.PlanningError('Identifica o que distingue a peça e justifica a necessidade adicional.')
+                if not free.enabled() and p.get('create_distinct') and possible and (not values.get('identity_discriminator') or not p.get('reason')):raise planning.PlanningError('Identifica o que distingue a peça e justifica a necessidade adicional.')
                 resolution={k:p[k] for k in ('area','production_order_no','source','reason','create_distinct') if k in p}
-                resolution.update(values=values,request_id=str(uuid.uuid5(needs.uid(p['request_id']),'resolve')))
+                resolution.update(_allow_unresolved=free.enabled(),values=values,request_id=str(uuid.uuid5(needs.uid(p['request_id']),'resolve')))
                 result=needs.resolve(resolution,conn=c)
                 if result.get('needs_decision'):raise Candidates(result)
                 nid=result['need_id'];revision=result['revision']
+                if free.enabled() and possible and not chosen:
+                    from psycopg.types.json import Jsonb
+                    c.execute('UPDATE planning_mtg.needs SET identity_pending=true,identity_candidates=identity_candidates || %s WHERE id=%s',
+                        (Jsonb([{'kind':'plan_line','id':r['plan_key'],'version':r['source_version']} for r in possible]),nid))
             if chosen:
                 result=needs.resolve({'request_id':str(uuid.uuid5(needs.uid(p['request_id']),'macro')),'area':area,'source':{'kind':'plan_line','id':chosen['plan_key'],'version':chosen['source_version']},'need_id':nid,'expected_revision':revision,'reason':p.get('reason') or 'Correspondência técnica completa, única e com a mesma quantidade.'},conn=c)
                 revision=result['revision']
@@ -92,7 +96,7 @@ def update_batch(p):
         if gen['id']!=current['id']:raise planning.PlanningError('Existem dados novos. Atualiza a lista e compara as alterações.',409)
         source_fingerprint=projection.fingerprint(c,area)
         cat=catalogs.catalog(area,c);allowed={f['id'] for f in contracts_for(area) if f['editable']}|{'picking_year','custom_profile','special_profile','geometry','identity_discriminator'}
-        results=[];seen=set();orders=set()
+        results=[];seen=set();orders=set();local_revisions={}
         for i,e in enumerate(edits):
             key=e.get('key');changes=e.get('values') or {}
             if key in seen:raise planning.PlanningError('Agrupa as alterações da mesma linha num único pedido.')
@@ -106,9 +110,16 @@ def update_batch(p):
             if e.get('expected_revision')!=row['revision']:raise planning.PlanningError('A linha mudou. Reabre-a para comparar.',409)
             nid=row['need_id'];revision=row['revision']
             if not nid:
-                resolution=needs.resolve({'request_id':str(uuid.uuid5(needs.uid(p['request_id']),str(i)+'resolve')),'area':area,'source':{'kind':'plan_line','id':row['plan_key'],'version':row.get('calculation',{}).get('macro_snapshot') or gen['metadata']['snapshot']['snapshot_id']}},conn=c)
+                resolution=needs.resolve({'request_id':str(uuid.uuid5(needs.uid(p['request_id']),str(i)+'resolve')),'area':area,'source':{'kind':'plan_line','id':row['plan_key'],'version':row.get('calculation',{}).get('macro_snapshot') or gen['metadata']['snapshot']['snapshot_id']},'_allow_unresolved':free.enabled()},conn=c)
                 if resolution.get('needs_decision'):raise planning.PlanningError('Existem peças semelhantes. Abre o formulário e escolhe a associação.',409)
                 nid=resolution['need_id'];revision=resolution['revision']
+            if free.enabled():
+                from .. import planning_local_orders
+                administrative={k:v for k,v in changes.items() if k in planning_local_orders.FIELDS}
+                if administrative:
+                    of=row['values']['of']
+                    saved_context=planning_local_orders.save(c,of,{'values':administrative,'expected_revision':local_revisions.get(of,row.get('local_order_revision',0))},needs.registration.human_actor(p))
+                    local_revisions[of]=saved_context['revision']
             defaults={k:v for k,v in row['values'].items() if k in {f['id'] for f in cat['fields']}}
             result=needs.save({'request_id':str(uuid.uuid5(needs.uid(p['request_id']),str(i)+'save')),'area':area,'need_id':nid,'expected_revision':revision,'catalog_version':cat['version'],'record_status':'draft','values':changes,
                 'decisions':{'picking_week':'clear'} if 'picking_week' in changes and changes['picking_week'] in (None,'') else {}},conn=c,source_defaults=defaults)

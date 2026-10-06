@@ -1,4 +1,4 @@
-const {chromium}=require('/home/luis/.npm/_npx/fd3bca3c548369c0/node_modules/playwright-core');
+const {chromium}=require('./playwright_core.cjs');
 const fs=require('node:fs'),assert=require('node:assert/strict');
 const base=process.env.PLANNING_CHECK_BASE,folder='docs/validacao-planeamento-integral/20260923-execucao';
 if(base!=='http://127.0.0.1:18113'||process.env.PLANNING_TEST_ISOLATED!=='1')throw Error('Explicit isolated copy required');
@@ -6,7 +6,7 @@ if(base!=='http://127.0.0.1:18113'||process.env.PLANNING_TEST_ISOLATED!=='1')thr
  const fixed=[{row:5588,id:34512,length:2750,cut:840,boc:null,aboc:false},
               {row:5589,id:34513,length:2050,cut:840,boc:765,aboc:true,record:2066},
               {row:5590,id:34514,length:2300,cut:840,boc:668,aboc:true,record:2065}];
- const browser=await chromium.launch({executablePath:'/home/luis/.cache/ms-playwright/chromium-1243/chrome-linux64/chrome',headless:true,args:['--no-sandbox']});
+ const browser=await chromium.launch({executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE,headless:true,args:['--no-sandbox']});
  const report={at:new Date().toISOString(),base,method:'OF264774 three distinct geometries; totals from independently reconciled central event IDs, arithmetic Q=840. Browser/API and operation evidence.',samples:[],errors:[]};
  const display=n=>n===null?'—':new Intl.NumberFormat('pt-PT',{maximumFractionDigits:4}).format(n).replace(/\s/g,'');
  const same=(a,b)=>a===null||b===null?assert.equal(a,b):assert(Math.abs(a-b)<=Math.max(1e-6,Math.abs(b)*1e-8));

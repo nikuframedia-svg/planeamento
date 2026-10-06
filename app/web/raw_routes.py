@@ -5,6 +5,7 @@ from pathlib import Path
 from fastapi import APIRouter, Request, Depends, HTTPException
 from fastapi.responses import HTMLResponse, Response
 from fastapi.templating import Jinja2Templates
+from .templates_env import install
 from psycopg.types.json import Jsonb
 from .. import planning, planning_raw as raw, planning_raw_analysis as analysis, planning_needs as needs
 from .need_routes import write, call
@@ -13,7 +14,7 @@ from .need_routes import write, call
 def enabled():
     if os.getenv('MES_PLANNING_RAW_ENABLED','0')!='1':raise HTTPException(404,'Vista RAW desativada.')
 router=APIRouter(dependencies=[Depends(enabled)])
-templates=Jinja2Templates(directory=str(Path(__file__).parent/'templates'))
+templates=install(Jinja2Templates(directory=str(Path(__file__).parent/'templates')))
 
 @router.get('/planeamento/raw',response_class=HTMLResponse)
 def page(request:Request):return templates.TemplateResponse(request=request,name='raw_workspace.html' if os.getenv('MES_RAW_WORKSPACE_ENABLED')=='1' else 'planning_raw.html',context={})
@@ -97,8 +98,20 @@ def weekly_capacity_page(request:Request):
     return templates.TemplateResponse(request=request,name='capacity.html',context={'mode':'weekly','title':'Disponibilidade semanal'})
 
 
-@router.get('/planeamento/gantt',response_class=HTMLResponse)
-def gantt_page(request:Request):
+def _gantt_enabled():
     if os.getenv('MES_PLANNING_GANTT_ENABLED','0')!='1' or os.getenv('MES_RAW_WORKSPACE_ENABLED')!='1':
         raise HTTPException(404,'Gantt desativado.')
+
+
+@router.get('/planeamento/gantt',response_class=HTMLResponse)
+def gantt_page(request:Request):
+    """Quadro simples: uma linha por máquina, uma caixa por OF, e a lista vermelha das OF por planear."""
+    _gantt_enabled()
+    return templates.TemplateResponse(request=request,name='plano.html',context={})
+
+
+@router.get('/planeamento/gantt/detalhe',response_class=HTMLResponse)
+def gantt_detail_page(request:Request):
+    """Ferramentas do planeador: cenários, propostas, aceitação e ajustes por operação."""
+    _gantt_enabled()
     return templates.TemplateResponse(request=request,name='gantt.html',context={})

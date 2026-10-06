@@ -26,11 +26,13 @@ def positive(v,zero=False):
 
 def validate(c,kind,id,d):
     if kind=='resource':
+        from ..gantt.machines import validate_rules
+        validate_rules(d.get('technical_rules', []))
         aliases=d.get('aliases',[])
         if not aliases or any(not a.get('name') or a.get('area') not in planning.AREAS for a in aliases):raise planning.PlanningError('Indica pelo menos um nome de máquina e a respetiva área.')
         for r in c.execute("SELECT id,definition FROM planning_mtg.raw_objects WHERE kind='resource' AND NOT archived AND id<>%s",(id,)).fetchall():
             if any(a in r['definition'].get('aliases',[]) for a in aliases):raise planning.PlanningError('Este nome já pertence a outro recurso físico.',409)
-        if not d.get('operations'):raise planning.PlanningError('Indica as operações suportadas.')
+        if not d.get('operations') and d.get('resource_type') not in ('grupo_operadores',):raise planning.PlanningError('Indica as operações suportadas.')
         shift=positive(d['shift_hours']) if d.get('shift_hours') not in (None,'') else None
         if shift and shift>24:raise planning.PlanningError('As horas por turno não podem exceder 24.')
         window=positive(d.get('history_window_days',90))

@@ -1,0 +1,115 @@
+/* Carteira simples (esboço do Luís, 02/10/2026). Letra: planning_typography.css (11 pt em tudo).
+   Cinzento = linha marcada; verde = toda em «Planeado para nesting». */
+.cart { max-width: 1400px; margin: 0 auto; padding: .8rem 1.25rem 2.5rem; }
+.cart-head { display: flex; align-items: baseline; gap: .8rem; flex-wrap: wrap; margin-bottom: .5rem; }
+.cart-head h1 { margin: 0; }
+.muted { color: #5d737a; }
+
+/* Filtros em duas linhas */
+.cart-filters { display: grid; gap: .5rem; margin-bottom: .8rem; }
+.cart-row { display: flex; flex-wrap: wrap; gap: .5rem .8rem; align-items: flex-end; }
+.cart-filters label, .cart-filters .field { display: flex; flex-direction: column; gap: .15rem; color: #3d4f56; flex: 1 1 11rem; }
+.cart-filters label.grow { flex: 3 1 18rem; }
+.cart-filters select, .cart-filters input { padding: .3rem .5rem; border: 1px solid #c9d4d7; background: #fff; width: 100%; box-sizing: border-box; }
+.cart-filters .clear { border: 1px solid #a9bbc4; background: #fff; color: #10384b; padding: .3rem .8rem; flex: 0 0 auto; }
+.weeks { position: relative; }
+.weeks summary { list-style: none; cursor: pointer; border: 1px solid #c9d4d7; border-radius: 8px; background: #fff; padding: .3rem .5rem; }
+.weeks summary::after { content: " ▾"; }
+.weeks summary::-webkit-details-marker { display: none; }
+.weeks-list { position: absolute; z-index: 25; top: 110%; left: 0; display: grid; gap: .1rem; max-height: 22rem; overflow-y: auto; min-width: 15rem;
+  background: #fff; border: 1px solid #dce6e8; border-radius: 8px; padding: .4rem .6rem; box-shadow: 0 10px 30px #0f2a3029; }
+.weeks-list .week { display: flex; gap: .3rem; align-items: center; white-space: nowrap; flex-direction: row; }
+
+/* Painéis: Punção, Broca, Resumo */
+.panels { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: .7rem; margin-bottom: .8rem; }
+@media (min-width: 900px) {
+  .panels[data-panels="3"] { grid-template-columns: minmax(15rem, 1fr) minmax(15rem, 1fr) minmax(26rem, 1.6fr); }
+  .panels[data-panels="2"] { grid-template-columns: minmax(18rem, 1fr) minmax(26rem, 1.3fr); }
+}
+.panel { background: #fff; border: 1px solid #dce6e8; border-radius: 10px; padding: .5rem .8rem; min-width: 0; }
+.panel h2 { margin: 0 0 .3rem; }
+.machines { list-style: none; margin: 0; padding: 0; }
+.machines li { display: grid; grid-template-columns: minmax(5.5rem, 1fr) auto auto; gap: .8rem; padding: .15rem 0; }
+.machines .m-metres, .machines .m-hours { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.delta { color: #15525c; font-weight: 700; }
+.resumo table { width: 100%; border-collapse: collapse; }
+.resumo tbody th { white-space: normal; }
+.resumo th, .resumo td { padding: .15rem .3rem; text-align: left; font-weight: normal; background: transparent;
+  text-transform: none; letter-spacing: normal; color: inherit; border: 0; white-space: nowrap; }
+.resumo thead th { font-weight: 700; }
+.resumo .num { text-align: right; font-variant-numeric: tabular-nums; }
+.marked-line { margin: .3rem 0 0; color: #15525c; font-weight: 700; }
+.assign-line { margin: .3rem 0 0; display: flex; gap: .4rem; align-items: center; flex-wrap: wrap; }
+.assign-line select { flex: 1 1 14rem; min-width: 0; max-width: 100%; border: 1px solid #c9d4d7; padding: .2rem .4rem; }
+.assign-line .assign { background: #10384b; color: #fff; border: 1px solid #10384b; padding: .15rem .8rem; font-weight: 600; }
+.sets-link { margin-left: auto; color: #15525c; }
+.others { grid-column: 1 / -1; margin: 0; }
+button.link { background: none; border: 0; color: #15525c; text-decoration: underline; padding: 0; min-height: 0; font-weight: normal; }
+
+.notice { margin: .4rem 0; padding: .35rem .6rem; background: #e9f6ef; border: 1px solid #b6e2c6; border-radius: 8px; color: #1e6b3d; }
+.error { margin: .4rem 0; color: #9d2a26; }
+.empty { padding: .6rem; margin: 0; }
+
+/* Tabela */
+.cart-table { overflow-x: auto; border: 1px solid #dce6e8; border-radius: 10px; background: #fff; }
+table.tree { width: 100%; border-collapse: collapse; }
+table.tree > thead th { position: sticky; top: 0; background: #f4f6f8; text-align: left; font-weight: 700; padding: .4rem .5rem;
+  border-bottom: 1px solid #dce6e8; white-space: nowrap; text-transform: none; letter-spacing: normal; color: inherit; }
+table.tree > tbody > tr > td, table.tree > tbody > tr > th { padding: .3rem .5rem; border-bottom: 1px solid #eef0f3; vertical-align: middle;
+  text-align: left; font-weight: normal; text-transform: none; letter-spacing: normal; color: inherit; background: transparent; }
+table.tree .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+table.tree tr.subtotal > * { background: #f7f9fa; font-weight: 700; border-bottom: 2px solid #dce6e8; }
+table.tree tr.more td { color: #5b6470; font-style: italic; }
+table.tree tr.level-1 > * { background-color: #fbfcfd; }
+table.tree tr.level-2 > * { background-color: #f6f8fa; }
+.name-cell { display: flex; align-items: center; gap: .35rem; padding-left: calc(var(--depth, 0) * 1.3rem); white-space: nowrap; }
+.name-cell input { margin: 0; }
+table.tree .toggle { width: 1.3rem; min-height: 1.3rem; height: 1.3rem; padding: 0; border: 0; border-radius: 4px; background: transparent;
+  color: #2f3b48; font-weight: 700; line-height: 1.3rem; text-align: center; }
+table.tree .toggle:hover { background: #e6ecef; }
+.toggle-space { width: 1.3rem; }
+table.tree .lupa { padding: 0 .3rem; min-height: 1.4rem; border: 1px solid #c9d4d7; border-radius: 5px; background: #fff; }
+table.tree .lupa[aria-expanded="true"] { background: #dbe8eb; }
+.pick-count { font-weight: 700; color: #3d4f56; font-variant-numeric: tabular-nums; }
+td.plan .plan-cell { display: flex; align-items: center; gap: .6rem; white-space: nowrap; }
+td.plan .acts { display: inline-flex; flex-direction: column; gap: .15rem; }
+table.tree .act { padding: .05rem .5rem; min-height: 1.4rem; font-weight: 600; border-radius: 5px; border: 1px solid #a9bbc4; background: #fff; color: #10384b; }
+table.tree .act-plan { background: #10384b; color: #fff; border-color: #10384b; }
+.planned { color: #3d4f56; }
+
+table.tree tr.is-partial > * { background-color: #f1f3f4; }
+table.tree tr.is-selected > * { background-color: #e1e5e8; }
+table.tree tr.is-nesting > * { background-color: #dff2e6; }
+table.tree tr.is-nesting.is-selected > * { background-color: #cfe5d7; }
+
+/* Lupa */
+tr.detail-row > td { padding: 0 .5rem .5rem 1.5rem; background: #f7f9fa; }
+.detail { border: 1px solid #cfdcdf; border-radius: 8px; background: #fff; padding: .5rem; }
+.lupa-head { display: flex; flex-wrap: wrap; gap: .4rem .6rem; align-items: center; margin-bottom: .4rem; }
+.lupa-head .detail-sum { flex: 1 1 12rem; font-weight: 700; }
+.lupa-head input { min-width: 12rem; border: 1px solid #c9d4d7; }
+.detail button.small { border: 1px solid #a9bbc4; background: #fff; color: #10384b; padding: .15rem .6rem; }
+.detail-scroll { max-height: 24rem; overflow: auto; }
+table.members { width: 100%; border-collapse: separate; border-spacing: 0; } /* collapse deixa o texto espreitar por cima do cabeçalho fixo */
+.detail-scroll { padding-top: 0; }
+table.members thead th { position: sticky; top: 0; z-index: 1; background: #f4f6f8; box-shadow: 0 -2px 0 #f4f6f8; text-align: left; font-weight: 700; text-transform: none; letter-spacing: normal; color: inherit; white-space: nowrap; }
+table.members td, table.members th { padding: .2rem .4rem; border-bottom: 1px solid #eef0f3; }
+table.members tr.is-selected td { background: #e1e5e8; }
+table.members tr.is-nesting td { background: #dff2e6; }
+.chip { display: inline-block; padding: 0 .4rem; border-radius: 999px; border: 1px solid transparent; white-space: nowrap; }
+.chip-planeado { background: #e3f0f2; color: #15525c; border-color: #a9cdd3; }
+.chip-nesting { background: #dff2e6; color: #1e6b3d; border-color: #9fd3b3; }
+.chip-sem_maquina { background: #fff4e5; color: #8a4f12; border-color: #f0cf9f; }
+
+@media (max-width: 760px) {
+  /* planning_hub.css transforma as tabelas em blocos no telemóvel; a Carteira mantém a tabela com scroll. */
+  table.tree, table.members { display: table; }
+  table.tree thead, table.members thead { display: table-header-group; }
+  table.tree tbody, table.members tbody { display: table-row-group; }
+  table.tree tr, table.members tr { display: table-row; border-bottom: 0; padding: 0; }
+  table.tree td, table.tree th, table.members td, table.members th { display: table-cell; }
+  .cart-table { overflow-x: auto; }
+  .cart { padding: .6rem 16px 2rem; }
+  .cart-filters label, .cart-filters .field, .cart-filters label.grow { flex: 1 1 100%; }
+  .resumo th, .resumo td { white-space: normal; }
+}

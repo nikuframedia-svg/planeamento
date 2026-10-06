@@ -1,5 +1,5 @@
 // C09: independent H01-H08 expectations and real UI edits, full isolated copy.
-const {chromium}=require('/home/luis/.npm/_npx/fd3bca3c548369c0/node_modules/playwright-core');
+const {chromium}=require('./playwright_core.cjs');
 const fs=require('node:fs'),assert=require('node:assert/strict'),crypto=require('node:crypto');
 const base=process.env.PLANNING_CHECK_BASE,folder='docs/validacao-planeamento-integral/20260923-execucao';
 if(base!=='http://127.0.0.1:18113'||process.env.PLANNING_TEST_ISOLATED!=='1')throw Error('Isolated Planeamento required');
@@ -86,7 +86,7 @@ async function results(watch,raw,area,entry,name,settings,saved){
  return {name,settings:{...settings},expected,values,shown,api,row:api.rows[0],saved,response_to_visible_ms:responseToVisible};
 }
 (async()=>{
- browser=await chromium.launch({executablePath:'/home/luis/.cache/ms-playwright/chromium-1243/chrome-linux64/chrome',headless:true,args:['--no-sandbox','--disable-background-timer-throttling']});
+ browser=await chromium.launch({executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE,headless:true,args:['--no-sandbox','--disable-background-timer-throttling']});
  for(const [area,entry] of Object.entries(fixture.areas)){
   const context=await browser.newContext({viewport:{width:1440,height:1050}});
   const editor=await context.newPage(),watch=await context.newPage(),raw=await context.newPage();

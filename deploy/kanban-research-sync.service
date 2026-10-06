@@ -1,0 +1,19 @@
+[Unit]
+Description=Synchronize current planning, manual history and source evidence to the research database
+After=network-online.target kanban-planning.service
+
+[Service]
+Type=simple
+WorkingDirectory=/home/luis/projects/planeamento
+EnvironmentFile=/home/luis/projects/planeamento/.env
+Environment=MES_RESEARCH_SYNC_ACCESS_FILE=/home/luis/.config/kanban-planning/research-sync-access.json
+Environment=MES_RESEARCH_SYNC_DATABASE=dataresearchmtg_planeamento_20260930
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/home/luis/projects/planeamento/.venv/bin/python -m app.raw.research_sync --watch
+Restart=on-failure
+RestartSec=10
+TimeoutStopSec=30
+Nice=5
+
+[Install]
+WantedBy=default.target

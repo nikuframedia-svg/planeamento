@@ -4,7 +4,6 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
-import os
 from pathlib import Path
 from urllib.parse import urlsplit
 
@@ -12,14 +11,13 @@ import psycopg
 from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse, JSONResponse, Response
 from fastapi.templating import Jinja2Templates
+from .templates_env import install
 
 from .. import planning, planning_hub
 
 router = APIRouter()
 _DIR = Path(__file__).parent
-templates = Jinja2Templates(directory=str(_DIR / "templates"))
-templates.env.globals['raw_enabled'] = lambda: os.getenv('MES_PLANNING_RAW_ENABLED','0') == '1'
-templates.env.globals['selection_enabled'] = lambda: os.getenv('MES_PLANNING_SELECTION_ENABLED','0') == '1'
+templates = install(Jinja2Templates(directory=str(_DIR / "templates")))
 log = logging.getLogger(__name__)
 
 

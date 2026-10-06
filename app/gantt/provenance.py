@@ -1,5 +1,6 @@
 """Annotate estimated future work with its own and inherited assumptions."""
 from __future__ import annotations
+from .contracts import predecessors
 
 
 def apply(jobs, bars):
@@ -21,8 +22,8 @@ def apply(jobs, bars):
             own.append(f'Saldo provisório da operação {key}')
         if option and option.get('provisional'):
             own.append(f'Duração provisória da operação {key}')
-        predecessor = job.get('predecessor_key')
-        inherited = reasons(predecessor, visited | {key}) if predecessor in bars else []
+        inherited = [reason for predecessor in predecessors(job) if predecessor in bars
+                     for reason in reasons(predecessor, visited | {key})]
         resolved[key] = sorted(set(own + inherited))
         return resolved[key]
 

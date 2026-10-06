@@ -1,0 +1,33 @@
+{#- Menu comum a todas as páginas do planeamento. Antes do include: {% set active = 'carteira' %}.
+    Cada ligação só aparece se a página estiver ligada; sem a função (processo antigo) mantém o comportamento anterior. -#}
+{%- set show_raw = raw_enabled is not defined or raw_enabled() -%}
+{%- set show_carteira = selection_enabled is not defined or selection_enabled() -%}
+{%- set show_maquinas = views_enabled is defined and views_enabled() -%}
+<header class="pl-header">
+  <a class="pl-brand" href="/planeamento"><strong>Metalogalva</strong><span>Planeamento</span></a>
+  <nav class="pl-nav" aria-label="Planeamento">
+    <a href="/planeamento"{% if active == 'ordens' %} aria-current="page"{% endif %}>Ordens de fabrico</a>
+    {%- if show_carteira %}<a href="/planeamento/carteira"{% if active == 'carteira' %} aria-current="page"{% endif %}>Carteira</a>{% endif %}
+    {%- if show_maquinas %}<a href="/planeamento/maquinas"{% if active == 'maquinas' %} aria-current="page"{% endif %}>Máquinas</a>{% endif %}
+    {%- if show_carteira %}<a href="/planeamento/setor/carga"{% if active == 'carga' %} aria-current="page"{% endif %}>Carga e turnos</a>{% endif %}
+    {%- if show_raw %}<a href="/planeamento/gantt"{% if active == 'gantt' %} aria-current="page"{% endif %}>Gantt</a>
+    <a href="/planeamento/raw"{% if active == 'raw' %} aria-current="page"{% endif %}>Tabela</a>{% endif %}
+    <details class="pl-more{% if active in ('capacidades', 'disponibilidade', 'pdf', 'manual', 'ocr', 'definicoes') %} pl-more-active{% endif %}">
+      <summary>Mais</summary>
+      <div class="pl-more-menu">
+        {%- if show_carteira %}
+        <a href="/planeamento/setor/definicoes"{% if active == 'definicoes' %} aria-current="page"{% endif %}>Definições do setor</a>
+        {%- endif %}
+        {%- if show_raw %}
+        <a href="/planeamento/capacidades"{% if active == 'capacidades' %} aria-current="page"{% endif %}>Capacidades das máquinas</a>
+        <a href="/planeamento/disponibilidade"{% if active == 'disponibilidade' %} aria-current="page"{% endif %}>Disponibilidade semanal</a>
+        {%- endif %}
+        <a href="/planeamento/dossies"{% if active == 'pdf' %} aria-current="page"{% endif %}>Carregar PDF</a>
+        <a href="/planeamento/manual"{% if active == 'manual' %} aria-current="page"{% endif %}>Preencher manualmente</a>
+        <a href="/planeamento/ocr-original"{% if active == 'ocr' %} aria-current="page"{% endif %}>OCR original</a>
+      </div>
+    </details>
+  </nav>
+</header>
+<script>(function(){const a=document.querySelector('.pl-nav [aria-current=page],.pl-more-active>summary');if(a&&innerWidth<760)a.scrollIntoView({inline:'center',block:'nearest'});
+  document.addEventListener('click',e=>{const m=document.querySelector('.pl-more[open]');if(m&&!m.contains(e.target))m.open=false;});})();</script>

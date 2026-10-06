@@ -140,6 +140,10 @@ def status(conn=None):
     if not conn.execute("SELECT to_regclass('ocr_original.instances') name").fetchone()['name']:return {'state':'not_configured','label':'OCR original — importação não configurada'}
     rows=conn.execute('''SELECT i.*,s.sheet_count,s.production_count,s.stoppage_count,s.captured_at,s.published_at FROM ocr_original.instances i
         LEFT JOIN ocr_original.snapshots s ON s.id=i.current_snapshot ORDER BY i.source_label''').fetchall()
+    if not rows:
+        from .raw import ocr_export
+        exported=ocr_export.status(conn)
+        if exported:return exported
     last=conn.execute('SELECT * FROM ocr_original.sync_attempts ORDER BY finished_at DESC LIMIT 1').fetchone()
     now=datetime.now(timezone.utc)
     for row in rows:
@@ -182,6 +186,9 @@ def query(*,of='',model='',machine='',date_from='',date_to='',page=1):
             conditions.append("r.value->>'sheet_iso_date' "+operator+' %s');args.append(value)
     with planning.connect(readonly=True) as conn:
         state=status(conn)
+        if state.get('mode')=='validated_export':
+            from .raw import ocr_export
+            return ocr_export.query(conn,state,of=of,model=model,machine=machine,date_from=date_from,date_to=date_to,page=page)
         if state['state']=='not_configured':return {'records':[],'total':0,'page':page,'source':state}
         base=''' FROM ocr_original.instances i JOIN ocr_original.snapshot_sheets x ON x.snapshot_id=i.current_snapshot
             JOIN ocr_original.sheets s ON (s.instance_id,s.sheet_id,s.content_hash)=(x.instance_id,x.sheet_id,x.content_hash)

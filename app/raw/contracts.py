@@ -8,7 +8,7 @@ DATES={'cut_date','delivery_date','expected_date','production_date','last_activi
 EXTRA=[('deadline_status','Prazo e trabalho pendente','work',None),('overdue','Prazo ultrapassado','work',None),('status','Estado CPIS','identity',None),('preparation_status','Preparação','work',None),('remaining_m','Metros por realizar','quantity',None),('section_unit','Área unitária comprovada (mm²)','technical',None),('ocr_cut','Cortada · OCR validado','production',None),('ocr_boc','Abocardada · OCR validado','production',None),('last_activity','Última atividade na OF','production',None),('unassigned_records','Registos por associar na OF','production',None),('execution_status','Execução acompanhada','production',None)]
 CANT=[s for s in legacy.SPECS if s[0] not in {'abocardar','cut','boc','cut_pct','boc_pct','final_pct','boc_remaining','section_total','bars'}]
 CANT += [('made','Produção principal','quantity',None),('made_pct','% realizado','quantity',None),('operation','1.ª operação','work','select'),('operation_detail','Operação adicional','work','select'),('speed_m_h','Velocidade aplicada (m/h)','work',None),('theoretical_hours','Horas previstas','work',None),('ocr_quantity','Produção OCR associada','production',None)]
-CANT_DEFAULT=['of','ov','component_ref','cut_date','material_type','quantity_required','material_description','length_mm','operation','operation_detail','team','pavilion']
+CANT_DEFAULT=['of','ov','component_ref','sku_family','sku_family_status','cut_date','material_type','quantity_required','material_description','length_mm','operation','operation_detail','team','pavilion']
 CANT += [('material_description','Descrição do material','identity',None),('macro_closed','Fechado · macro','quantity',None),('imported_week','Semana W · macro','work',None)]
 EXTRA += [('rate_source','Origem da taxa aplicada','work',None),('applied_rate_value','Taxa aplicada','work',None),('applied_rate_unit','Unidade da taxa','work',None)]
 EXTRA += [('planned_week','Semana de planeamento','work','number'),('planned_year','Ano de planeamento','work','number')]
@@ -57,6 +57,10 @@ def fields(area='perfis',dataset='planning'):
         specs=[(k,l,'work',None) for k,l in spec]
     if dataset=='orders':
         specs=[(k,l,'identity',None) for k,l in [('of','OF'),('ov','OV'),('customer','Cliente'),('status','Estado CPIS'),('quantity_required','Quantidade abrangida'),('remaining','Saldo integral (quando todas as peças são conhecidas)'),('known_remaining_total','Saldo das peças com informação conhecida'),('remaining_known_lines','Peças com saldo conhecido'),('lines_total','Peças abrangidas'),('unassigned_records','Registos por associar'),('last_activity','Última atividade na OF')]]
+    from .registration import enabled as free_entry
+    if dataset=='planning' and free_entry() and not any(s[0]=='operation' for s in specs):specs.append(('operation','Operação','work','select'))
+    if dataset=='planning' and free_entry():specs=[(k,l,g,'number' if k=='quantity_to_plan' else 'text' if k in ('customer','ov','designation','delivery_date') else t) for k,l,g,t in specs]
+    if dataset=='planning' and area=='cantoneiras':specs += [('sku_family','Família de SKU','identity',None),('sku_family_status','Estado da família de SKU','identity',None)]
     if dataset=='planning':specs=[(k,{'cut':'Quantidade cortada','boc':'Quantidade abocardada','hours_pct':'Ocupação da máquina/semana (%)'}.get(k,l),g,t) for k,l,g,t in specs]
     if dataset=='planning' and area=='perfis':
         index=next(i for i,s in enumerate(specs) if s[0]=='picking_week')
@@ -66,6 +70,8 @@ def fields(area='perfis',dataset='planning'):
     if dataset in ('planning','orders'):
         specs += [('planning_active','Planeamento ativo','identity',None),('closure_reason','Origem do fecho','identity',None)]
     if area=='cantoneiras' and dataset=='planning':
+        # Sem Picking no registo das cantoneiras (06/10/2026): a coluna fica visível, mas só de leitura.
+        specs=[(k,l,g,None if k=='picking_week' else t) for k,l,g,t in specs]
         specs=[(k,{'remaining':'Qtd. falta','quantity_required':'QTD','material_type':'Tipo de material','length_mm':'Comprimento (mm)','operation_detail':'2.ª operação','remaining_m':'Metros em falta','machine':'Máquina','ocr_quantity':'OCR · operação principal'}.get(k,l),g,t) for k,l,g,t in specs]
         cat=catalogs.catalog(area)
         codes={x['value']:x['label'] for x in cat['operations']+cat['additional_operations'] if x['countable']}
@@ -75,7 +81,7 @@ def fields(area='perfis',dataset='planning'):
 
 def columns(area='perfis'):
     cols=fields(area)
-    return {'area':area,'columns':cols,'default_widths':dict(zip(CANT_DEFAULT,[110,110,130,115,120,60,245,95,82,82,125,75])) if area=='cantoneiras' else {},'default_columns':CANT_DEFAULT if area=='cantoneiras' else list(dict.fromkeys(['of','ov','component_ref']+[f['id'] for f in cols if f['default_visible']])),'groups':GROUPS,'catalog':catalogs.catalog(area),'page_sizes':[25,50,100,250,500],'pinned':['of','ov','component_ref']}
+    return {'area':area,'columns':cols,'default_widths':dict(zip(CANT_DEFAULT,[110,110,130,140,220,115,120,60,245,95,82,82,125,75])) if area=='cantoneiras' else {},'default_columns':CANT_DEFAULT if area=='cantoneiras' else list(dict.fromkeys(['of','ov','component_ref']+[f['id'] for f in cols if f['default_visible']])),'groups':GROUPS,'catalog':catalogs.catalog(area),'page_sizes':[25,50,100,250,500],'pinned':['of','ov','component_ref']}
 
 
 def mapping(area='perfis',dataset='planning'):

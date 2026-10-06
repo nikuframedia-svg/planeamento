@@ -1,0 +1,99 @@
+{
+  "catalogo": {
+    "referencias": 31603,
+    "por_area": {
+      "cantoneiras": 31603
+    },
+    "agrupamentos": 329,
+    "sem_familia": 251,
+    "versoes": [
+      "9e1e4071de345765b4921fef8fe6d0e3b9030744934b807f41db6ddb6c5d1d87"
+    ]
+  },
+  "areas": {
+    "perfis": {
+      "geracao": 3595,
+      "fontes": {
+        "loaded_at": "2026-09-29T12:20:49.367422+00:00",
+        "snapshot_id": "mtg2_3da468582f1d59b6",
+        "source_filename": "Met2_Plan_Perfis.xlsm"
+      },
+      "linhas_ativas": 1209,
+      "ofs_ativas": 271,
+      "referencias_ativas": 956,
+      "linhas_com_saldo_principal_positivo": 1169,
+      "linhas_com_saldo_principal_desconhecido": 0,
+      "linhas_com_saldo_principal_zero": 40,
+      "horas_principais_documentais_conhecidas": 1454.4048,
+      "linhas_positivas_com_horas": 671,
+      "linhas_positivas_sem_horas": 498,
+      "linhas_positivas_com_corte_passado": 587,
+      "linhas_positivas_sem_data_corte": 32,
+      "linhas_positivas_com_corte_ate_14_dias": 385,
+      "linhas_positivas_sem_maquina": 419,
+      "linhas_positivas_com_saldo_provisorio": 1145,
+      "linhas_positivas_com_picking": 251,
+      "linhas_positivas_com_ano_picking": 0,
+      "fontes_taxa_nas_linhas_com_horas": {
+        "Excel provisório": 497,
+        "Histórico": 174
+      },
+      "pavilhoes_nas_linhas_positivas": {
+        "MTG5": 61,
+        "1": 299,
+        "MTG3": 222,
+        "8": 22,
+        "sem_pavilhao": 162,
+        "6": 160,
+        "2": 228,
+        "3": 15
+      }
+    },
+    "cantoneiras": {
+      "geracao": 3596,
+      "fontes": {
+        "loaded_at": "2026-09-30T12:23:48.098979+00:00",
+        "snapshot_id": "mtg_ef26928918339ece",
+        "source_filename": "Met3_Plan_Cantoneiras.xlsm"
+      },
+      "linhas_ativas": 17236,
+      "ofs_ativas": 157,
+      "referencias_ativas": 11670,
+      "linhas_com_saldo_principal_positivo": 15824,
+      "linhas_com_saldo_principal_desconhecido": 1139,
+      "linhas_com_saldo_principal_zero": 273,
+      "horas_principais_documentais_conhecidas": 1854.1031,
+      "linhas_positivas_com_horas": 3361,
+      "linhas_positivas_sem_horas": 12463,
+      "linhas_positivas_com_corte_passado": 9241,
+      "linhas_positivas_sem_data_corte": 3918,
+      "linhas_positivas_com_corte_ate_14_dias": 849,
+      "linhas_positivas_sem_maquina": 12794,
+      "linhas_positivas_com_saldo_provisorio": 15811,
+      "linhas_positivas_com_picking": 0,
+      "linhas_positivas_com_ano_picking": 0,
+      "fontes_taxa_nas_linhas_com_horas": {
+        "Excel provisório": 2678,
+        "Histórico": 683
+      },
+      "pavilhoes_nas_linhas_positivas": {
+        "MTG3": 15748,
+        "1": 70,
+        "2": 4,
+        "6": 2
+      }
+    }
+  },
+  "configuracao": {
+    "objetos_por_tipo": {
+      "period": 1,
+      "gantt": 2,
+      "resource": 29
+    },
+    "confirmados_por_tipo": {
+      "period": 1
+    },
+    "selecoes_para_planear": 0,
+    "cenarios_com_plano_aceite": 0
+  }
+}

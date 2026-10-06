@@ -29,12 +29,17 @@ def recalculate(row, section_table, weight_table):
         imported=planning._text(row['raw'].get('Des. Material'))
         v['material_description']=(imported if compatible else None) or ' '.join(str(v.get(k) or '') for k in ('profile','grade')).strip()
     operations=row.get('operations',[])
+    manual_quantity=('quantity_to_plan' in row.get('input_values',{}))
+    declared_quantity=v.get('quantity_to_plan')
     result=calculate(v,area=row['area'],raw=row['raw'],operations=operations,
         local_initial=bool(row.get('need_id') and not row.get('sources') and not row.get('plan_key')),
         compatible=compatible,sections=section_table,weights=weight_table,
         today=datetime.now(ZoneInfo(planning.settings.display_timezone)).date(),
         density=7850 if row['area']=='perfis' and row.get('plan_key') else None)
     row['values']=result['values']
+    if manual_quantity:
+        row['values']['quantity_to_plan']=declared_quantity
+        result['rules']['quantity_to_plan']={'formula':'Quantidade declarada','unit':'un.','source':'Registo manual','inputs':{'quantity_to_plan':declared_quantity}}
     row['calculation'].update(contract=result['contract'],rules=result['rules'],production_sources=result['operations'],compatible=compatible)
     for source in result['operations']:
         row['warnings'].extend(source['coverage_reasons'])
@@ -79,7 +84,7 @@ def enrich(values,original,source,weight_table,area):
     if v.get('final_pct') is not None:rules['final_pct']={'formula':'boc_pct' if v.get('abocardar')=='X' else 'cut_pct','unit':'%','inputs':{'abocardar':v.get('abocardar')},'limitations':['Percentagem da operação final; não fecha a OF.']}
     if v.get('theoretical_hours') is not None:rules['theoretical_hours']={'formula':'remaining_m / speed_m_h','unit':'h','inputs':{'remaining_m':v.get('remaining_m'),'speed_m_h':v.get('speed_m_h')},'source':'Velocidade importada; conferir vigência antes de usar na capacidade.'}
     today=datetime.now(ZoneInfo(planning.settings.display_timezone)).date()
-    picking=(planning_dates.picking_deadline(v.get('picking_week'),v.get('picking_year'))
+    picking=(planning_dates.picking_deadline(v.get('picking_week'),v.get('picking_year'),anchor=v.get('cut_date') or today)
              if area=='perfis' and not v.get('picking_conflict') else None)
     deadline=(picking['at'] if picking else None) or v.get('expected_date') or (
         v.get('cut_date') if area=='perfis' else None) or v.get('planned_finish_date') or v.get('delivery_date')

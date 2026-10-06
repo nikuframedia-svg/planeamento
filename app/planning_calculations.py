@@ -283,17 +283,19 @@ def calculate(values, *, area='perfis', raw=None, operations=(), local_initial=F
     period_inputs={k:v.get(k) for k in ('expected_date','cut_date','planned_year','planned_week','operation')}
     put('expected_week',f'{year}-W{week:02}' if year is not None else None,'Ano e semana ISO da previsão aplicável',inputs=period_inputs,source=period_source,reason=period_source if year is None else None)
     put('expected_year',year,'Ano ISO da previsão aplicável',inputs=period_inputs,source=period_source,reason=period_source if year is None else None)
-    picking=planning_dates.picking_deadline(v.get('picking_week'),v.get('picking_year')) if area=='perfis' and not v.get('picking_conflict') else None
-    put('picking_deadline',picking['at'] if picking else None,'Segunda-feira da semana ISO de Picking às 08:00 em Lisboa',
-        inputs={'week':v.get('picking_week'),'year':v.get('picking_year'),'assumed_year':2026 if picking and picking['provisional'] else None},
+    picking=planning_dates.picking_deadline(v.get('picking_week'),v.get('picking_year'),anchor=v.get('cut_date') or today) if area=='perfis' and not v.get('picking_conflict') else None
+    inferred_year=picking['year'] if picking and picking['provisional'] else None
+    put('picking_deadline',picking['at'] if picking else None,'Segunda-feira da semana ISO de Picking às 08:00 em Lisboa; sem ano, o ano em que a semana fica mais perto da Data Corte (ou de hoje)',
+        inputs={'week':v.get('picking_week'),'year':v.get('picking_year'),'inferred_year':inferred_year},
         source=picking['origin'] if picking else 'Picking por confirmar',reason='Semana Picking ausente ou em conflito.' if not picking else None)
     put('picking_date',picking['at'][:10] if picking else None,'Data local da segunda-feira da semana de Picking',
         inputs={'week':v.get('picking_week'),'year':v.get('picking_year'),
-                'assumed_year':2026 if picking and picking['provisional'] else None,
+                'inferred_year':inferred_year,
                 'origin':v.get('picking_origin'),'evidence':v.get('picking_evidence') or []},
         source=v.get('picking_origin') or (picking['origin'] if picking else 'Picking por confirmar'),
         reason='Semanas de Picking contraditórias.' if v.get('picking_conflict') else 'Semana/ano de Picking por confirmar.' if not picking else None)
     v['picking_deadline_provisional']=bool(picking and picking['provisional'])
+    v['picking_year_inferred']=inferred_year
     cut_due=v.get('expected_date') or (v.get('cut_date') if area=='perfis' and principal['remaining'] not in (None,0) else None)
     deadline=(picking['at'] if picking else None) or cut_due or v.get('planned_finish_date') or v.get('delivery_date')
     deadline_source='Picking' if picking else 'Previsão de corte' if cut_due else 'Fim previsto da Produção' if v.get('planned_finish_date') else 'Entrega' if v.get('delivery_date') else None

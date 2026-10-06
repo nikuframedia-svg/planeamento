@@ -1,0 +1,302 @@
+﻿area,tipo_material,perfil,linhas_ativas,ofs_ativas,referencias_ativas,linhas_com_saldo_principal_positivo,linhas_com_saldo_principal_desconhecido,linhas_com_saldo_principal_zero,horas_principais_documentais_conhecidas,linhas_positivas_com_horas,linhas_positivas_sem_horas,linhas_positivas_com_corte_passado,linhas_positivas_sem_data_corte,linhas_positivas_com_corte_ate_14_dias,linhas_positivas_sem_maquina,linhas_positivas_com_saldo_provisorio,linhas_positivas_com_picking,linhas_positivas_com_ano_picking
+perfis,Barra,100x14,3,2,2,3,0,0,0,0,3,0,0,3,3,3,0,0
+perfis,Barra,100x22,1,1,1,1,0,0,0,0,1,0,0,1,1,1,0,0
+perfis,Barra,30x8,1,1,1,1,0,0,72.6471,1,0,1,0,0,0,0,0,0
+perfis,Barra,40x20,1,1,1,1,0,0,0.3743,1,0,1,0,0,0,1,0,0
+perfis,Barra,60x14,1,1,1,1,0,0,0,0,1,0,0,1,1,1,0,0
+perfis,Calha,20x10x1,13,13,6,13,0,0,0.5341,8,5,9,0,3,5,13,0,0
+perfis,Calha,20x8x0.75,1,1,1,1,0,0,0.272,1,0,1,0,0,0,1,0,0
+perfis,Calha,40x22,2,2,2,2,0,0,0,0,2,1,0,1,1,2,0,0
+perfis,Calha,40x22x2,20,3,11,20,0,0,13.4498,11,9,11,0,0,9,20,0,0
+perfis,Calha,40x22x2.3,1,1,1,1,0,0,39.6193,1,0,0,0,1,0,1,0,0
+perfis,Calha,41x21x2.5,2,2,2,2,0,0,0.1146,1,1,2,0,0,1,2,0,0
+perfis,Calha,41x24x2.5,1,1,1,1,0,0,0.0591,1,0,1,0,0,0,1,1,0
+perfis,Cantoneira,200x200x26,9,3,9,9,0,0,0,0,9,9,0,0,9,9,0,0
+perfis,Cantoneira,200x200x28,7,2,7,7,0,0,0,0,7,7,0,0,7,7,0,0
+perfis,Cantoneira,250x250x22,8,4,8,8,0,0,3.4291,2,6,8,0,0,6,8,0,0
+perfis,Cantoneira,250x250x24,10,3,10,10,0,0,4.967,2,8,10,0,0,8,10,0,0
+perfis,Cantoneira,250x250x25,18,4,14,18,0,0,20.6522,8,10,18,0,0,10,18,0,0
+perfis,Cantoneira,250x250x26,6,4,6,6,0,0,0,0,6,6,0,0,6,5,0,0
+perfis,Cantoneira,250x250x28,24,9,24,24,0,0,45.9687,10,14,24,0,0,14,24,0,0
+perfis,Cantoneira,250x250x35,37,6,37,36,0,1,148.5978,10,26,31,1,0,26,36,0,0
+perfis,Chapa,225x6,1,1,1,1,0,0,0.1467,1,0,1,0,0,0,1,0,0
+perfis,Chapa,75x45,4,3,2,4,0,0,23.9767,3,1,4,0,0,1,3,4,0
+perfis,Perfil H,HEA240,39,2,39,39,0,0,0,0,39,0,24,15,15,39,0,0
+perfis,Perfil H,HEB260,5,2,5,5,0,0,0,0,5,0,0,0,0,5,0,0
+perfis,Perfil H,HEB260B,1,1,1,1,0,0,10.018,1,0,1,0,0,0,1,0,0
+perfis,Perfil H,HEB300,7,3,7,7,0,0,0,0,7,2,0,1,1,6,2,0
+perfis,Perfil H,HEB320,4,1,2,4,0,0,0,0,4,0,0,0,0,4,0,0
+perfis,Perfil H,HEB320B,8,2,4,8,0,0,123.2846,8,0,4,0,4,0,8,0,0
+perfis,Perfil H,HEM280,1,1,1,1,0,0,0,0,1,0,0,1,1,1,0,0
+perfis,Perfil H,HEM300,1,1,1,1,0,0,0,0,1,0,0,1,1,1,0,0
+perfis,Perfil H,HEM320,9,1,7,9,0,0,0,0,9,0,0,0,0,9,0,0
+perfis,Perfil H,HEM320M,1,1,1,1,0,0,2.0376,1,0,1,0,0,0,1,0,0
+perfis,Perfil H,HEM340,2,1,2,2,0,0,0,0,2,0,0,2,2,2,0,0
+perfis,Perfil I,IPE180,1,1,1,1,0,0,0.7455,1,0,0,0,0,0,1,0,0
+perfis,Perfil I,IPE330,129,2,129,93,0,36,52.5006,7,86,0,7,86,86,88,0,0
+perfis,Perfil U,UKT305x152x49,6,1,5,6,0,0,0,0,6,6,0,0,6,6,0,0
+perfis,Perfil U,UPN100,2,2,1,2,0,0,0,0,2,1,0,1,1,2,0,0
+perfis,Perfil U,UPN100x50,4,4,4,4,0,0,7.942,4,0,2,0,1,0,4,3,0
+perfis,Perfil U,UPN120,1,1,1,1,0,0,0,0,1,1,0,0,0,1,1,0
+perfis,Perfil U,UPN120x55,2,2,2,2,0,0,4.9049,2,0,0,0,1,0,2,1,0
+perfis,Perfil U,UPN140,1,1,1,1,0,0,0,0,1,0,0,1,0,1,0,0
+perfis,Perfil U,UPN140x60,17,8,15,17,0,0,0.9468,4,13,10,0,1,13,17,2,0
+perfis,Perfil U,UPN160x65,4,1,4,4,0,0,0,0,4,4,0,0,4,4,0,0
+perfis,Perfil U,UPN180,3,2,2,3,0,0,0,0,3,1,0,2,0,3,0,0
+perfis,Perfil U,UPN180x70,18,3,17,18,0,0,16.6363,15,3,3,0,0,3,18,0,0
+perfis,Perfil U,UPN280,8,2,5,8,0,0,0,0,8,3,0,5,0,8,0,0
+perfis,Perfil U,UPN280x95,5,2,5,5,0,0,1.6808,5,0,5,0,0,0,5,0,0
+perfis,Perfil U,UPN40x20,1,1,1,1,0,0,0,0,1,0,0,0,1,1,0,0
+perfis,Perfil U,UPN50,2,1,2,2,0,0,0,0,2,0,0,2,0,2,0,0
+perfis,Perfil U,UPN50x25,1,1,1,1,0,0,0,0,1,1,0,0,1,1,0,0
+perfis,Perfil U,UPN50x38,3,1,3,3,0,0,0.3886,3,0,0,0,3,0,3,3,0
+perfis,Perfil U,UPN65,13,10,9,13,0,0,0,0,13,9,0,2,4,13,8,0
+perfis,Perfil U,UPN65x42,7,3,7,7,0,0,5.2107,7,0,2,0,5,0,7,7,0
+perfis,Perfil U,UPN80,13,5,13,13,0,0,0,0,13,4,0,9,9,13,4,0
+perfis,Perfil U,UPN80x45,22,8,13,22,0,0,14.7884,10,12,12,0,4,12,22,10,0
+perfis,Tubo quadrado,100x100x5,1,1,1,1,0,0,0.1482,1,0,1,0,0,0,1,1,0
+perfis,Tubo quadrado,30x30x3,5,1,5,5,0,0,1.4148,5,0,5,0,0,0,5,5,0
+perfis,Tubo quadrado,350x350x10,2,1,2,2,0,0,0,0,2,0,0,2,2,2,0,0
+perfis,Tubo quadrado,350x350x16,2,1,2,2,0,0,0,0,2,0,0,2,2,2,0,0
+perfis,Tubo quadrado,400x400x12.5,1,1,1,1,0,0,0.6327,1,0,1,0,0,0,1,1,0
+perfis,Tubo quadrado,40x40x3,17,3,16,17,0,0,2.7698,17,0,17,0,0,0,17,17,0
+perfis,Tubo quadrado,40x40x3.2,1,1,1,1,0,0,0.4408,1,0,1,0,0,0,1,1,0
+perfis,Tubo quadrado,40x40x5,2,1,2,2,0,0,1.6376,2,0,2,0,0,0,2,2,0
+perfis,Tubo quadrado,50x50x3,49,1,49,49,0,0,8.2807,49,0,49,0,0,0,41,0,0
+perfis,Tubo quadrado,50x50x3.2,2,2,1,2,0,0,2.9429,2,0,2,0,0,0,2,2,0
+perfis,Tubo quadrado,50x50x5,1,1,1,1,0,0,0.1404,1,0,0,0,0,0,1,1,0
+perfis,Tubo quadrado,60x60x4,1,1,1,1,0,0,0.2795,1,0,1,0,0,0,1,1,0
+perfis,Tubo quadrado,80x80,1,1,1,1,0,0,0,0,1,1,0,0,1,1,0,0
+perfis,Tubo quadrado,80x80x5,1,1,1,1,0,0,0.117,1,0,1,0,0,0,1,1,0
+perfis,Tubo quadrado,80x80x8,1,1,1,1,0,0,0.7187,1,0,0,0,0,0,1,1,0
+perfis,Tubo redondo,100x4,1,1,1,1,0,0,0.0941,1,0,1,0,0,0,1,0,0
+perfis,Tubo redondo,101.6x3,13,3,13,13,0,0,5.1698,12,1,3,0,10,1,13,0,0
+perfis,Tubo redondo,101.6x4,1,1,1,1,0,0,0.0921,1,0,0,0,1,0,1,0,0
+perfis,Tubo redondo,101.6x4.5,28,3,10,28,0,0,8.9916,20,8,20,0,8,8,28,10,0
+perfis,Tubo redondo,101.6x5,2,2,2,2,0,0,0.355,2,0,1,0,0,0,2,1,0
+perfis,Tubo redondo,101x3,3,3,1,3,0,0,1.2891,2,1,1,0,1,1,3,0,0
+perfis,Tubo redondo,108x2.9,1,1,1,1,0,0,0,0,1,0,0,1,1,1,0,0
+perfis,Tubo redondo,108x3,3,3,1,3,0,0,0,0,3,0,0,0,3,3,0,0
+perfis,Tubo redondo,108x4,5,4,3,5,0,0,1.4597,4,1,3,0,2,1,5,0,0
+perfis,Tubo redondo,114.3x3,1,1,1,1,0,0,0,0,1,1,0,0,1,1,1,0
+perfis,Tubo redondo,114.3x6.3,12,1,12,12,0,0,2.1948,12,0,0,0,12,0,12,0,0
+perfis,Tubo redondo,114x2.6,1,1,1,1,0,0,1.1368,1,0,1,0,0,0,1,0,0
+perfis,Tubo redondo,114x3,6,6,4,5,0,1,1.7558,4,1,4,0,0,1,5,0,0
+perfis,Tubo redondo,114x3.2,6,6,3,6,0,0,21.2569,6,0,0,0,3,0,6,0,0
+perfis,Tubo redondo,114x3.6,1,1,1,1,0,0,0,0,1,0,0,0,1,1,0,0
+perfis,Tubo redondo,133x3,3,3,1,3,0,0,1.71,2,1,1,0,1,1,3,0,0
+perfis,Tubo redondo,133x3.6,2,2,2,2,0,0,1.9242,1,1,0,0,1,1,2,0,0
+perfis,Tubo redondo,133x4,8,8,6,6,0,2,13.8109,4,2,2,0,1,2,6,0,0
+perfis,Tubo redondo,139.7x3,5,3,2,5,0,0,32.2868,5,0,1,0,4,0,3,0,0
+perfis,Tubo redondo,139.7x4,4,4,3,4,0,0,3.0528,4,0,1,0,3,0,4,1,0
+perfis,Tubo redondo,140x3,4,4,2,4,0,0,1.2935,1,3,0,0,3,3,4,0,0
+perfis,Tubo redondo,140x4,2,2,2,2,0,0,0.1995,2,0,0,0,2,0,2,0,0
+perfis,Tubo redondo,141x3,1,1,1,1,0,0,0.1629,1,0,0,0,1,0,1,0,0
+perfis,Tubo redondo,141x4,1,1,1,1,0,0,0.0358,1,0,1,0,0,0,1,0,0
+perfis,Tubo redondo,150x4,3,3,1,3,0,0,16.3228,3,0,1,0,0,0,3,0,0
+perfis,Tubo redondo,159x10,1,1,1,1,0,0,0,0,1,0,0,1,1,1,0,0
+perfis,Tubo redondo,159x5,1,1,1,1,0,0,0.1817,1,0,0,0,1,0,1,0,0
+perfis,Tubo redondo,159x6.3,1,1,1,1,0,0,0,0,1,0,0,0,1,1,0,0
+perfis,Tubo redondo,168.3x4,1,1,1,1,0,0,0,0,1,1,0,0,1,1,1,0
+perfis,Tubo redondo,168x3,1,1,1,1,0,0,0.421,1,0,1,0,0,0,1,0,0
+perfis,Tubo redondo,168x4.5,1,1,1,1,0,0,1.4439,1,0,1,0,0,0,1,0,0
+perfis,Tubo redondo,168x5,1,1,1,1,0,0,1.5994,1,0,1,0,0,0,1,0,0
+perfis,Tubo redondo,177.8x5,2,2,2,2,0,0,3.1942,2,0,1,0,1,0,2,1,0
+perfis,Tubo redondo,177.8x6,1,1,1,1,0,0,0.6743,1,0,1,0,0,0,1,0,0
+perfis,Tubo redondo,177.8x8,1,1,1,1,0,0,0.3206,1,0,0,0,1,0,1,0,0
+perfis,Tubo redondo,177x4,1,1,1,1,0,0,0,0,1,0,0,1,1,1,0,0
+perfis,Tubo redondo,18x2,2,2,2,2,0,0,0.8388,2,0,0,0,2,0,2,1,0
+perfis,Tubo redondo,193.7x10,2,1,2,2,0,0,5.6368,2,0,0,0,2,0,2,0,0
+perfis,Tubo redondo,193.7x3.2,3,3,1,3,0,0,3.0079,3,0,3,0,0,0,3,3,0
+perfis,Tubo redondo,193.7x5,1,1,1,1,0,0,0,0,1,1,0,0,1,1,1,0
+perfis,Tubo redondo,193.7x6,2,1,2,2,0,0,3.9873,2,0,0,0,2,0,2,0,0
+perfis,Tubo redondo,193.7x8,1,1,1,1,0,0,4.5585,1,0,0,0,1,0,1,0,0
+perfis,Tubo redondo,200x5,1,1,1,1,0,0,1.4331,1,0,1,0,0,0,1,1,0
+perfis,Tubo redondo,21.3x2.6,3,3,1,3,0,0,0.0357,3,0,3,0,0,0,3,2,0
+perfis,Tubo redondo,21.3x3.2,1,1,1,1,0,0,0.5676,1,0,1,0,0,0,1,1,0
+perfis,Tubo redondo,213x17,1,1,1,1,0,0,0,0,1,1,0,0,1,1,0,0
+perfis,Tubo redondo,219.1x10,3,2,3,3,0,0,4.9355,3,0,0,0,3,0,2,0,0
+perfis,Tubo redondo,219.1x6,2,1,2,2,0,0,0,0,2,2,0,0,2,2,2,0
+perfis,Tubo redondo,219.1x8,2,2,2,2,0,0,0.7308,2,0,0,0,2,0,2,0,0
+perfis,Tubo redondo,244.5x10,2,2,2,2,0,0,3.8745,2,0,0,0,2,0,2,0,0
+perfis,Tubo redondo,244.5x12,1,1,1,1,0,0,0.6585,1,0,0,0,1,0,1,0,0
+perfis,Tubo redondo,26.9x2.3,1,1,1,1,0,0,0.0554,1,0,0,0,1,0,1,1,0
+perfis,Tubo redondo,273x10,1,1,1,1,0,0,0.6208,1,0,0,0,1,0,1,0,0
+perfis,Tubo redondo,323.9x10,1,1,1,1,0,0,0.7409,1,0,0,0,1,0,1,0,0
+perfis,Tubo redondo,33.7x2.6,5,3,5,5,0,0,0.6828,5,0,3,0,2,0,5,5,0
+perfis,Tubo redondo,33x2.65,1,1,1,1,0,0,0.0394,1,0,0,0,1,0,1,0,0
+perfis,Tubo redondo,33x3,1,1,1,1,0,0,0,0,1,0,0,0,1,1,0,0
+perfis,Tubo redondo,42.4x2.6,2,2,2,2,0,0,0.6084,2,0,2,0,0,0,2,2,0
+perfis,Tubo redondo,42.4x2.65,1,1,1,1,0,0,0.0358,1,0,1,0,0,0,1,0,0
+perfis,Tubo redondo,42.4x4,1,1,1,1,0,0,0,0,1,0,0,1,1,1,0,0
+perfis,Tubo redondo,42.4x5,1,1,1,1,0,0,2.7486,1,0,1,0,0,0,1,1,0
+perfis,Tubo redondo,42.5x2.65,1,1,1,1,0,0,0.0259,1,0,1,0,0,0,1,1,0
+perfis,Tubo redondo,48.3x2.9,7,5,6,7,0,0,0.9987,5,2,7,0,0,2,7,4,0
+perfis,Tubo redondo,48.3x3,56,3,39,56,0,0,23.133,56,0,36,0,20,0,56,18,0
+perfis,Tubo redondo,48.3x3.2,2,1,2,2,0,0,0.1414,2,0,0,0,2,0,2,2,0
+perfis,Tubo redondo,60.3x2.6,5,1,3,5,0,0,0,0,5,0,0,5,5,5,0,0
+perfis,Tubo redondo,60.3x2.9,74,54,43,74,0,0,20.6023,40,34,39,0,22,34,74,18,0
+perfis,Tubo redondo,60.3x3,2,1,2,2,0,0,2.2722,2,0,2,0,0,0,2,0,0
+perfis,Tubo redondo,60.3x3.2,3,3,2,3,0,0,0.1206,2,1,3,0,0,1,3,0,0
+perfis,Tubo redondo,60.3x4,3,2,2,3,0,0,0.4595,2,1,2,0,0,1,3,2,0
+perfis,Tubo redondo,60x2.6,8,8,4,8,0,0,1.8552,4,4,0,0,2,4,8,0,0
+perfis,Tubo redondo,60x2.9,4,3,3,4,0,0,2.1209,4,0,3,0,1,0,3,3,0
+perfis,Tubo redondo,60x3,8,7,7,8,0,0,3.5632,5,3,5,0,1,3,8,3,0
+perfis,Tubo redondo,63x3,4,1,4,4,0,0,1.3771,4,0,4,0,0,0,4,4,0
+perfis,Tubo redondo,76.1x2.5,6,2,1,6,0,0,14.2959,6,0,0,0,6,0,4,0,0
+perfis,Tubo redondo,76.1x3,9,3,9,9,0,0,6.9268,8,1,5,0,4,1,9,1,0
+perfis,Tubo redondo,76.1x3.2,35,22,31,35,0,0,11.0279,30,5,18,0,15,5,35,19,0
+perfis,Tubo redondo,76.1x3.25,9,7,5,9,0,0,1.4491,3,6,3,0,2,6,9,2,0
+perfis,Tubo redondo,76.1x8,1,1,1,1,0,0,0,0,1,0,0,1,1,1,0,0
+perfis,Tubo redondo,76.3x3.2,2,1,2,2,0,0,0,0,2,0,0,2,2,2,0,0
+perfis,Tubo redondo,76x2.6,8,8,4,8,0,0,11.0686,6,2,2,0,3,2,8,0,0
+perfis,Tubo redondo,76x3,2,2,2,2,0,0,0.0745,2,0,1,0,1,0,2,0,0
+perfis,Tubo redondo,76x3.25,2,1,2,2,0,0,0.1608,2,0,0,0,2,0,2,0,0
+perfis,Tubo redondo,76x3.6,1,1,1,1,0,0,0,0,1,0,0,0,1,1,0,0
+perfis,Tubo redondo,76x4,7,7,3,7,0,0,13.0441,7,0,4,0,1,0,7,0,0
+perfis,Tubo redondo,88.9x3,18,8,16,18,0,0,8.94,17,1,14,0,3,1,18,0,0
+perfis,Tubo redondo,88.9x3.2,8,5,5,8,0,0,3.2513,7,1,5,0,2,1,8,3,0
+perfis,Tubo redondo,88.9x3.25,4,3,2,4,0,0,0.142,1,3,1,0,0,3,4,1,0
+perfis,Tubo redondo,88.9x4,11,3,11,11,0,0,5.6724,11,0,1,0,10,0,11,1,0
+perfis,Tubo redondo,88.9x4.5,11,1,11,11,0,0,0,0,11,0,0,0,11,11,0,0
+perfis,Tubo redondo,89x3,4,4,4,4,0,0,3.724,4,0,2,0,1,0,4,1,0
+perfis,Tubo redondo,89x3.2,1,1,1,1,0,0,1.1341,1,0,0,0,0,0,1,0,0
+perfis,Tubo retangular,100x60x5,2,1,2,2,0,0,5.1681,2,0,0,0,2,0,2,0,0
+perfis,Tubo retangular,200x100x4,2,2,1,2,0,0,0.5265,1,1,0,0,2,1,2,0,0
+perfis,Tubo retangular,400x300x6,1,1,1,1,0,0,9.6272,1,0,1,0,0,0,1,0,0
+perfis,Tubo retangular,50x40x3,2,1,2,2,0,0,0.4716,2,0,2,0,0,0,2,2,0
+perfis,Tubo retangular,60x40x3,3,1,1,3,0,0,0,0,3,3,0,0,3,3,0,0
+perfis,Tubo retangular,60x40x4,2,1,2,2,0,0,4.5914,2,0,2,0,0,0,2,2,0
+perfis,Tubo retangular,70x40,1,1,1,1,0,0,0,0,1,0,0,1,0,1,0,0
+perfis,Varão quadrado,12x12,17,3,9,17,0,0,464.6762,9,8,9,0,0,8,17,1,0
+perfis,Varão quadrado,16x16,2,2,1,2,0,0,0.7586,2,0,2,0,0,0,2,1,0
+perfis,Varão quadrado,25x25,2,1,2,2,0,0,0.5848,2,0,2,0,0,0,2,0,0
+perfis,Varão quadrado,40x40,2,1,2,2,0,0,0,0,2,2,0,0,2,2,0,0
+perfis,Varão redondo,10,10,9,7,10,0,0,0.2111,8,2,4,0,4,2,10,2,0
+perfis,Varão redondo,10.6,10,8,7,10,0,0,0.7225,8,2,7,0,2,2,10,8,0
+perfis,Varão redondo,12,20,17,13,20,0,0,3.0073,16,4,8,0,8,4,20,13,0
+perfis,Varão redondo,14,1,1,1,1,0,0,0.024,1,0,0,0,1,0,1,1,0
+perfis,Varão redondo,14.5,3,2,3,3,0,0,1.1331,3,0,0,0,3,0,3,2,0
+perfis,Varão redondo,16,10,6,6,10,0,0,3.998,8,2,4,0,4,2,10,6,0
+perfis,Varão redondo,18,1,1,1,1,0,0,0.1587,1,0,0,0,1,0,1,0,0
+perfis,Varão redondo,20,8,8,7,8,0,0,14.6252,7,1,4,0,4,1,8,6,0
+perfis,Varão redondo,24,1,1,1,1,0,0,0.2117,1,0,1,0,0,0,1,1,0
+perfis,Varão redondo,25,2,2,2,2,0,0,0.3828,1,1,0,0,1,1,2,0,0
+perfis,Varão redondo,27,1,1,1,1,0,0,0.5358,1,0,1,0,0,0,0,1,0
+perfis,Varão redondo,30,1,1,1,1,0,0,0.2205,1,0,1,0,0,0,1,0,0
+perfis,Varão redondo,6,1,1,1,1,0,0,0.0044,1,0,1,0,0,0,1,1,0
+perfis,Varão redondo,8,2,2,2,2,0,0,0.051,2,0,1,0,1,0,2,1,0
+perfis,Varão redondo,80,6,3,5,6,0,0,10.5411,6,0,1,0,1,0,6,0,0
+perfis,Varão roscado,M10,6,6,3,6,0,0,0.1409,6,0,5,0,1,0,6,6,0
+perfis,Varão roscado,M16,2,2,2,2,0,0,0.0314,1,1,1,0,1,1,2,0,0
+perfis,Varão roscado,M24,2,1,2,2,0,0,0.7761,2,0,2,0,0,0,2,0,0
+cantoneiras,Cantoneira,L100X100X10,309,54,229,268,41,0,29.0412,85,183,220,33,3,188,268,0,0
+cantoneiras,Cantoneira,L100X100X12,48,20,37,42,6,0,4.8794,12,30,28,8,0,30,42,0,0
+cantoneiras,Cantoneira,L100X100X6,8,2,4,8,0,0,0.8595,4,4,8,0,0,4,8,0,0
+cantoneiras,Cantoneira,L100X100X7,162,29,95,153,0,9,18.9978,32,121,113,28,2,121,153,0,0
+cantoneiras,Cantoneira,L100X100X8,267,43,137,220,47,0,25.8346,35,185,86,99,7,185,220,0,0
+cantoneiras,Cantoneira,L100X50X6,142,11,94,98,44,0,10.1127,58,40,74,12,0,40,98,0,0
+cantoneiras,Cantoneira,L100X50X8,2,1,2,2,0,0,0.0178,2,0,2,0,0,0,2,0,0
+cantoneiras,Cantoneira,L100X60X8,2,1,2,2,0,0,0,0,2,0,2,0,2,2,0,0
+cantoneiras,Cantoneira,L100X65X7,5,5,1,2,3,0,0,0,2,0,1,0,2,2,0,0
+cantoneiras,Cantoneira,L100X65X8,1,1,1,1,0,0,0,0,1,0,1,0,1,1,0,0
+cantoneiras,Cantoneira,L110X110X10,137,31,109,119,18,0,7.4995,24,95,92,24,0,99,118,0,0
+cantoneiras,Cantoneira,L110X110X12,28,6,28,26,2,0,3.6185,15,11,25,1,0,11,26,0,0
+cantoneiras,Cantoneira,L110X110X8,113,14,81,112,0,1,2.5629,10,102,74,22,12,102,112,0,0
+cantoneiras,Cantoneira,L110X110X9,3,1,3,3,0,0,0.7984,3,0,0,3,0,0,3,0,0
+cantoneiras,Cantoneira,L120X120X10,200,38,148,193,1,6,14.4023,42,151,144,40,2,152,193,0,0
+cantoneiras,Cantoneira,L120X120X11,51,16,33,49,0,2,3.4796,15,34,32,14,3,34,49,0,0
+cantoneiras,Cantoneira,L120X120X12,248,54,178,215,33,0,19.7684,56,159,153,51,4,163,215,0,0
+cantoneiras,Cantoneira,L120X120X13,2,1,2,2,0,0,3.1742,2,0,0,0,2,0,2,0,0
+cantoneiras,Cantoneira,L120X120X15,25,23,3,25,0,0,6.5143,4,21,12,11,1,21,25,0,0
+cantoneiras,Cantoneira,L120X120X8,191,22,108,188,3,0,0.8093,6,182,70,33,24,182,188,0,0
+cantoneiras,Cantoneira,L120X80X8,5,5,2,3,2,0,0,0,3,0,3,0,3,3,0,0
+cantoneiras,Cantoneira,L130X130X10,80,12,61,80,0,0,0.4229,2,78,56,24,0,78,80,0,0
+cantoneiras,Cantoneira,L130X130X11,19,6,12,19,0,0,0.4094,3,16,5,10,2,16,19,0,0
+cantoneiras,Cantoneira,L130X130X12,181,29,148,173,3,5,14.2433,45,128,158,8,0,138,173,0,0
+cantoneiras,Cantoneira,L130X130X14,2,1,2,2,0,0,0,0,2,2,0,0,2,2,0,0
+cantoneiras,Cantoneira,L130X65X10,2,1,2,2,0,0,0.0107,2,0,2,0,0,0,2,0,0
+cantoneiras,Cantoneira,L130X65X8,5,5,1,2,3,0,0,0,2,0,1,0,2,2,0,0
+cantoneiras,Cantoneira,L140X140X12,4,2,4,4,0,0,2.0805,2,2,0,2,2,2,4,0,0
+cantoneiras,Cantoneira,L140X140X13,90,20,76,84,6,0,9.4262,24,60,62,14,4,60,84,0,0
+cantoneiras,Cantoneira,L140X140X15,18,4,18,18,0,0,7.7842,14,4,18,0,0,4,18,0,0
+cantoneiras,Cantoneira,L150X100X10,3,2,3,3,0,0,0.288,3,0,0,0,1,0,3,0,0
+cantoneiras,Cantoneira,L150X150X10,38,12,24,36,0,2,0,0,36,14,16,3,36,36,0,0
+cantoneiras,Cantoneira,L150X150X12,118,25,98,114,2,2,9.6383,22,92,92,15,0,96,114,0,0
+cantoneiras,Cantoneira,L150X150X13,13,4,11,13,0,0,3.3738,5,8,5,8,0,8,13,0,0
+cantoneiras,Cantoneira,L150X150X14,45,13,21,45,0,0,1.6432,8,37,22,20,0,37,45,0,0
+cantoneiras,Cantoneira,L150X150X15,137,28,126,112,25,0,13.6462,27,85,80,22,0,87,112,0,0
+cantoneiras,Cantoneira,L150X150X16,39,12,18,39,0,0,0.7412,5,34,26,12,0,34,39,0,0
+cantoneiras,Cantoneira,L150X150X18,64,20,46,54,6,4,6.409,6,48,32,13,0,48,54,0,0
+cantoneiras,Cantoneira,L150X75X10,17,8,9,11,6,0,0.1773,7,4,7,2,0,4,11,0,0
+cantoneiras,Cantoneira,L150X75X9,6,3,2,4,2,0,0,0,4,2,0,2,4,4,0,0
+cantoneiras,Cantoneira,L150X90X12,15,3,15,15,0,0,0.981,1,14,15,0,0,14,15,0,0
+cantoneiras,Cantoneira,L160X160X15,64,10,60,60,4,0,5.5234,34,26,54,4,0,32,60,0,0
+cantoneiras,Cantoneira,L160X160X17,15,4,15,15,0,0,1.0874,5,10,15,0,0,10,15,0,0
+cantoneiras,Cantoneira,L160X160X18,3,2,3,3,0,0,0.4085,1,2,0,0,1,2,3,0,0
+cantoneiras,Cantoneira,L180X180X14,4,1,4,4,0,0,0,0,4,0,4,0,4,4,0,0
+cantoneiras,Cantoneira,L180X180X15,18,7,16,13,0,5,1.1106,1,12,12,1,0,12,13,0,0
+cantoneiras,Cantoneira,L180X180X16,78,27,30,76,0,2,1.7588,15,61,55,5,9,61,76,0,0
+cantoneiras,Cantoneira,L180X180X18,51,12,50,40,9,2,10.8466,20,20,35,1,0,20,40,0,0
+cantoneiras,Cantoneira,L180X180X20,14,7,6,8,6,0,0.12,2,6,4,2,0,6,8,0,0
+cantoneiras,Cantoneira,L180X90X10,19,2,19,19,0,0,0.04,6,13,19,0,0,13,19,0,0
+cantoneiras,Cantoneira,L200X100X10,25,6,13,16,9,0,0,0,16,10,3,0,16,16,0,0
+cantoneiras,Cantoneira,L200X100X12,1,1,1,1,0,0,0.0311,1,0,1,0,0,0,1,0,0
+cantoneiras,Cantoneira,L200X100X15,3,3,1,2,1,0,0,0,2,1,0,1,2,2,0,0
+cantoneiras,Cantoneira,L200X150X15,8,2,8,8,0,0,0.5141,6,2,6,2,0,2,8,0,0
+cantoneiras,Cantoneira,L200X200X16,86,15,55,81,0,5,0.7289,7,74,51,8,12,74,80,0,0
+cantoneiras,Cantoneira,L200X200X18,19,5,19,19,0,0,0.5576,9,10,17,0,1,10,19,0,0
+cantoneiras,Cantoneira,L200X200X20,59,15,54,58,1,0,2.6845,12,46,53,3,2,46,58,0,0
+cantoneiras,Cantoneira,L200X200X22,8,5,8,8,0,0,2.049,7,1,8,0,0,1,8,0,0
+cantoneiras,Cantoneira,L200X200X24,149,26,76,140,2,7,11.3129,33,107,113,18,4,109,140,0,0
+cantoneiras,Cantoneira,L200X200X26,8,2,8,8,0,0,0,0,8,8,0,0,8,8,0,0
+cantoneiras,Cantoneira,L200X200X28,1,1,1,1,0,0,0,0,1,1,0,0,1,1,0,0
+cantoneiras,Cantoneira,L250X250X22,2,1,2,2,0,0,0,0,2,2,0,0,2,2,0,0
+cantoneiras,Cantoneira,L250X250X24,6,2,6,6,0,0,1.0189,2,4,6,0,0,4,6,0,0
+cantoneiras,Cantoneira,L250X250X25,4,1,4,4,0,0,0,0,4,4,0,0,4,4,0,0
+cantoneiras,Cantoneira,L250X250X26,2,1,2,2,0,0,0,0,2,2,0,0,2,2,0,0
+cantoneiras,Cantoneira,L250X250X35,22,1,22,22,0,0,0,0,22,22,0,0,22,22,0,0
+cantoneiras,Cantoneira,L40X40X3,343,14,182,314,10,19,41.2811,145,169,53,58,24,169,314,0,0
+cantoneiras,Cantoneira,L40X40X4,315,19,134,195,120,0,15.5539,56,139,77,44,10,139,195,0,0
+cantoneiras,Cantoneira,L40X40X5,6,6,2,3,3,0,0,0,3,1,1,0,3,3,0,0
+cantoneiras,Cantoneira,L45X45X3,163,12,76,145,9,9,27.8615,37,108,2,17,26,108,145,0,0
+cantoneiras,Cantoneira,L45X45X4,1153,52,660,1118,4,31,238.6766,96,1022,290,575,92,1022,1118,0,0
+cantoneiras,Cantoneira,L45X45X5,1969,52,1487,1890,6,73,161.5491,430,1460,1497,301,50,1626,1884,0,0
+cantoneiras,Cantoneira,L50X50X3,194,12,81,192,1,1,53.3297,67,125,14,18,21,125,188,0,0
+cantoneiras,Cantoneira,L50X50X4,478,57,288,430,45,3,53.5986,63,367,71,211,39,367,430,0,0
+cantoneiras,Cantoneira,L50X50X5,914,67,704,809,82,23,196.643,218,591,598,114,39,598,809,0,0
+cantoneiras,Cantoneira,L50X50X6,49,6,17,25,24,0,0.4246,9,16,9,8,0,16,25,0,0
+cantoneiras,Cantoneira,L55X55X4,246,32,159,244,2,0,106.2266,41,203,63,46,57,203,244,0,0
+cantoneiras,Cantoneira,L55X55X5,948,24,700,944,4,0,11.5093,77,867,613,291,21,867,944,0,0
+cantoneiras,Cantoneira,L55X55X6,107,16,99,92,15,0,15.5471,36,56,78,14,0,56,92,0,0
+cantoneiras,Cantoneira,L60X60X4,536,52,306,527,3,6,95.8631,85,442,161,242,33,442,527,0,0
+cantoneiras,Cantoneira,L60X60X5,490,51,310,434,49,7,94.5864,59,375,221,166,20,375,434,0,0
+cantoneiras,Cantoneira,L60X60X6,616,54,468,522,90,4,13.1773,112,410,296,105,10,413,522,0,0
+cantoneiras,Cantoneira,L60X60X7,4,1,4,4,0,0,0,0,4,0,4,0,4,4,0,0
+cantoneiras,Cantoneira,L60X60X8,35,7,11,17,18,0,0.0775,2,15,5,6,0,15,17,0,0
+cantoneiras,Cantoneira,L65X65X4,1,1,1,0,0,1,0,0,0,0,0,0,0,0,0,0
+cantoneiras,Cantoneira,L65X65X5,361,40,241,357,2,2,22.0808,51,306,200,86,35,306,356,0,0
+cantoneiras,Cantoneira,L65X65X6,111,17,68,98,13,0,3.1817,18,80,61,25,6,80,98,0,0
+cantoneiras,Cantoneira,L65X65X7,216,31,161,204,12,0,30.3527,66,138,135,45,8,143,204,0,0
+cantoneiras,Cantoneira,L65X65X8,4,1,4,4,0,0,0.6613,4,0,0,0,4,0,4,0,0
+cantoneiras,Cantoneira,L70X70X5,493,50,321,486,0,7,24.5007,70,416,262,150,34,416,486,0,0
+cantoneiras,Cantoneira,L70X70X6,295,38,203,272,23,0,59.6671,71,201,60,141,6,201,272,0,0
+cantoneiras,Cantoneira,L70X70X7,850,47,574,809,39,2,157.6604,276,533,685,91,24,633,809,0,0
+cantoneiras,Cantoneira,L70X70X9,1,1,1,1,0,0,0,0,1,1,0,0,1,1,0,0
+cantoneiras,Cantoneira,L75X75X5,274,39,159,274,0,0,25.6386,67,207,191,29,27,207,274,0,0
+cantoneiras,Cantoneira,L75X75X6,186,35,126,172,3,11,17.6145,40,132,103,49,7,132,172,0,0
+cantoneiras,Cantoneira,L75X75X7,53,17,32,42,11,0,0.0557,1,41,29,4,3,41,42,0,0
+cantoneiras,Cantoneira,L75X75X8,234,26,171,193,41,0,13.5596,41,152,128,53,0,153,193,0,0
+cantoneiras,Cantoneira,L80X80X10,2,1,2,2,0,0,0.6325,2,0,2,0,0,0,2,0,0
+cantoneiras,Cantoneira,L80X80X6,373,53,228,361,9,3,25.9578,82,279,167,127,35,279,361,0,0
+cantoneiras,Cantoneira,L80X80X7,58,15,40,58,0,0,2.0645,8,50,29,15,13,50,58,0,0
+cantoneiras,Cantoneira,L80X80X8,526,41,431,419,107,0,14.4037,73,346,267,38,68,356,419,0,0
+cantoneiras,Cantoneira,L90X60X6,6,1,6,6,0,0,0.2514,6,0,6,0,0,0,6,0,0
+cantoneiras,Cantoneira,L90X60X8,9,9,4,8,1,0,0.0587,3,5,0,2,0,5,8,0,0
+cantoneiras,Cantoneira,L90X90X10,40,5,24,40,0,0,3.0665,19,21,36,1,1,21,40,0,0
+cantoneiras,Cantoneira,L90X90X6,92,17,71,90,0,2,11.8306,19,71,45,39,2,71,90,0,0
+cantoneiras,Cantoneira,L90X90X7,435,56,280,404,18,13,20.5854,60,344,282,93,13,344,404,0,0
+cantoneiras,Cantoneira,L90X90X8,300,50,152,251,45,4,7.0835,34,217,109,83,14,217,251,0,0
+cantoneiras,Cantoneira,L90X90X9,234,28,203,190,44,0,23.7919,74,116,164,22,2,117,190,0,0
+cantoneiras,Cantoneira,Sem perfil,1,1,1,0,1,0,0,0,0,0,0,0,0,0,0,0
+cantoneiras,Cantoneira,l200x100x10,1,1,1,1,0,0,0.0604,1,0,0,0,1,0,1,0,0

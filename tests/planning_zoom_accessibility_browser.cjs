@@ -1,5 +1,5 @@
 // C08: native browser zoom, viewport reachability and rendered font evidence.
-const {chromium}=require('/home/luis/.npm/_npx/fd3bca3c548369c0/node_modules/playwright-core');
+const {chromium}=require('./playwright_core.cjs');
 const fs=require('node:fs'),os=require('node:os'),path=require('node:path'),crypto=require('node:crypto');
 const base=process.env.PLANNING_CHECK_BASE,folder='docs/validacao-planeamento-integral/20260923-execucao';
 if(base!=='http://127.0.0.1:18113'||process.env.PLANNING_TEST_ISOLATED!=='1')throw Error('Isolated Planeamento required');
@@ -7,7 +7,7 @@ const prefix=process.env.PLANNING_CHECK_PREFIX||'c08-real-zoom';
 if(!/^[a-z0-9-]+$/.test(prefix))throw Error('Invalid prefix');
 const sha=p=>crypto.createHash('sha256').update(fs.readFileSync(p)).digest('hex');
 const report={at:new Date().toISOString(),script_sha256:sha(__filename),application_files:Object.fromEntries(['app/web/static/raw_workspace.js','app/web/static/raw_workspace.css','app/web/static/planning_typography.css'].map(p=>[p,sha(p)])),cases:[],failures:[],errors:[],result:'running'};
-const executablePath='/home/luis/.cache/ms-playwright/chromium-1243/chrome-linux64/chrome';
+const executablePath=process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE;
 const extension=fs.mkdtempSync(path.join(os.tmpdir(),'planning-c08-zoom-'));
 fs.writeFileSync(path.join(extension,'manifest.json'),JSON.stringify({manifest_version:3,name:'Isolated Planning Zoom Verification',version:'1.0',permissions:['tabs'],background:{service_worker:'background.js'}}));
 fs.writeFileSync(path.join(extension,'background.js'),'chrome.runtime.onInstalled.addListener(() => {});');

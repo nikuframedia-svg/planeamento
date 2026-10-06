@@ -1,12 +1,12 @@
 // C09 read-only review of the real imported declarations replaced in the clone.
-const {chromium}=require('/home/luis/.npm/_npx/fd3bca3c548369c0/node_modules/playwright-core');
+const {chromium}=require('./playwright_core.cjs');
 const fs=require('node:fs'),assert=require('node:assert/strict'),crypto=require('node:crypto');
 const base=process.env.PLANNING_CHECK_BASE,folder='docs/validacao-planeamento-integral/20260923-execucao';
 if(base!=='http://127.0.0.1:18113'||process.env.PLANNING_TEST_ISOLATED!=='1')throw Error('Isolated Planeamento required');
 const prior=JSON.parse(fs.readFileSync(folder+'/c09-browser.json'));
 const report={at:new Date().toISOString(),script_sha256:crypto.createHash('sha256').update(fs.readFileSync(__filename)).digest('hex'),areas:[],errors:[],writes:[]};let browser;
 (async()=>{
- browser=await chromium.launch({executablePath:'/home/luis/.cache/ms-playwright/chromium-1243/chrome-linux64/chrome',headless:true,args:['--no-sandbox']});
+ browser=await chromium.launch({executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE,headless:true,args:['--no-sandbox']});
  for(const fixture of prior.areas){
   const page=await browser.newPage({viewport:{width:1440,height:1050}});page.on('pageerror',e=>report.errors.push(e.message));
   page.on('request',r=>{if(r.method()==='POST'&&r.url().includes('/raw/objects/'))report.writes.push(r.url());});

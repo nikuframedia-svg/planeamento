@@ -1,11 +1,11 @@
 // Delay the real pieces response to reproduce switching tabs during a request.
-const {chromium}=require('/home/luis/.npm/_npx/fd3bca3c548369c0/node_modules/playwright-core');
+const {chromium}=require('./playwright_core.cjs');
 const fs=require('node:fs'),assert=require('node:assert/strict');
 const base=process.env.PLANNING_CHECK_BASE,folder='docs/validacao-planeamento-integral/20260923-execucao',prefix=process.env.PLANNING_CHECK_PREFIX||'c09-tab-race';
 if(base!=='http://127.0.0.1:18113'||process.env.PLANNING_TEST_ISOLATED!=='1'||!/^[a-z0-9-]+$/.test(prefix))throw Error('Isolated test only');
 const report={at:new Date().toISOString(),areas:[],errors:[]};let browser;
 (async()=>{
- browser=await chromium.launch({executablePath:'/home/luis/.cache/ms-playwright/chromium-1243/chrome-linux64/chrome',headless:true,args:['--no-sandbox']});
+ browser=await chromium.launch({executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE,headless:true,args:['--no-sandbox']});
  for(const area of ['perfis','cantoneiras']){
   const p=await browser.newPage({viewport:{width:1440,height:1050}});p.on('pageerror',e=>report.errors.push(e.message));
   await p.goto(base+'/planeamento/disponibilidade?area='+area);await p.waitForFunction(()=>document.querySelector('#count').textContent.length>0);

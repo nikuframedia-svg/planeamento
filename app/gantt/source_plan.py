@@ -72,6 +72,9 @@ def build(snapshot):
         m = op['milestones']
         period = m.get('period_origin') == 'Decisão local'
         reasons = []
+        if 'Operação fora da seleção do cenário.' in op['blocking_reasons'] or 'Trabalho excluído da seleção.' in op['blocking_reasons']:
+            pending.append({'key':op['key'],'reasons':['Operação fora da seleção.']})
+            continue
         if any(reason in op['blocking_reasons'] for reason in (
                 'Data prevista inválida.', 'Ano/semana explícitos inválidos.',
                 'Data prevista e semana escolhida não coincidem.')):
@@ -88,7 +91,7 @@ def build(snapshot):
             reasons.append('Previsão inválida.')
         if not start:
             reasons.append('Previsão da operação por indicar.')
-        rid = op.get('source_resource_id')
+        rid = (op.get('assignment') or {}).get('resource_id') or op.get('source_resource_id')
         if not rid:
             reasons.append('Máquina da operação por indicar.')
         if reasons:
@@ -106,6 +109,7 @@ def build(snapshot):
             'duration_origin': duration.get('origin'),
             'provisional': bool(op['provisional'] or duration.get('origin') != 'Manual'),
             'forecast_origin': m.get('period_origin'),
+            'assignment': op.get('assignment'),
             'hourly_reasons': op['blocking_reasons']}
         entries.append(entry)
         load = loads[(rid, year, week)]

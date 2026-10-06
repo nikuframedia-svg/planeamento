@@ -443,7 +443,7 @@ def test_gantt_browser_generate_accept_and_reopen(workspace,monkeypatch,tmp_path
                       'method':'units_hour','value':20,'setup_minutes':15,
                       'valid_from':'2026-01-01','confirmed':True}},'rate')
     projection.rebuild('perfis');projection.rebuild('cantoneiras');capacity.rebuild()
-    evidence=Path(__file__).parents[1]/'docs/gantt-2026-09-24';evidence.mkdir(parents=True,exist_ok=True)
+    evidence=tmp_path/'gantt-evidence';evidence.mkdir(parents=True,exist_ok=True)
     with socket.socket() as sock:
         sock.bind(('127.0.0.1',0));port=sock.getsockname()[1]
     env={**os.environ,'MES_PG_DSN':os.environ['MES_PG_DSN'],

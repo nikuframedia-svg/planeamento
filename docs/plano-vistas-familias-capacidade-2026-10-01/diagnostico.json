@@ -1,0 +1,434 @@
+{
+  "consultado_em_utc": "2026-10-01T14:54:37.219649+00:00",
+  "data_corte_analise": "2026-10-01",
+  "escopo": "Linhas ativas da RAW por area documental; saldos/horas principais, nao carga integral nem producao fisica exclusiva da unidade.",
+  "areas": {
+    "perfis": {
+      "geracao": 3595,
+      "fontes": {
+        "loaded_at": "2026-09-29T12:20:49.367422+00:00",
+        "snapshot_id": "mtg2_3da468582f1d59b6",
+        "source_filename": "Met2_Plan_Perfis.xlsm"
+      },
+      "linhas_ativas": 1209,
+      "ofs_ativas": 271,
+      "referencias_ativas": 956,
+      "linhas_com_saldo_principal_positivo": 1169,
+      "linhas_com_saldo_principal_desconhecido": 0,
+      "linhas_com_saldo_principal_zero": 40,
+      "horas_principais_documentais_conhecidas": 1454.4048,
+      "linhas_positivas_com_horas": 671,
+      "linhas_positivas_sem_horas": 498,
+      "linhas_positivas_com_corte_passado": 587,
+      "linhas_positivas_sem_data_corte": 32,
+      "linhas_positivas_com_corte_ate_14_dias": 385,
+      "linhas_positivas_sem_maquina": 419,
+      "linhas_positivas_com_saldo_provisorio": 1145,
+      "linhas_positivas_com_picking": 251,
+      "linhas_positivas_com_ano_picking": 0,
+      "fontes_taxa_nas_linhas_com_horas": {
+        "Excel provisório": 497,
+        "Histórico": 174
+      },
+      "pavilhoes_nas_linhas_positivas": {
+        "MTG5": 61,
+        "1": 299,
+        "MTG3": 222,
+        "8": 22,
+        "sem_pavilhao": 162,
+        "6": 160,
+        "2": 228,
+        "3": 15
+      }
+    },
+    "cantoneiras": {
+      "geracao": 3596,
+      "fontes": {
+        "loaded_at": "2026-09-30T12:23:48.098979+00:00",
+        "snapshot_id": "mtg_ef26928918339ece",
+        "source_filename": "Met3_Plan_Cantoneiras.xlsm"
+      },
+      "linhas_ativas": 17236,
+      "ofs_ativas": 157,
+      "referencias_ativas": 11670,
+      "linhas_com_saldo_principal_positivo": 15824,
+      "linhas_com_saldo_principal_desconhecido": 1139,
+      "linhas_com_saldo_principal_zero": 273,
+      "horas_principais_documentais_conhecidas": 1854.1031,
+      "linhas_positivas_com_horas": 3361,
+      "linhas_positivas_sem_horas": 12463,
+      "linhas_positivas_com_corte_passado": 9241,
+      "linhas_positivas_sem_data_corte": 3918,
+      "linhas_positivas_com_corte_ate_14_dias": 849,
+      "linhas_positivas_sem_maquina": 12794,
+      "linhas_positivas_com_saldo_provisorio": 15811,
+      "linhas_positivas_com_picking": 0,
+      "linhas_positivas_com_ano_picking": 0,
+      "fontes_taxa_nas_linhas_com_horas": {
+        "Excel provisório": 2678,
+        "Histórico": 683
+      },
+      "pavilhoes_nas_linhas_positivas": {
+        "MTG3": 15748,
+        "1": 70,
+        "2": 4,
+        "6": 2
+      }
+    }
+  },
+  "casos_m1_m2": {
+    "M1": {
+      "linhas_todas": 181,
+      "linhas_ativas": 0,
+      "maquinas_documentais": {
+        "Ficep Rapid 20T -2": 181
+      },
+      "estados_documentais": {
+        "Em Produção": 181
+      },
+      "motivos_fecho": {
+        "Macro": 181
+      },
+      "menor_data_corte": "2026-07-24",
+      "maior_data_corte": "2026-07-24"
+    },
+    "M2": {
+      "linhas_todas": 395,
+      "linhas_ativas": 395,
+      "maquinas_documentais": {
+        "Ficep Rapid 25T": 165,
+        "Ficep Rapid 20T -1": 207,
+        "Sem maquina": 23
+      },
+      "estados_documentais": {
+        "Em Produção": 395
+      },
+      "motivos_fecho": {
+        "sem_fecho": 395
+      },
+      "menor_data_corte": "2026-08-14",
+      "maior_data_corte": "2026-08-20"
+    }
+  },
+  "limitacoes": [
+    "Horas documentais conhecidas nao medem capacidade disponivel.",
+    "Familia SKU, familia CPIS e perfil sao dimensoes distintas.",
+    "Linhas principais nao incluem necessariamente todas as operacoes seguintes.",
+    "Possiveis duplicados nao sao somados entre areas para afirmar trabalho fisico total."
+  ],
+  "catalogo": {
+    "referencias": 31603,
+    "por_area": {
+      "cantoneiras": 31603
+    },
+    "agrupamentos": 329,
+    "sem_familia": 251,
+    "versoes": [
+      "9e1e4071de345765b4921fef8fe6d0e3b9030744934b807f41db6ddb6c5d1d87"
+    ]
+  },
+  "configuracao": {
+    "objetos_por_tipo": {
+      "period": 1,
+      "gantt": 2,
+      "resource": 29
+    },
+    "confirmados_por_tipo": {
+      "period": 1
+    },
+    "selecoes_para_planear": 0,
+    "cenarios_com_plano_aceite": 0
+  },
+  "fonte_documental_gantt": {
+    "id": "3631a77921d91150caacd5e05f860b91720f1c0edf2393fb842ae92fa311d30e",
+    "created_at": "2026-09-30 22:00:45.110033+00:00",
+    "checked_at": "2026-10-01 14:00:43.495138+00:00",
+    "last_error": null,
+    "sources": {
+      "cpis": [
+        {
+          "id": "316bc906-2f9e-40ef-bc46-db1bb92166a5",
+          "estado": "validada",
+          "origem": "Mac:cpis_copia.dados",
+          "sha256": "e891f8a06a600a798860142f2010da53c1b923385bc4b5a1d3ca4889dce60158",
+          "capturado_em": "2026-09-30T11:40:57.226910+00:00"
+        }
+      ],
+      "excel": [
+        {
+          "setor": "MTG2",
+          "loaded_at": "2026-09-29T12:20:49.367422+00:00",
+          "dataset_id": "ds-met2-perfis",
+          "snapshot_id": "mtg2_3da468582f1d59b6",
+          "source_sha256": "3da468582f1d59b674910bfc8839174cc62b2cecb79a9dfa3756e081e4d569c5",
+          "source_filename": "Met2_Plan_Perfis.xlsm",
+          "criterio_selecao": "Ultima importacao disponivel no backup; nao prova data de atualizacao do CPIS no Excel"
+        },
+        {
+          "setor": "MTG3",
+          "loaded_at": "2026-09-29T12:19:35.401231+00:00",
+          "dataset_id": "ds-2638099daddc474e",
+          "snapshot_id": "mtg_7c7b2c4b9a8889ce",
+          "source_sha256": "7c7b2c4b9a8889ce07553fade31cbc441c330d678187a3ac505fd64da7c9d1c7",
+          "source_filename": "Met3_Plan_Cantoneiras.xlsm",
+          "criterio_selecao": "Ultima importacao disponivel no backup; nao prova data de atualizacao do CPIS no Excel"
+        },
+        {
+          "setor": null,
+          "loaded_at": "2026-08-05T07:44:15.241030+00:00",
+          "dataset_id": "ds-chapa-expedition",
+          "snapshot_id": "chapa_expedition_a1bba8c951eb76b6",
+          "source_sha256": "a1bba8c951eb76b624724d6881a2986fe72862f655e35151b4bb42a0ff02abfc",
+          "source_filename": "Exp.chapaMTG3.xlsm",
+          "criterio_selecao": "Ultima importacao disponivel no backup; nao prova data de atualizacao do CPIS no Excel"
+        },
+        {
+          "setor": null,
+          "loaded_at": "2026-08-05T07:44:15.240648+00:00",
+          "dataset_id": "ds-chapa-master",
+          "snapshot_id": "chapa_master_ab41e9221ca5d71d",
+          "source_sha256": "ab41e9221ca5d71d1b59cadd839732b6ef850a9a807428457c33e15fc6b52b10",
+          "source_filename": "listaofs_mtg3.xlsx",
+          "criterio_selecao": "Ultima importacao disponivel no backup; nao prova data de atualizacao do CPIS no Excel"
+        },
+        {
+          "setor": null,
+          "loaded_at": "2026-08-05T07:44:15.240862+00:00",
+          "dataset_id": "ds-chapa-plan",
+          "snapshot_id": "chapa_plan_3adb538417ce9c3c",
+          "source_sha256": "3adb538417ce9c3caec316df537a0f30cec35646d6cafc1fd3b07ba23b9fd5e6",
+          "source_filename": "plan_chapa.xlsm",
+          "criterio_selecao": "Ultima importacao disponivel no backup; nao prova data de atualizacao do CPIS no Excel"
+        },
+        {
+          "setor": null,
+          "loaded_at": "2026-08-09T15:49:45.330639+00:00",
+          "dataset_id": "ds-colaboradores",
+          "snapshot_id": "colab_2d29d51063a939e8",
+          "source_sha256": "2d29d51063a939e81f7ab27aac721792669858f7b43c81acd6220784bb793f36",
+          "source_filename": "ListaColaboradores.xlsx",
+          "criterio_selecao": "Ultima importacao disponivel no backup; nao prova data de atualizacao do CPIS no Excel"
+        },
+        {
+          "setor": null,
+          "loaded_at": "2026-08-21T11:18:52.040785+00:00",
+          "dataset_id": "ds-mtg2-producao",
+          "snapshot_id": "mtg2prod_5a875211345b1543",
+          "source_sha256": "5a875211345b1543480669b11e673263580a7aebc2b74176f439c00dd664ed0d",
+          "source_filename": "Kanbans_Producao_NOVO.xlsx",
+          "criterio_selecao": "Ultima importacao disponivel no backup; nao prova data de atualizacao do CPIS no Excel"
+        }
+      ]
+    },
+    "contagens": {
+      "rates": 5,
+      "rules": 34,
+      "events": 3656,
+      "aliases": 39,
+      "budgets": 0,
+      "history": 64607,
+      "relations": 6,
+      "resources": 29,
+      "capacities": 15,
+      "raw_by_item": 25937,
+      "availability": 105,
+      "dependencies": 25467,
+      "possible_duplicates": 52
+    },
+    "recursos_por_tipo": {
+      "posto": 8,
+      "maquina": 16,
+      "fila_funcional": 2,
+      "grupo_operadores": 1,
+      "destino": 2
+    },
+    "disponibilidades_por_estado": {
+      "historico_por_validar": 103,
+      "duplicado_por_resolver": 2
+    },
+    "amostra_disponibilidades": [
+      {
+        "id": 1,
+        "ano": 2025,
+        "dias": 5.0,
+        "folha": "PlanDisponibilidadeSemanal",
+        "linha": 2,
+        "estado": "historico_por_validar",
+        "semana": 3,
+        "horas_dia": 7.5,
+        "horas_total": 37.5,
+        "snapshot_id": "mtg2_3da468582f1d59b6",
+        "recurso_codigo": "POSTO_DISCO",
+        "recurso_original": "Serrote Disco pav 1"
+      },
+      {
+        "id": 2,
+        "ano": 2025,
+        "dias": 10.0,
+        "folha": "PlanDisponibilidadeSemanal",
+        "linha": 3,
+        "estado": "historico_por_validar",
+        "semana": 3,
+        "horas_dia": 7.5,
+        "horas_total": 75.0,
+        "snapshot_id": "mtg2_3da468582f1d59b6",
+        "recurso_codigo": "POSTO_FITA",
+        "recurso_original": "Serrote Fita Thomas IS639 Pav.1"
+      },
+      {
+        "id": 3,
+        "ano": 2025,
+        "dias": 5.0,
+        "folha": "PlanDisponibilidadeSemanal",
+        "linha": 4,
+        "estado": "historico_por_validar",
+        "semana": 3,
+        "horas_dia": 7.5,
+        "horas_total": 37.5,
+        "snapshot_id": "mtg2_3da468582f1d59b6",
+        "recurso_codigo": "MEBA",
+        "recurso_original": "Serrote MEBA IS381 Pav 3"
+      }
+    ],
+    "taxas": [
+      {
+        "id": 1,
+        "fonte": "mtg2_3da468582f1d59b6:CapacidadeMáquinas:2",
+        "valor": 12824.0,
+        "estado": "historica",
+        "unidade": "mm2/h",
+        "contexto": {
+          "coluna": "C",
+          "revalidar_para_calendario_atual": true
+        },
+        "data_fonte": "2024-11-11",
+        "recurso_codigo": "POSTO_DISCO",
+        "operacao_codigo": "LOCAL:PRINCIPAL"
+      },
+      {
+        "id": 2,
+        "fonte": "mtg2_3da468582f1d59b6:CapacidadeMáquinas:3",
+        "valor": 48024.0,
+        "estado": "historica",
+        "unidade": "mm2/h",
+        "contexto": {
+          "coluna": "C",
+          "revalidar_para_calendario_atual": true
+        },
+        "data_fonte": "2024-11-11",
+        "recurso_codigo": "MEBA",
+        "operacao_codigo": "LOCAL:PRINCIPAL"
+      },
+      {
+        "id": 3,
+        "fonte": "mtg2_3da468582f1d59b6:CapacidadeMáquinas:4",
+        "valor": 18478.0,
+        "estado": "historica",
+        "unidade": "mm2/h",
+        "contexto": {
+          "coluna": "C",
+          "revalidar_para_calendario_atual": true
+        },
+        "data_fonte": "2024-11-11",
+        "recurso_codigo": "POSTO_FITA",
+        "operacao_codigo": "LOCAL:PRINCIPAL"
+      },
+      {
+        "id": 4,
+        "fonte": "mtg2_3da468582f1d59b6:CapacidadeMáquinas:6",
+        "valor": 9200.0,
+        "estado": "historica",
+        "unidade": "mm2/h",
+        "contexto": {
+          "coluna": "C",
+          "revalidar_para_calendario_atual": true
+        },
+        "data_fonte": "2024-11-11",
+        "recurso_codigo": "VANGUARD",
+        "operacao_codigo": "LOCAL:PRINCIPAL"
+      },
+      {
+        "id": 5,
+        "fonte": "mtg2_3da468582f1d59b6:CapacidadeMáquinas:10",
+        "valor": 21863.5,
+        "estado": "historica",
+        "unidade": "mm2/h",
+        "contexto": {
+          "coluna": "C",
+          "revalidar_para_calendario_atual": true
+        },
+        "data_fonte": "2024-11-11",
+        "recurso_codigo": "DOALL",
+        "operacao_codigo": "LOCAL:PRINCIPAL"
+      }
+    ],
+    "relacoes_recursos": [
+      {
+        "pai": "OPERADORES_PAV1",
+        "filho": "POSTO_DISCO",
+        "fonte": "Catarina: quatro serrotes e dois operadores",
+        "relacao": "partilha_operadores"
+      },
+      {
+        "pai": "OPERADORES_PAV1",
+        "filho": "POSTO_FITA",
+        "fonte": "Catarina: quatro serrotes e dois operadores",
+        "relacao": "partilha_operadores"
+      },
+      {
+        "pai": "POSTO_DISCO",
+        "filho": "DISCO_AUTO",
+        "fonte": "Esclarecimento Catarina",
+        "relacao": "compoe"
+      },
+      {
+        "pai": "POSTO_DISCO",
+        "filho": "FITA_DIREITA",
+        "fonte": "Esclarecimento Catarina",
+        "relacao": "compoe"
+      },
+      {
+        "pai": "POSTO_FITA",
+        "filho": "DOALL",
+        "fonte": "Esclarecimento Catarina",
+        "relacao": "compoe"
+      },
+      {
+        "pai": "POSTO_FITA",
+        "filho": "THOMAS",
+        "fonte": "Esclarecimento Catarina",
+        "relacao": "compoe"
+      }
+    ],
+    "operacoes_por_setor_fase": [
+      {
+        "setor": "MTG2",
+        "fase": "principal",
+        "ocorrencias": 1271,
+        "itens": 1271,
+        "com_saldo_reconciliado": 0
+      },
+      {
+        "setor": "MTG2",
+        "fase": "seguinte",
+        "ocorrencias": 25,
+        "itens": 25,
+        "com_saldo_reconciliado": 0
+      },
+      {
+        "setor": "MTG3",
+        "fase": "principal",
+        "ocorrencias": 24666,
+        "itens": 24666,
+        "com_saldo_reconciliado": 0
+      },
+      {
+        "setor": "MTG3",
+        "fase": "seguinte",
+        "ocorrencias": 13515,
+        "itens": 12051,
+        "com_saldo_reconciliado": 0
+      }
+    ]
+  }
+}

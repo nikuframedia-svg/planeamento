@@ -1,4 +1,4 @@
-const {chromium}=require('/home/luis/.npm/_npx/fd3bca3c548369c0/node_modules/playwright-core');
+const {chromium}=require('./playwright_core.cjs');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const crypto=require('node:crypto');
@@ -6,7 +6,7 @@ const base=process.env.PLANNING_CHECK_BASE;
 if(base!=='http://127.0.0.1:18113'||process.env.PLANNING_TEST_ISOLATED!=='1')throw Error('Isolated planning server required');
 const output='docs/validacao-planeamento-integral/20260923-execucao';
 (async()=>{
- const browser=await chromium.launch({executablePath:'/home/luis/.cache/ms-playwright/chromium-1243/chrome-linux64/chrome',headless:true,args:['--no-sandbox']});
+ const browser=await chromium.launch({executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE,headless:true,args:['--no-sandbox']});
  const report={environment:base,at:new Date().toISOString(),script_sha256:crypto.createHash('sha256').update(fs.readFileSync(__filename)).digest('hex'),scopes:[],errors:[],writes:[]};
  try{
   const page=await browser.newPage({viewport:{width:1440,height:1000}});

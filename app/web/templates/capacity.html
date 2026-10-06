@@ -8,25 +8,15 @@
     <link rel="stylesheet" href="/static/capacity.css" />
     <script src="/static/capacity.js" defer></script>
   <link rel="stylesheet" href="/static/planning_typography.css">
+<link rel="stylesheet" href="/static/planeamento_ui.css?v=20261002">
 </head>
-  <body data-mode="{{ mode }}">
-    <header class="appbar">
-      <a href="/planeamento/raw" class="brand">RAW <span>Planeamento</span></a>
-      <nav>
-        <a id="raw-link" href="/planeamento/raw">Tabela</a
-        ><a
-          id="machines-link"
-          href="/planeamento/capacidades"
-          aria-current="{{ 'page' if mode == 'machines' else 'false' }}"
-          >Capacidades das máquinas</a
-        ><a
-          id="weekly-link"
-          href="/planeamento/disponibilidade"
-          aria-current="{{ 'page' if mode == 'weekly' else 'false' }}"
-          >Disponibilidade semanal</a
-        ><a href="/planeamento/gantt">Gantt · MTG2 Perfis</a>
-      </nav>
-    </header>
+  <body class="pl-fill" data-mode="{{ mode }}">
+    {% set active = 'capacidades' if mode == 'machines' else 'disponibilidade' %}{% include "_app_nav.html" %}
+<nav class="pl-page-actions" aria-label="Vistas da área">
+      <a id="raw-link" href="/planeamento/raw">Tabela</a>
+      <a id="machines-link" href="/planeamento/capacidades" aria-current="{{ 'page' if mode == 'machines' else 'false' }}">Capacidades das máquinas</a>
+      <a id="weekly-link" href="/planeamento/disponibilidade" aria-current="{{ 'page' if mode == 'weekly' else 'false' }}">Disponibilidade semanal</a>
+    </nav>
     <main class="capacity-page">
       <div class="capacity-heading">
         <div>

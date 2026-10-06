@@ -29,7 +29,8 @@ def save(conn, of, payload, actor):
     for field,value in merged.items():
         if value is not None and (not isinstance(value,str) or len(value)>2000):raise planning.PlanningError('Texto administrativo inválido.')
         merged[field]=value.strip() if value else None
-    if merged.get('delivery_date'):
+    from .raw.registration import enabled as free_entry
+    if merged.get('delivery_date') and not free_entry():
         try:date.fromisoformat(merged['delivery_date'])
         except ValueError:raise planning.PlanningError('Data de entrega local inválida.') from None
     if prior and merged==prior['values_json']:return prior

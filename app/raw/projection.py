@@ -61,8 +61,16 @@ def fingerprint(conn,area,*,include_ocr=True):
     for table in tables:
         decisions[table]=conn.execute('SELECT md5(coalesce(string_agg(t::text,\'\' ORDER BY t.id),\'\')) f FROM planning_mtg.'+table+' t').fetchone()['f']
     base={'contract':RAW_CONTRACT,'day':datetime.now(ZoneInfo(planning.settings.display_timezone)).date().isoformat(),'snapshot':snap['snapshot_id'],'cpis':str(direct['id']) if direct else hub._fallback_token(hub._latest_snapshots(conn)),'pieces':pieces,'decisions':decisions}
+    from .registration import enabled as free_entry
+    base['free_registration']=free_entry()
+    from . import sku_families
+    base['sku_family_rules']=sku_families.token(conn,area)
     base['calculation_contract']=calculation_contract
     base['operation_hours_contract']=ESTIMATE_CONTRACT
+    from ..gantt import research
+    if research.enabled():
+        base['research_version']=research.head(conn)['version_id']
+        base['research_balance_contract']=research.BALANCE_CONTRACT
     if not include_ocr:return needs.digest(base)
     from .. import planning_original_production
     base['original_ocr']=planning_original_production.snapshot_token(conn)
@@ -149,6 +157,8 @@ def build_rows(conn,area,*,orders=None,facts=None):
                 codes=[r['code'] for r in conn.execute('SELECT code FROM planning_mtg.need_operations WHERE need_id=%s AND area=%s AND sequence=1',(need['id'],area))]
                 primary=codes[0] if len(codes)==1 else None
             main=[r for r in records[key] if r['values_json'].get('operation')==primary]
+            from .registration import enabled as free_entry
+            if free_entry() and records[key]:main=[max(records[key],key=lambda r:r['updated_at'])]
             if len(main)==1:
                 record=main[0];v.update(record['values_json']);v.update(need['specification']);operation=record['operation_id'];status=record['record_status']
             elif len(main)>1:warn.append('Várias preparações de operação: consultar o detalhe antes de alterar.')
@@ -186,7 +196,8 @@ def build_rows(conn,area,*,orders=None,facts=None):
         if of in local_orders:
             local_context=local_orders[of]['values_json']
             for field in ('ov','customer','designation','delivery_date'):
-                if not v.get(field):v[field]=local_context.get(field)
+                from .registration import enabled as free_entry
+                if (free_entry() and field in local_context) or not v.get(field):v[field]=local_context.get(field)
             v['administrative_origin']='Manual local' if not ctx else 'CPIS com contexto local preservado'
         v=old.calculated(v,raw,compatible)
         if area=='cantoneiras':
@@ -206,12 +217,30 @@ def build_rows(conn,area,*,orders=None,facts=None):
         if v.get('boc') is not None and v.get('cut') is not None and v['boc']>v['cut']:warn.append('Abocardado superior ao cortado.')
         rules=calculations.enrich(v,original,raw,weight_table,area)
         output.append(dict(key=key,area=area,need_id=key if need else None,revision=need['revision'] if need else 0,values=v,original=original,raw=raw,warnings=warn,status=ctx.get('cpis_status'),status_values=ctx.get('status_values',[]),origin='local' if record else 'macro',sources=links.get(key,[]),plan_key=line['source_line_id'] if line else None,operation_id=operation,preparations=records.get(key,[]),operations=[],calculation={'contract':'raw-v2','rules':rules,'compatible':compatible,'macro_snapshot':snap['snapshot_id']},cpis_conflicts=ctx.get('conflicts'),macro_closure_values=[value for origin in origins for value in (origin.get('closed_x'), (origin.get('row_data') or {}).get('Fechado'))]))
+        output[-1]['local_order_revision']=(local_orders.get(of) or {}).get('revision',0)
         population.annotate(output[-1])
+        from . import registration as free
+        free.annotate(output[-1],record,need)
+        if free.enabled() and of in local_orders:
+            output[-1].setdefault('input_values',{}).update(local_orders[of]['values_json'])
+            if v.get('delivery_date'):
+                from datetime import date
+                try:v['delivery_date']=date.fromisoformat(str(v['delivery_date'])).isoformat()
+                except ValueError:
+                    v['delivery_date']=None
+                    output[-1]['warnings'].append('Data de entrega guardada; data por interpretar.')
     for row in output:row['selection_aliases']=[]
     preserve_selection(conn,area,output,orders=orders)
     events=enrich(conn,area,output,snap['snapshot_id'],facts=facts,proofs=proofs)
     section_table=calculations.sections(conn,snap['snapshot_id'])
-    for row in output:calculations.recalculate(row,section_table,weight_table)
+    for row in output:
+        calculations.recalculate(row,section_table,weight_table)
+        if row.get('identity_pending'):
+            row['values']['remaining']=None
+            row['values']['planning_remaining']=None
+            row['values']['quantity_to_plan']=None
+    from . import sku_families
+    sku_families.annotate(conn,area,output)
     return output,events,source_metadata(conn,area)
 
 
@@ -485,7 +514,9 @@ def publish_delta(conn,dataset,fingerprint,rows,metadata,remove=(),expected_gene
 
 def order_rows(rows):
     grouped=defaultdict(list)
-    for row in rows:grouped[(row['values'].get('of'),population.includes(row))].append(row)
+    for row in rows:
+        if row.get('identity_pending'):continue
+        grouped[(row['values'].get('of'),population.includes(row))].append(row)
     output=[]
     for (of,active),items in grouped.items():
         v=items[0]['values'];known=[r['values'].get('remaining') for r in items if r['values'].get('remaining') is not None];q=[r['values'].get('quantity_required') for r in items if r['values'].get('quantity_required') is not None]
@@ -502,7 +533,9 @@ def rebuild_original():
     with planning.connect() as c:
         if not planning_original_production.available(c):return
         instances=c.execute('SELECT * FROM ocr_original.instances ORDER BY id').fetchall()
-        if not instances:return
+        if not instances:
+            from . import ocr_export
+            return ocr_export.rebuild(c)
         rows=planning_original_production.sheets(c)
         ids=['original:'+str(s['instance_id'])+':'+str(s['sheet_id'])+':'+str(line['row_index']) for s in rows for line in s['payload'].get('production',[])]
         diagnostics=planning_original_production.diagnostics(c,ids)

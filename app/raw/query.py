@@ -130,6 +130,8 @@ def listing(p,conn=None):
         rows=c.execute('SELECT m.row_key,c.values_json,c.detail'+select+base+' ORDER BY '+','.join(sorts+['m.row_key'])+' LIMIT %s OFFSET %s',selectargs+params+sortargs+[size,(page-1)*size]).fetchall()
         output=[]
         for r in rows:output.append({**r['detail'],'key':r['row_key'],'values':{**r['values_json'],**{k:r[k] for k in calculated}},'formats':[{'id':str(f['id']),'style':f['definition']['style']} for f in formats if r['fmt_'+str(f['id']).replace('-','')] is True]})
+        from . import registration as free
+        if dataset=='planning':output=[free.display(row) for row in output]
         return needs.serial({**gen['metadata'],'version':str(gen['id']),'rows':output,'total':total,'page':page,'page_size':size,'created_at':gen['created_at'],'columns':list(fields.values()),'population':population.scope(p.get('population'))})
 
 

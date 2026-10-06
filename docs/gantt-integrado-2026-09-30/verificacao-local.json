@@ -1,0 +1,161 @@
+{
+  "checked_at": "2026-09-30T19:35:16.161174+00:00",
+  "checks": [
+    {
+      "route": "/planeamento/api/raw/gantt/operations",
+      "status": 200,
+      "seconds": 2.901,
+      "operations": 0,
+      "areas": [
+        "perfis",
+        "cantoneiras"
+      ],
+      "selection": {
+        "selected_orders": 0,
+        "orders_with_planning": 0,
+        "pending": [],
+        "rule": "Planear na Carteira → informação ativa de planeamento → escolha de máquina → proposta → aceitação."
+      },
+      "resources": 29,
+      "calculations_pending": false
+    },
+    {
+      "route": "/planeamento/api/raw/gantt/scenarios",
+      "status": 200,
+      "seconds": 0.014,
+      "scenarios": 2,
+      "accepted": 0
+    },
+    {
+      "route": "/planeamento/api/carteira?setor=perfis&vista=of",
+      "status": 200,
+      "seconds": 1.918,
+      "totals": {
+        "lines": 1185,
+        "ofs": 271,
+        "pieces": 85587,
+        "unknown_balances": 0,
+        "metres": 78189.4,
+        "state_counts": {
+          "por_decidir": 185,
+          "proposta": 1000
+        },
+        "pending_following_operations": 22
+      }
+    },
+    {
+      "route": "/planeamento/api/carteira?setor=cantoneiras&vista=of",
+      "status": 200,
+      "seconds": 12.278,
+      "totals": {
+        "lines": 17141,
+        "ofs": 156,
+        "pieces": 181987,
+        "unknown_balances": 1127,
+        "metres": 369948.7,
+        "state_counts": {
+          "por_decidir": 9280,
+          "proposta": 7861
+        },
+        "pending_following_operations": 5182
+      }
+    }
+  ],
+  "source": {
+    "version_id": "4b98767f767fcb58e363f9b8891cd55b49bede658ec3bccba741f0079d3b3f6a",
+    "checked_at": "2026-09-30T19:34:01.635561+00:00",
+    "last_error": null,
+    "sources": {
+      "cpis": [
+        {
+          "id": "316bc906-2f9e-40ef-bc46-db1bb92166a5",
+          "estado": "validada",
+          "origem": "Mac:cpis_copia.dados",
+          "sha256": "e891f8a06a600a798860142f2010da53c1b923385bc4b5a1d3ca4889dce60158",
+          "capturado_em": "2026-09-30T11:40:57.226910+00:00"
+        }
+      ],
+      "excel": [
+        {
+          "setor": "MTG2",
+          "loaded_at": "2026-09-29T12:20:49.367422+00:00",
+          "dataset_id": "ds-met2-perfis",
+          "snapshot_id": "mtg2_3da468582f1d59b6",
+          "source_sha256": "3da468582f1d59b674910bfc8839174cc62b2cecb79a9dfa3756e081e4d569c5",
+          "source_filename": "Met2_Plan_Perfis.xlsm",
+          "criterio_selecao": "Ultima importacao disponivel no backup; nao prova data de atualizacao do CPIS no Excel"
+        },
+        {
+          "setor": "MTG3",
+          "loaded_at": "2026-09-29T12:19:35.401231+00:00",
+          "dataset_id": "ds-2638099daddc474e",
+          "snapshot_id": "mtg_7c7b2c4b9a8889ce",
+          "source_sha256": "7c7b2c4b9a8889ce07553fade31cbc441c330d678187a3ac505fd64da7c9d1c7",
+          "source_filename": "Met3_Plan_Cantoneiras.xlsm",
+          "criterio_selecao": "Ultima importacao disponivel no backup; nao prova data de atualizacao do CPIS no Excel"
+        },
+        {
+          "setor": null,
+          "loaded_at": "2026-08-05T07:44:15.241030+00:00",
+          "dataset_id": "ds-chapa-expedition",
+          "snapshot_id": "chapa_expedition_a1bba8c951eb76b6",
+          "source_sha256": "a1bba8c951eb76b624724d6881a2986fe72862f655e35151b4bb42a0ff02abfc",
+          "source_filename": "Exp.chapaMTG3.xlsm",
+          "criterio_selecao": "Ultima importacao disponivel no backup; nao prova data de atualizacao do CPIS no Excel"
+        },
+        {
+          "setor": null,
+          "loaded_at": "2026-08-05T07:44:15.240648+00:00",
+          "dataset_id": "ds-chapa-master",
+          "snapshot_id": "chapa_master_ab41e9221ca5d71d",
+          "source_sha256": "ab41e9221ca5d71d1b59cadd839732b6ef850a9a807428457c33e15fc6b52b10",
+          "source_filename": "listaofs_mtg3.xlsx",
+          "criterio_selecao": "Ultima importacao disponivel no backup; nao prova data de atualizacao do CPIS no Excel"
+        },
+        {
+          "setor": null,
+          "loaded_at": "2026-08-05T07:44:15.240862+00:00",
+          "dataset_id": "ds-chapa-plan",
+          "snapshot_id": "chapa_plan_3adb538417ce9c3c",
+          "source_sha256": "3adb538417ce9c3caec316df537a0f30cec35646d6cafc1fd3b07ba23b9fd5e6",
+          "source_filename": "plan_chapa.xlsm",
+          "criterio_selecao": "Ultima importacao disponivel no backup; nao prova data de atualizacao do CPIS no Excel"
+        },
+        {
+          "setor": null,
+          "loaded_at": "2026-08-09T15:49:45.330639+00:00",
+          "dataset_id": "ds-colaboradores",
+          "snapshot_id": "colab_2d29d51063a939e8",
+          "source_sha256": "2d29d51063a939e81f7ab27aac721792669858f7b43c81acd6220784bb793f36",
+          "source_filename": "ListaColaboradores.xlsx",
+          "criterio_selecao": "Ultima importacao disponivel no backup; nao prova data de atualizacao do CPIS no Excel"
+        },
+        {
+          "setor": null,
+          "loaded_at": "2026-08-21T11:18:52.040785+00:00",
+          "dataset_id": "ds-mtg2-producao",
+          "snapshot_id": "mtg2prod_5a875211345b1543",
+          "source_sha256": "5a875211345b1543480669b11e673263580a7aebc2b74176f439c00dd664ed0d",
+          "source_filename": "Kanbans_Producao_NOVO.xlsx",
+          "criterio_selecao": "Ultima importacao disponivel no backup; nao prova data de atualizacao do CPIS no Excel"
+        }
+      ]
+    }
+  },
+  "selection": [],
+  "confirmed_objects": [],
+  "factory_connection_configured": false,
+  "distinct_tests_verified": 105,
+  "main_test_run": {
+    "passed": 100,
+    "deselected": 3,
+    "seconds": 139.71
+  },
+  "additional_regressions": [
+    "balances across import aliases",
+    "publication metadata",
+    "material scope",
+    "missing operation code",
+    "technical review does not transfer across drawing revisions"
+  ]
+}

@@ -1,18 +1,18 @@
-const {chromium}=require('/home/luis/.npm/_npx/fd3bca3c548369c0/node_modules/playwright-core');
+const {chromium}=require('./playwright_core.cjs');
 const assert=require('node:assert/strict');
 (async()=>{
  if(process.env.PLANNING_TEST_ISOLATED!=='1')throw Error('Disposable database server required');
  const base=process.env.PLANNING_CHECK_BASE;
- const browser=await chromium.launch({executablePath:'/home/luis/.cache/ms-playwright/chromium-1243/chrome-linux64/chrome',headless:true,args:['--no-sandbox']});
+ const browser=await chromium.launch({executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE,headless:true,args:['--no-sandbox']});
  const page=await browser.newPage({viewport:{width:1440,height:1000}}),errors=[];
  page.on('pageerror',e=>errors.push(e.message));
  await page.goto(base+'/planeamento/manual?of=OF4200&area=perfis');
  await page.waitForFunction(()=>document.querySelector('#picking-summary').textContent.includes('21/09/2026'));
  assert.equal(await page.locator('#field-picking_week').inputValue(),'39');
- assert.equal(await page.locator('#field-picking_year').inputValue(),'');
+ assert.match(await page.locator('#field-picking_year').inputValue(),/^20\d\d$/,'ano deduzido mostrado, não gravado');
  const sections=await page.locator('#preparation>section>h2').allTextContents();
  assert.deepEqual(sections.slice(0,2),['Dados da peça','Características de corte']);
- assert.match(await page.locator('#picking-summary').innerText(),/ano 2026 assumido/);
+ assert.match(await page.locator('#picking-summary').innerText(),/ano 20\d\d deduzido pela semana/);
  await page.locator('#field-component_ref').fill('BROWSER-AUTO-PICKING');
  await page.locator('#field-material_type').selectOption({label:'Tubo redondo'});
  await page.locator('#field-profile').selectOption({label:'88.9x3'});

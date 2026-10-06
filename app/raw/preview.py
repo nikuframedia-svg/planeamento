@@ -13,7 +13,8 @@ def preview(payload):
     area=planning.check_area(payload.get('area'))
     raw=dict(payload.get('values') or {})
     if set(raw)-{f['id'] for f in catalogs.fields()}:raise planning.PlanningError('A produção e os resultados calculados são obtidos pelo servidor.')
-    raw.pop('quantity_to_plan',None)
+    from . import registration as free
+    if not free.enabled():raw.pop('quantity_to_plan',None)
     decisions=payload.get('decisions') or {}
     if not isinstance(decisions,dict) or any(v not in ('write','select','accept','clear') for v in decisions.values()):
         raise planning.PlanningError('Decisões de preparação inválidas.')
@@ -36,8 +37,8 @@ def preview(payload):
             if len(matches)==1:base=matches[0]
             else:
                 similar=[r for r in rows if catalogs.key(r['values'].get('component_ref'))==catalogs.key(proposed.get('component_ref')) and proposed.get('component_ref')]
-                if similar:return {'needs_decision':True,'reason':'Existem peças semelhantes. Escolhe a associação ao guardar antes de usar os saldos.',
-                    'candidates':[{'key':r['key'],'values':r['values']} for r in similar],'preview':True}
+                if similar:return needs.serial({'needs_decision':True,'reason':'Existem peças semelhantes. Escolhe a associação ao guardar antes de usar os saldos.',
+                    'candidates':[{'key':r['key'],'values':r['values']} for r in similar],'preview':True})
         if base and base.get('need_id') and need is None:need=needs.load(conn,base['need_id'])
         if base is None:
             base={'key':str(need['id']) if need else 'preview','need_id':str(need['id']) if need else 'preview',
@@ -54,12 +55,13 @@ def preview(payload):
             base['status']=context.get('cpis_status');base['status_values']=context.get('status_values',[])
             base['values']['status']=base['status'];planning_population.annotate(base)
         row=deepcopy(base)
+        if free.enabled():row['input_values']={**row.get('input_values',{}),**raw}
         op=str(raw.get('operation') or row['values'].get('operation') or ('corte' if area=='perfis' else 'por_definir'))
         previous_preparation=next((r for r in row['preparations'] if r['values_json'].get('operation')==op),None)
         previous={**row['values'],**(previous_preparation['values_json'] if previous_preparation else {}),**(need['specification'] if need else {})}
         if op=='por_definir':cat['operations'].append({'value':op,'label':'Por definir','countable':False,'sequence':1})
         if op=='abocardar' and previous_preparation:cat['operations'].append({'value':op,'label':'Abocardar','countable':True,'sequence':2})
-        vals=catalogs.validate({**raw,'operation':op},cat,previous=previous)
+        vals=(free.normalize({**raw,'operation':op},cat,previous)[0] if free.enabled() else catalogs.validate({**raw,'operation':op},cat,previous=previous))
         technical_changed=bool(need and any(need['specification'].get(k)!=vals.get(k) for k in needs.TECH_FIELDS))
         if need and technical_changed:
             hypothetical={**need,'specification':{k:vals.get(k) for k in needs.PIECE_FIELDS},

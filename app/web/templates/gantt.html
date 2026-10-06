@@ -3,32 +3,65 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Gantt de Perfis · Planeamento</title>
+  <title>Gantt MTG2 e MTG3 · Planeamento</title>
   <link rel="stylesheet" href="/static/planning_typography.css">
   <link rel="stylesheet" href="/static/gantt.css">
   <script src="/static/gantt.js" defer></script>
+  <link rel="stylesheet" href="/static/needs.css">
+  <script src="/static/needs.js" defer></script>
+<link rel="stylesheet" href="/static/planeamento_ui.css?v=20261002">
 </head>
 <body>
-  <header class="topbar">
-    <a class="brand" href="/planeamento/raw">RAW <span>Planeamento</span></a>
-    <nav aria-label="Planeamento"><a href="/planeamento/raw">Tabela</a><a href="/planeamento/capacidades">Capacidades</a><a href="/planeamento/disponibilidade">Disponibilidade</a><a aria-current="page" href="/planeamento/gantt">Gantt · MTG2 Perfis</a></nav>
-  </header>
+  {% set active = 'gantt' %}{% include "_app_nav.html" %}
   <main>
     <section class="hero">
-      <div><p class="eyebrow">PERFIS · CORTE E ABOCARDAR</p><h1>Plano de produção</h1><p class="lead">Máquinas, previsões e carga do planeamento existente. Gera uma sequência ao minuto para os recursos com horários definidos.</p></div>
+      <div><p class="eyebrow">PERFIS E CANTONEIRAS</p><h1>Plano de produção</h1><p class="lead">Escolha automática de máquinas com condições e alternativas visíveis. Ajusta a máquina de cada operação e calcula a carga conjunta.</p></div>
       <div class="hero-actions"><button id="refresh">Atualizar fontes</button><button id="generate" class="primary">Gerar proposta</button><button id="accept">Aceitar plano</button></div>
     </section>
     <div id="notice" role="status" aria-live="polite"></div>
     <section class="controls" aria-label="Cenário">
       <label>Cenário<select id="scenario"><option value="">Novo cenário</option></select></label>
-      <label>Nome<input id="scenario-name" value="Plano de Perfis" maxlength="160"></label>
+      <label>Setores<select id="areas"><option value="both">MTG2 + MTG3</option><option value="perfis">MTG2 Perfis</option><option value="cantoneiras">MTG3 Cantoneiras</option></select></label>
+      <label>Nome<input id="scenario-name" value="Plano de produção" maxlength="160"></label>
       <label>Horizonte<select id="horizon"><option value="4">4 semanas</option><option value="8">8 semanas</option><option value="12" selected>12 semanas</option><option value="16">16 semanas</option></select></label>
       <button id="save">Guardar cenário</button>
       <span id="source-state" class="source-state">A carregar fontes…</span>
       <span id="accepted-state" class="source-state" hidden></span>
     </section>
+    <nav class="pl-toc" id="page-toc" aria-label="Nesta página">
+      <a href="#needs" hidden>Famílias e prazos</a><a href="#schedule">Gantt por máquina</a><a href="#needs-capacity" hidden>Necessidades e capacidade</a><a href="#lower">Pendências e operações</a>
+    </nav>
+    <script>
+      (function(){const links=[...document.querySelectorAll('#page-toc a')];
+        const sync=()=>links.forEach(a=>{const t=document.querySelector(a.getAttribute('href'));a.hidden=!t||t.hidden});
+        addEventListener('DOMContentLoaded',()=>{sync();links.forEach(a=>{const t=document.querySelector(a.getAttribute('href'));t&&new MutationObserver(sync).observe(t,{attributes:true,attributeFilter:['hidden']})})});})();
+    </script>
     <section class="summary" id="summary" aria-label="Cobertura"></section>
-    <section class="schedule" aria-labelledby="schedule-title">
+    <section id="resolution-queue" class="weekly-capacity" aria-label="Resolução de pendências"></section>
+    <section id="needs" class="needs-root needs-panel" aria-labelledby="needs-title" hidden>
+      <div class="needs-head"><div><p class="eyebrow">CARTEIRA E NECESSIDADES</p><h2 id="needs-title">Famílias, máquinas e prazos</h2>
+        <p class="hint">Todo o trabalho ativo, escolhido ou não com Planear. Abrir um grupo não cria registos; as horas são procura conhecida, não ocupação reservada.</p></div>
+        <div class="section-actions"><button type="button" id="needs-policy">Prazos por setor</button><button type="button" id="needs-set-new">Colar lista de referências</button><button type="button" id="needs-actions">Decisões de máquina</button></div></div>
+      <div class="needs-toolbar" id="needs-toolbar">
+        <label>Setores<select id="needs-areas"><option value="both">MTG2 + MTG3</option><option value="perfis">MTG2 Perfis</option><option value="cantoneiras">MTG3 Cantoneiras</option></select></label>
+        <label>Agrupar por<select id="needs-preset"></select></label>
+        <label>Níveis (ordem)<select id="needs-dims" multiple size="3" title="Ctrl+clique para escolher; a ordem segue a lista da vista"></select></label>
+        <label>Família SKU<select id="needs-family" multiple size="3"></select></label>
+        <label>Máquina atribuída<select id="needs-machine" multiple size="3"></select></label>
+        <label>Conjunto<select id="needs-set" multiple size="3"></select></label>
+        <label>Horizonte<select id="needs-horizon"><option value="4">4 semanas</option><option value="8">8 semanas</option><option value="12" selected>12 semanas</option><option value="26">26 semanas</option><option value="52">52 semanas</option></select></label>
+        <label>Ordenar<select id="needs-sort"><option value="urgencia">Mais urgente</option><option value="atraso">Mais horas em atraso</option><option value="horas">Mais horas</option><option value="nome">Nome</option></select></label>
+        <label>Pesquisar<input id="needs-q" type="search" placeholder="OF, referência, cliente…"></label>
+        <div class="needs-flags" id="needs-flags" role="group" aria-label="Pendências"></div>
+      </div>
+      <div class="needs-kpis" id="needs-kpis" aria-live="polite"></div>
+      <div id="needs-notes"></div>
+      <div class="tree-scroll"><table class="ntree" id="needs-tree" aria-label="Árvore de necessidades">
+        <thead><tr><th scope="col">Grupo</th><th scope="col" class="num">Ocorr.</th><th scope="col" class="num">OF</th><th scope="col" class="num">Refs.</th><th scope="col" class="num">Horas conhecidas</th><th scope="col">Cobertura</th><th scope="col">Prazo</th><th scope="col">Máquinas</th><th scope="col">Pendências</th><th scope="col" id="needs-period-head">Procura por período</th><th scope="col">Ações</th></tr></thead>
+        <tbody></tbody></table></div>
+      <div class="needs-detail" id="needs-detail" hidden aria-live="polite"></div>
+    </section>
+    <section class="schedule" id="schedule" aria-labelledby="schedule-title">
       <div class="section-head"><div><p class="eyebrow">PERFIS POR MÁQUINA</p><h2 id="schedule-title">Previsões e execução</h2></div><div class="section-actions"><label>Escala<select id="scale"><option value="day">Dia</option><option value="week">Semana</option></select></label><label>Vista<select id="compare"><option value="source" selected>Planeamento existente</option><option value="proposal">Proposta</option><option value="accepted">Plano aceite</option></select></label></div></div>
       <p class="hint" id="schedule-hint">A carregar o planeamento existente…</p>
       <div class="legend"><span><i class="legend-bar"></i>Execução futura</span><span><i class="legend-picking"></i>Picking</span><span><i class="legend-forecast"></i>Previsão da operação</span><span><i class="legend-cpis"></i>Marcos CPIS</span></div>
@@ -37,11 +70,28 @@
         <label>Máquina<select id="source-machine-filter"><option value="">Todas as máquinas</option></select></label><button id="source-today">Semana atual</button><span id="source-range" class="hint"></span>
       </div>
       <div id="weekly-capacity" class="weekly-capacity"></div>
-      <div class="timeline" id="timeline" tabindex="0" aria-label="Gantt de Perfis"></div>
+      <div class="timeline" id="timeline" tabindex="0" aria-label="Gantt de trabalho selecionado"></div>
     </section>
-    <section class="lower">
+    <section id="needs-capacity" class="needs-root needs-panel" aria-labelledby="capacity-title" hidden>
+      <div class="needs-head"><div><p class="eyebrow">CAPACIDADE POR SETOR E FAMÍLIA</p><h2 id="capacity-title">Necessidades e capacidade</h2>
+        <p class="hint">Mesma janela e filtros da árvore. Sem calendário confirmado, a capacidade pode vir do débito executado (MTG3, 16 semanas do Excel) ou da disponibilidade declarada no Excel (MTG2, por validar): é uma estimativa, sempre identificada, com erro histórico de 17–30% por semana. Recursos partilhados sem quota não contam em nenhum setor.</p></div>
+        <div class="section-actions"><label>Capacidade<select id="capacity-scenario"><option value="mediana">Confirmada, senão observada (mediana)</option><option value="prudente">Confirmada, senão observada (prudente, P25)</option><option value="confirmada">Só confirmada</option></select></label><label>Ocupação<select id="capacity-mode"><option value="needs">Necessidades + aceite</option><option value="proposal">Proposta do cenário</option><option value="accepted">Só plano aceite</option></select></label><button type="button" id="capacity-table-toggle" aria-pressed="false">Ver tabela</button></div></div>
+      <div class="cap-units" id="capacity-units"></div>
+      <div class="backlog" id="capacity-backlog" aria-label="Atraso e necessidades futuras"></div>
+    </section>
+    <dialog class="needs-dialog" id="needs-dialog"><form method="dialog" id="needs-dialog-form"></form></dialog>
+    <section class="lower" id="lower">
       <div class="panel"><div class="section-head"><div><p class="eyebrow">ATENÇÃO</p><h2>Pendências e operações</h2></div><label>Pesquisar<input id="search" type="search" placeholder="OF, referência, máquina…"></label></div><div id="pending-count" class="hint"></div><div id="operations" class="operations"></div></div>
-      <aside class="panel" aria-labelledby="edit-title"><p class="eyebrow">AJUSTAR</p><h2 id="edit-title">Prioridade e fixação</h2><p class="hint">Seleciona uma operação na lista ou numa barra. A fixação usa hora de Lisboa e obriga a nova proposta.</p><div id="selected-detail" class="selected-detail" aria-live="polite"></div><form id="edit-form"><label>Operação<input id="selected-key" readonly required></label><label>OF<input id="selected-of" readonly></label><label>Ano de Picking confirmado para a OF<input id="picking-year" type="number" min="2000" max="2200" placeholder="Vazio: hipótese de 2026"></label><label>Prazo de Picking corrigido para a OF<input id="picking-deadline" type="datetime-local" step="60"></label><label>Máquina<select id="pin-resource"><option value="">Sem fixação</option></select></label><label>Início fixo<input id="pin-start" type="datetime-local" step="60"></label><label class="check"><input id="urgent" type="checkbox"> Urgência manual</label><div class="form-actions"><button type="button" id="clear-pin">Retirar fixação</button><button class="primary">Aplicar ajuste</button></div></form><p class="hint">Para editar saldos, operações ou máquinas, abre a <a href="/planeamento/raw">tabela</a>. Para horários, abre a <a href="/planeamento/disponibilidade">disponibilidade</a>. Um evento Kanban sem operação confirmada exige revisão na origem.</p></aside>
+      <aside class="panel" aria-labelledby="edit-title"><p class="eyebrow">AJUSTAR</p><h2 id="edit-title">Máquina, prioridade e horário</h2><p class="hint">Podes escolher apenas a máquina. O início fixo é opcional e usa hora de Lisboa.</p><div id="selected-detail" class="selected-detail" aria-live="polite"></div><form id="edit-form"><label>Operação<input id="selected-key" readonly required></label><label>OF<input id="selected-of" readonly></label><label>Atribuição de máquina<select id="machine-choice"><option value="">Automático</option></select></label><label>Motivo da escolha manual<input id="machine-reason" maxlength="1000" placeholder="Ex.: preparação já feita"></label><button type="button" id="restore-auto">Voltar ao automático</button><div id="machine-alternatives" class="selected-detail"></div><label>Ano de Picking confirmado para a OF<input id="picking-year" type="number" min="2000" max="2200" placeholder="Ano por confirmar"></label><label>Prazo de Picking corrigido para a OF<input id="picking-deadline" type="datetime-local" step="60"></label><label>Máquina da fixação horária<select id="pin-resource"><option value="">Sem fixação</option></select></label><label>Início fixo<input id="pin-start" type="datetime-local" step="60"></label><label class="check"><input id="urgent" type="checkbox"> Urgência manual</label><div class="form-actions"><button type="button" id="clear-pin">Retirar fixação</button><button class="primary">Aplicar ajuste</button></div></form><p class="hint">Para saldos e operações, abre a <a href="/planeamento/raw">tabela</a>. Para horários, abre a <a href="/planeamento/disponibilidade">disponibilidade</a>. Sugestões condicionais conservam os dados que falta confirmar.</p></aside>
+    </section>
+    <section class="panel" id="technical-review" hidden>
+      <p class="eyebrow">REVISÃO TÉCNICA</p><h2>Condições da alternativa</h2>
+      <p class="hint">Regista apenas condições comprovadas. A regra fica ligada à peça e à máquina; a condição de mercado nacional fica também ligada à OF.</p>
+      <form id="rule-form"><label>Máquina a validar<select id="rule-resource"></select></label><div id="rule-conditions"></div>
+        <label>Prova e motivo<input id="rule-reason" maxlength="1000" required placeholder="Desenho, ferramentas e revisão conferidos"></label>
+        <label class="check"><input id="rule-confirmed" type="checkbox" required> Confirmo as condições assinaladas com a evidência indicada</label>
+        <button class="primary">Guardar regra técnica</button>
+      </form>
     </section>
   </main>
 </body>

@@ -111,19 +111,54 @@ def period_deadline(year, week, *, timezone='Europe/Lisbon'):
     return datetime.combine(next_monday, time.min, ZoneInfo(timezone)).isoformat()
 
 
-def picking_deadline(week, year=None, *, assumed_year=2026, timezone='Europe/Lisbon'):
+def _as_date(value):
+    if isinstance(value, datetime):
+        return value.date()
+    if isinstance(value, date):
+        return value
+    try:
+        return date.fromisoformat(str(value)[:10]) if value not in (None, '') else None
+    except ValueError:
+        return None
+
+
+def infer_iso_year(week, anchor=None, *, timezone='Europe/Lisbon'):
+    """Ano ISO em que a semana fica mais perto da data de referência (Data Corte; sem ela, hoje).
+
+    Regra do Luís (06/10/2026): em dezembro, Picking semana 1 é do ano seguinte; em janeiro,
+    semana 52 é do ano anterior. A semana 53 só conta nos anos que a têm.
+    """
+    week = positive_week(week)
+    if week is None:
+        return None
+    anchor = _as_date(anchor) or datetime.now(ZoneInfo(timezone)).date()
+    best = None
+    for year in (anchor.year - 1, anchor.year, anchor.year + 1):
+        try:
+            middle = date.fromisocalendar(year, week, 4)
+        except ValueError:
+            continue
+        distance = abs((middle - anchor).days)
+        if best is None or distance < best[0]:
+            best = (distance, year)
+    return best[1] if best else None
+
+
+def picking_deadline(week, year=None, *, assumed_year=None, anchor=None, timezone='Europe/Lisbon'):
+    """Segunda-feira 08:00 da semana de Picking; sem ano, deduz o ano (`infer_iso_year`)."""
     week = positive_week(week)
     if week is None:
         return None
     explicit = year not in (None, '')
     try:
-        chosen = _integer(year) if explicit else assumed_year
+        chosen = _integer(year) if explicit else assumed_year or infer_iso_year(week, anchor, timezone=timezone)
         day = date.fromisocalendar(chosen, week, 1)
     except (ValueError, TypeError):
         return None
+    origin = ('Picking · ano explícito' if explicit else 'Picking · ano assumido' if assumed_year
+              else 'Picking · ano deduzido')
     return {'at': datetime.combine(day, time(8), ZoneInfo(timezone)).isoformat(),
-            'year': chosen, 'week': week, 'provisional': not explicit,
-            'origin': 'Picking · ano assumido' if not explicit else 'Picking · ano explícito'}
+            'year': chosen, 'week': week, 'provisional': not explicit, 'origin': origin}
 
 
 def picking_values(of, line_week, indexed_weeks, evidence, *, record=None, override=None):

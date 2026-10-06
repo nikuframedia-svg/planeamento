@@ -1,11 +1,11 @@
-const {chromium}=require('/home/luis/.npm/_npx/fd3bca3c548369c0/node_modules/playwright-core');
+const {chromium}=require('./playwright_core.cjs');
 const fs=require('node:fs'),assert=require('node:assert/strict');
 const base=process.env.PLANNING_CHECK_BASE,folder='docs/validacao-planeamento-integral/20260923-execucao';
 if(base!=='http://127.0.0.1:18113'||process.env.PLANNING_TEST_ISOLATED!=='1')throw Error('Explicit isolated copy required');
 (async()=>{
  const fixture=JSON.parse(fs.readFileSync(folder+'/c04-structured-quantity-final.json','utf8'));
  const report={at:new Date().toISOString(),base,method:'Read-only browser checks every N/AH disagreement after restart; column selection and history/search use the UI.',rows:[],errors:[]};
- const browser=await chromium.launch({executablePath:'/home/luis/.cache/ms-playwright/chromium-1243/chrome-linux64/chrome',headless:true,args:['--no-sandbox']});
+ const browser=await chromium.launch({executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE,headless:true,args:['--no-sandbox']});
  try{
   const page=await browser.newPage({viewport:{width:1600,height:1000}});page.on('pageerror',e=>report.errors.push(e.message));
   const keys=fixture.source_disagreements.map(r=>'macro:'+r.plan_key);

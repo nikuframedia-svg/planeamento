@@ -144,10 +144,17 @@ def gantt_enabled():
 
 
 @router.get('/planeamento/api/raw/gantt/operations')
-def gantt_operations(scenario_id:str|None=None):
+def gantt_operations(scenario_id:str|None=None, area:str|None=None):
     gantt_enabled()
     from ..gantt import service
-    return call(service.operations,scenario_id)
+    return call(service.operations,scenario_id,area)
+
+
+@router.get('/planeamento/api/raw/gantt/options')
+def gantt_options(key:str, scenario_id:str|None=None):
+    gantt_enabled()
+    from ..gantt import service
+    return call(service.options,key,scenario_id)
 
 
 @router.get('/planeamento/api/raw/gantt/scenarios')
@@ -155,6 +162,13 @@ def gantt_scenarios():
     gantt_enabled()
     from ..gantt import service
     return call(service.scenarios)
+
+
+@router.post('/planeamento/api/raw/gantt/rules')
+async def gantt_rule(request:Request):
+    gantt_enabled()
+    from ..gantt import service
+    return await write(request,service.confirm_rule)
 
 
 @router.post('/planeamento/api/raw/gantt/scenarios')

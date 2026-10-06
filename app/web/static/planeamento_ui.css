@@ -1,0 +1,75 @@
+/* Camada visual comum do planeamento (1/10/2026). Carregada por último em todas as páginas do
+   planeamento; não é partilhada com o MES. Mantém Calibri 11 (planning_typography.css) para o corpo,
+   corrige títulos e dá um cabeçalho, botões, campos e cartões coerentes em todas as páginas. */
+:root{--pl-bg:#f5f8f8;--pl-surface:#fff;--pl-ink:#20343b;--pl-muted:#5d737a;--pl-line:#dce6e8;--pl-action:#216d7a;
+  --pl-action-dark:#15525c;--pl-brand:#17383f;--pl-warn:#b66b20;--pl-error:#b23b3b;--pl-ok:#2f7d5b;--pl-radius:10px}
+html{background:var(--pl-bg)}
+body{background:var(--pl-bg);color:var(--pl-ink);margin:0}
+
+/* Títulos: tudo a 11 pt (pedido do Luís, 02/10/2026); os títulos distinguem-se só pelo negrito. */
+body h1{font-size:11pt!important;font-weight:700;line-height:1.15;letter-spacing:-.01em;margin:0 0 4px}
+body h2{font-size:11pt!important;font-weight:700;line-height:1.2}
+body h3{font-size:11pt!important;font-weight:700}
+body .eyebrow,body .pl-eyebrow{font-size:9pt!important;letter-spacing:.12em;text-transform:uppercase;color:var(--pl-action);font-weight:800}
+body .metric strong,body .kpi strong,body .needs-kpis strong,body .flow strong{font-size:11pt!important}
+
+/* Cabeçalho comum */
+.pl-header{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:20px;padding:0 20px;min-height:52px;
+  background:var(--pl-brand);color:#fff;box-shadow:0 1px 0 #0e262b}
+.pl-brand{display:flex;align-items:baseline;gap:8px;color:#fff;text-decoration:none;white-space:nowrap}
+.pl-brand strong{letter-spacing:.08em;text-transform:uppercase;font-weight:800}
+.pl-brand span{color:#a9c9ce}
+.pl-header .pl-nav{display:flex;align-items:center;align-self:stretch;gap:2px;flex:1;width:auto;min-width:0;overflow-x:auto;scrollbar-width:none;font-size:inherit}
+.pl-nav::-webkit-scrollbar{display:none}
+.pl-nav>a,.pl-more>summary{display:block;margin:0;font-weight:500;background:none;color:#d6e6e8;text-decoration:none;padding:16px 12px;white-space:nowrap;border-bottom:3px solid transparent;cursor:pointer;list-style:none}
+.pl-more>summary::-webkit-details-marker{display:none}
+.pl-more>summary::after{content:" ▾";font-size:9pt}
+.pl-nav>a:hover,.pl-more>summary:hover{color:#fff;background:#ffffff12}
+.pl-nav>a[aria-current=page],.pl-more-active>summary{color:#fff;font-weight:700;border-bottom-color:#7cc3cd}
+.pl-more{position:relative}
+.pl-more-menu{position:fixed;margin-top:2px;min-width:240px;background:#fff;border:1px solid var(--pl-line);border-radius:var(--pl-radius);
+  box-shadow:0 10px 30px #0f2a3029;padding:6px;display:grid;z-index:40}
+.pl-more-menu a{color:var(--pl-ink);text-decoration:none;padding:9px 12px;border-radius:7px}
+.pl-more-menu a:hover{background:#eef6f7}.pl-more-menu a[aria-current=page]{color:var(--pl-action);font-weight:700}
+
+/* Ações próprias de cada página (antigos botões do cabeçalho) */
+.pl-page-actions{display:flex;flex-wrap:wrap;gap:8px;font-size:inherit;align-items:center;padding:10px 20px;background:#fff;border-bottom:1px solid var(--pl-line)}
+.pl-page-actions .pl-page-title{font-weight:700;margin-right:auto}
+.pl-page-actions button,.pl-page-actions a{border:1px solid #c7d5d8;background:#fff;border-radius:8px;padding:6px 12px;min-height:34px;color:var(--pl-ink);text-decoration:none;cursor:pointer}
+.pl-page-actions [aria-current=page],.pl-page-actions button[aria-selected=true]{background:var(--pl-action);border-color:var(--pl-action);color:#fff;font-weight:700}
+.pl-page-actions details{position:relative}.pl-page-actions summary{cursor:pointer;padding:6px 12px;border:1px solid #c7d5d8;border-radius:8px;list-style:none;background:#fff}
+.pl-page-actions details nav{position:absolute;right:0;top:110%;display:grid;background:#fff;border:1px solid var(--pl-line);border-radius:8px;padding:6px;min-width:180px;z-index:20}
+
+/* Controlos: alvos maiores e foco visível em todas as páginas */
+body button,body select,body input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]),body textarea{border-radius:8px}
+body button{cursor:pointer}
+body button:focus-visible,body a:focus-visible,body select:focus-visible,body input:focus-visible,body textarea:focus-visible,body summary:focus-visible{outline:2px solid #25899b;outline-offset:2px}
+body .primary,body button.primary{background:var(--pl-action);border-color:var(--pl-action);color:#fff}
+body .primary:hover{background:var(--pl-action-dark)}
+
+.pl-spacer{flex:1}
+
+/* Páginas de ecrã inteiro (Tabela, Capacidades): cabeçalho + ações + conteúdo que ocupa o resto */
+body.pl-fill{display:flex;flex-direction:column;height:100dvh;overflow:hidden}
+body.pl-fill>.pl-header,body.pl-fill>.pl-page-actions{flex:none}
+body.pl-fill>main{flex:1 1 auto;min-height:0;height:auto!important}
+
+/* Gantt: índice da página e secções separadas */
+.pl-toc{position:sticky;top:52px;z-index:20;display:flex;gap:6px;flex-wrap:wrap;padding:8px 0;margin:0 0 8px;background:var(--pl-bg)}
+.pl-toc a[hidden]{display:none}
+.pl-toc a{text-decoration:none;color:var(--pl-ink);background:#fff;border:1px solid var(--pl-line);border-radius:999px;padding:5px 12px}
+.pl-toc a:hover{border-color:var(--pl-action);color:var(--pl-action)}
+section[id]{scroll-margin-top:110px}
+
+@media(max-width:760px){
+  .pl-header{gap:10px;padding:0 10px}
+  .pl-brand{display:none}
+  .pl-header::after{content:"";position:absolute;right:0;top:0;bottom:0;width:28px;pointer-events:none;background:linear-gradient(90deg,transparent,var(--pl-brand))}
+  .pl-more-menu{top:54px;right:8px;left:auto}
+  .pl-toc{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}.pl-toc a{white-space:nowrap}
+  .pl-nav>a,.pl-more>summary{padding:15px 9px}
+  .pl-page-actions{padding:8px 10px}
+  body h1{font-size:11pt!important}
+  body.pl-fill[data-mode]{height:auto;overflow:visible}
+}
+@media print{.pl-header,.pl-page-actions,.pl-toc{display:none!important}}

@@ -1,8 +1,8 @@
 """Deterministic earliest-due feasible schedule and CP-SAT fallback."""
 from __future__ import annotations
 
-from .calendar import first_fit, windows
-from .contracts import minute
+from .calendar import option_fit
+from .contracts import minute, predecessors
 from .provenance import apply as annotate_provisional
 from .validation import validate
 
@@ -13,6 +13,7 @@ def build(snapshot):
     bars = {}
     unplaced = {}
     occupied = {resource: [] for resource in snapshot['resources']}
+    shared = {}
     remaining = {key for key, job in jobs.items() if job['state'] == 'ready'}
     # Reserve fixed work and its unfinished predecessors before free work can
     # consume their slots. A fixed successor cannot run until its chain ends.
@@ -21,9 +22,9 @@ def build(snapshot):
         if key not in remaining or pin_chain.get(key, fixed_minute + 1) <= fixed_minute:
             return
         pin_chain[key] = fixed_minute
-        predecessor = jobs[key].get('predecessor_key')
-        if predecessor in remaining:
-            reserve_chain(predecessor, fixed_minute)
+        for predecessor in predecessors(jobs[key]):
+            if predecessor in remaining:
+                reserve_chain(predecessor, fixed_minute)
     for key, pin in snapshot.get('pins', {}).items():
         if key in remaining:
             reserve_chain(key, minute(pin['start'], snapshot['started_at']))
@@ -38,11 +39,11 @@ def build(snapshot):
         protected = remaining.intersection(pin_chain)
         for key in sorted(protected if protected else remaining, key=order):
             job = jobs[key]
-            prior = job.get('predecessor_key')
-            if prior and prior in remaining:
+            previous = predecessors(job)
+            if any(prior in remaining for prior in previous):
                 continue
-            earliest = bars[prior]['end_minute'] if prior in bars else 0
-            if prior and jobs[prior]['state'] != 'complete' and prior not in bars:
+            earliest = max((bars[p]['end_minute'] for p in previous if p in bars), default=0)
+            if any(jobs.get(p, {}).get('state') != 'complete' and p not in bars for p in previous):
                 remaining.remove(key); states[key] = 'overflow'
                 unplaced[key] = 'Dependência anterior sem colocação no horizonte.'
                 progressed = True; continue
@@ -53,12 +54,15 @@ def build(snapshot):
                 if pin and pin['resource_id'] != resource:
                     continue
                 fixed = minute(pin['start'], snapshot['started_at']) if pin else None
-                found = first_fit(windows(snapshot, resource), max(earliest, option.get('earliest_minute') or 0),
-                                  option['duration_minutes'], occupied[resource], fixed)
+                found = option_fit(snapshot, option, max(earliest, option.get('earliest_minute') or 0),
+                                   occupied[resource], shared, fixed)
                 if found and option.get('latest_minute') is not None and found['end'] > option['latest_minute']:
                     found = None
                 if found:
-                    candidates.append((found['end'], resource, found['start'],
+                    due = minute(job['deadline'],snapshot['started_at']) if job.get('deadline') else None
+                    stable = (job.get('assignment') or {}).get('resource_id')
+                    candidates.append(((max(0,found['end']-due) if due is not None else 0,
+                        bool(stable and resource!=stable),found['end']), resource, found['start'],
                                        str(option.get('option_id') or option['duration_minutes']), found, option))
             if candidates:
                 _, resource, _, _, found, option = min(candidates, key=lambda x: x[:4])
@@ -69,6 +73,8 @@ def build(snapshot):
                              'provisional':bool(job.get('balance_provisional') or option.get('provisional'))}
                 occupied[resource].extend(found['segments'])
                 occupied[resource].sort()
+                for pool, demand in option.get('shared_demands', {}).items():
+                    shared.setdefault(pool, []).extend((left, right, demand) for left, right in found['segments'])
                 states[key] = 'scheduled'
             else:
                 unplaced[key] = 'Sem encaixe válido no calendário, vigência ou fixação.'

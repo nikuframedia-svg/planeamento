@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="pt">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Planeamento · Carga e turnos</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/static/planning_hub.css">
+  <link rel="stylesheet" href="/static/planning_typography.css">
+  <link rel="stylesheet" href="/static/setor_carga.css?v={{ version }}">
+  <script src="/static/setor_carga.js?v={{ version }}" defer></script>
+  <link rel="stylesheet" href="/static/planeamento_ui.css?v=20261002">
+</head>
+<body>
+  {% set active = 'carga' %}{% include "_app_nav.html" %}
+  <main class="load">
+    <header class="load-head">
+      <h1>Carga e turnos</h1>
+      <label>Setor
+        <select id="setor">{% for key, label in sectors.items() %}<option value="{{ key }}"{% if key == 'cantoneiras' %} selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+      </label>
+      <button type="button" id="apply-all" class="apply" hidden>Aplicar todas as recomendações</button>
+      <a href="/planeamento/setor/definicoes">Definições →</a>
+    </header>
+    <p class="legend muted">Cada célula: <b>turnos · capacidade</b>, carga (<span class="k plan">no plano</span> + <span class="k due">a vencer</span> + <span class="k sug">a vencer, máquina sugerida</span>) e a recomendação. O trabalho atrasado conta na semana atual. Clica numa célula para ver as OF e os turnos de cada dia.</p>
+    <p id="notice" class="notice" role="status" hidden></p>
+    <p id="error" class="error" role="alert" hidden></p>
+    <div class="grid-wrap"><table class="loadgrid"><thead id="head"></thead><tbody id="body"></tbody></table></div>
+    <section id="detail" class="detail" hidden></section>
+  </main>
+</body>
+</html>

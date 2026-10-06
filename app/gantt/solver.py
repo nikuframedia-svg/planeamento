@@ -6,9 +6,9 @@ from collections import defaultdict
 
 from ortools.sat.python import cp_model
 
-from .calendar import windows, working_offset
-from .contracts import SOLVER_SECONDS, minute
-from .validation import validate
+from .calendar import option_windows, working_offset
+from .contracts import SOLVER_SECONDS, minute, predecessors
+from .validation import validate, order_scoped, milestone_orders
 from .provenance import apply as annotate_provisional
 
 
@@ -21,6 +21,8 @@ def optimize(snapshot, baseline, *, seconds=SOLVER_SECONDS):
     model = cp_model.CpModel()
     horizon = snapshot['horizon_minutes']
     machine_intervals = defaultdict(list)
+    shared_intervals = defaultdict(list)
+    shared_demands = defaultdict(list)
     placements = {}
     starts = {}
     ends = {}
@@ -36,8 +38,10 @@ def optimize(snapshot, baseline, *, seconds=SOLVER_SECONDS):
         ends[key] = model.NewIntVar(0, horizon, 'end:' + key)
         choices = []
         for index, option in enumerate(job['options']):
+            if option.get('eligibility', 'admissible') != 'admissible':
+                continue
             resource = option['resource_id']
-            available = windows(snapshot, resource)
+            available = option_windows(snapshot, option)
             total = sum(high-low for low, high in available)
             duration = option['duration_minutes']
             if not available or duration > total:
@@ -46,8 +50,6 @@ def optimize(snapshot, baseline, *, seconds=SOLVER_SECONDS):
             start_work = model.NewIntVar(0, total-duration, f'ws:{key}:{index}')
             end_work = model.NewIntVar(duration, total, f'we:{key}:{index}')
             model.Add(end_work == start_work + duration).OnlyEnforceIf(chosen)
-            machine_intervals[resource].append(model.NewOptionalIntervalVar(
-                start_work, duration, end_work, chosen, f'interval:{key}:{index}'))
             first, last = [], []
             accumulated = 0
             for window_index, (low, high) in enumerate(available):
@@ -67,6 +69,28 @@ def optimize(snapshot, baseline, *, seconds=SOLVER_SECONDS):
                 model.AddImplication(finish, chosen)
                 first.append(begin)
                 last.append(finish)
+                # Clip execution to each actual working window. Shared pools and
+                # machines use these absolute segments, including calendar pauses.
+                seg_start = model.NewIntVar(0, horizon, f'ss:{key}:{index}:{window_index}')
+                seg_stop = model.NewIntVar(0, horizon, f'se:{key}:{index}:{window_index}')
+                delta = model.NewIntVar(-horizon, horizon, f'sd:{key}:{index}:{window_index}')
+                seg_size = model.NewIntVar(0, size, f'sz:{key}:{index}:{window_index}')
+                seg_end = model.NewIntVar(0, horizon + size, f'send:{key}:{index}:{window_index}')
+                present = model.NewBoolVar(f'sp:{key}:{index}:{window_index}')
+                model.AddMaxEquality(seg_start, [starts[key], low])
+                model.AddMinEquality(seg_stop, [ends[key], high])
+                model.Add(delta == seg_stop - seg_start)
+                model.AddMaxEquality(seg_size, [delta, 0])
+                model.Add(seg_end == seg_start + seg_size)
+                model.AddImplication(present, chosen)
+                model.Add(seg_size >= 1).OnlyEnforceIf(present)
+                model.Add(seg_size == 0).OnlyEnforceIf([chosen, present.Not()])
+                interval = model.NewOptionalIntervalVar(seg_start, seg_size, seg_end,
+                                                         present, f'wall:{key}:{index}:{window_index}')
+                machine_intervals[resource].append(interval)
+                for pool, demand in option.get('shared_demands', {}).items():
+                    shared_intervals[pool].append(interval)
+                    shared_demands[pool].append(demand)
                 accumulated += size
             model.Add(sum(first) == chosen)
             model.Add(sum(last) == chosen)
@@ -88,7 +112,7 @@ def optimize(snapshot, baseline, *, seconds=SOLVER_SECONDS):
         model.Add(ends[key] == 0).OnlyEnforceIf(placed.Not())
         placements[key] = (placed, choices)
         by_group[job['priority_group']].append(key)
-        if job.get('deadline') and job['priority_group'] != 1:
+        if job.get('deadline') and not order_scoped(job):
             due = minute(job['deadline'], snapshot['started_at'])
             late = model.NewIntVar(0, max(horizon, horizon-due), 'late:' + key)
             model.Add(late >= ends[key] - due).OnlyEnforceIf(placed)
@@ -96,31 +120,33 @@ def optimize(snapshot, baseline, *, seconds=SOLVER_SECONDS):
             lateness[key] = late
     for resource, intervals in machine_intervals.items():
         model.AddNoOverlap(intervals)
+    for pool, intervals in shared_intervals.items():
+        model.AddCumulative(intervals, shared_demands[pool], snapshot['resources'][pool].get('capacity', 1))
     for job in ready:
-        prior = job.get('predecessor_key')
-        if prior in placements:
-            model.Add(placements[job['key']][0] <= placements[prior][0])
-            model.Add(starts[job['key']] >= ends[prior]).OnlyEnforceIf(placements[job['key']][0])
-        elif prior and jobs.get(prior, {}).get('state') != 'complete':
-            model.Add(placements[job['key']][0] == 0)
+        for prior in predecessors(job):
+            if prior in placements:
+                model.Add(placements[job['key']][0] <= placements[prior][0])
+                model.Add(starts[job['key']] >= ends[prior]).OnlyEnforceIf(placements[job['key']][0])
+            elif jobs.get(prior, {}).get('state') != 'complete':
+                model.Add(placements[job['key']][0] == 0)
 
-    picking_lateness = []
-    for of in sorted({jobs[key]['of'] for key in by_group[1]}):
-        keys = [key for key in by_group[1] if jobs[key]['of'] == of]
-        required = [key for key in snapshot.get('orders', {}).get(of, keys)
-                    if jobs[key]['state'] != 'complete']
+    # Order-scoped milestones (Picking): the whole OF of that sector must be ready.
+    # Operation-scoped ones (Data Corte) already have their own lateness above.
+    milestone_lateness = []
+    for area, of, keys, required in milestone_orders(snapshot, jobs, [key for key in by_group[1] if order_scoped(jobs[key])]):
         if not all(key in placements for key in required):
             continue
-        all_placed = model.NewBoolVar('of-ready:' + of)
+        label = f'{area}:{of}'
+        all_placed = model.NewBoolVar('of-ready:' + label)
         model.Add(sum(placements[key][0] for key in required) == len(required)).OnlyEnforceIf(all_placed)
         model.Add(sum(placements[key][0] for key in required) <= len(required)-1).OnlyEnforceIf(all_placed.Not())
-        finished = model.NewIntVar(0, horizon, 'of-end:' + of)
+        finished = model.NewIntVar(0, horizon, 'of-end:' + label)
         model.AddMaxEquality(finished, [ends[key] for key in required])
         due = min(minute(jobs[key]['deadline'], snapshot['started_at']) for key in keys)
-        late = model.NewIntVar(0, max(horizon,horizon-due), 'of-late:' + of)
+        late = model.NewIntVar(0, max(horizon,horizon-due), 'of-late:' + label)
         model.Add(late >= finished - due).OnlyEnforceIf(all_placed)
         model.Add(late == 0).OnlyEnforceIf(all_placed.Not())
-        picking_lateness.append(late)
+        milestone_lateness.append(late)
 
     moves = []
     for key, prior in (snapshot.get('accepted_bars') or {}).items():
@@ -133,11 +159,15 @@ def optimize(snapshot, baseline, *, seconds=SOLVER_SECONDS):
             if resource != prior['resource_id']:
                 moves.append(480 * chosen)
     makespan = model.NewIntVar(0, horizon, 'makespan')
+    for key,(_,choices) in placements.items():
+        current=jobs[key].get('source_resource_id')
+        if key not in (snapshot.get('accepted_bars') or {}) and current and any(resource==current for _,resource,*_ in choices):
+            moves.extend(480*chosen for chosen,resource,*_ in choices if resource!=current)
     model.AddMaxEquality(makespan, list(ends.values()))
     objectives = []
     for group in range(3):
         objectives.append(sum(1-placements[key][0] for key in by_group[group]))
-        objectives.append(sum(picking_lateness) if group == 1 else sum(lateness[key] for key in by_group[group] if key in lateness))
+        objectives.append((sum(milestone_lateness) if group == 1 else 0) + sum(lateness[key] for key in by_group[group] if key in lateness))
     objectives.extend([sum(moves), makespan])
 
     # Give the solver the independently validated deterministic proposal.
@@ -151,7 +181,9 @@ def optimize(snapshot, baseline, *, seconds=SOLVER_SECONDS):
             model.AddHint(starts[key], bar['start_minute'])
             model.AddHint(ends[key], bar['end_minute'])
         for chosen, resource, option, ws, we, first, last, available in choices:
-            selected = bool(bar and resource == bar['resource_id'])
+            selected = bool(bar and resource == bar['resource_id'] and
+                            (bar.get('option_id') == option.get('option_id') if bar.get('option_id')
+                             else bar.get('duration_minutes') == option['duration_minutes']))
             model.AddHint(chosen, int(selected))
             if selected:
                 start_work = working_offset(available, bar['start_minute'])
@@ -184,7 +216,7 @@ def optimize(snapshot, baseline, *, seconds=SOLVER_SECONDS):
                 if solver.Value(chosen):
                     start, end = solver.Value(starts[key]), solver.Value(ends[key])
                     used = []
-                    for low, high in windows(snapshot, resource):
+                    for low, high in option_windows(snapshot, option):
                         left, right = max(low, start), min(high, end)
                         if right > left:
                             used.append((left, right))

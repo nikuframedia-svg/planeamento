@@ -7,11 +7,12 @@ from urllib.parse import urlsplit
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
+from .templates_env import install
 from starlette.concurrency import run_in_threadpool
 from .. import planning, planning_needs as needs, planning_catalogs as catalogs, planning_associations as associations
 
 router=APIRouter()
-templates=Jinja2Templates(directory=str(Path(__file__).parent/'templates'))
+templates=install(Jinja2Templates(directory=str(Path(__file__).parent/'templates')))
 
 
 def enabled():return os.environ.get('MES_PLANNING_NEEDS_ENABLED','0')=='1'

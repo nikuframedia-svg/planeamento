@@ -1,9 +1,9 @@
-const {chromium}=require('/home/luis/.npm/_npx/fd3bca3c548369c0/node_modules/playwright-core');
+const {chromium}=require('./playwright_core.cjs');
 const fs=require('node:fs'),assert=require('node:assert/strict'),crypto=require('node:crypto');
 const base=process.env.PLANNING_CHECK_BASE,folder='docs/validacao-planeamento-integral/20260923-execucao';
 if(base!=='http://127.0.0.1:18113'||process.env.PLANNING_TEST_ISOLATED!=='1')throw Error('Isolated planning server required');
 (async()=>{
- const browser=await chromium.launch({executablePath:'/home/luis/.cache/ms-playwright/chromium-1243/chrome-linux64/chrome',headless:true,args:['--no-sandbox']});
+ const browser=await chromium.launch({executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE,headless:true,args:['--no-sandbox']});
  const fixture=JSON.parse(fs.readFileSync(folder+'/c02-source-policy-swap-fixture.json'));
  const report={at:new Date().toISOString(),base,fixture,script_sha256:crypto.createHash('sha256').update(fs.readFileSync(__filename)).digest('hex'),steps:[],errors:[]};
  try{
@@ -11,7 +11,7 @@ if(base!=='http://127.0.0.1:18113'||process.env.PLANNING_TEST_ISOLATED!=='1')thr
   // Discard uncommitted operation drafts when changing the operation again.
   page.on('dialog',d=>d.accept());
   await page.goto(base+'/planeamento/preparar?area=cantoneiras&of='+encodeURIComponent(fixture.of));
-  await page.locator('#references-open').click();await page.locator('#reference-query').fill(fixture.reference);
+  await page.locator('#order-pieces').waitFor({state:'visible'});await page.locator('#reference-query').fill(fixture.reference);
   report.referenceOptions=await page.locator('#references button').allTextContents();
   const label=fixture.reference+' · '+fixture.profile+' · '+String(fixture.length)+' mm · plano importado';
   await page.locator('#references').getByRole('button',{name:label,exact:true}).click();

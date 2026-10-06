@@ -1,4 +1,4 @@
-"""Versioned Perfis scenarios, frozen executions and guarded acceptance."""
+"""Versioned planning scenarios, frozen executions and guarded acceptance."""
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
@@ -19,7 +19,7 @@ from .contracts import HORIZON_WEEKS, utc
 
 log = logging.getLogger(__name__)
 USER_FIELDS = {'horizon_weeks', 'urgent', 'pins', 'picking_year_by_of',
-               'picking_deadline_by_of', 'alternatives'}
+               'picking_deadline_by_of', 'alternatives', 'machine_overrides', 'areas', 'included_operations'}
 
 
 @lru_cache(maxsize=1)
@@ -27,14 +27,16 @@ def runtime_manifest():
     root = Path(__file__).resolve().parents[1]
     paths = sorted([*root.joinpath('gantt').glob('*.py'),
                     root/'planning_dates.py', root/'planning_estimates.py',
-                    root/'planning_calendars.py'])
+                    root/'planning_calendars.py',root/'planning_population.py',
+                    root/'sector/scope.py',root/'sector/decisions.py',root/'sector/machine_choice.py',
+                    root/'raw/productivity.py'])
     digest = sha256(b''.join(path.read_bytes() for path in paths)).hexdigest()
     return {'code_sha256': digest,
             'python_dependencies': {name: version(name) for name in ('ortools', 'psycopg')}}
 
 
 def validate_definition(value):
-    if not isinstance(value, dict) or set(value) - USER_FIELDS - {'accepted', 'pin_bindings'}:
+    if not isinstance(value, dict) or set(value) - USER_FIELDS - {'accepted', 'pin_bindings', 'override_bindings'}:
         raise planning.PlanningError('Definição do cenário inválida.', 422)
     weeks = value.get('horizon_weeks', HORIZON_WEEKS)
     if type(weeks) is not int or not 1 <= weeks <= 26:
@@ -77,10 +79,34 @@ def validate_definition(value):
     result = {'horizon_weeks': weeks, 'urgent': list(dict.fromkeys(urgent)),
               'pins': clean_pins, 'picking_year_by_of': years,
               'picking_deadline_by_of': deadlines, 'alternatives': alternatives}
+    areas = value.get('areas', ['perfis'])
+    if not isinstance(areas, list) or not areas or any(a not in planning.AREAS for a in areas):
+        raise planning.PlanningError('Seleciona os setores do cenário.', 422)
+    result['areas'] = list(dict.fromkeys(areas))
+    overrides = value.get('machine_overrides', {})
+    if not isinstance(overrides, dict) or len(overrides) > 30000:
+        raise planning.PlanningError('Escolhas de máquina inválidas.', 422)
+    clean = {}
+    for key, decision in overrides.items():
+        if not isinstance(key, str) or not isinstance(decision, dict) or set(decision) - {'resource_id', 'reason'}:
+            raise planning.PlanningError('Escolha de máquina inválida.', 422)
+        rid = str(needs.uid(decision.get('resource_id')))
+        reason = str(decision.get('reason') or '').strip()
+        if not reason or len(reason) > 1000:
+            raise planning.PlanningError('Indica o motivo da escolha manual.', 422)
+        clean[key] = {'resource_id': rid, 'reason': reason}
+    result['machine_overrides'] = clean
+    if 'included_operations' in value:
+        selected = value['included_operations']
+        if not isinstance(selected, list) or any(not isinstance(k, str) for k in selected) or len(selected) > 50000:
+            raise planning.PlanningError('Seleção de operações inválida.', 422)
+        result['included_operations'] = list(dict.fromkeys(selected))
     if 'accepted' in value:
         result['accepted'] = value['accepted']
     if 'pin_bindings' in value:
         result['pin_bindings'] = value['pin_bindings']
+    if 'override_bindings' in value:
+        result['override_bindings'] = value['override_bindings']
     return result
 
 
@@ -88,7 +114,8 @@ def _binding(operation):
     return {'of': operation['of'], 'operation': operation['operation'],
             'planning_key': operation['planning_key'],
             'selection_aliases': operation.get('selection_aliases') or [],
-            'technical_signature': operation['technical_signature']}
+            'technical_signature': operation['technical_signature'],
+            'area': operation.get('area'), 'occurrence': operation.get('occurrence')}
 
 
 def _current_pin_bindings(conn, pins, inherited=None):
@@ -117,7 +144,48 @@ def _current_pin_bindings(conn, pins, inherited=None):
     return bindings
 
 
-def operations(scenario_id=None):
+def snapshot(area=None):
+    """O retrato atual de um setor (o mesmo que operations usa), para o quadro semanal e a proposta automática."""
+    with planning.connect(readonly=True) as c:
+        c.execute('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ')
+        from . import research
+        d = {'areas': ['perfis', 'cantoneiras']} if research.enabled() else {}
+        if area:
+            d = {**d, 'areas': [planning.check_area(area)]}
+        return inputs.capture(c, d, datetime.now(timezone.utc) + timedelta(minutes=1))
+
+
+def operations(scenario_id=None, area=None):
+    with planning.connect(readonly=True) as c:
+        c.execute('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ')
+        from . import research
+        d = {'areas': ['perfis', 'cantoneiras']} if research.enabled() else {}
+        if scenario_id:
+            obj = objects.get(scenario_id, c)
+            if obj['kind'] != 'gantt' or obj['archived']:
+                raise planning.PlanningError('Cenário indisponível.', 404)
+            d = obj['definition']
+        if area:
+            d = {**d, 'areas': [planning.check_area(area)]}
+        snapshot = inputs.capture(c, d, datetime.now(timezone.utc) + timedelta(minutes=1))
+        from . import insights, weekly
+        public = [{**op, 'candidate_count': len(op.get('candidates', [])),
+                   'cpis_evidence':{k:v for k,v in (op.get('cpis_evidence') or {}).items() if k in ('version','status','limitation')},
+                   'candidates': None, 'evidence': {k:v for k,v in op.get('evidence', {}).items() if k != 'raw'}
+                   if isinstance(op.get('evidence'), dict) else op.get('evidence')}
+                  for op in snapshot['operations']]
+        return {'operations': public, 'resources': snapshot['resources'],
+                'source_references': snapshot['source_references'],
+                'orphaned_pins': snapshot['orphaned_pins'],
+                'orphaned_overrides': snapshot.get('orphaned_overrides', []),
+                'areas': snapshot.get('areas', ['perfis']),
+                'selection_summary':snapshot.get('selection_summary'),
+                'source_status': snapshot.get('source_status'),
+                'insights': insights.build(snapshot), 'weekly_simulation': weekly.build(snapshot),
+                'source_plan': source_plan.build(snapshot)}
+
+
+def options(key, scenario_id=None):
     with planning.connect(readonly=True) as c:
         c.execute('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ')
         d = {}
@@ -127,10 +195,49 @@ def operations(scenario_id=None):
                 raise planning.PlanningError('Cenário indisponível.', 404)
             d = obj['definition']
         snapshot = inputs.capture(c, d, datetime.now(timezone.utc) + timedelta(minutes=1))
-        return {'operations': snapshot['operations'], 'resources': snapshot['resources'],
-                'source_references': snapshot['source_references'],
-                'orphaned_pins': snapshot['orphaned_pins'],
-                'source_plan': source_plan.build(snapshot)}
+        op = next((o for o in snapshot['operations'] if o['key'] == key), None)
+        if not op:
+            raise planning.PlanningError('Operação indisponível nesta versão.', 404)
+        return {'operation': op, 'source_references': snapshot['source_references']}
+
+
+def confirm_rule(p):
+    """Explicit, audited technical review; never confirms resource calendars."""
+    from .machines import validate_rules
+    with planning.connect() as c:
+        _,actor,old=needs.command(c,p)
+        if old:
+            return old
+        snapshot=inputs.capture(c,{'areas':['perfis','cantoneiras']},datetime.now(timezone.utc).replace(second=0,microsecond=0))
+        if p.get('source_references')!=snapshot['source_references']:
+            raise planning.PlanningError('As fontes mudaram. Reabre a operação antes de validar.',409)
+        op=next((o for o in snapshot['operations'] if o['key']==p.get('key')),None)
+        if not op:
+            raise planning.PlanningError('Operação fora da seleção com informação de planeamento.',409)
+        resource=objects.get(p.get('resource_id'),c)
+        if resource['revision']!=p.get('expected_revision'):
+            raise planning.PlanningError('As regras desta máquina mudaram. Reabre a operação.',409)
+        candidates=[o for o in op.get('candidates',[]) if o.get('resource_id')==resource['id']]
+        available={condition for o in candidates for condition in o['conditions']}
+        conditions=p.get('resolved_conditions')
+        if not candidates or not isinstance(conditions,list) or not conditions or set(conditions)-available:
+            raise planning.PlanningError('Seleciona as condições desta alternativa que foram comprovadas.',422)
+        reason=str(p.get('reason') or '').strip()
+        if p.get('confirmed') is not True or not reason or len(reason)>1000:
+            raise planning.PlanningError('Confirma a revisão técnica e descreve a prova.',422)
+        signature=op.get('evidence',{}).get('variant_signature')
+        if not signature:
+            raise planning.PlanningError('Identidade técnica por resolver antes de criar uma regra.',422)
+        rule={'operation_code':op['operation'],'signature':signature,'revision':op['technical']['revision'],
+            'resolved_conditions':list(dict.fromkeys(conditions)),'reason':reason,'confirmed':True,
+            'actor':actor,'confirmed_at':datetime.now(timezone.utc).isoformat(),
+            'evidence':op['evidence']['snapshot'],'source_references':snapshot['source_references'],
+            **({'order_code':op['of']} if 'confirmar_cliente_nacional' in conditions else {})}
+        d=resource['definition'];rules=[*d.get('technical_rules',[]),rule];validate_rules(rules)
+        saved=objects.save({**p,'request_id':str(uuid.uuid5(needs.uid(p['request_id']),'technical-rule')),
+            'id':resource['id'],'area':resource['area'],'name':resource['name'],
+            'definition':{**d,'technical_rules':rules,'operations':list(dict.fromkeys([*d.get('operations',[]),op['operation']]))}},'resource',conn=c)
+        return needs.finish(c,p,saved)
 
 
 def _current(conn, payload, current_refs=None):
@@ -148,7 +255,7 @@ def _current(conn, payload, current_refs=None):
         now = inputs.capture(conn, payload['definition'], payload['started_at'])
     except planning.PlanningError:
         return False
-    return not now['orphaned_pins'] and inputs.effective_digest(now) == inputs.effective_digest(frozen)
+    return not now['orphaned_pins'] and not now.get('orphaned_overrides') and inputs.effective_digest(now) == inputs.effective_digest(frozen)
 
 
 def scenarios():
@@ -178,17 +285,40 @@ def save(p):
         prior = c.execute('SELECT * FROM planning_mtg.raw_objects WHERE id=%s FOR UPDATE', (ident,)).fetchone()
         if prior and prior['kind'] != 'gantt':
             raise planning.PlanningError('Identificador já utilizado por outro registo.', 409)
-        if p.get('area', 'perfis') != 'perfis':
-            raise planning.PlanningError('O Gantt está disponível apenas para Perfis.', 422)
+        planning.check_area(p.get('area', 'perfis'))
         incoming = p.get('definition') or {}
-        if not isinstance(incoming, dict) or 'accepted' in incoming or 'pin_bindings' in incoming:
+        if not isinstance(incoming, dict) or set(incoming) & {'accepted', 'pin_bindings', 'override_bindings'}:
             raise planning.PlanningError('A aceitação faz-se na ação própria.', 422)
         d = validate_definition(incoming)
         d['pin_bindings'] = _current_pin_bindings(c, d['pins'],
             (prior['definition'].get('pin_bindings') if prior else None))
+        from . import research
+        if d['machine_overrides'] or research.enabled() and d['pins']:
+            snapshot = inputs.capture(c, {**d, 'machine_overrides': {}}, datetime.now(timezone.utc).replace(second=0, microsecond=0))
+            ops = {o['key']: o for o in snapshot['operations']}
+            inherited = prior['definition'].get('override_bindings', {}) if prior else {}
+            decisions, _, orphans = inputs.reconcile_decisions(snapshot['operations'], d['machine_overrides'], inherited)
+            if orphans:
+                raise planning.PlanningError('Escolhas manuais sem correspondência inequívoca: revê ou remove as decisões órfãs.', 409)
+            d['machine_overrides'] = decisions
+            for key, decision in d['machine_overrides'].items():
+                if key not in ops:
+                    raise planning.PlanningError('Operação da escolha manual já não existe.', 409)
+                op = ops[key]
+                if op.get('started') and decision['resource_id'] != op.get('source_resource_id'):
+                    raise planning.PlanningError('A operação iniciada conserva a máquina de execução.', 422)
+                permitted = {o['resource_id'] for o in op.get('candidates', op['options']) if o.get('eligibility') != 'excluded' and o.get('resource_id')}
+                if decision['resource_id'] not in permitted:
+                    raise planning.PlanningError('Máquina sem alternativa admissível ou condicional para esta operação.', 422)
+                pin = d['pins'].get(key)
+                if pin and pin['resource_id'] != decision['resource_id']:
+                    raise planning.PlanningError('A máquina escolhida contradiz a fixação horária.', 422)
+            d['override_bindings'] = {key: _binding(ops[key]) for key in d['machine_overrides']}
+            if research.enabled():
+                d['pin_bindings'] = {key: _binding(ops[key]) for key in d['pins'] if key in ops}
         if prior and prior['definition'].get('accepted'):
             d['accepted'] = prior['definition']['accepted']
-        return objects.save({**p, 'id': str(ident), 'area': 'perfis', 'definition': d}, 'gantt', conn=c)
+        return objects.save({**p, 'id': str(ident), 'area': d['areas'][0], 'definition': d}, 'gantt', conn=c)
 
 
 def solve(p):
@@ -205,6 +335,13 @@ def solve(p):
         refs = inputs.references(c)
         if refs['sources_pending']:
             raise planning.PlanningError('Aguarda a publicação dos cálculos.', 409)
+        from . import research
+        import os
+        if research.enabled() or os.getenv('MES_PLANNING_SELECTION_ENABLED')=='1':
+            from ..sector import scope
+            chosen,_=scope.planning_lines(c,scope.read(c),obj['definition'].get('areas',['perfis']))
+            if not chosen:
+                raise planning.PlanningError('Marca o trabalho com Planear na Carteira; o Gantt exige seleção e informação ativa de planeamento.',422)
         accepted = obj['definition'].get('accepted') or {}
         prior_bars = {}
         started = datetime.now(timezone.utc).replace(second=0, microsecond=0) + timedelta(minutes=1)
@@ -254,8 +391,14 @@ def run_job(job):
                                       payload['started_at'], expected_references=payload['source_references'])
         payload['snapshot'] = snapshot
         preliminary = {'input': payload, 'result': {'phase': 'initial', 'snapshot': snapshot}}
-        if snapshot['orphaned_pins']:
-            preliminary['result']['diagnostic'] = {'orphaned_pins': snapshot['orphaned_pins']}
+        if not snapshot['operations']:
+            preliminary['result'].update(phase='diagnostic',diagnostic={'message':'A seleção ainda não tem operações com informação ativa de planeamento.'})
+            _publish(job,preliminary,final=True)
+            return
+        from . import weekly, insights
+        preliminary['result'].update(weekly_simulation=weekly.build(snapshot), insights=insights.build(snapshot))
+        if snapshot['orphaned_pins'] or snapshot.get('orphaned_overrides'):
+            preliminary['result']['diagnostic'] = {'orphaned_pins': snapshot['orphaned_pins'], 'orphaned_overrides': snapshot.get('orphaned_overrides', [])}
         try:
             initial = baseline.build(snapshot)
         except (ValueError, KeyError) as exc:
@@ -266,14 +409,16 @@ def run_job(job):
         preliminary['result']['initial'] = initial
         preliminary['result']['timings'] = {'initial_seconds': round(time.perf_counter()-began, 3)}
         _publish(job, preliminary)
-        if snapshot['orphaned_pins']:
+        if snapshot['orphaned_pins'] or snapshot.get('orphaned_overrides'):
             preliminary['result'].update(phase='diagnostic', proposal=initial)
             _publish(job, preliminary, final=True)
             return
         proposal, technical = solver.optimize(snapshot, initial)
         checked = validation.validate(snapshot, proposal)
         preliminary['result']['timings']['total_seconds'] = round(time.perf_counter()-began, 3)
-        preliminary['result'].update(phase='done', proposal=proposal, solver=technical, validation=checked)
+        from . import backlog
+        preliminary['result'].update(phase='done', proposal=proposal, solver=technical, validation=checked,
+                                     backlog=backlog.compare(snapshot, initial, proposal))
         _publish(job, preliminary, final=True)
     except Exception as exc:
         log.exception('Gantt job failed')
@@ -302,7 +447,7 @@ def accept(p):
             raise planning.PlanningError('A proposta não é aceitável.', 409)
         if not _current(c, row['input']):
             raise planning.PlanningError('As fontes mudaram. Recalcula a proposta.', 409)
-        if snapshot.get('orphaned_pins'):
+        if snapshot.get('orphaned_pins') or snapshot.get('orphaned_overrides'):
             raise planning.PlanningError('Revê as fixações órfãs ou incompatíveis.', 409)
         checked = validation.validate(snapshot, proposal)
         if not checked['valid']:
@@ -311,10 +456,12 @@ def accept(p):
                     'score': checked['score'], 'accepted_at': datetime.now(timezone.utc).isoformat()}
         internal = {'request_id': str(uuid.uuid5(needs.uid(p['request_id']), 'accepted-gantt')),
                     'id': obj['id'], 'expected_revision': obj['revision'],
-                    'name': obj['name'], 'area': 'perfis',
+                    'name': obj['name'], 'area': obj['area'],
                     'definition': {**obj['definition'], 'pins': snapshot['pins'],
                                    'pin_bindings': {op['key']:_binding(op) for op in snapshot['operations']
                                                     if op['key'] in snapshot['pins']},
+                                   'machine_overrides': snapshot.get('machine_overrides', {}),
+                                   'override_bindings': {op['key']:_binding(op) for op in snapshot['operations'] if op['key'] in snapshot.get('machine_overrides', {})},
                                    'accepted': accepted}}
         saved = objects.save(internal, 'gantt', conn=c)
         return needs.finish(c, p, {'id': saved['id'], 'revision': saved['revision'], 'accepted': accepted})

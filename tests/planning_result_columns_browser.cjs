@@ -1,10 +1,10 @@
-const {chromium}=require('/home/luis/.npm/_npx/fd3bca3c548369c0/node_modules/playwright-core');
+const {chromium}=require('./playwright_core.cjs');
 const fs=require('node:fs'),assert=require('node:assert/strict');
 const base=process.env.PLANNING_CHECK_BASE,folder='docs/validacao-planeamento-integral/20260923-execucao';
 if(base!=='http://127.0.0.1:18113'||process.env.PLANNING_TEST_ISOLATED!=='1')throw Error('Explicit isolated planning copy required');
 (async()=>{
  const fixtures=JSON.parse(fs.readFileSync(folder+'/c04-result-columns-fixture.json','utf8'));
- const browser=await chromium.launch({executablePath:'/home/luis/.cache/ms-playwright/chromium-1243/chrome-linux64/chrome',headless:true,args:['--no-sandbox']});
+ const browser=await chromium.launch({executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE,headless:true,args:['--no-sandbox']});
  const report={at:new Date().toISOString(),base,scope:'All eight newly exposed result columns, exact/absent weight samples, derived values and readonly UI. Source selection remains a separate gate.',samples:[],errors:[]};let page;
  const display=n=>n===null?'—':new Intl.NumberFormat('pt-PT',{maximumFractionDigits:4}).format(n).replace(/\s/g,'');
  const same=(a,b)=>a===null||b===null?assert.equal(a,b):assert(Math.abs(a-b)<=Math.max(1e-6,Math.abs(b)*1e-8));

@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="pt">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Plano das máquinas · Planeamento</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/static/planning_typography.css">
+  <link rel="stylesheet" href="/static/planeamento_ui.css?v=20261002">
+  <link rel="stylesheet" href="/static/plano.css?v=20261002e">
+  <script src="/static/plano.js?v=20261002f" defer></script>
+</head>
+<body>
+  {% set active = 'gantt' %}{% include "_app_nav.html" %}
+  <main class="pq">
+    <div class="pq-top">
+      <div>
+        <h1>Plano das máquinas</h1>
+        <p class="pq-sub" id="source">A carregar…</p>
+      </div>
+      <div class="pq-sectors" role="group" aria-label="Setor">
+        <button type="button" data-sector="cantoneiras" aria-pressed="true">MTG3 Cantoneiras</button>
+        <button type="button" data-sector="perfis" aria-pressed="false">MTG2 Perfis</button>
+      </div>
+    </div>
+    <div id="notice" class="pq-notice" role="status" aria-live="polite" hidden></div>
+
+    <section class="pq-alert" id="alert" aria-labelledby="alert-title" hidden>
+      <header class="pq-alert-head">
+        <span class="pq-alert-count" id="alert-count">0</span>
+        <div>
+          <h2 id="alert-title">OF por planear</h2>
+          <p>Entraram e ainda não têm máquina, por isso não estão no plano. As mais urgentes estão em cima.</p>
+        </div>
+      </header>
+      <ol class="pq-list" id="alert-list"></ol>
+      <button type="button" class="pq-more" id="alert-more" hidden></button>
+      <details class="pq-cpis" id="cpis" hidden>
+        <summary id="cpis-title"></summary>
+        <p>Estas OF estão abertas no CPIS mas não aparecem no plano de Perfis nem no de Cantoneiras. Ainda não se sabe em que setor entram.</p>
+        <div class="pq-table-wrap"><table class="pq-table">
+          <thead><tr><th scope="col">OF</th><th scope="col">Cliente</th><th scope="col">Tipo de obra</th><th scope="col">Entrou</th><th scope="col">Entrega</th></tr></thead>
+          <tbody id="cpis-list"></tbody>
+        </table></div>
+      </details>
+    </section>
+    <section class="pq-ok" id="all-planned" hidden><strong>Tudo planeado.</strong> Todas as OF deste setor já têm máquina.</section>
+
+    <section class="pq-board" aria-labelledby="board-title">
+      <div class="pq-board-head">
+        <div>
+          <h2 id="board-title">O que cada máquina vai fazer</h2>
+          <p>Cada linha é uma máquina. Cada caixa é uma OF: começa no dia em que a máquina pega nela e acaba no dia em que deve ficar feita. Carrega numa caixa para ver os pormenores.</p>
+        </div>
+        <div class="pq-weeks" role="group" aria-label="Semanas">
+          <button type="button" id="prev" aria-label="Semana anterior">◀</button>
+          <button type="button" id="today">Hoje</button>
+          <button type="button" id="next" aria-label="Semana seguinte">▶</button>
+          <strong id="range"></strong>
+        </div>
+      </div>
+      <ul class="pq-legend" aria-label="Legenda">
+        <li><i class="pq-box-sample"></i> A tempo</li>
+        <li><i class="pq-box-sample late"></i> Atrasada (passa do prazo ou o dia já passou)</li>
+        <li><i class="pq-box-sample approximate"></i> Só se sabe a semana</li>
+      </ul>
+      <div class="pq-behind" id="behind" hidden></div>
+      <div class="pq-gantt" id="gantt" tabindex="0" aria-label="Plano por máquina"></div>
+      <div class="pq-empty" id="empty" hidden></div>
+      <button type="button" class="pq-more" id="idle-toggle" hidden></button>
+    </section>
+
+    <p class="pq-foot">Para fazer propostas, aceitar o plano ou mudar a máquina de uma operação: <a href="/planeamento/gantt/detalhe">ferramentas do planeador</a>.</p>
+
+    <dialog class="pq-dialog" id="dialog" aria-labelledby="dialog-title">
+      <form method="dialog">
+        <h2 id="dialog-title"></h2>
+        <dl id="dialog-body"></dl>
+        <div class="pq-dialog-actions" id="dialog-actions"></div>
+      </form>
+    </dialog>
+  </main>
+</body>
+</html>

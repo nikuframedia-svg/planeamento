@@ -1,0 +1,329 @@
+{
+  "collected_at_lisbon": "2026-10-02T16:36:03.599715+01:00",
+  "source_repository": "/home/luis/projects/planeamento",
+  "method": "GET locais; reprodução com linhas sintéticas e _write substituído por captura; nenhum POST nem gravação na base operacional. Testes de persistência em PostgreSQL descartável.",
+  "http": [
+    {
+      "path": "/planeamento/carteira",
+      "status": 200,
+      "labels": {
+        "Família da encomenda": true,
+        "Prazo": true,
+        "Sinal": true,
+        "Família SKU": true,
+        "OF → Perfil": false
+      }
+    },
+    {
+      "path": "/planeamento/api/carteira/opcoes?setor=cantoneiras",
+      "status": 200,
+      "keys": [
+        "families",
+        "sku_families",
+        "machines"
+      ],
+      "families": 10,
+      "sku_families": 89,
+      "machines": [
+        "Ficep Rapid 20T -1",
+        "Ficep Rapid 20T -2",
+        "Ficep Rapid 25T",
+        "Ficep XP T4",
+        "Ficep XP T6",
+        "Ficep XP T7",
+        "Ficep XP T8",
+        "Ficep XP T9",
+        "Peddi 6",
+        "Peddi 8"
+      ]
+    },
+    {
+      "path": "/planeamento/api/carteira?setor=cantoneiras&vista=perfil",
+      "status": 200,
+      "totals": {
+        "lines": 17787,
+        "ofs": 176,
+        "pieces": 171703,
+        "unknown_balances": 2511,
+        "metres": 351521.8,
+        "metres_without_machine": 287149.6,
+        "earliest_cut_date": "2025-11-21",
+        "earliest_priority_day": "2025-11-21",
+        "windows": {
+          "atrasado": 128069.6,
+          "3_semanas": 18996.1,
+          "mais_tarde": 140629.8,
+          "sem_data": 63826.2
+        },
+        "machines": [
+          {
+            "machine": "Sem máquina",
+            "metres": 287149.6
+          },
+          {
+            "machine": "Peddi 8",
+            "metres": 18280.5
+          },
+          {
+            "machine": "Ficep XP T4",
+            "metres": 12645.4
+          },
+          {
+            "machine": "Ficep XP T6",
+            "metres": 11413.7
+          }
+        ],
+        "signals": {
+          "anulada": 1799,
+          "estado_cpis": 3389,
+          "validacao": 936,
+          "eletrofer": 361,
+          "prioridade": 1205
+        },
+        "priority": 1,
+        "written_weeks": [
+          "W1/2027",
+          "W2/2027",
+          "W3/2027",
+          "W4/2027",
+          "W44/2026",
+          "W45/2026",
+          "W46/2026",
+          "W48",
+          "W48/2026",
+          "W49/2026",
+          "W50/2026",
+          "W52",
+          "W8/2027"
+        ],
+        "customers": [
+          "ALSTOM",
+          "BRAGALUX-MONTAGENS ELÉCTRICAS,S.A.",
+          "C.M.E.-CONST. E"
+        ],
+        "designation": "MCA | POSTE DUERO 4KS 30M | MONTANTES | (25UN.) ENTREGA W48/2026",
+        "states": {
+          "proposta": 107636.1,
+          "selecionado": 558.1,
+          "excluido": 0.0,
+          "por_decidir": 243327.6
+        },
+        "state_counts": {
+          "por_decidir": 10116,
+          "selecionado": 53,
+          "proposta": 7618
+        },
+        "pending_following_operations": 4870,
+        "proposed_metres": 108180.1
+      },
+      "group_count": 108,
+      "generation": 4118,
+      "snapshot": "mtg_cdd4dda73e0856f6",
+      "states": {
+        "proposta": "Proposta por decidir",
+        "selecionado": "Marcado para planear",
+        "excluido": "Excluído",
+        "por_decidir": "Sem decisão"
+      },
+      "level": {
+        "id": "profile",
+        "label": "Perfil"
+      }
+    },
+    {
+      "path": "/planeamento/api/carteira?setor=cantoneiras&vista=perfil&q=__inexistente_analise__",
+      "status": 200,
+      "totals": {
+        "lines": 0,
+        "ofs": 0,
+        "pieces": 0,
+        "unknown_balances": 0,
+        "metres": 0,
+        "metres_without_machine": 0,
+        "earliest_cut_date": null,
+        "earliest_priority_day": null,
+        "windows": {
+          "atrasado": 0.0,
+          "3_semanas": 0.0,
+          "mais_tarde": 0.0,
+          "sem_data": 0.0
+        },
+        "machines": [],
+        "signals": {},
+        "priority": null,
+        "written_weeks": [],
+        "customers": [],
+        "designation": "",
+        "states": {
+          "proposta": 0.0,
+          "selecionado": 0.0,
+          "excluido": 0.0,
+          "por_decidir": 0.0
+        },
+        "state_counts": {},
+        "pending_following_operations": 0,
+        "proposed_metres": 0
+      },
+      "group_count": 0,
+      "generation": 4118,
+      "snapshot": "mtg_cdd4dda73e0856f6",
+      "states": {
+        "proposta": "Proposta por decidir",
+        "selecionado": "Marcado para planear",
+        "excluido": "Excluído",
+        "por_decidir": "Sem decisão"
+      },
+      "level": {
+        "id": "profile",
+        "label": "Perfil"
+      }
+    },
+    {
+      "path": "/planeamento/api/carteira?setor=cantoneiras&vista=familia_sku",
+      "status": 200,
+      "totals": {
+        "lines": 17787,
+        "ofs": 176,
+        "pieces": 171703,
+        "unknown_balances": 2511,
+        "metres": 351521.8,
+        "metres_without_machine": 287149.6,
+        "earliest_cut_date": "2025-11-21",
+        "earliest_priority_day": "2025-11-21",
+        "windows": {
+          "atrasado": 128069.6,
+          "3_semanas": 18996.1,
+          "mais_tarde": 140629.8,
+          "sem_data": 63826.2
+        },
+        "machines": [
+          {
+            "machine": "Sem máquina",
+            "metres": 287149.6
+          },
+          {
+            "machine": "Peddi 8",
+            "metres": 18280.5
+          },
+          {
+            "machine": "Ficep XP T4",
+            "metres": 12645.4
+          },
+          {
+            "machine": "Ficep XP T6",
+            "metres": 11413.7
+          }
+        ],
+        "signals": {
+          "anulada": 1799,
+          "estado_cpis": 3389,
+          "validacao": 936,
+          "eletrofer": 361,
+          "prioridade": 1205
+        },
+        "priority": 1,
+        "written_weeks": [
+          "W1/2027",
+          "W2/2027",
+          "W3/2027",
+          "W4/2027",
+          "W44/2026",
+          "W45/2026",
+          "W46/2026",
+          "W48",
+          "W48/2026",
+          "W49/2026",
+          "W50/2026",
+          "W52",
+          "W8/2027"
+        ],
+        "customers": [
+          "ALSTOM",
+          "BRAGALUX-MONTAGENS ELÉCTRICAS,S.A.",
+          "C.M.E.-CONST. E"
+        ],
+        "designation": "MCA | POSTE DUERO 4KS 30M | MONTANTES | (25UN.) ENTREGA W48/2026",
+        "states": {
+          "proposta": 107636.1,
+          "selecionado": 558.1,
+          "excluido": 0.0,
+          "por_decidir": 243327.6
+        },
+        "state_counts": {
+          "por_decidir": 10116,
+          "selecionado": 53,
+          "proposta": 7618
+        },
+        "pending_following_operations": 4870,
+        "proposed_metres": 108180.1
+      },
+      "group_count": 89,
+      "generation": 4118,
+      "snapshot": "mtg_cdd4dda73e0856f6",
+      "states": {
+        "proposta": "Proposta por decidir",
+        "selecionado": "Marcado para planear",
+        "excluido": "Excluído",
+        "por_decidir": "Sem decisão"
+      },
+      "level": {
+        "id": "sku_family",
+        "label": "Família SKU"
+      }
+    },
+    {
+      "path": "/planeamento/maquinas",
+      "error": "HTTP Error 404: Not Found"
+    }
+  ],
+  "synthetic": {
+    "of_wildcard_filtered": {
+      "pairs": [
+        [
+          "OF1",
+          "*"
+        ]
+      ],
+      "action": "selected",
+      "visible_lines": 1,
+      "effective_selected_lines": 2
+    },
+    "state_filter_write": {
+      "pairs": [
+        [
+          "OF1",
+          "*"
+        ]
+      ],
+      "action": "selected",
+      "visible_lines": 1,
+      "matched_by_write": 2
+    },
+    "same_of_reference_different_profiles": {
+      "pairs": [
+        [
+          "OF1",
+          "SAME_REF"
+        ]
+      ],
+      "action": "selected",
+      "visible_lines": 1,
+      "effective_selected_lines": 2
+    },
+    "cleared_specific_with_selected_parent": "selected"
+  },
+  "validation": {
+    "pytest": {
+      "command": ".venv/bin/python -m pytest tests/test_sector_portfolio.py tests/test_sector_selection.py -q",
+      "passed": 20,
+      "warnings": 12,
+      "warning_reason": "Limpeza de diretórios temporários de execuções anteriores do pytest.",
+      "seconds": 4.9
+    },
+    "browser": {
+      "command": "CARTEIRA_SHOT=/tmp/carteira-atual-2026-10-02.png node tests/carteira_browser.cjs",
+      "status": "passed",
+      "writes": false
+    }
+  }
+}

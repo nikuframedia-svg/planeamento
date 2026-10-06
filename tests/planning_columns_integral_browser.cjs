@@ -1,11 +1,11 @@
-const {chromium}=require('/home/luis/.npm/_npx/fd3bca3c548369c0/node_modules/playwright-core');
+const {chromium}=require('./playwright_core.cjs');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const base=process.env.PLANNING_CHECK_BASE;
 const output=process.env.PLANNING_CHECK_OUTPUT || 'docs/validacao-planeamento-integral/20260923-execucao';
 if(!base || !process.env.PLANNING_TEST_ISOLATED) throw Error('An explicitly isolated server is required');
 (async()=>{
- const browser=await chromium.launch({executablePath:'/home/luis/.cache/ms-playwright/chromium-1243/chrome-linux64/chrome',headless:true,args:['--no-sandbox']});
+ const browser=await chromium.launch({executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE,headless:true,args:['--no-sandbox']});
  try {
   const page=await browser.newPage({viewport:{width:1440,height:1000}}),errors=[],report={base,areas:{}};
   page.on('pageerror',e=>errors.push(e.message));

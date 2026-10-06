@@ -11,6 +11,16 @@
   const uuid = () => crypto.randomUUID();
   const format = (instant, options={}) => instant ? new Intl.DateTimeFormat("pt-PT",{timeZone:"Europe/Lisbon",dateStyle:"short",timeStyle:"short",...options}).format(new Date(instant)) : "—";
   const coverage = value => value==="complete"?"completa":value==="partial"?"parcial":value||"parcial";
+  const conditionLabel = value => ({confirmar_cliente_nacional:"Mercado nacional por confirmar",
+    confirmar_graminho_ferramentas_e_desenho:"Graminho, ferramentas e desenho por confirmar",
+    confirmar_numero_de_diametros_da_peca:"Confirmar os três diâmetros da peça",
+    mudanca_112_para_119_requer_decisao:"Autorizar explicitamente a mudança 112 → 119",
+    revisao_tecnica_por_validar:"Identidade e revisão técnica por validar",
+    confirmar_geometria_furacao_e_revisao:"Geometria, furação e revisão por confirmar",
+    perfil_por_interpretar:"Perfil por interpretar",limites_por_validar:"Limites da máquina por validar",
+    abas_desiguais_por_validar:"Abas desiguais por validar",rota_por_validar:"Rota por validar",
+    recurso_da_operacao_por_validar:"Recurso da operação por validar",
+    processo_119_em_puncao_por_confirmar:"Código 119 em punção: prática observada no Excel, confirmar furação e desenho"}[value]||value.replaceAll('_',' '));
   const text = (tag, value, cls="") => {const node=document.createElement(tag);node.textContent=value ?? "";if(cls)node.className=cls;return node};
   const notice = (message, error=false) => {$("notice").textContent=message;$("notice").classList.toggle("error",error)};
   async function api(path, body) {
@@ -24,6 +34,12 @@
   function renderFreshness() {
     $("source-state").textContent=data.proposalStale?"Proposta desatualizada · recalcular":"Fontes publicadas atuais";
     $("source-state").classList.toggle("stale",data.proposalStale);
+    if(data.sourceStatus){
+      const sourceDates = values => {const dates=(values||[]).filter(v=>v&&!Number.isNaN(Date.parse(v))).sort();return dates.length?format(dates[0])+(dates.at(-1)!==dates[0]?" a "+format(dates.at(-1)):""):"sem data"};
+      const sources=data.sourceStatus.sources||{};
+      $("source-state").textContent=`Dados v2 · Excel importado ${sourceDates(sources.excel?.map(x=>x.loaded_at))} · CPIS capturada ${sourceDates(sources.cpis?.map(x=>x.capturado_em))} · consulta ${format(data.sourceStatus.checked_at)}${data.sourceStatus.last_error?" · origem indisponível, versão conservada":""}${data.sourceStatus.calculations_pending?" · cálculos em atualização":""}${data.proposalStale?" · proposta desatualizada, recalcular":""}`;
+      $("source-state").classList.toggle("stale",Boolean(data.sourceStatus.last_error)||data.proposalStale);
+    }
     const accepted=$("accepted-state");
     accepted.hidden=!data.scenario?.definition?.accepted;
     accepted.textContent=data.stale?"Plano aceite desatualizado · recalcular":"Plano aceite atual";
@@ -32,7 +48,10 @@
   function currentDefinition() {
     return {horizon_weeks:Number($("horizon").value),urgent:data.definition?.urgent||[],
       pins:data.definition?.pins||{},picking_year_by_of:data.definition?.picking_year_by_of||{},
-      picking_deadline_by_of:data.definition?.picking_deadline_by_of||{},alternatives:data.definition?.alternatives||{}};
+      picking_deadline_by_of:data.definition?.picking_deadline_by_of||{},alternatives:data.definition?.alternatives||{},
+      areas:$("areas").value==="both"?["perfis","cantoneiras"]:[$("areas").value],
+      machine_overrides:data.definition?.machine_overrides||{},
+      ...(data.definition?.included_operations?{included_operations:data.definition.included_operations}:{})};
   }
   async function loadScenarios(keep) {
     const response=await api("scenarios");data.scenarios=response.scenarios||[];
@@ -44,15 +63,25 @@
     renderFreshness();
   }
   async function loadOperations() {
-    const info=await api("operations"+(data.scenario?`?scenario_id=${encodeURIComponent(data.scenario.id)}`:""));
+    const params=new URLSearchParams();if(data.scenario)params.set("scenario_id",data.scenario.id);
+    if($("areas").value!=="both")params.set("area",$("areas").value);
+    const info=await api("operations?"+params);
     data.operations=info.operations||[];data.resources=info.resources||{};
     data.liveOperations=data.operations;data.liveResources=data.resources;data.sourcePlan=info.source_plan;
+    data.sourceStatus=info.source_status;renderFreshness();
+    data.selectionSummary=info.selection_summary;
+    const queue=$("resolution-queue");queue.replaceChildren();
+    for(const gap of (info.insights?.resolution_queue||[]).slice(0,5)){
+      const card=text("a","","resolution-card");card.href=gap.resolution_url;
+      card.append(text("strong",`${gap.operations} operações · ${gap.orders} OF`),text("span",gap.reason));queue.append(card);
+    }
     populateWeeks();
     const machines=$("source-machine-filter"),keepMachine=machines.value;
     machines.replaceChildren(new Option("Todas as máquinas",""),...Object.entries(data.liveResources).sort((a,b)=>a[1].name.localeCompare(b[1].name)).map(([rid,r])=>new Option(r.name,rid)));
     machines.value=data.liveResources[keepMachine]?keepMachine:"";
     renderSummary();renderOperations();
     if(info.orphaned_pins?.length)notice(`${info.orphaned_pins.length} fixações pedem revisão antes da aceitação.`,true);
+    if(info.orphaned_overrides?.length)notice(`${info.orphaned_overrides.length} escolhas de máquina perderam a correspondência; revê o cenário.`,true);
   }
   async function loadAccepted() {
     data.accepted=null;data.acceptedSnapshot=null;
@@ -65,7 +94,8 @@
   async function choose() {
     data.scenario=data.scenarios.find(s=>s.id===$("scenario").value)||null;
     data.definition=data.scenario?.definition?structuredClone(data.scenario.definition):null;
-    $("scenario-name").value=data.scenario?.name||"Plano de Perfis";
+    $("scenario-name").value=data.scenario?.name||"Plano de produção";
+    const areas=data.definition?.areas;$("areas").value=areas?.length===1?areas[0]:"both";
     $("horizon").value=String(data.definition?.horizon_weeks||12);
     $("selected-detail").replaceChildren();
     data.proposal=null;data.snapshot=null;data.selected=null;data.proposalStale=false;
@@ -89,7 +119,7 @@
   }
   async function saveScenario() {
     const payload={request_id:uuid(),id:data.scenario?.id,expected_revision:data.scenario?.revision||0,
-      name:$("scenario-name").value.trim(),area:"perfis",definition:currentDefinition()};
+      name:$("scenario-name").value.trim(),area:currentDefinition().areas[0],definition:currentDefinition()};
     const saved=await api("scenarios",payload);
     await loadScenarios(saved.id);
     data.definition=structuredClone(data.scenario.definition);
@@ -113,7 +143,7 @@
       if(run.result?.proposal||run.result?.initial){data.proposal=run.result.proposal||run.result.initial;renderSummary();renderOperations();renderTimeline()}
       if(run.status==="done"){
         notice(run.stale?"A proposta ficou desatualizada durante o cálculo. Gera uma nova proposta.":run.result?.phase==="diagnostic" ? (run.result.diagnostic?.message||"Proposta com fixações para rever.") :
-          `Proposta ${run.result?.proposal?.origin||"inicial"} concluída · ${coverage(run.result?.proposal?.coverage)}.`,run.stale||run.result?.phase==="diagnostic");
+          `Proposta ${run.result?.proposal?.origin||"inicial"} concluída · ${coverage(run.result?.proposal?.coverage)}.${run.result?.backlog?` Atraso concluído em ${run.result.backlog.proposal.window_days} dias: ${run.result.backlog.proposal.late_completed_hours} de ${run.result.backlog.proposal.late_reference_hours} h de referência (sequência inicial ${run.result.backlog.reference.late_completed_hours} h) · ${run.result.backlog.proposal.orders_completed} de ${run.result.backlog.proposal.orders_due} OF com prazo completas.`:""}`,run.stale||run.result?.phase==="diagnostic");
         setAcceptance(run.result?.phase==="done"&&!run.stale&&run.result?.validation?.valid);
         return;
       }
@@ -151,13 +181,15 @@
     rows.sort((a,b)=>(a.state==="blocked"?0:a.state==="ready"?1:2)-(b.state==="blocked"?0:b.state==="ready"?1:2)||a.priority_group-b.priority_group||(a.deadline||"").localeCompare(b.deadline||"")||a.key.localeCompare(b.key));
     const wrap=$("operations");wrap.replaceChildren();
     $("pending-count").textContent=`${rows.length} de ${viewOperations().length} operações · seleção visual não altera o cálculo`;
-    if(!rows.length){wrap.append(text("p","Sem operações neste filtro.","operations-empty"));return}
-    for(const op of rows){
+    if(!rows.length){wrap.append(text("p",data.liveOperations.length?"Sem operações neste filtro.":"Marca as OFs ou referências com Planear na Carteira. O Gantt recebe apenas a seleção com informação ativa de planeamento.","operations-empty"));
+      if(data.selectionSummary?.pending?.length)wrap.append(text('p',`${data.selectionSummary.pending.length} seleções aguardam informação de planeamento ou correspondência de identidade.`,'hint'));
+      return}
+    for(const op of rows.slice(0,500)){
       const state=shown?.states?.[op.key]||op.state;
       const provisional=Boolean(bars[op.key]?.provisional||op.provisional);
       let status=(state==="complete"?"Concluída":state==="scheduled"?"Calendarizada":state==="overflow"?(shown?.unplaced_reasons?.[op.key]||"Fora do horizonte"):op.blocking_reasons?.join("; ")||"A aguardar proposta")+
         (op.milestones?.picking_provisional?" · Picking: ano 2026 assumido":"");
-      if(sourceView() && state!=="complete")status=`${op.source_machine||"Máquina por indicar"} · ${op.source_duration?.hours==null?"Duração por confirmar":Number(op.source_duration.hours).toFixed(2)+" h"} · previsão ${op.milestones?.operation_forecast|| (op.milestones?.period_week?`W${op.milestones.period_week}/${op.milestones.period_year}`:"por indicar")} · ${status}`;
+      if(sourceView() && state!=="complete")status=`${viewResources()[op.assignment?.resource_id]?.name||op.source_machine||"Máquina por indicar"}${op.assignment?.eligibility==="conditional"?" · condicional":""} · ${op.source_duration?.hours==null?"Duração por confirmar":Number(op.source_duration.hours).toFixed(2)+" h"} · previsão ${op.milestones?.operation_forecast|| (op.milestones?.period_week?`W${op.milestones.period_week}/${op.milestones.period_year}`:"por indicar")} · ${status}`;
       const row=text("button","","operation-row"+(data.selected===op.key?" selected":""));row.type="button";
       row.append(text("span",op.of,"of"),text("span",`${op.reference||"Sem referência"} · ${op.operation}`),
         text("span",`${op.planning_remaining??"?"} un.`),text("span",provisional?"Provisório":"Confirmado",provisional?"provisional":""),
@@ -165,6 +197,7 @@
       row.title=`${op.key}\nMáquina no planeamento: ${op.source_machine||"—"}\nDuração calculada: ${op.source_duration?.hours??"—"} h · ${op.source_duration?.origin||"—"}\nOrigem do saldo: ${op.balance_origin||"desconhecida"}\n${(bars[op.key]?.provisional_reasons||[]).join("; ")}\nPrevisão: ${op.milestones?.operation_forecast||"—"}\nPicking: ${format(op.milestones?.picking)}\nFim Produção: ${op.milestones?.planned_finish_date||"—"}\nEntrega: ${op.milestones?.delivery_date||"—"}\nObservações Kanban: ${op.observations?.length||0}`;
       row.addEventListener("click",()=>selectOperation(op.key));wrap.append(row);
     }
+    if(rows.length>500)wrap.append(text('p',`A mostrar as primeiras 500 de ${rows.length} operações. Pesquisa para encontrar uma OF ou referência; o cálculo usa toda a seleção.`,'hint'));
   }
   function localLisbon(iso) {
     if(!iso)return "";
@@ -181,20 +214,37 @@
     if(found===undefined)throw Error("Esta hora local não existe em Lisboa devido à mudança de hora.");
     return new Date(found).toISOString();
   }
-  function selectOperation(key) {
-    const op=viewOperations().find(x=>x.key===key);if(!op)return;
+  async function selectOperation(key) {
+    let op=viewOperations().find(x=>x.key===key);if(!op)return;
+    data.selected=key;
+    if(op.candidates===null){
+      try{
+        const loaded=await api(`options?key=${encodeURIComponent(key)}${data.scenario?"&scenario_id="+encodeURIComponent(data.scenario.id):""}`);
+        if(data.selected!==key)return;
+        op=loaded.operation;
+        data.selectedReferences=loaded.source_references;
+      }catch(error){notice(error.message,true);return}
+    }
     const detail=$("selected-detail");detail.replaceChildren();
     const known=sourceView()?data.sourcePlan?.entries.find(e=>e.key===key):null;
-    const details=[['Máquina',op.source_machine||'Por indicar'],['Referência / linha',`${op.reference||'—'} / ${op.line||op.planning_key}`],
+    const suggestion=viewResources()[op.assignment?.resource_id]?.name;
+    const acceptedOp=data.acceptedSnapshot?.operations.find(x=>x.key===key);
+    const acceptedRid=data.accepted?.bars?.[key]?.resource_id||acceptedOp?.assignment?.resource_id;
+    const details=[['Máquina de origem',op.source_machine||'Por indicar'],['Máquina sugerida',suggestion||'Por indicar'],
+      ['Máquina aceite',`${data.acceptedSnapshot?.resources?.[acceptedRid]?.name||'Sem plano aceite para esta ocorrência'}${acceptedOp?.assignment?.eligibility==='conditional'?' · condicional':''}`],
+      ['Escolha',`${op.assignment?.mode==="manual"?"Manual":"Automática"} · ${op.assignment?.reason||"—"}`],
+      ['Operação proposta',op.assignment?.proposed_code||op.operation],
+      ['Condições',(op.assignment?.conditions||[]).map(conditionLabel).join('; ')||'—'],['Referência / linha',`${op.reference||'—'} / ${op.line||op.planning_key}`],
       ['Saldo',`${op.planning_remaining??'?'} un. · ${op.balance_origin||'origem desconhecida'}`],
       ['Carga',`${known?.hours!=null?Number(known.hours).toFixed(2)+' h':op.source_duration?.hours!=null?Number(op.source_duration.hours).toFixed(2)+' h':'Por confirmar'} · ${op.source_duration?.origin||'—'}`],
       ['Previsão',known?`${known.start_date} · ${known.precision==='week'?'semana':'dia'} · ${known.forecast_origin||'planeamento'}`:op.milestones?.operation_forecast||'Por indicar'],
+      ['Prazo do setor',op.priority?.priority_day?`${op.priority.priority_day.split('-').reverse().join('/')} · ${op.priority.priority_source}${op.priority.priority_scope==='order'?' · OF inteira':''}`:(op.priority?.missing_reason||'—')],
       ['Picking',`${format(op.milestones?.picking)}${op.milestones?.picking_provisional?' · ano assumido':''}`],
       ['Fim Produção',op.milestones?.planned_finish_date||'—'],['Entrega',op.milestones?.delivery_date||'—']];
     for(const [label,value] of details){const line=text('p','');line.append(text('strong',label+' '),text('span',value));detail.append(line)}
     if(op.provisional||known?.provisional)detail.append(text('p','Estimativa provisória','provisional'));
     if(op.blocking_reasons?.length)detail.append(text('p','Para calendarizar ao minuto: '+op.blocking_reasons.join('; '),'hint'));
-    data.selected=key;$("selected-key").value=key;$("selected-of").value=op.of;
+    data.selected=key;$("selected-key").value=op.occurrence?`${op.operation} · ocorrência ${op.occurrence}`:op.operation;$("selected-of").value=op.of;
     $("urgent").checked=(data.definition?.urgent||[]).includes(key);
     $("picking-year").value=data.definition?.picking_year_by_of?.[op.of]||"";
     $("picking-deadline").value=localLisbon(data.definition?.picking_deadline_by_of?.[op.of])||"";
@@ -202,12 +252,54 @@
     for(const option of op.options||[])select.add(new Option(viewResources()[option.resource_id]?.name||option.resource_id,option.resource_id));
     const pin=data.definition?.pins?.[key];select.value=pin?.resource_id||"";
     $("pin-start").value=localLisbon(pin?.start)||"";
+    const machine=$("machine-choice");machine.replaceChildren(new Option("Automático",""));
+    const variants=op.candidates||op.options||[];const seen=new Set();
+    for(const candidate of variants){
+      if(!candidate.resource_id||seen.has(candidate.resource_id)||candidate.eligibility==="excluded")continue;
+      seen.add(candidate.resource_id);
+      machine.add(new Option(`${viewResources()[candidate.resource_id]?.name||candidate.resource_id}${candidate.eligibility==="conditional"?" · condicional":""}`,candidate.resource_id));
+    }
+    data.selectedOperation=op;
+    const ruleResource=$('rule-resource');ruleResource.replaceChildren();
+    const ruleResources=new Set();
+    for(const candidate of variants)if(candidate.conditions?.length&&candidate.resource_id&&!ruleResources.has(candidate.resource_id)){
+      ruleResources.add(candidate.resource_id);ruleResource.add(new Option(viewResources()[candidate.resource_id]?.name||candidate.resource_id,candidate.resource_id));
+    }
+    $('technical-review').hidden=!op.evidence?.variant_signature||!ruleResource.options.length;
+    $('rule-reason').value='';$('rule-confirmed').checked=false;renderRuleConditions();
+    machine.value=data.definition?.machine_overrides?.[key]?.resource_id||"";
+    $("machine-reason").value=data.definition?.machine_overrides?.[key]?.reason||"";
+    const alternatives=$("machine-alternatives");alternatives.replaceChildren();
+    for(const candidate of variants){
+      const name=viewResources()[candidate.resource_id]?.name||candidate.resource_code||candidate.resource_id;
+      const status={admissible:"Admissível",conditional:"Condicional",excluded:"Excluída"}[candidate.eligibility]||"Alternativa";
+      const duration=candidate.duration;
+      const estimate=duration?` · ${Number(duration.duration_hours).toFixed(2)} h · ${duration.duration_origin}${candidate.predicted_finish_without_queue?" · fim sem fila "+format(candidate.predicted_finish_without_queue):""}`:"";
+      alternatives.append(text("p",`${name} · ${status}${candidate.code_change?" · "+op.operation+" → "+candidate.proposed_code:""} · ${candidate.other_orders??"—"} outras OF · ${(candidate.reasons||[]).map(conditionLabel).join('; ')||candidate.duration_reason||"compatibilidade registada"}${estimate}`,"hint"));
+    }
     renderOperations();
     $("edit-title").scrollIntoView({block:"nearest",behavior:"smooth"});
+  }
+  function renderRuleConditions(){
+    const candidates=data.selectedOperation?.candidates?.filter(c=>c.resource_id===$('rule-resource').value)||[];
+    const box=$('rule-conditions');box.replaceChildren();
+    for(const condition of new Set(candidates.flatMap(c=>c.conditions||[]))){
+      const label=text('label','','check'),input=document.createElement('input');input.type='checkbox';input.value=condition;
+      label.append(input,text('span',conditionLabel(condition)));box.append(label);
+    }
+  }
+  async function saveRule(){
+    const rid=$('rule-resource').value,resource=viewResources()[rid];
+    const resolved=[...$('rule-conditions input:checked')].map(input=>input.value);
+    if(!resolved.length)throw Error('Assinala as condições comprovadas.');
+    await api('rules',{request_id:uuid(),key:data.selected,resource_id:rid,expected_revision:resource.revision,
+      source_references:data.selectedReferences,resolved_conditions:resolved,reason:$('rule-reason').value.trim(),confirmed:$('rule-confirmed').checked});
+    notice('Regra técnica guardada. Atualiza após a publicação dos cálculos para rever as alternativas.');
   }
   async function applyAdjustment() {
     const key=data.selected;if(!key)throw Error("Seleciona uma operação.");
     data.definition=data.definition||currentDefinition();
+    const scheduleBefore=JSON.stringify([data.definition.urgent,data.definition.picking_year_by_of,data.definition.picking_deadline_by_of,data.definition.pins]);
     const urgent=new Set(data.definition.urgent||[]);$("urgent").checked?urgent.add(key):urgent.delete(key);data.definition.urgent=[...urgent];
     const years={...(data.definition.picking_year_by_of||{})};
     if($("picking-year").value)years[$("selected-of").value]=Number($("picking-year").value);
@@ -221,7 +313,15 @@
     if($("pin-resource").value){if(!$("pin-start").value)throw Error("Indica o início fixo.");pins[key]={resource_id:$("pin-resource").value,start:toUTCFromLisbon($("pin-start").value)}}
     else delete pins[key];
     data.definition.pins=pins;
-    await generate();
+    const overrides={...(data.definition.machine_overrides||{})};
+    if($("machine-choice").value){
+      const reason=$("machine-reason").value.trim();if(!reason)throw Error("Indica o motivo da escolha manual.");
+      overrides[key]={resource_id:$("machine-choice").value,reason};
+    }else delete overrides[key];
+    data.definition.machine_overrides=overrides;
+    const scheduleChanged=scheduleBefore!==JSON.stringify([data.definition.urgent,data.definition.picking_year_by_of,data.definition.picking_deadline_by_of,data.definition.pins]);
+    if(scheduleChanged){await generate()}
+    else{await saveScenario();await loadOperations();notice("Escolha guardada. Gera uma proposta para atualizar os horários.")}
   }
   function weekStart(value) {
     const day=new Date(value.slice(0,10)+"T12:00:00Z");day.setUTCDate(day.getUTCDate()-((day.getUTCDay()+6)%7));
@@ -380,7 +480,11 @@
   $("scale").addEventListener("change",renderTimeline);$("compare").addEventListener("change",()=>{renderTimeline();renderSummary();renderOperations()});
   $("search").addEventListener("input",renderOperations);
   $("edit-form").addEventListener("submit",event=>{event.preventDefault();safe(applyAdjustment)()});
+  $("rule-form").addEventListener("submit",event=>{event.preventDefault();safe(saveRule)()});
+  $("rule-resource").addEventListener("change",renderRuleConditions);
   $("clear-pin").addEventListener("click",()=>{$("pin-resource").value="";$("pin-start").value=""});
+  $("restore-auto").addEventListener("click",()=>{$("machine-choice").value="";$("machine-reason").value=""});
+  $("areas").addEventListener("change",safe(async()=>{await loadOperations();renderTimeline()}));
   setAcceptance(false);
   safe(async()=>{await loadScenarios();await choose()})();
 })();

@@ -79,7 +79,9 @@ def capture(conn,area,*,force=False):
     for row in local_orders:orders[row['production_order_no']]['local']=needs.serial(row)
     # Catalogues and reference formulas may affect every piece. Only a proven
     # unchanged catalogue allows an order-scoped calculation.
-    return {'contract':'source-scope-v7','engine':[projection.RAW_CONTRACT,planning_calculations.CONTRACT,capacity.ESTIMATE_CONTRACT],
+    from .registration import enabled as free_entry
+    from . import sku_families
+    return {'contract':'source-scope-v9-free-'+str(free_entry()),'engine':[projection.RAW_CONTRACT,planning_calculations.CONTRACT,capacity.ESTIMATE_CONTRACT,sku_families.token(conn,area)],
             'day':datetime.now(ZoneInfo(planning.settings.display_timezone)).date().isoformat(),
             'catalogs':macro['catalogs'],'unknown':macro['unknown'],'orders':{of:needs.digest(value) for of,value in sorted(orders.items())}}
 

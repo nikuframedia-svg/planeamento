@@ -251,11 +251,11 @@ def test_pending_feed_filters_unknown_orders_without_fabricating_identity(canoni
 def test_editor_presentation_contract_is_shared(canonical):
     cat=catalogs.catalog('perfis')
     fields={f['id']:f for f in cat['fields']}
-    assert fields['quantity_required']['label']=='Quantidade total necessária'
+    assert fields['quantity_required']['label']=='Quantidade'
     assert fields['quantity_to_plan']['label']=='Quantidade a preparar agora'
     assert fields['quantity_required']['group']=='piece'
     assert not fields['quantity_to_plan']['editor_visible']
-    assert fields['grade']['group']=='cut'
+    assert fields['grade']['group']=='piece' and fields['picking_week']['group']=='piece'
     assert fields['length_mm']['visibility']=='always'
     assert fields['quantity_to_plan']['help']
     assert needs.need_for_pdf('not-linked','piece')=={'need_id':None}

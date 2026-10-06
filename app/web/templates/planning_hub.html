@@ -7,18 +7,10 @@
   <link rel="stylesheet" href="/static/planning_hub.css?v={{ version }}">
   <script src="/static/planning_hub.js?v={{ version }}" defer></script>
 <link rel="stylesheet" href="/static/planning_typography.css">
+<link rel="stylesheet" href="/static/planeamento_ui.css?v=20261002">
 </head>
 <body>
-  <header class="plant-head">
-    <a class="wordmark" href="/planeamento"><span>METALOGALVA</span><small>Planeamento</small></a>
-    <nav aria-label="Entrada do planeamento">
-      <a href="/planeamento" aria-current="page">Ordens de fabrico</a>
-      {% if selection_enabled is defined and selection_enabled() %}<a href="/planeamento/carteira">Carteira</a>{% endif %}
-      {% if raw_enabled() %}<a href="/planeamento/raw">Vista RAW</a>{% endif %}
-      <a href="/planeamento/dossies">Carregar PDF</a>
-      <a href="/planeamento/manual">Preencher manualmente</a><details class="consult-menu"><summary>Consultas</summary><a href="/planeamento/ocr-original">OCR original</a></details>
-    </nav>
-  </header>
+  {% set active = 'ordens' %}{% include "_app_nav.html" %}
 
   <main>
     <section class="intro">

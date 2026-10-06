@@ -98,7 +98,9 @@ def evaluate(events,cohorts,*,area,operation,method,values,end,days):
             excluded.append({'key':ident,'sheets':sorted(cohort['sheets']),'events':sorted(unique),'reasons':sorted(reasons)})
         else:
             accepted.append({'key':ident,'sheets':sorted(cohort['sheets']),'events':sorted(unique),
-                             'hours':hours,'volume':volume,'start_date':str(first),'end_date':str(last),
+                             'hours':hours,'volume':volume,
+                             'orders':sorted({e['of'] for versions in unique.values() for e in versions if e.get('of')}),
+                             'start_date':str(first),'end_date':str(last),
                              'hours_origin':cohort.get('origin'),'hours_revision':cohort.get('revision'),
                              'allocation':cohort.get('allocation')})
     total_hours=sum(c['hours'] for c in accepted);total_volume=sum(c['volume'] for c in accepted)

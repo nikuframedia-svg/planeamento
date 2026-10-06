@@ -51,10 +51,16 @@ def refresh_sources():
 
 
 def refresh_auxiliary():
+    try:
+        from . import sku_families
+        sku_families.refresh()
+    except Exception:log.exception('Could not register new SKU family mappings')
     # Network observations must not delay local edits or central OCR revisions.
     try:workbooks.observe_drive()
     except Exception:log.exception('Drive metadata unavailable; cached observation retained')
     try:
+        from . import ocr_export
+        ocr_export.refresh()
         source_status('original',begin=True);result=projection.rebuild_original()
         source_status('original',available=bool(result),error=None if result else 'Conector da SQLite original sem publicação confirmada.')
     except Exception as exc:
