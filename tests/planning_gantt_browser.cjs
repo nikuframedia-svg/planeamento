@@ -35,14 +35,27 @@ const assert=require('node:assert/strict');
   await page.waitForFunction(()=>document.querySelector('#scenario').selectedOptions[0]?.textContent.includes('r2'));
   await page.waitForFunction(()=>document.querySelector('#notice').textContent.includes('concluída'),undefined,{timeout:60000});
   assert.equal(await page.locator('#accept').isDisabled(),false);
-  await page.route('**/gantt/jobs/*',async route=>{
+  // Proposta desatualizada (07/10/2026): recalcula sozinha quando as fontes mudaram, no máximo duas vezes por ação;
+  // se continuar desatualizada avisa numa frase curta e Aceitar fica desligado.
+  let solves=0;
+  page.on('request',request=>{if(request.url().endsWith('/api/raw/gantt/solve'))solves++});
+  const staleAs=reason=>page.route('**/gantt/jobs/*',async route=>{
     const response=await route.fetch();const result=await response.json();
-    await route.fulfill({response,json:{...result,stale:true}});
+    await route.fulfill({response,json:{...result,stale:true,stale_reason:reason}});
   });
+  await staleAs('fontes');
   await page.locator('#refresh').click();
-  await page.waitForFunction(()=>document.querySelector('#source-state').textContent.includes('Proposta desatualizada'));
+  await page.waitForFunction(()=>/Gera uma nova proposta/.test(document.querySelector('#notice').textContent),undefined,{timeout:120000});
+  assert.equal(solves,2,'duas recalculações automáticas e depois para');
+  assert.match(await page.locator('#source-state').innerText(),/desatualizada/);
   assert.equal(await page.locator('#accept').isDisabled(),true);
-  assert.match(await page.locator('#notice').innerText(),/Gera uma nova proposta/);
+  await page.unroute('**/gantt/jobs/*');
+  // Outra versão do motor: recalcular daria outra proposta desatualizada; só avisa.
+  await staleAs('motor');solves=0;
+  await page.locator('#refresh').click();
+  await page.waitForFunction(()=>document.querySelector('#notice').textContent.includes('outra versão do motor'));
+  assert.equal(solves,0);
+  assert.equal(await page.locator('#accept').isDisabled(),true);
   await page.unroute('**/gantt/jobs/*');
   await page.locator('#refresh').click();
   await page.waitForFunction(()=>document.querySelector('#source-state').textContent.includes('Fontes publicadas atuais'));

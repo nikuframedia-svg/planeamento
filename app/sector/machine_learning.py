@@ -123,8 +123,9 @@ def model(area: str, *, conn=None, lines: list[dict] | None = None) -> dict:
     from . import portfolio
     from ..gantt import research
     with (planning.connect(readonly=True) if conn is None else nullcontext(conn)) as c:
-        events = c.execute("SELECT count(*) n, max(id) m FROM planning_mtg.sector_decision_events WHERE area = %s AND kind = 'machine'",
-                           (area,)).fetchone()
+        # As mesmas escolhas que build() lê: as máquinas sugeridas gravadas ao Planear não mudam o modelo.
+        events = c.execute("SELECT count(*) n, max(id) m FROM planning_mtg.sector_decision_events WHERE area = %s AND kind = 'machine' "
+                           "AND coalesce(detail->>'origem', '') <> 'sugerida'", (area,)).fetchone()
         data = None
         if lines is None:
             data = portfolio.load(area, conn=c)
@@ -161,16 +162,17 @@ def suggest(learned: dict | None, family, profile) -> dict | None:
     return None
 
 
-def technical(area: str) -> dict | None:
+def technical(area: str, *, data: dict | None = None) -> dict | None:
     """{chave da linha: preferência aprendida já filtrada pelas candidatas técnicas da operação principal}.
 
     Auditoria 06/10 (PROP-2): a Carteira pré-escolhia a máquina aprendida sem olhar à ficha técnica, que a
     pode excluir (ex. Ficep Rapid 25T para L200X200X24) ou nem a ter como candidata. Esta é a mesma
     preferência que a previsão e a Carga usam (estimates.apply). None quando não há ficha técnica (sem
-    camada de pesquisa): fica a sugestão aprendida tal como está.
+    camada de pesquisa): fica a sugestão aprendida tal como está. `data`: ocorrências já lidas (o Planear lê-as
+    atuais; sem elas, a versão em memória, que se refaz em segundo plano).
     """
     from . import occurrences
-    data = occurrences.load(area, allow_stale=True)
+    data = data if data is not None else occurrences.load(area, allow_stale=True)
     if not data.get("research_version"):
         return None
     return {f["line_key"]: f["learned_preference"] for f in data["facts"]

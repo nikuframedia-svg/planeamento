@@ -31,6 +31,15 @@ def test_marking_with_planear_keeps_order_red_until_it_has_a_machine():
     assert result["orders"][0]["marked"] is True
 
 
+def test_planear_is_offered_for_orders_whose_lines_all_lack_a_machine():
+    # Desde 07/10/2026 o Planear dá a máquina sugerida às linhas sem máquina: também contam como por planear.
+    result = board.unplanned("cantoneiras", data=data(line("OF1"), line("OF1", reference="R2")), decisions={})
+    assert result["orders"][0]["plannable"] == 2
+    marked = board.unplanned("cantoneiras", data=data(line("OF1"), line("OF1", reference="R2", machine="Peddi 8")),
+                             decisions={("OF1", "*"): {"decision": "selected"}})
+    assert marked["orders"][0]["marked"] and marked["orders"][0]["plannable"] == 1  # marcada, falta a máquina sugerida
+
+
 def test_excluded_lines_do_not_count_and_partial_orders_show_missing_part():
     decisions = {("OF1", "R2"): {"decision": "excluded"}}
     result = board.unplanned("cantoneiras", data=data(

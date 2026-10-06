@@ -175,7 +175,8 @@ def _legacy(payload: dict, data: dict) -> list[tuple[dict, None]]:
 def request_hash(payload: dict, action: str) -> str:
     """O pedido tal como foi enviado (não o grupo recalculado): uma repetição devolve o resultado gravado."""
     keep = ("setor", "acao", "motivo", "membros", "grupo", "vista", "caminho", "filtros", "maquina")
-    return needs.digest({"action": action, **{k: payload.get(k) for k in keep}})
+    whole = {"todo_o_grupo": True} if payload.get("todo_o_grupo") else {}  # só quando vem: os pedidos antigos mantêm o resumo
+    return needs.digest({"action": action, **{k: payload.get(k) for k in keep}, **whole})
 
 
 def previous_request(c, request_id, content):
@@ -188,27 +189,44 @@ def previous_request(c, request_id, content):
     return {**found["result"], "repeated": True, "changed": 0}
 
 
-def suggested_machines(sector: str, lines: list[dict]) -> dict[str, dict]:
-    """{chave: {resource_id, machine, origin, label}} — a máquina sugerida de cada linha sem máquina (07/10/2026).
+# Coluna Máquina da Tabela: só «vazia» ou «Por definir» quer dizer «por decidir». Os outros textos sem máquina
+# física (Subcontrato, Serrote MTG3, Abocardar…) são uma decisão: nunca recebem a máquina sugerida.
+UNDECIDED = {"", "por definir"}
+NO_MEMBER_MACHINE = "A máquina por linha ainda não está instalada (migração 048)."
 
-    A mesma sugestão que a Carteira mostra («— sugerida» na lupa), só entre as máquinas do setor (members.py):
+
+def tabela_note(line: dict) -> str | None:
+    """«Na Tabela: …» quando a coluna Máquina diz que a linha não leva máquina interna; None se está por decidir."""
+    text = str(line.get("tabela_machine") or "").strip()
+    return None if text.casefold() in UNDECIDED else f"Na Tabela: {text}"
+
+
+def suggested_machines(sector: str, lines: list[dict], *, allow_stale: bool = False) -> dict[str, dict]:
+    """{chave: {resource_id, machine, origin, label}} — a máquina que o Planear grava numa linha sem máquina.
+
+    Uma só fonte (revisão de 07/10/2026): é também a «— sugerida» da lupa e a pré-escolha de «Atribuir máquina».
+    Só máquinas do setor (members.py) e só linhas sem máquina efetiva e por decidir na Tabela:
     1. a preferência aprendida com as escolhas dos planeadores, já filtrada pela ficha técnica
        (machine_learning.for_line com machine_learning.technical);
     2. senão a máquina sugerida da previsão (estimates.apply): a das outras linhas da OF com o mesmo perfil e
        operação (estimates.peer_machine), o processo da regra das séries, o precedente da peça e o equilíbrio
        de carga — também só entre as candidatas da ficha técnica.
-    A máquina efetiva (machine_choice.effective) já vem nas linhas: só as que não a têm chegam aqui. Uma linha
-    sem nenhuma das duas não tem sugestão. As ocorrências podem vir da versão anterior enquanto se refazem.
+    Uma linha sem nenhuma das duas não tem sugestão. As gravações leem as ocorrências atuais; as leituras da
+    lupa podem passar `allow_stale` e mostrar a versão anterior enquanto se refazem.
     """
     from . import machine_learning, members, occurrences
+    lines = [x for x in lines if not x["machine"] and tabela_note(x) is None]
+    if not lines:
+        return {}
     with planning.connect(readonly=True) as c:
         own = members.members(c, sector)
-    if not own or not lines:
+    if not own:
         return {}
-    learned = machine_learning.model(sector)
-    checked = machine_learning.technical(sector)
+    data = occurrences.load(sector, allow_stale=allow_stale)
+    checked = machine_learning.technical(sector, data=data)
+    learned = machine_learning.model(sector) if checked is None else None
     estimated = {}
-    for f in occurrences.load(sector, allow_stale=True)["facts"]:
+    for f in data["facts"]:
         if f["phase"] == "principal" and f.get("machine_basis") == "sugerida" and f.get("suggestion"):
             estimated.setdefault(f["line_key"], f["suggestion"])
     out = {}
@@ -224,14 +242,21 @@ def suggested_machines(sector: str, lines: list[dict]) -> dict[str, dict]:
     return out
 
 
-def _suggestions(sector: str, lines: list[dict], c) -> tuple[dict, str]:
-    """Sugestões para as linhas sem máquina e o motivo das que ficam sem nenhuma."""
-    if not lines:
-        return {}, NO_SUGGESTION
-    if not c.execute("SELECT to_regclass('planning_mtg.sector_member_machine') t").fetchone()["t"]:
-        return {}, "A máquina por linha ainda não está instalada (migração 048)."
+def _to_suggest(payload: dict, data: dict) -> list[dict]:
+    """Linhas do pedido sem máquina e por decidir, resolvidas sem bloqueio, só para calcular as sugestões antes."""
     try:
-        return suggested_machines(sector, lines), NO_SUGGESTION
+        chosen, _, _ = _requested(payload, data, resolution.Decisions(), partial=True)
+    except planning.PlanningError:
+        return []  # o pedido volta a ser conferido sob o bloqueio, com as decisões gravadas
+    return [line for line, _ in chosen if not line["machine"] and tabela_note(line) is None]
+
+
+def _suggestions(sector: str, lines: list[dict]) -> tuple[dict, str | None]:
+    """Sugestões das linhas sem máquina e, se a previsão falhar, o motivo para as que ficam sem nenhuma."""
+    if not lines:
+        return {}, None
+    try:
+        return suggested_machines(sector, lines), None
     except Exception:  # a sugestão não pode impedir planear as linhas que já têm máquina
         import logging
         logging.getLogger(__name__).exception("Máquinas sugeridas indisponíveis ao Planear")
@@ -251,6 +276,9 @@ def apply(payload: dict, *, data: dict | None = None, conn=None) -> dict:
 
     data = data or portfolio.current(sector)
     actor = registration.human_actor(payload)
+    # As sugestões calculam-se antes de qualquer bloqueio, com ligações próprias só de leitura e as ocorrências
+    # atuais (uma gravação nunca usa allow_stale): nenhum outro pedido espera pela previsão.
+    suggestions, unavailable = _suggestions(sector, _to_suggest(payload, data)) if action == "selected" else ({}, None)
     with (planning.connect() if conn is None else nullcontext(conn)) as c:
         if not c.execute("SELECT to_regclass('planning_mtg.sector_member_selection') t").fetchone()["t"]:
             raise planning.PlanningError("A gravação por membro ainda não está instalada (migração 046).", 503)
@@ -261,8 +289,9 @@ def apply(payload: dict, *, data: dict | None = None, conn=None) -> dict:
             return repeated
         decisions = current(sector, conn=c)
         chosen, scope, skipped = _requested(payload, data, decisions, partial=True)
-        if action == "selected" and payload.get("membros") is None:
-            # Planear um grupo não anula exclusões: um membro excluído só volta se for escolhido um a um.
+        if action == "selected" and (payload.get("membros") is None or payload.get("todo_o_grupo")):
+            # Planear um grupo (também quando chega como membros com «todo_o_grupo») não anula exclusões: um membro
+            # excluído só volta se for escolhido um a um.
             chosen = [(line, token) for line, token in chosen if portfolio.effective(line, decisions)["decision"] != "excluded"]
             if not chosen:
                 raise planning.PlanningError("Todas estas linhas estão excluídas; escolhe-as uma a uma na lupa para as planear.")
@@ -272,40 +301,66 @@ def apply(payload: dict, *, data: dict | None = None, conn=None) -> dict:
             if token is not None and token != portfolio.member_token(line, before["revision"]):
                 skipped.append(_skipped(line, CHANGED))
             else:
-                ready.append((line, before))
-        conflicts = len(skipped)
-        machines = []  # (linha, sugestão): a máquina sugerida fica como escolha da Carteira
-        if action == "selected":
-            suggestions, missing = _suggestions(sector, [line for line, _ in ready if not line["machine"]], c)
-            planned = []
-            for line, before in ready:
-                if not line["machine"]:
-                    found = suggestions.get(line["key"])
-                    if not found:
-                        skipped.append(_skipped(line, missing))
-                        continue
-                    machines.append((line, found))
-                    line = {**line, "machine": found["machine"], "machine_source": "carteira", "machine_resource_id": found["resource_id"]}
-                planned.append((line, before))
-            ready = planned
+                ready.append((line, before, token))
+        machines, no_machine = [], 0  # (linha, sugestão): a máquina sugerida fica como escolha da Carteira
+        if action == "selected" and any(not line["machine"] for line, _, _ in ready):
+            ready, machines, no_machine = _with_machines(c, sector, ready, skipped, suggestions, unavailable)
         if not ready:
-            if conflicts:
+            if len(skipped) > no_machine:
                 raise Conflict("Estas linhas mudaram entretanto ou já não estão na carteira. Nada foi gravado; atualiza a seleção.", skipped)
             raise planning.PlanningError("Nenhuma destas linhas tem máquina nem máquina sugerida. Dá-lhes máquina antes de Planear.")
         changes = []
-        for line, before in ready:
+        for line, before, _ in ready:
             after = _after(action, line, decisions)
             if after["decision"] == before["decision"]:
                 continue  # a decisão efetiva já é esta: nada a gravar neste membro
             changes.append((line, before, after))
+        # Planeadas neste pedido: as que passam a Planear e as já marcadas que só agora recebem a máquina sugerida.
+        planned = {line["key"] for line, _, _ in changes} | {line["key"] for line, _ in machines} if action == "selected" else set()
         detail = {"ambito": scope, "geracao": data["generation"], "importacao": data["snapshot"]}
-        result = {"changed": len(changes), "members": len(ready), "skipped_no_machine": len(skipped) - conflicts,
+        result = {"changed": len(changes), "planned": len(planned), "members": len(ready), "skipped_no_machine": no_machine,
                   "suggested_machine": len(machines), "skipped": skipped[:200], "skipped_count": len(skipped),
                   "group_changed": bool(scope.get("grupo_mudou")), "action": action, "actor": actor,
                   "metres": round(sum(line["metres"] for line, _, _ in changes), 1), "repeated": False,
                   "keys": [line["key"] for line, _, _ in changes]}
         _write(c, sector, action, reason, actor, request_id, detail, changes, content, result, machines)
     return result
+
+
+def _with_machines(c, sector, ready, skipped, suggestions, unavailable):
+    """Máquina das linhas sem máquina, lida sob o bloqueio de «Atribuir máquina» (revisão de 07/10/2026).
+
+    Uma escolha da Carteira ou um conjunto de famílias gravados entretanto ganham sempre à sugestão: a linha
+    planeia-se com essa máquina, ou fica de fora como mudada se foi marcada (token) quando não tinha máquina.
+    Só a linha ainda sem máquina e por decidir na Tabela recebe a sugestão calculada antes; as outras ficam de
+    fora com o motivo. Devolve (linhas a gravar, máquinas sugeridas, quantas ficaram sem máquina).
+    """
+    from . import machine_choice
+    ctx = None
+    if c.execute("SELECT to_regclass('planning_mtg.sector_member_machine') t").fetchone()["t"]:
+        c.execute("SELECT pg_advisory_xact_lock(hashtext('sector_member_machine:' || %s))", (sector,))
+        ctx = machine_choice.context(sector, conn=c)
+    out, machines, no_machine = [], [], 0
+    for line, before, token in ready:
+        if not line["machine"]:
+            family = line.get("sku_family") if line.get("sku_family") not in (None, "Sem família SKU") else None
+            now = machine_choice.effective(ctx, [line["key"], *line.get("aliases", ())], family, line.get("tabela_machine"))
+            if now["machine"]:
+                if token is not None:
+                    skipped.append(_skipped(line, CHANGED))
+                    continue
+                line = {**line, "machine": now["machine"], "machine_source": now["source"], "machine_resource_id": now["resource_id"]}
+            else:
+                note = tabela_note(line)
+                found = None if note or ctx is None else suggestions.get(line["key"])
+                if not found:
+                    no_machine += 1
+                    skipped.append(_skipped(line, note or (NO_MEMBER_MACHINE if ctx is None else unavailable or NO_SUGGESTION)))
+                    continue
+                machines.append((line, found))
+                line = {**line, "machine": found["machine"], "machine_source": "carteira", "machine_resource_id": found["resource_id"]}
+        out.append((line, before, token))
+    return out, machines, no_machine
 
 
 def _after(action, line, decisions) -> dict:
@@ -316,8 +371,24 @@ def _after(action, line, decisions) -> dict:
     return {"decision": None, "explicit": inherited["decision"] is not None}
 
 
+def _cleared(cur, table: str, sector: str, lines: list[dict]) -> dict[str, int]:
+    """Apaga numa só instrução o que estava gravado para estes membros (chave atual e antigas) e devolve a revisão
+    nova de cada um."""
+    assert table in ("sector_member_selection", "sector_member_machine")
+    owner = {}
+    for line in lines:
+        for key in (line["key"], *line.get("aliases", ())):
+            owner.setdefault(key, line["key"])
+    revisions = {line["key"]: 1 for line in lines}
+    for r in cur.execute(f"DELETE FROM planning_mtg.{table} WHERE area = %s AND member_key = ANY(%s) RETURNING member_key, revision",
+                         (sector, list(owner))).fetchall():
+        key = owner[r["member_key"]]
+        revisions[key] = max(revisions[key], r["revision"] + 1)
+    return revisions
+
+
 def _write(c, sector, action, reason, actor, request_id, detail, changes, content, result, machines=()) -> None:
-    """Uma transação: decisões, máquinas sugeridas, eventos e pedido gravados juntos ou nada."""
+    """Uma transação: pedido, máquinas sugeridas, decisões e eventos, em lotes (uma instrução por tabela)."""
     with c.cursor() as cur:
         try:
             cur.execute("INSERT INTO planning_mtg.sector_selection_requests (request_id, area, action, content_hash, actor, result) "
@@ -325,57 +396,57 @@ def _write(c, sector, action, reason, actor, request_id, detail, changes, conten
         except psycopg.errors.UniqueViolation:
             raise planning.PlanningError("O mesmo pedido foi gravado entretanto. Atualiza a Carteira.", 409) from None
         if machines:
-            # O mesmo bloqueio de «Atribuir máquina» (member_machine.py), sempre depois do da seleção.
-            cur.execute("SELECT pg_advisory_xact_lock(hashtext('sector_member_machine:' || %s))", (sector,))
-        for line, found in machines:
-            _suggested_machine(cur, sector, actor, request_id, detail, line, found)
+            _suggested_machines(cur, sector, actor, request_id, detail, machines)
+        if not changes:
+            return
+        revisions = _cleared(cur, "sector_member_selection", sector, [line for line, _, _ in changes])
+        rows, events = [], []
         for line, before, after in changes:
-            keys = [line["key"], *line.get("aliases", ())]
-            old = cur.execute("DELETE FROM planning_mtg.sector_member_selection WHERE area = %s AND member_key = ANY(%s) "
-                              "RETURNING revision", (sector, keys)).fetchall()
-            revision = max((r["revision"] for r in old), default=0) + 1
+            revision = revisions[line["key"]]
             stored = after["decision"] if after["decision"] else ("cleared" if after.get("explicit") else None)
             if stored:
-                cur.execute(
-                    """INSERT INTO planning_mtg.sector_member_selection
-                           (area, member_key, production_order_no, reference, decision, reason, actor, revision, request_id, seen)
-                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
-                    (sector, line["key"], line["of"], line["reference"], stored,
-                     resolution.reason_or_default(reason) if stored == "excluded" else None, actor, revision, request_id,
-                     Jsonb(_seen(line))))
-            cur.execute(
-                """INSERT INTO planning_mtg.sector_decision_events
-                       (area, kind, production_order_no, reference, member_key, action, reason, actor, request_id, detail)
-                   VALUES (%s, 'member', %s, %s, %s, %s, %s, %s, %s, %s)""",
-                (sector, line["of"], line["reference"], line["key"], action, reason, actor, request_id,
-                 Jsonb({**detail, "seen": _seen(line), "revision": revision,
-                        "before": {k: before[k] for k in ("decision", "source", "revision")},
-                        "after": {"decision": after["decision"], "stored": stored}})))
+                rows.append((sector, line["key"], line["of"], line["reference"], stored,
+                             resolution.reason_or_default(reason) if stored == "excluded" else None, actor, revision, request_id,
+                             Jsonb(_seen(line))))
+            events.append((sector, line["of"], line["reference"], line["key"], action, reason, actor, request_id,
+                           Jsonb({**detail, "seen": _seen(line), "revision": revision,
+                                  "before": {k: before[k] for k in ("decision", "source", "revision")},
+                                  "after": {"decision": after["decision"], "stored": stored}})))
+        if rows:
+            cur.executemany("""INSERT INTO planning_mtg.sector_member_selection
+                                   (area, member_key, production_order_no, reference, decision, reason, actor, revision, request_id, seen)
+                               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""", rows)
+        cur.executemany("""INSERT INTO planning_mtg.sector_decision_events
+                               (area, kind, production_order_no, reference, member_key, action, reason, actor, request_id, detail)
+                           VALUES (%s, 'member', %s, %s, %s, %s, %s, %s, %s, %s)""", events)
 
 
-def _suggested_machine(cur, sector, actor, request_id, detail, line, found) -> None:
+def _suggested_machines(cur, sector, actor, request_id, detail, machines) -> None:
     """A máquina sugerida fica como escolha da Carteira (a mesma de «Atribuir máquina»), com a origem «sugerida».
 
-    A origem fica em `seen` e no evento; machine_learning.build não aprende com estes eventos, para a sugestão
-    não se reforçar a si própria. Muda-se como qualquer escolha da Carteira. O evento leva um identificador
-    derivado do pedido (um só evento por membro e pedido), com o pedido do Planear em `pedido`.
+    A origem fica em `seen` e no evento; machine_learning não aprende com estes eventos, para a sugestão não se
+    reforçar a si própria. Muda-se como qualquer escolha da Carteira. Os eventos levam um identificador derivado
+    do pedido (um só evento por membro e pedido), com o pedido do Planear em `pedido`.
     """
-    keys = [line["key"], *line.get("aliases", ())]
-    old = cur.execute("DELETE FROM planning_mtg.sector_member_machine WHERE area = %s AND member_key = ANY(%s) RETURNING revision",
-                      (sector, keys)).fetchall()
-    revision = max((r["revision"] for r in old), default=0) + 1
-    suggestion = {"origem": found.get("origin"), "motivo": found.get("label")}
     machine_request = uuid.uuid5(request_id, "maquina-sugerida")
-    cur.execute("""INSERT INTO planning_mtg.sector_member_machine
-                       (area, member_key, production_order_no, reference, resource_id, machine_name, actor, revision, request_id, seen)
-                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
-                (sector, line["key"], line["of"], line["reference"], found["resource_id"], found["machine"], actor, revision,
-                 machine_request, Jsonb({**_seen(line), "origem": "sugerida", "sugestao": suggestion, "pedido": str(request_id)})))
-    cur.execute("""INSERT INTO planning_mtg.sector_decision_events
-                       (area, kind, production_order_no, reference, member_key, action, actor, request_id, detail)
-                   VALUES (%s, 'machine', %s, %s, %s, 'machine', %s, %s, %s)""",
-                (sector, line["of"], line["reference"], line["key"], actor, machine_request,
-                 Jsonb({**detail, "origem": "sugerida", "sugestao": suggestion, "pedido": str(request_id), "seen": _seen(line), "revision": revision,
-                        "before": {"carteira": None, "tabela": line.get("tabela_machine"), "efetiva": line["machine"],
-                                   "origem": line.get("machine_source"), "familia": line.get("sku_family"), "perfil": line.get("profile")},
-                        "after": {"carteira": found["machine"]}})))
+    revisions = _cleared(cur, "sector_member_machine", sector, [line for line, _ in machines])
+    rows, events = [], []
+    for line, found in machines:
+        suggestion = {"origem": found.get("origin"), "motivo": found.get("label")}
+        revision = revisions[line["key"]]
+        rows.append((sector, line["key"], line["of"], line["reference"], found["resource_id"], found["machine"], actor, revision,
+                     machine_request, Jsonb({**_seen(line), "origem": "sugerida", "sugestao": suggestion, "pedido": str(request_id)})))
+        events.append((sector, line["of"], line["reference"], line["key"], actor, machine_request,
+                       Jsonb({**detail, "origem": "sugerida", "sugestao": suggestion, "pedido": str(request_id), "seen": _seen(line),
+                              "revision": revision,
+                              "before": {"carteira": None, "tabela": line.get("tabela_machine"), "efetiva": line["machine"],
+                                         "origem": line.get("machine_source"), "familia": line.get("sku_family"),
+                                         "perfil": line.get("profile")},
+                              "after": {"carteira": found["machine"]}})))
+    cur.executemany("""INSERT INTO planning_mtg.sector_member_machine
+                           (area, member_key, production_order_no, reference, resource_id, machine_name, actor, revision, request_id, seen)
+                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""", rows)
+    cur.executemany("""INSERT INTO planning_mtg.sector_decision_events
+                           (area, kind, production_order_no, reference, member_key, action, actor, request_id, detail)
+                       VALUES (%s, 'machine', %s, %s, %s, 'machine', %s, %s, %s)""", events)
+

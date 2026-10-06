@@ -102,9 +102,11 @@
     } else {when.classList.add("on-time"); when.append(el("strong", "Sem prazo"))}
     const actions = el("div", null, "pq-of-actions");
     if (order.marked) actions.append(el("span", "Marcada · falta máquina", "pq-marked"));
-    else if (order.plannable === undefined || order.plannable > 0) {  // só com linhas com máquina por planear
+    // Desde 07/10/2026 o Planear dá a máquina sugerida às linhas sem máquina, também às já marcadas: o botão
+    // aparece sempre que o servidor diz que há linhas por planear (`plannable`).
+    if ((order.plannable === undefined && !order.marked) || order.plannable > 0) {
       const plan = el("button", "Planear", "pq-plan"); plan.type = "button";
-      plan.title = "Planeia as linhas desta OF que já têm máquina. As outras precisam de Máquina na Tabela.";
+      plan.title = "Planeia as linhas desta OF. As que não têm máquina recebem a máquina sugerida (podes mudar).";
       plan.addEventListener("click", () => planOrder(order, plan));
       actions.append(plan);
     }
@@ -127,7 +129,7 @@
       if (!response.ok) throw Error(result.error || result.detail || `Erro ${response.status}`);
       const skipped = result.skipped_no_machine || 0;
       const suggested = result.suggested_machine || 0;  // 07/10/2026: sem máquina, o Planear usa a sugerida
-      notice(`${order.of}: ${result.changed ?? 0} linha(s) planeada(s)` +
+      notice(`${order.of}: ${result.planned ?? result.changed ?? 0} linha(s) planeada(s)` +
              (suggested ? `; ${suggested} com a máquina sugerida (podes mudar)` : '') + '.' +
              (skipped ? ` ${skipped} sem máquina ficaram por planear — dá-lhes Máquina na Tabela.` : ''));
       await load();

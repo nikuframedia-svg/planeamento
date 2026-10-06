@@ -585,12 +585,13 @@ def group_seal(lines: list[dict], decisions: dict | None) -> str:
 
 def members(sector: str, view: str, path: list[str], *, cursor: int = 0, limit: int = 200, q: str | None = None,
             filters: dict | None = None, data: dict | None = None, decisions: dict | None = None, learned: dict | None = None,
-            checked: dict | None = None) -> dict:
+            checked: dict | None = None, suggest=None) -> dict:
     """Membros exatos de um grupo, com o total integral e todas as chaves.
 
     `keys` traz sempre todas as chaves do grupo (para «selecionar todos» nunca ficar limitado à página);
     `items` é paginado. `q` pesquisa dentro do grupo sem mudar o total; `filters` só marca quais membros
-    estão visíveis na lista.
+    estão visíveis na lista. `suggest(linhas) -> {chave: sugestão}`: a máquina que o Planear gravaria
+    (selection.suggested_machines, 07/10/2026); sem ele, a preferência aprendida (`learned`, `checked`).
     """
     data = data or current(sector)
     if not path:
@@ -609,10 +610,12 @@ def members(sector: str, view: str, path: list[str], *, cursor: int = 0, limit: 
         raise planning.PlanningError("Página inválida.") from None
     visible = {x["key"] for x in universe if matches(x, filters or {}, decisions)} if filters else None
     from .machine_learning import for_line
+    page = shown[cursor:cursor + limit]
+    found = suggest([x for x in page if not x["machine"]]) if suggest else None
     # `checked`: preferência já filtrada pela ficha técnica (machine_learning.technical, PROP-2).
     items = [{**member_view(x, decisions), "visible": visible is None or x["key"] in visible,
-              "suggested": None if x["machine"] else for_line(learned, checked, x)}
-             for x in shown[cursor:cursor + limit]]
+              "suggested": None if x["machine"] else found.get(x["key"]) if found is not None else for_line(learned, checked, x)}
+             for x in page]
     statuses = [planning_status.classify(effective(x, decisions), x["machine"]) for x in universe]
     return {
         "sector": sector, "view": view, "path": path, "total": len(universe), "matching": len(shown),
@@ -622,6 +625,9 @@ def members(sector: str, view: str, path: list[str], *, cursor: int = 0, limit: 
         "generation": data["generation"], "seal": group_seal(universe, decisions),
         **{code: sum(s[code] for s in statuses) for code in STATUS},
         "hidden_by_filters": len(universe) - len(visible) if visible is not None else 0,
+        # O servidor aceita o grupo inteiro como membros com token («todo_o_grupo», 07/10/2026): a Carteira só o
+        # manda assim quando vê isto, para nunca o mandar a uma versão que não respeite as exclusões do grupo.
+        "todo_o_grupo": True,
     }
 
 

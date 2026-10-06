@@ -177,6 +177,25 @@ def test_kpis_ignore_list_filters_and_the_page_has_the_new_controls(client):
     assert date.fromisoformat(options["weeks"][0]["start"]) == date(2026, 9, 14)
 
 
+def test_lupa_and_assign_machine_show_the_machine_planear_writes(client, monkeypatch):
+    """Revisão de 07/10: uma só fonte — a «— sugerida» da lupa e a pré-escolha de «Atribuir máquina» são o que o Planear grava."""
+    from app.sector import family_sets, selection
+    calls = []
+
+    def suggest(sector, lines, allow_stale=False):
+        calls.append((sorted(x["key"] for x in lines), allow_stale))
+        return {x["key"]: {"resource_id": PEDDI, "machine": "Peddi 8", "origin": "previsao", "label": "Única candidata"}
+                for x in lines if not x["machine"]}
+    monkeypatch.setattr(selection, "suggested_machines", suggest)
+    monkeypatch.setattr(family_sets, "machines", lambda sector, conn=None: [{"id": PEDDI, "name": "Peddi 8"}, {"id": RAPID, "name": "Ficep Rapid 25T"}])
+    members = client.get("/planeamento/api/carteira/membros", params=[("setor", "cantoneiras"), ("vista", "of"), ("caminho", "OV1"),
+                                                                      ("caminho", "OF2")]).json()
+    assert [(i["key"], i["suggested"]["machine"], i["suggested"]["label"]) for i in members["items"]] == [("k3", "Peddi 8", "Única candidata")]
+    assert calls == [(["k3"], True)]  # a lupa é uma leitura: pode mostrar a versão anterior enquanto se refaz
+    suggestion = client.post("/planeamento/api/carteira/sugestao", json={"setor": "cantoneiras", "chaves": ["k3", "k1"]}).json()
+    assert suggestion["suggestion"]["resource_id"] == PEDDI and suggestion["suggestion"]["lines"] == 1 and suggestion["suggestion"]["marked"] == 2
+
+
 def test_tonnes_use_open_pieces_times_unit_weight_and_unknown_weight_is_not_zero():
     heavy = raw("OF1", "A", 10, 1000, key="k1", machine="Peddi 8", made=4)
     heavy["v"]["weight_unit"] = 25.0  # kg por peça

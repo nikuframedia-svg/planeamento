@@ -100,27 +100,33 @@
     $("selected-detail").replaceChildren();
     data.proposal=null;data.snapshot=null;data.selected=null;data.proposalStale=false;
     await Promise.all([loadOperations(),loadAccepted()]);
-    let latestDone=false;
+    let latest=null;
     if(data.scenario?.latest_job_id){
       $("compare").value="proposal";
       data.jobId=data.scenario.latest_job_id;
-      const latest=await api(`jobs/${data.jobId}`);
+      latest=await api(`jobs/${data.jobId}`);
       data.proposalStale=Boolean(latest.stale);if(latest.stale)$("compare").value="source";renderFreshness();
       if(latest.input?.snapshot){
         data.snapshot=latest.input.snapshot;data.operations=data.snapshot.operations;data.resources=data.snapshot.resources;
       }
       data.proposal=latest.result?.proposal||latest.result?.initial||null;
-      latestDone=latest.status==="done";
       setAcceptance(latest.status==="done"&&!latest.stale&&latest.result?.phase==="done"&&latest.result?.validation?.valid);
       if(latest.status==="queued"||latest.status==="running")pollJob(data.jobId).catch(error=>notice(error.message,true));
     }else{setAcceptance(false);data.jobId=null;$("compare").value=data.accepted?"accepted":"source"}
     renderTimeline();renderSummary();
     renderOperations();
     data.autoRecalculations=0;
-    if(data.proposalStale&&latestDone)await recalculate("A proposta usava fontes anteriores: a recalcular sozinha.");
-    else if(data.proposalStale)notice("A proposta usa fontes anteriores. Gera uma nova proposta.",true);
+    if(data.proposalStale&&latest?.status==="done"&&canRecalculate(latest))await recalculate("A proposta usava fontes anteriores: a recalcular sozinha.");
+    else if(data.proposalStale)notice(staleNotice(latest?.stale_reason),true);
     else if(data.stale)notice("O plano aceite usa fontes anteriores. Gera uma nova proposta.",true);
   }
+  // Recalcula sozinho (07/10/2026) só quando as fontes mudaram e já estão publicadas, no máximo duas vezes por ação:
+  // com cálculos ainda a publicar ou com outra versão do motor, recalcular daria outra proposta desatualizada.
+  // Sem `stale_reason` (servidor antigo) não recalcula.
+  const canRecalculate = run => run?.stale_reason==="fontes"&&!data.sourceStatus?.calculations_pending&&(data.autoRecalculations||0)<2;
+  const staleNotice = reason => reason==="motor"?"A proposta foi calculada com outra versão do motor. Gera uma nova proposta.":
+    reason==="fontes_em_atualizacao"?"Os cálculos estão a ser publicados. Gera uma nova proposta quando terminarem.":
+    "A proposta usa fontes anteriores. Gera uma nova proposta.";
   async function recalculate(message) {
     // Fontes ou motor mudaram (07/10/2026): recalcula sozinho, sem nova revisão do cenário; aceita-se depois.
     if(!data.scenario)return;
@@ -156,9 +162,9 @@
       if(run.result?.snapshot){data.snapshot=run.result.snapshot;data.operations=data.snapshot.operations;data.resources=data.snapshot.resources}
       if(run.result?.proposal||run.result?.initial){data.proposal=run.result.proposal||run.result.initial;renderSummary();renderOperations();renderTimeline()}
       if(run.status==="done"){
-        // Fontes mudadas durante o cálculo: recalcula sozinho uma vez por ação (07/10/2026).
-        if(run.stale&&(data.autoRecalculations||0)<2)return recalculate("As fontes mudaram durante o cálculo: a recalcular sozinha.");
-        notice(run.stale?"A proposta ficou desatualizada durante o cálculo. Gera uma nova proposta.":run.result?.phase==="diagnostic" ? (run.result.diagnostic?.message||"Proposta com fixações para rever.") :
+        // Fontes mudadas durante o cálculo: recalcula sozinho, dentro do limite de cada ação (07/10/2026).
+        if(run.stale&&canRecalculate(run))return recalculate("As fontes mudaram durante o cálculo: a recalcular sozinha.");
+        notice(run.stale?staleNotice(run.stale_reason):run.result?.phase==="diagnostic" ? (run.result.diagnostic?.message||"Proposta com fixações para rever.") :
           `Proposta ${run.result?.proposal?.origin||"inicial"} concluída · ${coverage(run.result?.proposal?.coverage)}.${run.result?.backlog?` Atraso concluído em ${run.result.backlog.proposal.window_days} dias: ${run.result.backlog.proposal.late_completed_hours} de ${run.result.backlog.proposal.late_reference_hours} h de referência (sequência inicial ${run.result.backlog.reference.late_completed_hours} h) · ${run.result.backlog.proposal.orders_completed} de ${run.result.backlog.proposal.orders_due} OF com prazo completas.`:""}`,run.stale||run.result?.phase==="diagnostic");
         setAcceptance(run.result?.phase==="done"&&!run.stale&&run.result?.validation?.valid);
         return;
@@ -169,7 +175,7 @@
   }
   async function accept() {
     if(sourceView()||!data.acceptEligible||!data.scenario||!data.jobId)throw Error("Gera uma proposta válida antes de aceitar.");
-    const response=await api("accept",{request_id:uuid(),job_id:data.jobId,expected_revision:data.scenario.revision});
+    const response=await api("accept",{request_id:uuid(),job_id:data.jobId,expected_revision:data.scenario.revision,auto_recalculate:true});
     if(response.recalculating){
       // As fontes mudaram depois da proposta: o servidor recalculou em vez de recusar; aceita-se a nova (07/10/2026).
       data.jobId=response.job_id;data.proposalStale=false;data.autoRecalculations=1;setAcceptance(false);renderFreshness();

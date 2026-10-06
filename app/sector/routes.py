@@ -66,17 +66,19 @@ def members(setor: str = "cantoneiras", vista: str = "referencia", caminho: list
     _guard()
     filters = {k: v for k, v in _filters(familia, familia_sku, janela, maquina, sinal, estado, q, semanas).items() if v}
     def build():
-        from . import machine_learning
         sector = portfolio.check_sector(setor)
-        try:
-            learned = machine_learning.model(sector)
-            checked = machine_learning.technical(sector)  # só máquinas que a ficha técnica admite (PROP-2)
-        except Exception:  # a sugestão é opcional: a lupa abre na mesma
-            import logging
-            logging.getLogger(__name__).exception("Preferências de máquina indisponíveis")
-            learned, checked = None, {}
+
+        def suggest(lines):
+            # A máquina que o Planear grava nestas linhas (uma só fonte, 07/10/2026); a sugestão é opcional: a lupa
+            # abre na mesma se a previsão falhar.
+            try:
+                return selection.suggested_machines(sector, lines, allow_stale=True)
+            except Exception:
+                import logging
+                logging.getLogger(__name__).exception("Máquinas sugeridas indisponíveis")
+                return {}
         return needs.serial(portfolio.members(sector, vista, caminho, cursor=cursor, limit=limite, q=pesquisa, filters=filters,
-                                              decisions=selection.current(setor), learned=learned, checked=checked))
+                                              decisions=selection.current(setor), suggest=suggest))
     return _call(build)
 
 
@@ -143,23 +145,19 @@ async def member_tokens(request: Request):
 
 @router.post("/planeamento/api/carteira/sugestao")
 async def machine_suggestion(request: Request):
-    """Máquinas do setor e a sugestão aprendida mais frequente para as linhas marcadas (consulta)."""
+    """Máquinas do setor e a máquina sugerida mais frequente nas linhas marcadas — a que o Planear grava (consulta)."""
     _guard()
 
     def build(p):
         from collections import Counter
-        from . import family_sets, machine_learning
+        from . import family_sets
         sector = portfolio.check_sector(str(p.get("setor") or ""))
         keys = set(portfolio.keys_from(p))
-        learned = machine_learning.model(sector)
-        checked = machine_learning.technical(sector)  # só máquinas que a ficha técnica admite (PROP-2)
+        marked = [x for x in portfolio.current(sector)["lines"] if x["key"] in keys]
         votes, labels = Counter(), {}
-        for x in portfolio.current(sector)["lines"]:
-            if x["key"] in keys:
-                found = machine_learning.for_line(learned, checked, x)
-                if found:
-                    votes[found["resource_id"]] += 1
-                    labels.setdefault(found["resource_id"], found)
+        for found in selection.suggested_machines(sector, marked, allow_stale=True).values():
+            votes[found["resource_id"]] += 1
+            labels.setdefault(found["resource_id"], found)
         top = votes.most_common(1)
         return needs.serial({"machines": family_sets.machines(sector),
                              "suggestion": {**labels[top[0][0]], "lines": top[0][1], "marked": len(keys)} if top else None})

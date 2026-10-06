@@ -290,14 +290,19 @@ def test_technical_review_is_versioned_and_idempotent(integrated_db):
 
 
 def test_old_technical_review_requests_are_still_accepted_without_reason_checkbox_or_same_sources(integrated_db):
-    # A regra técnica saiu do ecrã a 07/10/2026; o pedido antigo continua aceite, sem exigir motivo, caixa nem fontes iguais.
+    # A regra técnica saiu do ecrã a 07/10/2026; o pedido antigo continua aceite sem motivo, caixa nem fontes iguais,
+    # mas uma caixa explicitamente por marcar (confirmed: false) nunca é gravada como confirmada.
     from app.sector.decisions import NO_REASON
     detail=service.options(service.operations()['operations'][0]['key'])
     candidate=next(c for c in detail['operation']['candidates'] if c['resource_code']=='XPT6')
     with planning.connect(readonly=True) as c:
         revision=c.execute('SELECT revision FROM planning_mtg.raw_objects WHERE id=%s',(candidate['resource_id'],)).fetchone()['revision']
-    result=service.confirm_rule({'request_id':str(uuid.uuid4()),'key':detail['operation']['key'],'resource_id':candidate['resource_id'],
-        'expected_revision':revision,'source_references':{'antigas':True},'resolved_conditions':candidate['conditions'],'confirmed':False})
+    base={'key':detail['operation']['key'],'resource_id':candidate['resource_id'],'expected_revision':revision,
+          'source_references':{'antigas':True},'resolved_conditions':candidate['conditions']}
+    with pytest.raises(planning.PlanningError,match='Confirma') as refused:
+        service.confirm_rule({**base,'request_id':str(uuid.uuid4()),'confirmed':False})
+    assert refused.value.status==422
+    result=service.confirm_rule({**base,'request_id':str(uuid.uuid4())})
     assert result['revision']==revision+1
     with planning.connect(readonly=True) as c:
         rules=c.execute('SELECT definition FROM planning_mtg.raw_objects WHERE id=%s',(candidate['resource_id'],)).fetchone()['definition']['technical_rules']
@@ -721,6 +726,9 @@ def test_runtime_manifest_covers_the_modules_that_change_durations():
     names={str(p).split('/app/')[-1] for p in service.runtime_paths()}
     assert {'raw/worked_hours.py','raw/capacity.py','raw/productivity.py','sector/priority.py','sector/estimates.py',
             'sector/assignments.py','planning_calculations.py'} <= names
+    # Revisão de 07/10: todos os módulos do setor de que o retrato do Gantt depende (máquinas do setor incluídas).
+    assert {'sector/members.py','sector/scope.py','sector/decisions.py','sector/machine_choice.py','sector/portfolio.py',
+            'sector/occurrences.py'} <= names
 
 
 def test_local_cantoneiras_line_with_composite_second_operation_gives_one_occurrence_per_operation():
@@ -744,9 +752,12 @@ def test_local_cantoneiras_line_with_composite_second_operation_gives_one_occurr
                                              ('-', ['LOCAL:PRINCIPAL']), ('X', ['LOCAL:PRINCIPAL', 'LOCAL:ABOCARDAR'])])
 def test_unknown_abocardar_is_no_abocardar_without_route_review(mark, operations):
     # Plano de 07/10/2026: abocardar desconhecido = «-» (também nos registos antigos); só «X»/«sim» cria a operação.
+    from app.planning_calculations import calculate
     from app.sector import scope
-    record={'area':'perfis','row_key':'k1','values_json':{'of':'OF1','component_ref':'R','quantity_required':4,'abocardar':mark},
-            'detail':{'calculation':{}}}
+    values={'of':'OF1','component_ref':'R','quantity_required':4,'length_mm':1000,'abocardar':mark}
+    # O cálculo real (production_sources) ainda traz «abocardar» quando a marca é desconhecida.
+    sources=calculate(values,area='perfis')['operations']
+    record={'area':'perfis','row_key':'k1','values_json':values,'detail':{'calculation':{'production_sources':sources}}}
     rows,deps=scope.local_rows([record],{})
     assert [r['operacao_codigo'] for r in rows]==operations
     assert not any(r['route_review_required'] for r in rows) and all(d['validada'] for d in deps)

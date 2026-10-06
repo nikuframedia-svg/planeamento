@@ -73,7 +73,7 @@ def conn(database):
 @pytest.fixture(autouse=True)
 def no_suggestions(monkeypatch):
     """Sem camada de pesquisa nesta base: nenhuma máquina sugerida, salvo quando o teste a dá."""
-    monkeypatch.setattr(selection, "suggested_machines", lambda sector, lines: {})
+    monkeypatch.setattr(selection, "suggested_machines", lambda sector, lines, **kw: {})
 
 
 P8 = "Peddi 8"  # Planear só grava linhas com máquina
@@ -291,7 +291,7 @@ def test_planear_without_machine_saves_the_suggested_machine_and_the_line_is_pla
     result = selection.apply({"setor": "cantoneiras", "acao": "selecionar", "request_id": str(uuid.uuid4()),
                               "membros": [{"chave": k, "token": t} for k, t in tokens.items()]}, data=d, conn=conn)
     assert sorted(asked) == ["s:1", "s:3"]  # só as linhas sem máquina pedem sugestão
-    assert result["changed"] == 2 and result["suggested_machine"] == 1 and result["skipped_no_machine"] == 1
+    assert result["changed"] == 2 and result["planned"] == 2 and result["suggested_machine"] == 1 and result["skipped_no_machine"] == 1
     assert [s["key"] for s in result["skipped"]] == ["s:3"]
     # A sugerida fica como escolha da Carteira (a mesma de «Atribuir máquina»), com a origem marcada.
     row = conn.execute("SELECT member_key, resource_id, machine_name, actor, seen FROM planning_mtg.sector_member_machine").fetchone()
@@ -324,8 +324,71 @@ def test_planear_gives_the_suggested_machine_to_an_already_planned_line_without_
     monkeypatch.setattr(selection, "suggested_machines", lambda sector, lines: {"s:1": RAPID25})
     result = selection.apply({"setor": "cantoneiras", "acao": "selecionar", "request_id": str(uuid.uuid4()),
                               "membros": [{"chave": "s:1"}]}, data=d, conn=conn)
-    assert result["changed"] == 0 and result["suggested_machine"] == 1
+    assert result["changed"] == 0 and result["planned"] == 1 and result["suggested_machine"] == 1  # a linha passa a «Planeado»
     assert conn.execute("SELECT machine_name FROM planning_mtg.sector_member_machine").fetchone()["machine_name"] == "Ficep Rapid 25T"
+
+
+def test_a_machine_assigned_meanwhile_is_never_overwritten_by_the_suggestion(conn, catalogue, monkeypatch, database):
+    """Revisão de 07/10: a Carteira lida antes do «Atribuir máquina» de outra pessoa não apaga essa escolha."""
+    from app.sector import member_machine
+    stale = data(raw("OF1", "A", 10, 1000, key="r:1"), raw("OF1", "B", 10, 1000, key="r:2"))  # vista antes da escolha
+    member_machine.apply({"setor": "cantoneiras", "maquina": "rid-p8", "request_id": str(uuid.uuid4()),
+                          "membros": [{"chave": "r:1"}, {"chave": "r:2"}]}, data=stale, conn=conn)
+    conn.commit()
+    free = []
+
+    def suggest(sector, lines, **kw):
+        # A sugestão calcula-se antes de qualquer bloqueio (ligações próprias, só leitura).
+        with psycopg.connect(database) as other:
+            free.append(other.execute("SELECT pg_try_advisory_xact_lock(hashtext('sector_member_selection:cantoneiras'))").fetchone()[0])
+        return {x["key"]: RAPID25 for x in lines}
+    monkeypatch.setattr(selection, "suggested_machines", suggest)
+    result = selection.apply({"setor": "cantoneiras", "acao": "selecionar", "request_id": str(uuid.uuid4()),
+                              "membros": [{"chave": "r:1", "token": portfolio.member_token(stale["lines"][0], 0)}, {"chave": "r:2"}]},
+                             data=stale, conn=conn)
+    assert free == [True]
+    # r:1 foi marcada sem máquina e entretanto ganhou uma: mudou. r:2 (sem token) planeia-se com a máquina escolhida.
+    assert result["planned"] == 1 and result["keys"] == ["r:2"] and result["suggested_machine"] == 0
+    assert {s["key"]: s["reason"] for s in result["skipped"]} == {"r:1": selection.CHANGED}
+    rows = conn.execute("SELECT member_key, resource_id, revision FROM planning_mtg.sector_member_machine ORDER BY member_key").fetchall()
+    assert [(r["member_key"], r["resource_id"], r["revision"]) for r in rows] == [("r:1", "rid-p8", 1), ("r:2", "rid-p8", 1)]
+    seen = conn.execute("SELECT seen FROM planning_mtg.sector_member_selection WHERE member_key = 'r:2'").fetchone()["seen"]
+    assert seen["machine"] == "Peddi 8"
+
+
+def test_a_whole_group_sent_as_members_keeps_the_exclusions(conn):
+    d = data(raw("OF1", "A", 10, 1000, key="w:1", machine=P8), raw("OF1", "B", 10, 1000, key="w:2", machine=P8))
+    selection.apply({"setor": "cantoneiras", "acao": "excluir", "request_id": str(uuid.uuid4()), "membros": [{"chave": "w:2"}]}, data=d, conn=conn)
+    tokens = {x["key"]: portfolio.member_token(x, 0) for x in d["lines"]}
+    result = selection.apply({"setor": "cantoneiras", "acao": "selecionar", "request_id": str(uuid.uuid4()), "todo_o_grupo": True,
+                              "membros": [{"chave": k, "token": t} for k, t in tokens.items()]}, data=d, conn=conn)
+    assert result["keys"] == ["w:1"] and result["skipped_count"] == 0
+    decisions = selection.current("cantoneiras", conn=conn)
+    assert {x["key"]: portfolio.decision_of(x, decisions) for x in d["lines"]} == {"w:1": "selected", "w:2": "excluded"}
+
+
+def test_planear_never_suggests_over_a_tabela_placeholder(conn, monkeypatch):
+    # «Subcontrato», «Serrote MTG3»… contam como «sem máquina» mas não são linhas por decidir: nunca se sugere máquina.
+    d = data(raw("OF1", "A", 10, 1000, key="p:1", machine="Subcontrato"), raw("OF1", "B", 10, 1000, key="p:2"),
+             raw("OF1", "C", 10, 1000, key="p:3", machine="Por definir"))
+    asked = []
+    monkeypatch.setattr(selection, "suggested_machines", lambda sector, lines, **kw: asked.extend(x["key"] for x in lines) or {x["key"]: RAPID25 for x in lines})
+    result = selection.apply({"setor": "cantoneiras", "acao": "selecionar", "request_id": str(uuid.uuid4()),
+                              "membros": [{"chave": "p:1"}, {"chave": "p:2"}, {"chave": "p:3"}]}, data=d, conn=conn)
+    assert sorted(asked) == ["p:2", "p:3"] and result["planned"] == 2 and result["suggested_machine"] == 2
+    assert result["skipped"] == [{"key": "p:1", "of": "OF1", "reference": "A", "reason": "Na Tabela: Subcontrato"}]
+
+
+def test_the_lupa_shows_the_machine_planear_would_write():
+    d = data(raw("OF1", "A", 10, 1000, key="l:1"), raw("OF1", "B", 10, 1000, key="l:2", machine=P8))
+    calls = []
+
+    def suggest(lines):
+        calls.append([x["key"] for x in lines])
+        return {"l:1": RAPID25}
+    page = portfolio.members("cantoneiras", "of_perfil", ["OF1"], data=d, decisions={}, suggest=suggest)
+    assert {i["key"]: i["suggested"] for i in page["items"]} == {"l:1": RAPID25, "l:2": None} and calls == [["l:1"]]
+    assert page["todo_o_grupo"] is True  # a Carteira pode mandar o grupo inteiro como membros com token
 
 
 def test_a_failing_suggestion_never_stops_planning_the_lines_that_have_a_machine(conn, monkeypatch):
@@ -346,22 +409,28 @@ def test_suggested_machine_is_the_carteira_suggestion_then_the_estimate_and_only
     monkeypatch.setattr(planning, "connect", lambda readonly=False: nullcontext(None))
     monkeypatch.setattr(members, "members", lambda c, sector: own)
     monkeypatch.setattr(machine_learning, "model", lambda sector: {"weighted": {}, "raw": {}})
+    loads = []
     # Preferência aprendida já filtrada pela ficha técnica (a «— sugerida» da lupa): A no setor, B noutro setor.
-    monkeypatch.setattr(machine_learning, "technical", lambda sector: {
+    monkeypatch.setattr(machine_learning, "technical", lambda sector, data=None: {
         "a": {"resource_id": "rid-25", "machine": "Rapid 25T", "label": "4 de 5 escolhas"},
-        "b": {"resource_id": "rid-mtg2", "machine": "Vanguard", "label": "noutro setor"}})
+        "b": {"resource_id": "rid-mtg2", "machine": "Vanguard", "label": "noutro setor"},
+        "e": {"resource_id": "rid-25", "machine": "Rapid 25T", "label": "4 de 5 escolhas"}} if data is not None else None)
     facts = [{"line_key": "b", "phase": "principal", "machine_basis": "sugerida",
               "suggestion": {"resource_id": "rid-p8", "machine": "Peddi 8", "reason": "Mesma máquina das outras linhas da OF"}},
              {"line_key": "antiga:c", "phase": "principal", "machine_basis": "sugerida",
               "suggestion": {"resource_id": "rid-p8", "machine": "Peddi 8", "reason": "precedente em 2 OF"}},
              {"line_key": "d", "phase": "seguinte", "machine_basis": "sugerida",
               "suggestion": {"resource_id": "rid-p8", "machine": "Peddi 8", "reason": "operação seguinte"}}]
-    monkeypatch.setattr(occurrences, "load", lambda sector, **kw: {"facts": facts})
-    lines = [{"key": k, "aliases": ["antiga:c"] if k == "c" else [], "sku_family": None, "profile": "L45X45X5"} for k in "abcd"]
+    monkeypatch.setattr(occurrences, "load", lambda sector, **kw: loads.append(kw) or {"facts": facts})
+    lines = [{"key": k, "aliases": ["antiga:c"] if k == "c" else [], "sku_family": None, "profile": "L45X45X5", "machine": "",
+              "tabela_machine": "Subcontrato" if k == "e" else ""} for k in "abcde"]
     found = selection.suggested_machines("cantoneiras", lines)
+    assert loads == [{"allow_stale": False}]  # o Planear lê as ocorrências atuais
+    # «e» diz «Subcontrato» na Tabela: nunca recebe máquina, mesmo com preferência aprendida.
     assert found == {"a": {"resource_id": "rid-25", "machine": "Ficep Rapid 25T", "origin": "aprendida", "label": "4 de 5 escolhas"},
                      "b": {"resource_id": "rid-p8", "machine": "Peddi 8", "origin": "previsao", "label": "Mesma máquina das outras linhas da OF"},
                      "c": {"resource_id": "rid-p8", "machine": "Peddi 8", "origin": "previsao", "label": "precedente em 2 OF"}}
+    assert selection.suggested_machines("cantoneiras", lines, allow_stale=True) == found and loads[-1] == {"allow_stale": True}
     monkeypatch.setattr(members, "members", lambda c, sector: {})
     assert selection.suggested_machines("cantoneiras", lines) == {}  # sem máquinas do setor não há sugestão
 
@@ -369,15 +438,18 @@ def test_suggested_machine_is_the_carteira_suggestion_then_the_estimate_and_only
 def test_suggested_machines_do_not_teach_the_learned_preferences(conn, monkeypatch):
     from app.sector import machine_learning
     monkeypatch.setattr(machine_learning, "_names", lambda c: {"ficep rapid 25t": ("rid-25", "Ficep Rapid 25T")})
-    monkeypatch.setattr(selection, "suggested_machines", lambda sector, lines: {x["key"]: RAPID25 for x in lines})
+    monkeypatch.setattr(selection, "suggested_machines", lambda sector, lines, **kw: {x["key"]: RAPID25 for x in lines})
     lines = [raw("OF1", f"R{i}", 10, 1000, key=f"t:{i}") for i in range(4)]
     for r in lines:
         r["v"]["sku_family"] = "ZG"
+    machine_learning._cache.clear()
+    before = machine_learning.model("cantoneiras", conn=conn, lines=[])
     selection.apply({"setor": "cantoneiras", "acao": "selecionar", "request_id": str(uuid.uuid4()),
                      "grupo": {"vista": "of_perfil", "caminho": ["OF1"]}}, data=data(*lines), conn=conn)
     assert conn.execute("SELECT count(*) AS n FROM planning_mtg.sector_member_machine").fetchone()["n"] == 4
     learned = machine_learning.build(conn, "cantoneiras", [])
     assert learned["weighted"] == {}  # só as escolhas do planeador ensinam; a sugestão não se reforça a si própria
+    assert machine_learning.model("cantoneiras", conn=conn, lines=[]) is before  # e não refaz o modelo em memória
 
 
 def test_the_authenticated_user_is_recorded_as_author(conn):

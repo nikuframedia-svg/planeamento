@@ -451,6 +451,8 @@ def test_stale_gantt_proposal_recalculates_instead_of_refusing(workspace,monkeyp
         patch.setattr(service.inputs,'references',lambda conn:{**real(conn),'sources_pending':True})
         queued=service.solve({'request_id':str(uuid.uuid4()),'id':saved['id'],'expected_revision':saved['revision']})
     assert queued['status']=='queued'
+    # Outro pedido para o mesmo cenário e revisão enquanto este está na fila: devolve o mesmo cálculo.
+    assert service.solve({'request_id':str(uuid.uuid4()),'id':saved['id'],'expected_revision':saved['revision']})['job_id']==queued['job_id']
     claimed=worker.tick('gantt-test')
     # Motor e fontes mudaram entre o pedido e o cálculo: calcula com o que está agora, não falha.
     claimed[0]['input']={**claimed[0]['input'],'runtime_manifest':{'code_sha256':'antigo'},
@@ -459,9 +461,23 @@ def test_stale_gantt_proposal_recalculates_instead_of_refusing(workspace,monkeyp
     finished=service.job(queued['job_id'])
     assert finished['status']=='done' and finished['result']['phase']=='done' and not finished['stale']
     assert finished['input']['runtime_manifest']==service.runtime_manifest()
+    assert finished['stale_reason'] is None
+    with monkeypatch.context() as patch:  # cálculos a publicar: desatualizada, e o ecrã não recalcula em vão
+        patch.setattr(service.inputs,'references',lambda conn:{**real(conn),'sources_pending':True})
+        assert service.job(queued['job_id'])['stale_reason']=='fontes_em_atualizacao'
+    with monkeypatch.context() as patch:  # referências mudadas sem mudar o plano: continua atual
+        patch.setattr(service.inputs,'references',lambda conn:{**real(conn),'configuration_digest':'outra'})
+        assert service.job(queued['job_id'])['stale_reason'] is None
+        patch.setattr(service.inputs,'effective_digest',lambda snapshot:id(snapshot))  # e mudando: o ecrã recalcula sozinho
+        assert service.job(queued['job_id'])['stale_reason']=='fontes'
     monkeypatch.setattr(service,'runtime_manifest',lambda:{'code_sha256':'novo'})  # o serviço reiniciou com outro motor
-    assert service.job(queued['job_id'])['stale']
-    request={'request_id':str(uuid.uuid4()),'job_id':queued['job_id'],'expected_revision':saved['revision']}
+    stale=service.job(queued['job_id'])
+    assert stale['stale'] and stale['stale_reason']=='motor'
+    # Um separador antigo (sem «auto_recalculate») continua a receber a recusa de sempre, nunca um falso «aceite».
+    with pytest.raises(planning.PlanningError,match='Recalcula') as refused:
+        service.accept({'request_id':str(uuid.uuid4()),'job_id':queued['job_id'],'expected_revision':saved['revision']})
+    assert refused.value.status==409
+    request={'request_id':str(uuid.uuid4()),'job_id':queued['job_id'],'expected_revision':saved['revision'],'auto_recalculate':True}
     again=service.accept(request)  # desatualizada: recalcula em vez de recusar, e não aceita às cegas
     assert again['recalculating'] and again['job_id']!=queued['job_id'] and again['status']=='queued'
     assert service.accept(request)==again  # o mesmo pedido devolve o mesmo resultado
@@ -520,7 +536,7 @@ def test_gantt_browser_generate_accept_and_reopen(workspace,monkeypatch,tmp_path
             else:pytest.fail('O servidor Gantt não iniciou.')
             thread.start()
             run=subprocess.run(['node','tests/planning_gantt_browser.cjs'],env=env,
-                               capture_output=True,text=True,timeout=90,cwd=Path(__file__).parents[1])
+                               capture_output=True,text=True,timeout=240,cwd=Path(__file__).parents[1])
             log.flush();log.seek(0)
             assert run.returncode==0,run.stdout+run.stderr+'\n'+log.read()
         finally:

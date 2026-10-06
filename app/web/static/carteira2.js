@@ -142,7 +142,7 @@
     const id = pathId(path);
     if (state.groups.has(id)) return state.groups.get(id);
     const data = await api('/planeamento/api/carteira/membros', query({vista: view || $('vista').value, caminho: path, limite: 1, cursor: 0}));
-    const info = {keys: data.keys, tokens: data.tokens, seal: data.seal, total: data.total};
+    const info = {keys: data.keys, tokens: data.tokens, seal: data.seal, total: data.total, asMembers: Boolean(data.todo_o_grupo)};
     state.groups.set(id, info);
     return info;
   }
@@ -397,7 +397,7 @@
         const data = await api('/planeamento/api/carteira/membros', query({vista: view, caminho: path, cursor: reset ? 0 : cursor, limite: 200, pesquisa: search.value}));
         if (ticket !== pageTicket || sector !== state.sector || !detail.isConnected) return;
         if (reset) body.replaceChildren();
-        const info = {keys: data.keys, tokens: data.tokens, seal: data.seal, total: data.total};
+        const info = {keys: data.keys, tokens: data.tokens, seal: data.seal, total: data.total, asMembers: Boolean(data.todo_o_grupo)};
         state.groups.set(pathId(path), info);
         panel._info = info;
         data.items.forEach((m) => body.append(memberRow(m)));
@@ -440,7 +440,12 @@
       const marked = info.keys.filter((k) => state.selected.has(k));
       const whole = !marked.length || marked.length === info.total;
       const payload = {setor: sector, acao: action, request_id: crypto.randomUUID()};
-      if (whole) payload.grupo = {vista: view, caminho: path, selo: info.seal};
+      if (whole && info.asMembers && info.keys.length <= EXPLICIT_LIMIT) {
+        // Grupo inteiro como membros com o token visto (07/10/2026): uma linha que mudou fica de fora e as outras
+        // gravam-se, em vez de valer o grupo de agora com linhas que ninguém viu. O selo fica para os grupos enormes.
+        payload.membros = info.keys.map((k, i) => ({chave: k, token: state.selected.get(k) || info.tokens[i]}));
+        payload.todo_o_grupo = true;
+      } else if (whole) payload.grupo = {vista: view, caminho: path, selo: info.seal};
       else if (marked.length <= EXPLICIT_LIMIT) payload.membros = marked.map((k) => ({chave: k, token: state.selected.get(k)}));
       else payload.grupo = {vista: view, caminho: path, selo: info.seal, exceto: info.keys.filter((k) => !state.selected.has(k))};
       const result = await post('/planeamento/api/carteira/selecao', payload, {retry: true});
@@ -450,7 +455,7 @@
       const name = path[path.length - 1];
       const suggested = result.suggested_machine || 0;
       const done = action === 'selecionar'
-        ? `${name}: ${number.format(result.changed)} linha(s) planeada(s)${suggested ? `; ${number.format(suggested)} com a máquina sugerida (podes mudar)` : ''}.`
+        ? `${name}: ${number.format(result.planned ?? result.changed)} linha(s) planeada(s)${suggested ? `; ${number.format(suggested)} com a máquina sugerida (podes mudar)` : ''}.`
         : `${name}: ${number.format(result.changed)} linha(s) limpa(s).`;
       notice(result.repeated ? 'Este pedido já tinha sido gravado.' : done + left(result));
       selectionChanged();

@@ -80,8 +80,9 @@ def unplanned(sector: str, *, data: dict | None = None, decisions: dict | None =
             "lines": len(missing), "lines_total": len(lines), "partial": len(missing) < len(lines),
             "priority": min(priorities) if priorities else None,
             "marked": all(portfolio.decision_of(x, decisions) == "selected" for x in missing),
-            # Linhas desta OF que já têm máquina e ainda não estão planeadas: só estas o botão Planear grava.
-            "plannable": sum(1 for x in lines if x["machine"] and portfolio.decision_of(x, decisions) != "selected"),
+            # Linhas desta OF que o botão Planear grava: as ainda não planeadas e as marcadas sem máquina (desde
+            # 07/10/2026 recebem a máquina sugerida).
+            "plannable": sum(1 for x in lines if not (x["machine"] and portfolio.decision_of(x, decisions) == "selected")),
             "warnings": [label for name, label in (("anulada", "Diz «anulada» no Excel"), ("eletrofer", "Feita na Eletrofer"),
                                                    ("validacao", "Só depois de validação"))
                          if any(x["signals"].get(name) for x in lines)],

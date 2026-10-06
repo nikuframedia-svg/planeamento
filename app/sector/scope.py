@@ -185,12 +185,16 @@ def local_rows(records, resource_codes):
         main = 'corte' if area=='perfis' else str(v.get('operation') or '')
         operations = [main]
         # Abocardar desconhecido ou vazio = «-» (plano de 07/10/2026, também nos registos antigos): só «X»/«sim»
-        # acrescenta a operação, sem rota por confirmar.
-        if area=='perfis' and abocardar(v.get('abocardar')) is True:
+        # acrescenta a operação, sem rota por confirmar. O cálculo publicado ainda traz uma fonte «abocardar»
+        # quando a marca é desconhecida: essa fonte não cria a operação.
+        boc = area=='perfis' and abocardar(v.get('abocardar')) is True
+        if boc:
             operations.append('abocardar')
         whole = {}  # operação → código composto de origem («111-1034»), que é a única fonte de saldo
         for s in sources:
             code = str(s['operation'])
+            if area=='perfis' and code=='abocardar' and not boc:
+                continue
             # 2.ª Oper. composta da MTG3 (ex. «111-1034»): uma ocorrência por operação, como na pesquisa
             # (auditoria 06/10, ORF-2). O saldo e a preparação continuam a ser os da operação composta.
             parts = [p.strip() for p in code.split('-') if p.strip()] if area=='cantoneiras' and code!=main else [code]

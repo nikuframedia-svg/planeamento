@@ -33,7 +33,9 @@ def runtime_paths():
                     # Também mudam durações, saldos, prazos ou máquinas do retrato (auditoria 06/10, GT-07).
                     root/'raw/worked_hours.py',root/'raw/capacity.py',root/'planning_calculations.py',
                     root/'planning_needs.py',root/'sector/priority.py',root/'sector/estimates.py',
-                    root/'sector/assignments.py',root/'sector/occurrences.py',root/'sector/portfolio.py'])
+                    root/'sector/assignments.py',root/'sector/occurrences.py',root/'sector/portfolio.py',
+                    # Máquinas do setor (integrated._resources, 07/10/2026).
+                    root/'sector/members.py'])
 
 
 @lru_cache(maxsize=1)
@@ -214,7 +216,7 @@ def confirm_rule(p):
 
     Desde 07/10/2026 a regra técnica saiu do ecrã: a máquina escolhida pelo planeador já conta como validada.
     O pedido continua aceite para compatibilidade, sem exigir motivo, caixa de confirmação nem as mesmas fontes
-    (a operação é procurada nas fontes atuais).
+    (a operação é procurada nas fontes atuais); só `confirmed: false` explícito é recusado.
     """
     from .machines import validate_rules
     from ..sector.decisions import reason_or_default
@@ -234,6 +236,8 @@ def confirm_rule(p):
         conditions=p.get('resolved_conditions')
         if not candidates or not isinstance(conditions,list) or not conditions or set(conditions)-available:
             raise planning.PlanningError('Seleciona as condições desta alternativa que foram comprovadas.',422)
+        if p.get('confirmed') is False:  # caixa explicitamente por marcar: não se grava uma regra confirmada
+            raise planning.PlanningError('Confirma a revisão técnica antes de a gravar.',422)
         reason=reason_or_default(p.get('reason'))
         if len(reason)>1000:
             raise planning.PlanningError('O motivo tem no máximo 1000 caracteres.',422)
@@ -252,22 +256,32 @@ def confirm_rule(p):
         return needs.finish(c,p,saved)
 
 
-def _current(conn, payload, current_refs=None):
+def _stale_reason(conn, payload, current_refs=None):
+    """None quando a proposta corresponde ao motor e às fontes atuais; senão o porquê (revisão de 07/10/2026):
+    'motor' (calculada com outra versão do código), 'fontes_em_atualizacao' (cálculos ainda a publicar) ou
+    'fontes' (fontes ou decisões mudaram). O ecrã só recalcula sozinho no último caso: nos outros recalcular
+    daria outra vez uma proposta desatualizada."""
     if payload.get('runtime_manifest') != runtime_manifest():
-        return False
+        return 'motor'
     refs = current_refs or inputs.references(conn)
     if refs['sources_pending']:
-        return False
+        return 'fontes_em_atualizacao'
     if payload['source_references'] == refs:
-        return True
+        return None
     frozen = payload.get('snapshot')
     if not frozen:
-        return False
+        return 'fontes'
     try:
         now = inputs.capture(conn, payload['definition'], payload['started_at'])
     except planning.PlanningError:
-        return False
-    return not now['orphaned_pins'] and not now.get('orphaned_overrides') and inputs.effective_digest(now) == inputs.effective_digest(frozen)
+        return 'fontes'
+    if now['orphaned_pins'] or now.get('orphaned_overrides') or inputs.effective_digest(now) != inputs.effective_digest(frozen):
+        return 'fontes'
+    return None
+
+
+def _current(conn, payload, current_refs=None):
+    return _stale_reason(conn, payload, current_refs) is None
 
 
 def scenarios():
@@ -359,7 +373,16 @@ def solve(p):
 
 
 def _queue(c, obj):
-    """Põe o cálculo do cenário na fila, com as fontes e o motor de agora e as barras do plano aceite."""
+    """Põe o cálculo do cenário na fila, com as fontes e o motor de agora e as barras do plano aceite.
+
+    Já há um cálculo na fila ou a correr para este cenário e revisão: devolve esse (revisão de 07/10/2026). Ele lê
+    as fontes de agora quando corre, por isso dois pedidos seguidos nunca fazem dois cálculos iguais.
+    """
+    running = c.execute("SELECT * FROM planning_mtg.raw_jobs WHERE kind='gantt' AND object_id=%s AND object_revision=%s "
+                        "AND status IN ('queued','running') ORDER BY created_at DESC LIMIT 1",
+                        (needs.uid(obj['id']), obj['revision'])).fetchone()
+    if running:
+        return running
     refs = inputs.references(c)
     accepted = obj['definition'].get('accepted') or {}
     prior_bars = {}
@@ -385,7 +408,8 @@ def job(id):
         if not row:
             raise planning.PlanningError('Tarefa Gantt não encontrada.', 404)
         result = needs.serial(row)
-        result['stale'] = not _current(c, row['input'])
+        result['stale_reason'] = _stale_reason(c, row['input'])
+        result['stale'] = result['stale_reason'] is not None
         return result
 
 
@@ -464,6 +488,8 @@ def accept(p):
         if not snapshot or not proposal or result.get('phase') != 'done':
             raise planning.PlanningError('A proposta não é aceitável.', 409)
         if not _current(c, row['input']):
+            if not p.get('auto_recalculate'):  # separador antigo: a mesma recusa de sempre, nunca um falso «aceite»
+                raise planning.PlanningError('As fontes mudaram. Recalcula a proposta.', 409)
             # Fontes ou motor mudaram depois da proposta (07/10/2026): recalcula sozinho em vez de recusar. Nada é
             # aceite às cegas: aceita-se a proposta nova quando terminar.
             job = _queue(c, obj)
