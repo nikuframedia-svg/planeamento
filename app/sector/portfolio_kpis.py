@@ -7,7 +7,8 @@ setor, das fontes e das decisões gravadas.
 - B (carga atual de cada máquina): linhas «Planeado» (Planear e Máquina) — o trabalho que o Gantt
   recebe. Uma máquina sugerida nunca entra em B.
 - Acréscimo de S: linhas marcadas «Planeado para nesting» (com Máquina, ainda sem Planear), na sua
-  máquina. Marcar uma linha já planeada acrescenta zero; sem máquina não se planeia (fica à parte).
+  máquina. Marcar uma linha já planeada acrescenta zero; as sem máquina contam à parte (ao Planear recebem a
+  máquina sugerida, que só se conhece quando é gravada).
 - Resumo: Planeado / Planeado para nesting / Sem máquina atribuída — uma partição de todo o setor, em
   metros, horas e toneladas (saldo de peças × peso unitário; sem peso conta à parte).
 - Metros e peças contam uma vez por linha (operação principal); horas somam-se por ocorrência e só com a
@@ -206,7 +207,7 @@ def preview(payload: dict, **kw) -> dict:
     """Acréscimo dos membros marcados (S) por máquina. Só consulta: nada é gravado.
 
     Só as linhas em «Planeado para nesting» acrescentam (na sua máquina). As já planeadas acrescentam
-    zero; as sem máquina não podem ser planeadas e contam à parte, uma vez por linha.
+    zero; as sem máquina contam à parte, uma vez por linha (ao Planear recebem a máquina sugerida).
     """
     sector = portfolio.check_sector(str(payload.get("setor") or ""))
     keys = portfolio.keys_from(payload)

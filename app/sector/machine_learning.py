@@ -3,7 +3,8 @@
 Nunca atribui: só sugere (a sugestão vem pré-escolhida ao «Atribuir máquina» e entra como primeiro critério
 da máquina sugerida em estimates.py). Fontes, todas na operação principal:
 - escolhas feitas na Carteira («Atribuir máquina», eventos kind='machine') — peso 5, as mais recentes contam
-  como as outras: são a vontade explícita do planeador;
+  como as outras: são a vontade explícita do planeador. A máquina sugerida que o Planear grava numa linha sem
+  máquina (origem «sugerida», 07/10/2026) não conta;
 - máquinas escritas na coluna Máquina da Tabela nas linhas abertas — peso 1;
 - histórico do Excel (planeamento_v2, `history`: variante × operação × máquina de OF anteriores) — peso 1.
 Contextos, do mais específico para o mais geral: família SKU + perfil, família SKU + espessura, perfil,
@@ -90,8 +91,10 @@ def build(c, area: str, lines: list[dict]) -> dict:
     for x in lines:  # Tabela, linhas abertas
         if machine_choice.normalize(x.get("tabela_machine")):
             add(x.get("sku_family"), x.get("profile"), x["tabela_machine"], "tabela")
-    for e in c.execute("SELECT detail FROM planning_mtg.sector_decision_events WHERE area = %s AND kind = 'machine' AND action = 'machine'",
-                       (area,)).fetchall():
+    # A máquina sugerida gravada ao Planear (07/10/2026) não é uma escolha do planeador: não ensina, senão a
+    # sugestão reforçava-se a si própria.
+    for e in c.execute("SELECT detail FROM planning_mtg.sector_decision_events WHERE area = %s AND kind = 'machine' AND action = 'machine' "
+                       "AND coalesce(detail->>'origem', '') <> 'sugerida'", (area,)).fetchall():
         d = e["detail"] or {}
         add((d.get("before") or {}).get("familia"), (d.get("before") or {}).get("perfil") or (d.get("seen") or {}).get("profile"),
             (d.get("after") or {}).get("carteira"), "carteira")

@@ -99,9 +99,9 @@ def validate_definition(value):
         if not isinstance(key, str) or not isinstance(decision, dict) or set(decision) - {'resource_id', 'reason'}:
             raise planning.PlanningError('Escolha de máquina inválida.', 422)
         rid = str(needs.uid(decision.get('resource_id')))
-        reason = str(decision.get('reason') or '').strip()
-        if not reason or len(reason) > 1000:
-            raise planning.PlanningError('Indica o motivo da escolha manual.', 422)
+        reason = str(decision.get('reason') or '').strip()  # opcional desde 07/10/2026
+        if len(reason) > 1000:
+            raise planning.PlanningError('O motivo da escolha manual tem no máximo 1000 caracteres.', 422)
         clean[key] = {'resource_id': rid, 'reason': reason}
     result['machine_overrides'] = clean
     if 'included_operations' in value:
@@ -210,15 +210,19 @@ def options(key, scenario_id=None):
 
 
 def confirm_rule(p):
-    """Explicit, audited technical review; never confirms resource calendars."""
+    """Audited technical review; never confirms resource calendars.
+
+    Desde 07/10/2026 a regra técnica saiu do ecrã: a máquina escolhida pelo planeador já conta como validada.
+    O pedido continua aceite para compatibilidade, sem exigir motivo, caixa de confirmação nem as mesmas fontes
+    (a operação é procurada nas fontes atuais).
+    """
     from .machines import validate_rules
+    from ..sector.decisions import reason_or_default
     with planning.connect() as c:
         _,actor,old=needs.command(c,p)
         if old:
             return old
         snapshot=inputs.capture(c,{'areas':['perfis','cantoneiras']},datetime.now(timezone.utc).replace(second=0,microsecond=0))
-        if p.get('source_references')!=snapshot['source_references']:
-            raise planning.PlanningError('As fontes mudaram. Reabre a operação antes de validar.',409)
         op=next((o for o in snapshot['operations'] if o['key']==p.get('key')),None)
         if not op:
             raise planning.PlanningError('Operação fora da seleção com informação de planeamento.',409)
@@ -230,9 +234,9 @@ def confirm_rule(p):
         conditions=p.get('resolved_conditions')
         if not candidates or not isinstance(conditions,list) or not conditions or set(conditions)-available:
             raise planning.PlanningError('Seleciona as condições desta alternativa que foram comprovadas.',422)
-        reason=str(p.get('reason') or '').strip()
-        if p.get('confirmed') is not True or not reason or len(reason)>1000:
-            raise planning.PlanningError('Confirma a revisão técnica e descreve a prova.',422)
+        reason=reason_or_default(p.get('reason'))
+        if len(reason)>1000:
+            raise planning.PlanningError('O motivo tem no máximo 1000 caracteres.',422)
         signature=op.get('evidence',{}).get('variant_signature')
         if not signature:
             raise planning.PlanningError('Identidade técnica por resolver antes de criar uma regra.',422)
@@ -340,9 +344,8 @@ def solve(p):
             raise planning.PlanningError('Cenário indisponível.', 404)
         if p.get('expected_revision') != obj['revision']:
             raise planning.PlanningError('O cenário mudou. Reabre-o.', 409)
-        refs = inputs.references(c)
-        if refs['sources_pending']:
-            raise planning.PlanningError('Aguarda a publicação dos cálculos.', 409)
+        # Com cálculos em atualização a proposta entra na fila na mesma (07/10/2026): calcula com o que estiver
+        # publicado quando correr.
         from . import research
         import os
         if research.enabled() or os.getenv('MES_PLANNING_SELECTION_ENABLED')=='1':
@@ -350,23 +353,29 @@ def solve(p):
             chosen,_=scope.planning_lines(c,scope.read(c),obj['definition'].get('areas',['perfis']))
             if not chosen:
                 raise planning.PlanningError('Marca o trabalho com Planear na Carteira; o Gantt exige seleção e informação ativa de planeamento.',422)
-        accepted = obj['definition'].get('accepted') or {}
-        prior_bars = {}
-        started = datetime.now(timezone.utc).replace(second=0, microsecond=0) + timedelta(minutes=1)
-        if accepted.get('job_id'):
-            prior = c.execute("SELECT input,result FROM planning_mtg.raw_jobs WHERE id=%s AND kind='gantt' AND status='done'",(needs.uid(accepted['job_id']),)).fetchone()
-            if prior and prior['result']:
-                older = (prior['result'].get('proposal') or {}).get('bars') or {}
-                offset = int((utc(prior['input']['started_at'])-started).total_seconds()//60)
-                prior_bars = {key: {**bar, 'start_minute': bar['start_minute']+offset,
-                                    'end_minute': bar['end_minute']+offset}
-                              for key, bar in older.items()}
-        payload = {'definition': obj['definition'], 'source_references': refs,
-                   'runtime_manifest': runtime_manifest(),
-                   'started_at': started.isoformat(), 'accepted_bars': prior_bars}
-        job = analysis.queue(c, obj, kind='gantt', input=payload)
+        job = _queue(c, obj)
         return needs.finish(c, p, {'job_id': str(job['id']), 'status': job['status'],
                                    'object_revision': obj['revision']})
+
+
+def _queue(c, obj):
+    """Põe o cálculo do cenário na fila, com as fontes e o motor de agora e as barras do plano aceite."""
+    refs = inputs.references(c)
+    accepted = obj['definition'].get('accepted') or {}
+    prior_bars = {}
+    started = datetime.now(timezone.utc).replace(second=0, microsecond=0) + timedelta(minutes=1)
+    if accepted.get('job_id'):
+        prior = c.execute("SELECT input,result FROM planning_mtg.raw_jobs WHERE id=%s AND kind='gantt' AND status='done'",(needs.uid(accepted['job_id']),)).fetchone()
+        if prior and prior['result']:
+            older = (prior['result'].get('proposal') or {}).get('bars') or {}
+            offset = int((utc(prior['input']['started_at'])-started).total_seconds()//60)
+            prior_bars = {key: {**bar, 'start_minute': bar['start_minute']+offset,
+                                'end_minute': bar['end_minute']+offset}
+                          for key, bar in older.items()}
+    payload = {'definition': obj['definition'], 'source_references': refs,
+               'runtime_manifest': runtime_manifest(),
+               'started_at': started.isoformat(), 'accepted_bars': prior_bars}
+    return analysis.queue(c, obj, kind='gantt', input=payload)
 
 
 def job(id):
@@ -391,12 +400,13 @@ def run_job(job):
     began = time.perf_counter()
     try:
         payload = dict(job['input'])
-        if payload.get('runtime_manifest') != runtime_manifest():
-            raise planning.PlanningError('A versão do motor Gantt mudou. Volta a calcular.',409)
         with planning.connect(readonly=True) as c:
             c.execute('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ')
+            # Fontes, decisões ou motor mudaram desde o pedido: calcula com o que está agora e regista-o, em vez de
+            # falhar e pedir para voltar a calcular (07/10/2026).
+            payload.update(runtime_manifest=runtime_manifest(), source_references=inputs.references(c))
             snapshot = inputs.capture(c, {**payload['definition'], 'accepted_bars': payload.get('accepted_bars') or {}},
-                                      payload['started_at'], expected_references=payload['source_references'])
+                                      payload['started_at'])
         payload['snapshot'] = snapshot
         preliminary = {'input': payload, 'result': {'phase': 'initial', 'snapshot': snapshot}}
         if not snapshot['operations']:
@@ -454,7 +464,11 @@ def accept(p):
         if not snapshot or not proposal or result.get('phase') != 'done':
             raise planning.PlanningError('A proposta não é aceitável.', 409)
         if not _current(c, row['input']):
-            raise planning.PlanningError('As fontes mudaram. Recalcula a proposta.', 409)
+            # Fontes ou motor mudaram depois da proposta (07/10/2026): recalcula sozinho em vez de recusar. Nada é
+            # aceite às cegas: aceita-se a proposta nova quando terminar.
+            job = _queue(c, obj)
+            return needs.finish(c, p, {'recalculating': True, 'job_id': str(job['id']), 'status': job['status'],
+                                       'object_revision': obj['revision']})
         if snapshot.get('orphaned_pins') or snapshot.get('orphaned_overrides'):
             raise planning.PlanningError('Revê as fixações órfãs ou incompatíveis.', 409)
         checked = validation.validate(snapshot, proposal)

@@ -281,6 +281,27 @@ def _application_inputs(row, record, aliases):
     return row
 
 
+ROUTE_REVIEW = 'Operação ou aplicabilidade da rota por confirmar.'
+CPIS_ROUTE = 'Rota CPIS atual difere da informação de planeamento.'
+SEQUENCE = 'Sequência operacional por validar.'
+
+
+def chosen_by_planner(selected, source_rid, override_rid, sector):
+    """A máquina da ocorrência foi escolhida por uma pessoa (plano de 07/10/2026).
+
+    Conta a escolha manual no Gantt; sem ela, a máquina do planeamento (Carteira, Tabela/Excel ou conjunto de
+    famílias); e a preferência do setor quando foi aplicada. Com essa máquina a rota e a compatibilidade do
+    planeador/Excel contam como validadas. A escolha automática (sem nenhuma destas) continua por confirmar.
+    """
+    if not selected:
+        return False
+    human = {override_rid} if override_rid else {source_rid}
+    if sector and sector.get('mode') == 'prefer':
+        human.add(sector.get('resource_id'))
+    human.discard(None)
+    return selected.get('resource_id') in human
+
+
 def member_selection_digest(c):
     """Member decisions of the Carteira (plano de 02/10/2026); absent while there are none, so the
     references of existing scenarios stay identical until the first member decision."""
@@ -501,24 +522,26 @@ def capture(c, definition, started_at, *, expected_references=None):
         if started:
             selected = next((o for o in sorted(candidates, key=lambda o: o['eligibility'] == 'excluded') if o.get('resource_id') == source_rid), None)
             reason = 'Trabalho iniciado conserva a máquina documentada'
-        # A máquina escolhida pelo planeador vale como confirmação técnica para esta ocorrência.
-        planner = bool(selected) and bool(source_rid) and selected.get('resource_id') == source_rid and (not override_rid or override_rid == source_rid)
+        # A máquina escolhida por uma pessoa vale como confirmação técnica para esta ocorrência, e a rota do
+        # planeador/Excel também (07/10/2026): rota, compatibilidade e sequência ficam como avisos.
+        planner = chosen_by_planner(selected, source_rid, override_rid, sector)
         info = record_info.get(row.get('matched_application_key') or row.get('application_row_key'))
         decision = scope.decision(selection,area,row['ordem_codigo'],row['referencia_original'],
                                   info[0] if info else [k for k in (row.get('matched_application_key'),row.get('application_row_key'),row.get('linha_origem')) if k])
         reasons = list(b['reasons'])
+        warnings = []  # por confirmar sem bloquear: a máquina e a rota do planeador contam como validadas
         if execution_conflict:
             reasons.append('A máquina no registo diverge do trabalho iniciado; conferir execução.')
         if row.get('source_ambiguity'):
             reasons.append('Correspondência a várias linhas documentais por rever.')
         if row.get('route_review_required'):
-            reasons.append('Operação ou aplicabilidade da rota por confirmar.')
+            (warnings if planner else reasons).append(ROUTE_REVIEW)
         cp=cpis_evidence.get(row['operacao_id'])
         if cp and cp['status']=='correspondencia_documental_unica':
             route=[str(r['codope']) for r in cp['route']]
             expected=[code.removeprefix('CPIS:') for code in index.routes[row['item_id']]]
             if row['setor']=='MTG3' and route!=expected:
-                reasons.append('Rota CPIS atual difere da informação de planeamento.')
+                (warnings if planner else reasons).append(CPIS_ROUTE)
         if started and override_rid and override_rid != source_rid:
             reasons.append('Escolha manual contradiz trabalho iniciado.')
         if sector and sector.get('conflict'):
@@ -573,7 +596,8 @@ def capture(c, definition, started_at, *, expected_references=None):
                              'sector_decision': sector},
               'candidates': candidates, 'options': options, 'selection_aliases': [row['linha_origem']],
               'state': 'complete' if remaining == 0 else 'blocked' if reasons else 'ready',
-              'blocking_reasons': sorted(set(reasons)), 'provisional': b['balance_provisional'] or any(o['provisional'] for o in options),
+              'blocking_reasons': sorted(set(reasons)), 'warnings': sorted(set(warnings)),
+              'provisional': b['balance_provisional'] or any(o['provisional'] for o in options),
               'priority_group': priority.group(due), 'priority': due,
               'deadline': deadline, 'predecessor_keys': [], 'predecessor_key': None,
               'evidence': {'snapshot': row['snapshot_id'], 'row': row['excel_linha'], 'operation_id': row['operacao_id'], 'raw': raw,
@@ -596,8 +620,13 @@ def capture(c, definition, started_at, *, expected_references=None):
             validated = bool(original and any('rota_por_validar' in r.get('resolved_conditions', [])
                              for r in machines.matching_rules(original, resources[selected_id])))
             if not dep['validada'] and not validated and by_key[after]['state'] != 'complete':
-                by_key[after]['blocking_reasons'].append('Sequência operacional por validar.')
-                by_key[after]['state'] = 'blocked'
+                if by_key[after]['assignment']['basis'] == 'escolha_do_planeador':
+                    # Rota do planeador/Excel com a máquina escolhida: validada, fica como aviso (07/10/2026).
+                    if SEQUENCE not in by_key[after]['warnings']:
+                        by_key[after]['warnings'].append(SEQUENCE)
+                else:
+                    by_key[after]['blocking_reasons'].append(SEQUENCE)
+                    by_key[after]['state'] = 'blocked'
     for op in operations:
         op['predecessor_key'] = next(iter(op['predecessor_keys']), None)
     pins, transfers, orphans = reconcile_pins(operations, definition.get('pins', {}), definition.get('pin_bindings', {}))

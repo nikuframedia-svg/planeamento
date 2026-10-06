@@ -60,8 +60,20 @@ def test_open_conflict_between_cpis_copies_stays_in_the_proposal_and_says_confli
     r["detail"] = {"status_values": ["Em Aberto", "Em Produção"]}
     line = portfolio.line_from_row(r, TODAY)
     assert line["status"] == "Estado em conflito" and line["proposal"] == "C"
+    # Antes de 07/10/2026 «Estado CPIS por confirmar» tirava a linha da proposta; agora é só a etiqueta.
     r["detail"] = {"status_values": ["Fechada", "Em Produção"]}
-    assert portfolio.line_from_row(r, TODAY)["proposal"] is None
+    line = portfolio.line_from_row(r, TODAY)
+    assert line["signals"]["estado_cpis"] and line["proposal"] == "C"
+
+
+def test_unknown_cpis_state_is_a_label_and_does_not_leave_the_proposal():
+    # 3 386 linhas da MTG3 e 21 da MTG2 sem estado CPIS a 07/10/2026, e toda a OF manual nova.
+    line = portfolio.line_from_row(raw("OF1", "DLT319", 24, 1500, status=None, cut="2026-09-20"), TODAY)
+    assert line["status"] == "Sem estado CPIS" and line["signals"]["estado_cpis"] and line["proposal"] == "B"
+    assert "estado_cpis" not in portfolio.BLOCKING and "estado_cpis" in portfolio.SIGNALS
+    d = data(raw("OF1", "DLT319", 24, 1500, status=None), raw("OF2", "DLT20", 10, 1000, notes="ANULADA"))
+    assert portfolio.groups("cantoneiras", "referencia", filters={"estado": "proposta"}, data=d)["totals"]["ofs"] == 1
+    assert portfolio.groups("cantoneiras", "referencia", filters={"sinal": "estado_cpis"}, data=d)["totals"]["ofs"] == 1
 
 
 def test_unreconciled_excel_and_mes_counters_leave_an_unknown_balance():

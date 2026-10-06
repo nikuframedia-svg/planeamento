@@ -76,7 +76,9 @@ STATES = {  # decisão Planear de cada linha (informação da linha; o filtro Es
 STATUS = planning_status.STATUS  # filtro Estado (plano de 02/10/2026)
 NO_WEEK = "sem"
 PARKED_WEEK = "estacionada"  # filtro de semanas: linhas estacionadas no Excel (S53-1), à parte de «Sem semana definida»
-BLOCKING = ("anulada", "eletrofer", "validacao", "estado_cpis")  # sinais que tiram uma linha da proposta
+# Sinais que tiram uma linha da proposta. «Estado CPIS por confirmar» saiu a 07/10/2026 (fica como etiqueta e
+# filtro): tirava todas as linhas sem estado CPIS, incluindo cada OF manual nova.
+BLOCKING = ("anulada", "eletrofer", "validacao")
 WHOLE = resolution.WHOLE  # decisão antiga sobre a OF inteira
 
 _PRIORITY = re.compile(r"(\d+)\s*[ªº]?\s*PRIORIDADE", re.I)
@@ -548,7 +550,7 @@ def groups(sector: str, view: str = "referencia", path: list[str] | None = None,
             "modelo": "Referência mestre = código do modelo no início da referência (ED4T40 → ED4, DLT319 → DLT, 1283V053 → 1283).",
             "semana": "Semana ISO do prazo do setor: MTG3 pela Data Corte; MTG2 pelo Picking com ano confirmado, depois Galvanização e Data Corte. Sem prazo fica em «Sem semana definida».",
             "familias": "Família SKU vem do catálogo versionado de referências (por exemplo M1, M2); Família de Produto é o tipo de obra do CPIS. São dimensões diferentes.",
-            "estado": "Planeado = Planear e Máquina; Planeado para nesting = tem Máquina, ainda sem Planear; Sem máquina atribuída = coluna Máquina vazia. Cada linha tem um só estado. Sem máquina não se pode planear.",
+            "estado": "Planeado = Planear e Máquina; Planeado para nesting = tem Máquina, ainda sem Planear; Sem máquina atribuída = coluna Máquina vazia. Cada linha tem um só estado. Planear numa linha sem máquina usa a máquina sugerida (podes mudar).",
             "selecao": "As caixas de seleção são um rascunho desta sessão e deste setor; filtrar, pesquisar, ordenar ou mudar a vista não as altera. Planear e Limpar gravam só os membros marcados dessa linha (ou o grupo inteiro, se nenhum estiver marcado).",
         },
     }

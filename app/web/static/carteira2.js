@@ -446,11 +446,13 @@
       const result = await post('/planeamento/api/carteira/selecao', payload, {retry: true});
       if (sector !== state.sector) return;
       (whole ? info.keys : marked).forEach((k) => state.selected.delete(k));
+      state.groups.delete(pathId(path)); // revisões novas: o selo e os tokens guardados já não servem
       const name = path[path.length - 1];
-      const skipped = result.skipped_no_machine || 0;
-      notice(result.repeated ? 'Este pedido já tinha sido gravado.' : action === 'selecionar'
-        ? `${name}: ${number.format(result.changed)} linha(s) planeada(s).${skipped ? ` ${number.format(skipped)} sem máquina ficaram por planear.` : ''}`
-        : `${name}: ${number.format(result.changed)} linha(s) limpa(s).`);
+      const suggested = result.suggested_machine || 0;
+      const done = action === 'selecionar'
+        ? `${name}: ${number.format(result.changed)} linha(s) planeada(s)${suggested ? `; ${number.format(suggested)} com a máquina sugerida (podes mudar)` : ''}.`
+        : `${name}: ${number.format(result.changed)} linha(s) limpa(s).`;
+      notice(result.repeated ? 'Este pedido já tinha sido gravado.' : done + left(result));
       selectionChanged();
       await Promise.all([load(), loadKpis()]);
     } catch (error) {
@@ -465,6 +467,17 @@
     } finally {
       buttons.forEach((b) => { b.disabled = false; });
     }
+  }
+
+  function left(result) {
+    // Linhas que ficaram de fora, com o motivo (07/10/2026); a Python antiga só mandava skipped_no_machine.
+    const count = result.skipped_count ?? result.skipped_no_machine ?? 0;
+    if (!count) return result.group_changed ? ' O grupo tinha mudado: contaram as linhas atuais.' : '';
+    const reasons = {};
+    for (const s of result.skipped || []) reasons[s.reason] = (reasons[s.reason] || 0) + 1;
+    const why = Object.entries(reasons).map(([reason, n]) => `${number.format(n)}: ${reason}`).join(' · ');
+    return ` ${number.format(count)} ficaram de fora${why ? ` (${why})` : ' sem máquina'}.` +
+      (result.group_changed ? ' O grupo tinha mudado: contaram as linhas atuais.' : '');
   }
 
   async function refreshTokens() {
@@ -598,7 +611,7 @@
     const nm = p.no_machine || {lines: 0, metres: 0};
     const tp = p.to_plan || {tonnes: 0};
     text.textContent = `${number.format(n)} marcada(s): Planear acrescenta ${metres(addM)} · ${hours(addH)} · ${tonnes(tp.tonnes)}` +
-      (nm.lines ? ` · ${number.format(nm.lines)} sem máquina (${metres(nm.metres)}) não dão para planear` : '');
+      (nm.lines ? ` · ${number.format(nm.lines)} sem máquina (${metres(nm.metres)}): será usada a sugerida ao planear` : '');
   }
 
   async function refreshPreview() {

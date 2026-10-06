@@ -4,16 +4,25 @@ Um membro é uma linha técnica da Carteira (row_key da projeção, reencontrada
 selection_aliases). A ação grava exatamente os membros pedidos — nunca reconstrói a intenção a partir
 dos filtros da lista. Antes de gravar, o servidor confere cada membro: ainda existe, a mesma variante
 técnica, o mesmo saldo, a mesma máquina e a mesma revisão da decisão (o `token` da pré-visualização).
-Qualquer diferença devolve 409 com os membros afetados e nada é gravado.
 
-Planear só grava membros com Máquina (regra do Luís, 02/10/2026): os outros ficam de fora e são contados
-em `skipped_no_machine`; se nenhum tiver máquina, a ação é recusada.
+Conflitos (07/10/2026): um membro que mudou ou que já não está na carteira fica de fora, com o motivo em
+`skipped`; os outros gravam-se. Um grupo que mudou desde que foi aberto (selo antigo) grava-se tal como
+está agora e o resultado diz `group_changed`. Só quando nada se pode gravar por causa de conflitos é que o
+pedido é recusado (409, com os membros afetados).
+
+Planear numa linha sem máquina (decisão do Luís, 07/10/2026, substitui a regra de 02/10 «sem máquina não se
+planeia»): grava a máquina sugerida — a mesma que a Carteira mostra, só máquinas do setor — como escolha da
+Carteira (sector_member_machine, como «Atribuir máquina», com a origem «sugerida») e planeia. Só fica de fora,
+com o motivo, a linha sem nenhuma sugestão possível (contada em `skipped_no_machine`); se nenhuma linha
+puder ser planeada, a ação é recusada.
+
+Excluir: o motivo é opcional desde 07/10/2026; o autor e a hora ficam sempre registados.
 
 Precedência na leitura: membro → (OF, referência) → (OF, '*') (ver decisions.py). As decisões antigas
 por OF/referência continuam a valer; novas ações só escrevem decisões por membro. Limpar um membro
 coberto por uma decisão herdada grava uma desmarcação explícita ('cleared'), que vence a herança.
 
-Cada ação fica numa transação: decisões, um evento por membro (antes/depois) em
+Cada ação fica numa transação: decisões, máquinas sugeridas, um evento por membro (antes/depois) em
 planning_mtg.sector_decision_events e o pedido em sector_selection_requests. O mesmo request_id com o
 mesmo conteúdo devolve o resultado já gravado; com outro conteúdo é recusado (409).
 """
@@ -31,6 +40,11 @@ from . import decisions as resolution, portfolio
 WHOLE = portfolio.WHOLE
 ACTIONS = {"selecionar": "selected", "excluir": "excluded", "limpar": "cleared"}
 MAX_MEMBERS = 50000
+# Motivos de uma linha que fica de fora (07/10/2026): ditos no resultado, nunca escondidos.
+CHANGED = "Mudou desde a pré-visualização (saldo, máquina, variante ou decisão)."
+GONE = "Já não está na carteira aberta (concluído ou mudou na importação)."
+NO_SUGGESTION = "Sem máquina sugerida: a ficha técnica e o histórico não indicam nenhuma máquina do setor."
+SUGGESTION_UNAVAILABLE = "Máquina sugerida indisponível neste momento; tenta outra vez ou atribui a máquina."
 
 
 def current(sector: str, conn=None) -> resolution.Decisions:
@@ -59,8 +73,31 @@ class Conflict(planning.PlanningError):
         self.fields = {"conflicts": conflicts[:200], "conflict_count": len(conflicts)}
 
 
-def _requested(payload: dict, data: dict, decisions) -> tuple[list[tuple[dict, str | None]], dict]:
-    """[(line, token sent)] for the exact members of the request, and what the request referred to."""
+def _skipped(line: dict | None, reason: str, key: str | None = None) -> dict:
+    if line is None:
+        return {"key": key, "reason": reason}
+    return {"key": line["key"], "of": line["of"], "reference": line["reference"], "reason": reason}
+
+
+def _alias_index(lines: list[dict]) -> dict:
+    """Chave antiga (selection_aliases) → linha atual, só quando a chave antiga é de uma única linha."""
+    found, repeated = {}, set()
+    for line in lines:
+        for alias in line.get("aliases") or ():
+            if alias in found and found[alias] is not line:
+                repeated.add(alias)
+            found[alias] = line
+    return {alias: line for alias, line in found.items() if alias not in repeated}
+
+
+def _requested(payload: dict, data: dict, decisions, *, partial: bool = False) -> tuple[list[tuple[dict, str | None]], dict, list[dict]]:
+    """([(line, token sent)], what the request referred to, [members left out with the reason]).
+
+    Um membro marcado antes de uma importação é reencontrado pela chave antiga (selection_aliases). Sem
+    `partial` (Atribuir máquina) um membro que já não está na carteira ou um grupo que mudou recusam o pedido
+    (409); com `partial` (Planear, Excluir, Limpar — 07/10/2026) o membro fica de fora com o motivo e o grupo
+    vale tal como está agora (`grupo_mudou` no âmbito). Sem nada para gravar, recusa na mesma.
+    """
     by_key = {}
     for line in data["lines"]:
         by_key[line["key"]] = line
@@ -68,20 +105,24 @@ def _requested(payload: dict, data: dict, decisions) -> tuple[list[tuple[dict, s
         members = payload["membros"]
         if not isinstance(members, list) or not members or len(members) > MAX_MEMBERS:
             raise planning.PlanningError("Escolhe pelo menos um membro.")
-        result, missing = [], []
+        aliases = _alias_index(data["lines"])
+        result, missing, seen = [], [], set()
         for item in members:
             if not isinstance(item, dict) or not isinstance(item.get("chave"), str):
                 raise planning.PlanningError("Membro inválido.")
-            line = by_key.get(item["chave"])
+            line = by_key.get(item["chave"]) or aliases.get(item["chave"])
             if line is None:
-                missing.append({"key": item["chave"], "reason": "Já não está na carteira aberta (concluído ou mudou na importação)."})
-            else:
-                result.append((line, item.get("token")))
-        if missing:
+                missing.append(_skipped(None, GONE, item["chave"]))
+                continue
+            if line["key"] in seen:
+                if not partial:
+                    raise planning.PlanningError("Membro repetido no pedido.")
+                continue  # a mesma linha marcada pela chave antiga e pela atual
+            seen.add(line["key"])
+            result.append((line, item.get("token")))
+        if missing and (not partial or not result):
             raise Conflict("Alguns membros já não estão na carteira. Atualiza a seleção.", missing)
-        if len({line["key"] for line, _ in result}) != len(result):
-            raise planning.PlanningError("Membro repetido no pedido.")
-        return result, {"membros": len(result)}
+        return result, {"membros": len(result)}, missing
     group = payload.get("grupo")
     if isinstance(group, dict):
         view, path = str(group.get("vista") or ""), group.get("caminho")
@@ -94,14 +135,19 @@ def _requested(payload: dict, data: dict, decisions) -> tuple[list[tuple[dict, s
         lines = portfolio.group_lines(data, view, path)
         if not lines:
             raise planning.PlanningError("Esse grupo já não tem trabalho aberto. Atualiza a Carteira.", 409)
-        if group.get("selo") and group["selo"] != portfolio.group_seal(lines, decisions):
+        changed = bool(group.get("selo")) and group["selo"] != portfolio.group_seal(lines, decisions)
+        if changed and not partial:
             raise Conflict("O grupo mudou desde que foi aberto. Abre a lupa outra vez.", [{"group": path, "reason": "Membros, saldos ou decisões mudaram."}])
         excluded = set(exceto)
-        chosen = [(x, None) for x in lines if x["key"] not in excluded]
+        # Uma exceção marcada antes de uma importação vale pela chave antiga da mesma linha.
+        chosen = [(x, None) for x in lines if x["key"] not in excluded and not excluded.intersection(x.get("aliases") or ())]
         if not chosen:
             raise planning.PlanningError("Escolhe pelo menos um membro.")
-        return chosen, {"vista": view, "caminho": path, "exceto": len(excluded)}
-    return _legacy(payload, data), {"contrato": "antigo"}
+        scope = {"vista": view, "caminho": path, "exceto": len(excluded)}
+        if changed:
+            scope["grupo_mudou"] = True
+        return chosen, scope, []
+    return _legacy(payload, data), {"contrato": "antigo"}, []
 
 
 def _legacy(payload: dict, data: dict) -> list[tuple[dict, None]]:
@@ -142,14 +188,62 @@ def previous_request(c, request_id, content):
     return {**found["result"], "repeated": True, "changed": 0}
 
 
+def suggested_machines(sector: str, lines: list[dict]) -> dict[str, dict]:
+    """{chave: {resource_id, machine, origin, label}} — a máquina sugerida de cada linha sem máquina (07/10/2026).
+
+    A mesma sugestão que a Carteira mostra («— sugerida» na lupa), só entre as máquinas do setor (members.py):
+    1. a preferência aprendida com as escolhas dos planeadores, já filtrada pela ficha técnica
+       (machine_learning.for_line com machine_learning.technical);
+    2. senão a máquina sugerida da previsão (estimates.apply): a das outras linhas da OF com o mesmo perfil e
+       operação (estimates.peer_machine), o processo da regra das séries, o precedente da peça e o equilíbrio
+       de carga — também só entre as candidatas da ficha técnica.
+    A máquina efetiva (machine_choice.effective) já vem nas linhas: só as que não a têm chegam aqui. Uma linha
+    sem nenhuma das duas não tem sugestão. As ocorrências podem vir da versão anterior enquanto se refazem.
+    """
+    from . import machine_learning, members, occurrences
+    with planning.connect(readonly=True) as c:
+        own = members.members(c, sector)
+    if not own or not lines:
+        return {}
+    learned = machine_learning.model(sector)
+    checked = machine_learning.technical(sector)
+    estimated = {}
+    for f in occurrences.load(sector, allow_stale=True)["facts"]:
+        if f["phase"] == "principal" and f.get("machine_basis") == "sugerida" and f.get("suggestion"):
+            estimated.setdefault(f["line_key"], f["suggestion"])
+    out = {}
+    for line in lines:
+        keys = [line["key"], *line.get("aliases", ())]  # as ocorrências podem ser de antes da última importação
+        learned_choice = next((x for x in (machine_learning.for_line(learned, checked, {**line, "key": k}) for k in keys) if x), None)
+        estimate = next((estimated[k] for k in keys if k in estimated), None)
+        for found, origin, label in ((learned_choice, "aprendida", "label"), (estimate, "previsao", "reason")):
+            if found and found["resource_id"] in own:
+                out[line["key"]] = {"resource_id": found["resource_id"], "origin": origin, "label": found.get(label),
+                                    "machine": own[found["resource_id"]].get("name") or found["machine"]}
+                break
+    return out
+
+
+def _suggestions(sector: str, lines: list[dict], c) -> tuple[dict, str]:
+    """Sugestões para as linhas sem máquina e o motivo das que ficam sem nenhuma."""
+    if not lines:
+        return {}, NO_SUGGESTION
+    if not c.execute("SELECT to_regclass('planning_mtg.sector_member_machine') t").fetchone()["t"]:
+        return {}, "A máquina por linha ainda não está instalada (migração 048)."
+    try:
+        return suggested_machines(sector, lines), NO_SUGGESTION
+    except Exception:  # a sugestão não pode impedir planear as linhas que já têm máquina
+        import logging
+        logging.getLogger(__name__).exception("Máquinas sugeridas indisponíveis ao Planear")
+        return {}, SUGGESTION_UNAVAILABLE
+
+
 def apply(payload: dict, *, data: dict | None = None, conn=None) -> dict:
     sector = portfolio.check_sector(str(payload.get("setor") or "cantoneiras"))
     action = ACTIONS.get(str(payload.get("acao")))
-    reason = str(payload.get("motivo") or "").strip() or None
+    reason = str(payload.get("motivo") or "").strip() or None  # opcional também em Excluir (07/10/2026)
     if not action:
         raise planning.PlanningError("Ação inválida: usa selecionar, excluir ou limpar.")
-    if action == "excluded" and not reason:
-        raise planning.PlanningError("Para excluir, indica o motivo.")
     try:
         request_id = uuid.UUID(str(payload.get("request_id")))
     except ValueError:
@@ -166,37 +260,51 @@ def apply(payload: dict, *, data: dict | None = None, conn=None) -> dict:
         if repeated:
             return repeated
         decisions = current(sector, conn=c)
-        chosen, scope = _requested(payload, data, decisions)
-        skipped = 0
-        if action == "selected":
-            if payload.get("membros") is None:
-                # Planear um grupo não anula exclusões: um membro excluído só volta se for escolhido um a um.
-                chosen = [(line, token) for line, token in chosen if portfolio.effective(line, decisions)["decision"] != "excluded"]
+        chosen, scope, skipped = _requested(payload, data, decisions, partial=True)
+        if action == "selected" and payload.get("membros") is None:
+            # Planear um grupo não anula exclusões: um membro excluído só volta se for escolhido um a um.
+            chosen = [(line, token) for line, token in chosen if portfolio.effective(line, decisions)["decision"] != "excluded"]
             if not chosen:
                 raise planning.PlanningError("Todas estas linhas estão excluídas; escolhe-as uma a uma na lupa para as planear.")
-            with_machine = [(line, token) for line, token in chosen if line["machine"]]
-            skipped = len(chosen) - len(with_machine)
-            if not with_machine:
-                raise planning.PlanningError("Nenhum destes membros tem máquina. Dá-lhes máquina antes de Planear.")
-            chosen = with_machine
-        conflicts, changes = [], []
+        ready = []
         for line, token in chosen:
             before = portfolio.effective(line, decisions)
             if token is not None and token != portfolio.member_token(line, before["revision"]):
-                conflicts.append({"key": line["key"], "of": line["of"], "reference": line["reference"],
-                                  "reason": "Mudou desde a pré-visualização (saldo, máquina, variante ou decisão)."})
-                continue
+                skipped.append(_skipped(line, CHANGED))
+            else:
+                ready.append((line, before))
+        conflicts = len(skipped)
+        machines = []  # (linha, sugestão): a máquina sugerida fica como escolha da Carteira
+        if action == "selected":
+            suggestions, missing = _suggestions(sector, [line for line, _ in ready if not line["machine"]], c)
+            planned = []
+            for line, before in ready:
+                if not line["machine"]:
+                    found = suggestions.get(line["key"])
+                    if not found:
+                        skipped.append(_skipped(line, missing))
+                        continue
+                    machines.append((line, found))
+                    line = {**line, "machine": found["machine"], "machine_source": "carteira", "machine_resource_id": found["resource_id"]}
+                planned.append((line, before))
+            ready = planned
+        if not ready:
+            if conflicts:
+                raise Conflict("Estas linhas mudaram entretanto ou já não estão na carteira. Nada foi gravado; atualiza a seleção.", skipped)
+            raise planning.PlanningError("Nenhuma destas linhas tem máquina nem máquina sugerida. Dá-lhes máquina antes de Planear.")
+        changes = []
+        for line, before in ready:
             after = _after(action, line, decisions)
             if after["decision"] == before["decision"]:
                 continue  # a decisão efetiva já é esta: nada a gravar neste membro
             changes.append((line, before, after))
-        if conflicts:
-            raise Conflict("Alguns membros mudaram entretanto. Nada foi gravado; revê a seleção.", conflicts)
         detail = {"ambito": scope, "geracao": data["generation"], "importacao": data["snapshot"]}
-        result = {"changed": len(changes), "members": len(chosen), "skipped_no_machine": skipped, "action": action, "actor": actor,
+        result = {"changed": len(changes), "members": len(ready), "skipped_no_machine": len(skipped) - conflicts,
+                  "suggested_machine": len(machines), "skipped": skipped[:200], "skipped_count": len(skipped),
+                  "group_changed": bool(scope.get("grupo_mudou")), "action": action, "actor": actor,
                   "metres": round(sum(line["metres"] for line, _, _ in changes), 1), "repeated": False,
                   "keys": [line["key"] for line, _, _ in changes]}
-        _write(c, sector, action, reason, actor, request_id, detail, changes, content, result)
+        _write(c, sector, action, reason, actor, request_id, detail, changes, content, result, machines)
     return result
 
 
@@ -208,14 +316,19 @@ def _after(action, line, decisions) -> dict:
     return {"decision": None, "explicit": inherited["decision"] is not None}
 
 
-def _write(c, sector, action, reason, actor, request_id, detail, changes, content, result) -> None:
-    """Uma transação: decisões, eventos e pedido gravados juntos ou nada."""
+def _write(c, sector, action, reason, actor, request_id, detail, changes, content, result, machines=()) -> None:
+    """Uma transação: decisões, máquinas sugeridas, eventos e pedido gravados juntos ou nada."""
     with c.cursor() as cur:
         try:
             cur.execute("INSERT INTO planning_mtg.sector_selection_requests (request_id, area, action, content_hash, actor, result) "
                         "VALUES (%s, %s, %s, %s, %s, %s)", (request_id, sector, action, content, actor, Jsonb(result)))
         except psycopg.errors.UniqueViolation:
             raise planning.PlanningError("O mesmo pedido foi gravado entretanto. Atualiza a Carteira.", 409) from None
+        if machines:
+            # O mesmo bloqueio de «Atribuir máquina» (member_machine.py), sempre depois do da seleção.
+            cur.execute("SELECT pg_advisory_xact_lock(hashtext('sector_member_machine:' || %s))", (sector,))
+        for line, found in machines:
+            _suggested_machine(cur, sector, actor, request_id, detail, line, found)
         for line, before, after in changes:
             keys = [line["key"], *line.get("aliases", ())]
             old = cur.execute("DELETE FROM planning_mtg.sector_member_selection WHERE area = %s AND member_key = ANY(%s) "
@@ -228,7 +341,8 @@ def _write(c, sector, action, reason, actor, request_id, detail, changes, conten
                            (area, member_key, production_order_no, reference, decision, reason, actor, revision, request_id, seen)
                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
                     (sector, line["key"], line["of"], line["reference"], stored,
-                     reason if stored == "excluded" else None, actor, revision, request_id, Jsonb(_seen(line))))
+                     resolution.reason_or_default(reason) if stored == "excluded" else None, actor, revision, request_id,
+                     Jsonb(_seen(line))))
             cur.execute(
                 """INSERT INTO planning_mtg.sector_decision_events
                        (area, kind, production_order_no, reference, member_key, action, reason, actor, request_id, detail)
@@ -237,3 +351,31 @@ def _write(c, sector, action, reason, actor, request_id, detail, changes, conten
                  Jsonb({**detail, "seen": _seen(line), "revision": revision,
                         "before": {k: before[k] for k in ("decision", "source", "revision")},
                         "after": {"decision": after["decision"], "stored": stored}})))
+
+
+def _suggested_machine(cur, sector, actor, request_id, detail, line, found) -> None:
+    """A máquina sugerida fica como escolha da Carteira (a mesma de «Atribuir máquina»), com a origem «sugerida».
+
+    A origem fica em `seen` e no evento; machine_learning.build não aprende com estes eventos, para a sugestão
+    não se reforçar a si própria. Muda-se como qualquer escolha da Carteira. O evento leva um identificador
+    derivado do pedido (um só evento por membro e pedido), com o pedido do Planear em `pedido`.
+    """
+    keys = [line["key"], *line.get("aliases", ())]
+    old = cur.execute("DELETE FROM planning_mtg.sector_member_machine WHERE area = %s AND member_key = ANY(%s) RETURNING revision",
+                      (sector, keys)).fetchall()
+    revision = max((r["revision"] for r in old), default=0) + 1
+    suggestion = {"origem": found.get("origin"), "motivo": found.get("label")}
+    machine_request = uuid.uuid5(request_id, "maquina-sugerida")
+    cur.execute("""INSERT INTO planning_mtg.sector_member_machine
+                       (area, member_key, production_order_no, reference, resource_id, machine_name, actor, revision, request_id, seen)
+                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+                (sector, line["key"], line["of"], line["reference"], found["resource_id"], found["machine"], actor, revision,
+                 machine_request, Jsonb({**_seen(line), "origem": "sugerida", "sugestao": suggestion, "pedido": str(request_id)})))
+    cur.execute("""INSERT INTO planning_mtg.sector_decision_events
+                       (area, kind, production_order_no, reference, member_key, action, actor, request_id, detail)
+                   VALUES (%s, 'machine', %s, %s, %s, 'machine', %s, %s, %s)""",
+                (sector, line["of"], line["reference"], line["key"], actor, machine_request,
+                 Jsonb({**detail, "origem": "sugerida", "sugestao": suggestion, "pedido": str(request_id), "seen": _seen(line), "revision": revision,
+                        "before": {"carteira": None, "tabela": line.get("tabela_machine"), "efetiva": line["machine"],
+                                   "origem": line.get("machine_source"), "familia": line.get("sku_family"), "perfil": line.get("profile")},
+                        "after": {"carteira": found["machine"]}})))

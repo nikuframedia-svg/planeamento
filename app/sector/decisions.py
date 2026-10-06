@@ -15,6 +15,14 @@ setor à frente.
 from __future__ import annotations
 
 WHOLE = "*"
+# Motivos opcionais desde 07/10/2026 (Excluir, prazos, política, máquina por grupo): o autor e a hora ficam
+# sempre registados. As tabelas que exigem texto no motivo recebem esta frase quando ninguém escreveu nada.
+NO_REASON = "Sem motivo indicado"
+
+
+def reason_or_default(value) -> str:
+    """O motivo escrito, ou NO_REASON quando vem vazio."""
+    return str(value or "").strip() or NO_REASON
 
 
 class Decisions(dict):

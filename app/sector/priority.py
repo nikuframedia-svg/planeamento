@@ -9,7 +9,8 @@ Uma só regra para a Carteira, a vista de necessidades, o Gantt, o motor, o veri
 - Operações seguintes guardam o seu próprio marco (Galvanização; na MTG2 também o Picking da OF):
   não ficam todas obrigadas a terminar no prazo de corte.
 
-Uma substituição por OF (ou OF × referência) prevalece e fica registada com motivo. A chave inclui o
+Uma substituição por OF (ou OF × referência) prevalece e fica registada com o autor e a hora; o motivo é
+opcional desde 07/10/2026 (também na política). A chave inclui o
 setor: a mesma OF noutro setor não herda a decisão. As políticas são configuráveis por setor; sem
 configuração gravada vale a política por defeito abaixo.
 """
@@ -23,6 +24,7 @@ from zoneinfo import ZoneInfo
 from psycopg.types.json import Jsonb
 
 from .. import planning, planning_dates, planning_needs as needs
+from .decisions import reason_or_default
 
 LISBON = ZoneInfo("Europe/Lisbon")
 WHOLE = "*"
@@ -336,9 +338,9 @@ def save_policy(payload: dict, conn=None) -> dict:
     from .. import planning_registration as registration
     area = planning.check_area(str(payload.get("setor") or payload.get("area") or ""))
     request_id = _request(payload)
-    reason = str(payload.get("motivo") or payload.get("reason") or "").strip()
-    if not reason or len(reason) > 1000:
-        raise planning.PlanningError("Indica o motivo da mudança de política.")
+    reason = str(payload.get("motivo") or payload.get("reason") or "").strip()  # opcional desde 07/10/2026
+    if len(reason) > 1000:
+        raise planning.PlanningError("O motivo tem no máximo 1000 caracteres.")
     actor = registration.human_actor(payload)
     if payload.get("repor"):
         definition = None
@@ -358,9 +360,9 @@ def save_policy(payload: dict, conn=None) -> dict:
             c.execute("""INSERT INTO planning_mtg.sector_priority_policies(area,definition,reason,actor)
                 VALUES (%s,%s,%s,%s) ON CONFLICT (area) DO UPDATE SET definition=excluded.definition,
                 reason=excluded.reason, actor=excluded.actor, updated_at=now(),
-                revision=sector_priority_policies.revision+1""", (area, Jsonb(definition), reason, actor))
+                revision=sector_priority_policies.revision+1""", (area, Jsonb(definition), reason_or_default(reason), actor))
         _event(c, "priority_policy", area, area, "reset" if definition is None else "saved",
-               prior and prior["definition"], definition, reason, actor, request_id)
+               prior and prior["definition"], definition, reason or None, actor, request_id)
         return {"repeated": False, "policies": needs.serial(policies(c))}
 
 
@@ -373,13 +375,13 @@ def save_override(payload: dict, conn=None) -> dict:
     if not of:
         raise planning.PlanningError("Indica a OF.")
     request_id = _request(payload)
-    reason = str(payload.get("motivo") or payload.get("reason") or "").strip()
+    reason = str(payload.get("motivo") or payload.get("reason") or "").strip()  # opcional desde 07/10/2026
     actor = registration.human_actor(payload)
     clear = bool(payload.get("limpar"))
     definition = None
+    if len(reason) > 1000:
+        raise planning.PlanningError("O motivo tem no máximo 1000 caracteres.")
     if not clear:
-        if not reason or len(reason) > 1000:
-            raise planning.PlanningError("Indica o motivo da substituição do prazo.")
         due, field = payload.get("due_date"), payload.get("field")
         if bool(due) == bool(field):
             raise planning.PlanningError("Escolhe uma data ou um campo de prazo, não ambos.")
@@ -411,8 +413,8 @@ def save_override(payload: dict, conn=None) -> dict:
                 reason=excluded.reason, actor=excluded.actor, updated_at=now(),
                 revision=sector_priority_overrides.revision+1""",
                       (area, of, reference, uuid.uuid5(uuid.NAMESPACE_URL, f"priority-override:{area}:{subject}"),
-                       Jsonb(definition), reason, actor))
+                       Jsonb(definition), reason_or_default(reason), actor))
         _event(c, "priority_override", area, subject, "cleared" if clear else "saved",
                prior and {"definition": prior["definition"], "reason": prior["reason"]},
-               definition and {"definition": definition, "reason": reason}, reason or None, actor, request_id)
+               definition and {"definition": definition, "reason": reason_or_default(reason)}, reason or None, actor, request_id)
         return {"repeated": False, "override": needs.serial(overrides(c).get((area, of, reference)))}

@@ -114,7 +114,7 @@ async def kpis_preview(request: Request):
 
 @router.post("/planeamento/api/carteira/selecao")
 async def decide(request: Request):
-    """Planear (só membros com máquina), excluir (com motivo) ou limpar membros exatos da Carteira."""
+    """Planear (sem máquina, com a máquina sugerida), excluir (motivo opcional) ou limpar membros exatos da Carteira."""
     _guard()
     return await _post(request, lambda payload: needs.serial(selection.apply(payload)))
 

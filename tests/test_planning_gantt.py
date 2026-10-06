@@ -425,6 +425,54 @@ def test_gantt_scenario_revision_and_idempotency_on_disposable_database(workspac
     assert planning_calendars.available_hours(definition)==40
 
 
+def test_manual_machine_reason_is_optional():
+    from app.gantt import service
+    rid=str(uuid.uuid4())
+    clean=service.validate_definition({'machine_overrides':{'k1':{'resource_id':rid},'k2':{'resource_id':rid,'reason':' Ferramentas '}}})
+    assert clean['machine_overrides']=={'k1':{'resource_id':rid,'reason':''},'k2':{'resource_id':rid,'reason':'Ferramentas'}}
+    with pytest.raises(planning.PlanningError):
+        service.validate_definition({'machine_overrides':{'k1':{'resource_id':rid,'reason':'x'*1001}}})
+
+
+def test_stale_gantt_proposal_recalculates_instead_of_refusing(workspace,monkeypatch):
+    """Plano de 07/10/2026: fontes em atualização, motor ou fontes mudados e aceitação desatualizada recalculam sozinhos."""
+    from app.raw import projection, worker, objects, capacity
+    from app.gantt import service
+    monkeypatch.setenv('MES_PLANNING_GANTT_ENABLED','1')
+    with psycopg.connect(workspace) as c:
+        c.execute((Path(__file__).parents[1]/'sql/037_planning_gantt.sql').read_text())
+    projection.rebuild('perfis')
+    projection.rebuild('cantoneiras')
+    capacity.rebuild()
+    saved=service.save({'request_id':str(uuid.uuid4()),'name':'Recalcular','area':'perfis',
+                        'definition':{'horizon_weeks':1},'expected_revision':0})
+    real=service.inputs.references
+    with monkeypatch.context() as patch:  # cálculos em atualização: a proposta entra na fila na mesma
+        patch.setattr(service.inputs,'references',lambda conn:{**real(conn),'sources_pending':True})
+        queued=service.solve({'request_id':str(uuid.uuid4()),'id':saved['id'],'expected_revision':saved['revision']})
+    assert queued['status']=='queued'
+    claimed=worker.tick('gantt-test')
+    # Motor e fontes mudaram entre o pedido e o cálculo: calcula com o que está agora, não falha.
+    claimed[0]['input']={**claimed[0]['input'],'runtime_manifest':{'code_sha256':'antigo'},
+                         'source_references':{**claimed[0]['input']['source_references'],'configuration_digest':'antigo'}}
+    service.run_job(claimed[0])
+    finished=service.job(queued['job_id'])
+    assert finished['status']=='done' and finished['result']['phase']=='done' and not finished['stale']
+    assert finished['input']['runtime_manifest']==service.runtime_manifest()
+    monkeypatch.setattr(service,'runtime_manifest',lambda:{'code_sha256':'novo'})  # o serviço reiniciou com outro motor
+    assert service.job(queued['job_id'])['stale']
+    request={'request_id':str(uuid.uuid4()),'job_id':queued['job_id'],'expected_revision':saved['revision']}
+    again=service.accept(request)  # desatualizada: recalcula em vez de recusar, e não aceita às cegas
+    assert again['recalculating'] and again['job_id']!=queued['job_id'] and again['status']=='queued'
+    assert service.accept(request)==again  # o mesmo pedido devolve o mesmo resultado
+    assert not service.scenarios()['scenarios'][0]['definition'].get('accepted')
+    claimed=worker.tick('gantt-test')
+    assert [str(j['id']) for j in claimed]==[again['job_id']]
+    service.run_job(claimed[0])
+    accepted=service.accept({'request_id':str(uuid.uuid4()),'job_id':again['job_id'],'expected_revision':saved['revision']})
+    assert accepted['revision']==saved['revision']+1 and not service.scenarios()['scenarios'][0]['stale']
+
+
 def test_gantt_browser_generate_accept_and_reopen(workspace,monkeypatch,tmp_path):
     import os, socket, subprocess, threading, time, urllib.request
     from app.raw import projection, capacity, worker, objects, query

@@ -153,10 +153,13 @@ class EvidenceIndex:
                 if row.get('application_row_key'):
                     extras.update(code for code,r in resources_by_code.items() if code in {'POSTO_DISCO','POSTO_FITA','MEBA','MAQFORT','VANGUARD','LASER_TUBO','PLASMA_TUBO'}
                         and ('corte' in r.get('operations',[]) or 'LOCAL:PRINCIPAL' in r.get('operations',[])))
-        elif code in SECONDARY_RESOURCES:
-            extras.add(SECONDARY_RESOURCES[code])
-        elif row['fase'] == 'segundo_programa' and row.get('recurso_atual'):
-            extras.add(row['recurso_atual'])
+        else:
+            if code in SECONDARY_RESOURCES:
+                extras.add(SECONDARY_RESOURCES[code])
+            if row.get('recurso_atual'):
+                # A máquina do planeamento/Excel de uma operação seguinte também fica, mesmo fora da ficha de
+                # capacidades, como na operação principal (plano de 07/10/2026; antes só no segundo programa).
+                extras.add(row['recurso_atual'])
         for resource in sorted(extras):
             if any(x['resource_code'] == resource and x['proposed_code'] == code for x in result):
                 continue

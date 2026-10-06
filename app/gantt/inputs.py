@@ -205,8 +205,8 @@ def capture(conn, definition, started_at, *, expected_references=None):
         if selection is not None and scope.decision(selection,'perfis',v.get('of'),v.get('component_ref'),
                                                     [record['row_key'],*(row.get('selection_aliases') or [])])!='selected':
             continue
-        mark = abocardar(v.get('abocardar'))
-        op_names = ['corte'] + (['abocardar'] if mark is not False else [])
+        # Abocardar desconhecido ou vazio = «-» (plano de 07/10/2026): só «X»/«sim» acrescenta a operação.
+        op_names = ['corte'] + (['abocardar'] if abocardar(v.get('abocardar')) is True else [])
         estimators = {e['operation']: e for e in row.get('calculation',{}).get('operation_estimates') or []}
         preparations = {p.get('values_json',{}).get('operation'):p.get('values_json',{}) for p in row.get('preparations') or []}
         picking = (planning_dates.picking_deadline(v.get('picking_week'),manual_years.get(of) or v.get('picking_year'),anchor=v.get('cut_date'))
@@ -254,8 +254,6 @@ def capture(conn, definition, started_at, *, expected_references=None):
                 reasons.append('Semanas de Picking contraditórias; confirmar prazo.')
             if v.get('picking_week') and not picking_at and not v.get('picking_conflict'):
                 reasons.append('Ano/semana de Picking inválidos; confirmar prazo.')
-            if op == 'abocardar' and mark is None:
-                reasons.append('Necessidade de abocardar por confirmar.')
             if remaining is None:
                 reasons.append('Saldo por confirmar.')
             options = []

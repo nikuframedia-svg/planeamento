@@ -113,7 +113,8 @@ def planning_lines(c, selection, areas):
             v = row['values_json']
             seen_keys.update(member_keys(row)); active_orders.add(v.get('of'))
             if decision(selection,area,v.get('of'),v.get('component_ref'),member_keys(row))=='selected':
-                # Regra do Luís (02/10/2026): sem máquina não se planeia — nem por uma decisão antiga.
+                # O Gantt só recebe linhas com máquina. Desde 07/10/2026 o Planear dá a máquina sugerida a uma linha
+                # sem máquina; aqui ficam de fora só as decisões antigas e as linhas a que tiraram a máquina depois.
                 found = effective_machine(mctx, member_keys(row), v.get('sku_family'), v.get('machine'))
                 if not found['machine']:
                     no_machine += 1
@@ -183,8 +184,9 @@ def local_rows(records, resource_codes):
         sources = detail.get('calculation',{}).get('production_sources') or []
         main = 'corte' if area=='perfis' else str(v.get('operation') or '')
         operations = [main]
-        mark = abocardar(v.get('abocardar'))
-        if area=='perfis' and mark is not False:
+        # Abocardar desconhecido ou vazio = «-» (plano de 07/10/2026, também nos registos antigos): só «X»/«sim»
+        # acrescenta a operação, sem rota por confirmar.
+        if area=='perfis' and abocardar(v.get('abocardar')) is True:
             operations.append('abocardar')
         whole = {}  # operação → código composto de origem («111-1034»), que é a única fonte de saldo
         for s in sources:
@@ -229,7 +231,7 @@ def local_rows(records, resource_codes):
                 'execution_started':bool(reconciled is not None and b['evidence']),
                 'application_balance_evidence':b,'application_row_key':key,'application_revision':detail.get('revision'),
                 'source_ambiguity':record.get('source_ambiguity'),
-                'route_review_required':not operation or operation=='por_definir' or (operation=='abocardar' and mark is None),
+                'route_review_required':not operation or operation=='por_definir',
                 'documentary_rate':estimates.get(operation)}
             rows.append(r)
             if prior:

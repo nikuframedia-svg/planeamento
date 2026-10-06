@@ -6,9 +6,9 @@
   <title>Gantt MTG2 e MTG3 · Planeamento</title>
   <link rel="stylesheet" href="/static/planning_typography.css">
   <link rel="stylesheet" href="/static/gantt.css">
-  <script src="/static/gantt.js" defer></script>
+  <script src="/static/gantt.js?v=20261007a" defer></script>
   <link rel="stylesheet" href="/static/needs.css">
-  <script src="/static/needs.js" defer></script>
+  <script src="/static/needs.js?v=20261007a" defer></script>
 <link rel="stylesheet" href="/static/planeamento_ui.css?v=20261002">
 </head>
 <body>
@@ -82,16 +82,7 @@
     <dialog class="needs-dialog" id="needs-dialog"><form method="dialog" id="needs-dialog-form"></form></dialog>
     <section class="lower" id="lower">
       <div class="panel"><div class="section-head"><div><p class="eyebrow">ATENÇÃO</p><h2>Pendências e operações</h2></div><label>Pesquisar<input id="search" type="search" placeholder="OF, referência, máquina…"></label></div><div id="pending-count" class="hint"></div><div id="operations" class="operations"></div></div>
-      <aside class="panel" aria-labelledby="edit-title"><p class="eyebrow">AJUSTAR</p><h2 id="edit-title">Máquina, prioridade e horário</h2><p class="hint">Podes escolher apenas a máquina. O início fixo é opcional e usa hora de Lisboa.</p><div id="selected-detail" class="selected-detail" aria-live="polite"></div><form id="edit-form"><label>Operação<input id="selected-key" readonly required></label><label>OF<input id="selected-of" readonly></label><label>Atribuição de máquina<select id="machine-choice"><option value="">Automático</option></select></label><label>Motivo da escolha manual<input id="machine-reason" maxlength="1000" placeholder="Ex.: preparação já feita"></label><button type="button" id="restore-auto">Voltar ao automático</button><div id="machine-alternatives" class="selected-detail"></div><label>Ano de Picking confirmado para a OF<input id="picking-year" type="number" min="2000" max="2200" placeholder="Ano por confirmar"></label><label>Prazo de Picking corrigido para a OF<input id="picking-deadline" type="datetime-local" step="60"></label><label>Máquina da fixação horária<select id="pin-resource"><option value="">Sem fixação</option></select></label><label>Início fixo<input id="pin-start" type="datetime-local" step="60"></label><label class="check"><input id="urgent" type="checkbox"> Urgência manual</label><div class="form-actions"><button type="button" id="clear-pin">Retirar fixação</button><button class="primary">Aplicar ajuste</button></div></form><p class="hint">Para saldos e operações, abre a <a href="/planeamento/raw">tabela</a>. Para turnos e horários, abre <a href="/planeamento/setor/carga">Carga e turnos</a>. Sugestões condicionais conservam os dados que falta confirmar.</p></aside>
-    </section>
-    <section class="panel" id="technical-review" hidden>
-      <p class="eyebrow">REVISÃO TÉCNICA</p><h2>Condições da alternativa</h2>
-      <p class="hint">Regista apenas condições comprovadas. A regra fica ligada à peça e à máquina; a condição de mercado nacional fica também ligada à OF.</p>
-      <form id="rule-form"><label>Máquina a validar<select id="rule-resource"></select></label><div id="rule-conditions"></div>
-        <label>Prova e motivo<input id="rule-reason" maxlength="1000" required placeholder="Desenho, ferramentas e revisão conferidos"></label>
-        <label class="check"><input id="rule-confirmed" type="checkbox" required> Confirmo as condições assinaladas com a evidência indicada</label>
-        <button class="primary">Guardar regra técnica</button>
-      </form>
+      <aside class="panel" aria-labelledby="edit-title"><p class="eyebrow">AJUSTAR</p><h2 id="edit-title">Máquina, prioridade e horário</h2><p class="hint">Podes escolher apenas a máquina. O início fixo é opcional e usa hora de Lisboa.</p><div id="selected-detail" class="selected-detail" aria-live="polite"></div><form id="edit-form"><label>Operação<input id="selected-key" readonly required></label><label>OF<input id="selected-of" readonly></label><label>Atribuição de máquina<select id="machine-choice"><option value="">Automático</option></select></label><label>Motivo da escolha manual (opcional)<input id="machine-reason" maxlength="1000" placeholder="Ex.: preparação já feita"></label><button type="button" id="restore-auto">Voltar ao automático</button><div id="machine-alternatives" class="selected-detail"></div><label>Ano de Picking confirmado para a OF<input id="picking-year" type="number" min="2000" max="2200" placeholder="Ano por confirmar"></label><label>Prazo de Picking corrigido para a OF<input id="picking-deadline" type="datetime-local" step="60"></label><label>Máquina da fixação horária<select id="pin-resource"><option value="">Sem fixação</option></select></label><label>Início fixo<input id="pin-start" type="datetime-local" step="60"></label><label class="check"><input id="urgent" type="checkbox"> Urgência manual</label><div class="form-actions"><button type="button" id="clear-pin">Retirar fixação</button><button class="primary">Aplicar ajuste</button></div></form><p class="hint">Para saldos e operações, abre a <a href="/planeamento/raw">tabela</a>. Para turnos e horários, abre <a href="/planeamento/setor/carga">Carga e turnos</a>. Sugestões condicionais conservam os dados que falta confirmar.</p></aside>
     </section>
   </main>
 </body>

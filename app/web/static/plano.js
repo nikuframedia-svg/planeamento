@@ -126,7 +126,9 @@
       const result = await response.json().catch(() => ({}));
       if (!response.ok) throw Error(result.error || result.detail || `Erro ${response.status}`);
       const skipped = result.skipped_no_machine || 0;
-      notice(`${order.of}: ${result.changed ?? 0} linha(s) planeada(s).` +
+      const suggested = result.suggested_machine || 0;  // 07/10/2026: sem máquina, o Planear usa a sugerida
+      notice(`${order.of}: ${result.changed ?? 0} linha(s) planeada(s)` +
+             (suggested ? `; ${suggested} com a máquina sugerida (podes mudar)` : '') + '.' +
              (skipped ? ` ${skipped} sem máquina ficaram por planear — dá-lhes Máquina na Tabela.` : ''));
       await load();
     } catch (error) {

@@ -212,6 +212,27 @@ def test_priority_policy_and_override_are_revisioned_and_idempotent(db):
     assert [(e["kind"], e["action"]) for e in events] == [("priority_policy", "saved"), ("priority_override", "saved"), ("priority_override", "cleared")]
 
 
+def test_reasons_are_optional_and_author_and_time_stay_recorded(world, db):
+    # Plano de 07/10/2026: prazo, política e máquina por grupo gravam sem motivo; a base recebe «Sem motivo indicado».
+    from app.sector.decisions import NO_REASON
+    policy = priority.save_policy({"setor": "cantoneiras", "request_id": str(uuid.uuid4()),
+                                   "definition": {"principal": ["cut_date"], "following": ["cut_date"]}})
+    assert policy["policies"]["cantoneiras"]["revision"] == 1
+    override = priority.save_override({"setor": "cantoneiras", "of": "OF7", "request_id": str(uuid.uuid4()), "due_date": "2026-10-20"})
+    assert override["override"]["reason"] == NO_REASON and override["override"]["actor"]
+    machine = assignments.apply(group(mode="assign", resource_id=RAPID25, stamp="s1"))
+    assert machine["changed"] == 2
+    with psycopg.connect(db, row_factory=dict_row) as c:
+        assert {r["reason"] for r in c.execute("SELECT reason FROM planning_mtg.sector_machine_decisions").fetchall()} == {NO_REASON}
+        action = c.execute("SELECT reason, actor, created_at FROM planning_mtg.sector_machine_actions").fetchone()
+        events = c.execute("SELECT reason, actor, at FROM planning_mtg.sector_config_events ORDER BY id").fetchall()
+    assert action["reason"] == NO_REASON and action["actor"] and action["created_at"]
+    assert [e["reason"] for e in events] == [None, None] and all(e["actor"] and e["at"] for e in events)
+    preference = assignments.apply({"setor": "cantoneiras", "request_id": str(uuid.uuid4()), "mode": "future_preference",
+                                    "resource_id": RAPID20, "selector": {"kind": "sku_family", "value": "M2"}})
+    assert preference["mode"] == "future_preference"
+
+
 def test_reference_sets_keep_literal_members_and_unknowns(world, db):
     saved = sets.save({"setor": "cantoneiras", "request_id": str(uuid.uuid4()), "name": "Piloto M2", "mode": "frozen",
                        "members": "M200\nM201; M201,  M999 \n m200"})

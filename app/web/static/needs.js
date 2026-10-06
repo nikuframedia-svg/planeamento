@@ -267,7 +267,7 @@
       ["sku_family", "reference", "profile", "set"].includes(target.level) ? el("option", {value: "future_preference", text: "Guardar preferência para trabalho futuro"}) : null);
     const include = el("select", {}, el("option", {value: "eligible", text: "Admissíveis e condicionais"}),
       el("option", {value: "admissible", text: "Só admissíveis"}), el("option", {value: "all", text: "Todas exceto iniciadas (guardar intenção)"}));
-    const reason = el("input", {maxlength: "1000", placeholder: "Motivo (obrigatório exceto no automático)"});
+    const reason = el("input", {maxlength: "1000", placeholder: "Motivo (opcional)"});
     const summary = el("div", {});
     const current = Object.entries(first.current).map(([k, v]) => `${k}: ${v}`).join(" · ");
     let preview = null;
@@ -307,10 +307,10 @@
     const date = el("input", {type: "date"}), field = el("select", {}, el("option", {value: "", text: "— ou usar outro campo —"}),
       ...Object.entries(state.meta?.priority?.fields || {}).map(([k, v]) => el("option", {value: k, text: v})));
     const applies = el("select", {}, el("option", {value: "principal", text: "Só a operação principal"}), el("option", {value: "all", text: "Todas as operações"}));
-    const reason = el("input", {maxlength: "1000", placeholder: "Motivo"});
+    const reason = el("input", {maxlength: "1000", placeholder: "Motivo (opcional)"});
     const clear = el("label", {class: "check"}, el("input", {type: "checkbox"}), " Retirar a substituição");
     const prior = (state.meta?.priority?.overrides || []).find(o => o.area === area && o.production_order_no === of && o.reference === reference);
-    dialog(`Prazo · ${of}${reference !== "*" ? " · " + reference : ""}`, `Política do setor: ${state.meta?.priority?.policies?.[area]?.version || ""}. A substituição vale só neste setor e fica registada com motivo.${prior ? ` Atual: ${prior.definition.due_date || prior.definition.field} (r${prior.revision}).` : ""}`,
+    dialog(`Prazo · ${of}${reference !== "*" ? " · " + reference : ""}`, `Política do setor: ${state.meta?.priority?.policies?.[area]?.version || ""}. A substituição vale só neste setor e fica registada com o autor e a hora.${prior ? ` Atual: ${prior.definition.due_date || prior.definition.field} (r${prior.revision}).` : ""}`,
       [el("div", {class: "row"}, el("label", {}, "Data", date), el("label", {}, "Campo", field), el("label", {}, "Vale para", applies)), el("label", {}, "Motivo", reason), clear],
       "Gravar prazo", async () => {
         await call("/prioridades/of", {setor: area, of, referencia: reference, request_id: uuid(), due_date: date.value || null, field: field.value || null,
@@ -333,7 +333,7 @@
         el("div", {class: "row"}, el("label", {}, "Operação principal (ordem)", order), el("label", {}, "Operações seguintes", following), el("label", {}, "Ano de Picking assumido", year)));
     }
     const area = el("select", {}, el("option", {value: "cantoneiras", text: "Gravar MTG3"}), el("option", {value: "perfis", text: "Gravar MTG2"}));
-    const reason = el("input", {maxlength: "1000", placeholder: "Motivo da mudança"});
+    const reason = el("input", {maxlength: "1000", placeholder: "Motivo da mudança (opcional)"});
     body.push(el("p", {class: "hint", text: `Campos disponíveis: ${Object.entries(fields).map(([k, v]) => `${k} (${v})`).join(", ")}. MTG3 por defeito: Data Corte; sem data fica «prioridade sem data».`}),
       el("div", {class: "row"}, el("label", {}, "Setor", area), el("label", {}, "Motivo", reason)));
     dialog("Prazos por setor", "Uma só regra para Carteira, vista de necessidades, Gantt, motor e verificador.", body, "Gravar política", async () => {

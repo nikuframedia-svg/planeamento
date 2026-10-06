@@ -100,6 +100,7 @@
     $("selected-detail").replaceChildren();
     data.proposal=null;data.snapshot=null;data.selected=null;data.proposalStale=false;
     await Promise.all([loadOperations(),loadAccepted()]);
+    let latestDone=false;
     if(data.scenario?.latest_job_id){
       $("compare").value="proposal";
       data.jobId=data.scenario.latest_job_id;
@@ -109,13 +110,26 @@
         data.snapshot=latest.input.snapshot;data.operations=data.snapshot.operations;data.resources=data.snapshot.resources;
       }
       data.proposal=latest.result?.proposal||latest.result?.initial||null;
+      latestDone=latest.status==="done";
       setAcceptance(latest.status==="done"&&!latest.stale&&latest.result?.phase==="done"&&latest.result?.validation?.valid);
       if(latest.status==="queued"||latest.status==="running")pollJob(data.jobId).catch(error=>notice(error.message,true));
     }else{setAcceptance(false);data.jobId=null;$("compare").value=data.accepted?"accepted":"source"}
     renderTimeline();renderSummary();
     renderOperations();
-    if(data.proposalStale)notice("A proposta usa fontes anteriores. Gera uma nova proposta.",true);
+    data.autoRecalculations=0;
+    if(data.proposalStale&&latestDone)await recalculate("A proposta usava fontes anteriores: a recalcular sozinha.");
+    else if(data.proposalStale)notice("A proposta usa fontes anteriores. Gera uma nova proposta.",true);
     else if(data.stale)notice("O plano aceite usa fontes anteriores. Gera uma nova proposta.",true);
+  }
+  async function recalculate(message) {
+    // Fontes ou motor mudaram (07/10/2026): recalcula sozinho, sem nova revisão do cenário; aceita-se depois.
+    if(!data.scenario)return;
+    data.autoRecalculations=(data.autoRecalculations||0)+1;
+    $("compare").value="proposal";
+    const result=await api("solve",{request_id:uuid(),id:data.scenario.id,expected_revision:data.scenario.revision});
+    data.jobId=result.job_id;data.proposalStale=false;setAcceptance(false);renderFreshness();
+    notice(message);
+    await pollJob(result.job_id);
   }
   async function saveScenario() {
     const payload={request_id:uuid(),id:data.scenario?.id,expected_revision:data.scenario?.revision||0,
@@ -128,7 +142,7 @@
     return saved;
   }
   async function generate() {
-    $("compare").value="proposal";
+    $("compare").value="proposal";data.autoRecalculations=0;
     const saved=await saveScenario();
     const result=await api("solve",{request_id:uuid(),id:saved.id,expected_revision:saved.revision});
     data.jobId=result.job_id;data.proposal=null;data.snapshot=null;data.proposalStale=false;renderFreshness();
@@ -142,6 +156,8 @@
       if(run.result?.snapshot){data.snapshot=run.result.snapshot;data.operations=data.snapshot.operations;data.resources=data.snapshot.resources}
       if(run.result?.proposal||run.result?.initial){data.proposal=run.result.proposal||run.result.initial;renderSummary();renderOperations();renderTimeline()}
       if(run.status==="done"){
+        // Fontes mudadas durante o cálculo: recalcula sozinho uma vez por ação (07/10/2026).
+        if(run.stale&&(data.autoRecalculations||0)<2)return recalculate("As fontes mudaram durante o cálculo: a recalcular sozinha.");
         notice(run.stale?"A proposta ficou desatualizada durante o cálculo. Gera uma nova proposta.":run.result?.phase==="diagnostic" ? (run.result.diagnostic?.message||"Proposta com fixações para rever.") :
           `Proposta ${run.result?.proposal?.origin||"inicial"} concluída · ${coverage(run.result?.proposal?.coverage)}.${run.result?.backlog?` Atraso concluído em ${run.result.backlog.proposal.window_days} dias: ${run.result.backlog.proposal.late_completed_hours} de ${run.result.backlog.proposal.late_reference_hours} h de referência (sequência inicial ${run.result.backlog.reference.late_completed_hours} h) · ${run.result.backlog.proposal.orders_completed} de ${run.result.backlog.proposal.orders_due} OF com prazo completas.`:""}`,run.stale||run.result?.phase==="diagnostic");
         setAcceptance(run.result?.phase==="done"&&!run.stale&&run.result?.validation?.valid);
@@ -154,6 +170,13 @@
   async function accept() {
     if(sourceView()||!data.acceptEligible||!data.scenario||!data.jobId)throw Error("Gera uma proposta válida antes de aceitar.");
     const response=await api("accept",{request_id:uuid(),job_id:data.jobId,expected_revision:data.scenario.revision});
+    if(response.recalculating){
+      // As fontes mudaram depois da proposta: o servidor recalculou em vez de recusar; aceita-se a nova (07/10/2026).
+      data.jobId=response.job_id;data.proposalStale=false;data.autoRecalculations=1;setAcceptance(false);renderFreshness();
+      notice("As fontes mudaram: a recalcular a proposta. Aceita quando terminar.");
+      await pollJob(response.job_id);
+      return;
+    }
     await loadScenarios(response.id);await loadAccepted();
     data.proposalStale=false;renderFreshness();
     setAcceptance(false);
@@ -222,7 +245,6 @@
         const loaded=await api(`options?key=${encodeURIComponent(key)}${data.scenario?"&scenario_id="+encodeURIComponent(data.scenario.id):""}`);
         if(data.selected!==key)return;
         op=loaded.operation;
-        data.selectedReferences=loaded.source_references;
       }catch(error){notice(error.message,true);return}
     }
     const detail=$("selected-detail");detail.replaceChildren();
@@ -244,6 +266,8 @@
     for(const [label,value] of details){const line=text('p','');line.append(text('strong',label+' '),text('span',value));detail.append(line)}
     if(op.provisional||known?.provisional)detail.append(text('p','Estimativa provisória','provisional'));
     if(op.blocking_reasons?.length)detail.append(text('p','Para calendarizar ao minuto: '+op.blocking_reasons.join('; '),'hint'));
+    // Avisos que já não bloqueiam (07/10/2026): a máquina e a rota do planeador ou do Excel contam como validadas.
+    if(op.warnings?.length)detail.append(text('p','Por confirmar, sem bloquear: '+op.warnings.join('; '),'hint'));
     data.selected=key;$("selected-key").value=op.occurrence?`${op.operation} · ocorrência ${op.occurrence}`:op.operation;$("selected-of").value=op.of;
     $("urgent").checked=(data.definition?.urgent||[]).includes(key);
     $("picking-year").value=data.definition?.picking_year_by_of?.[op.of]||"";
@@ -259,14 +283,6 @@
       seen.add(candidate.resource_id);
       machine.add(new Option(`${viewResources()[candidate.resource_id]?.name||candidate.resource_id}${candidate.eligibility==="conditional"?" · condicional":""}`,candidate.resource_id));
     }
-    data.selectedOperation=op;
-    const ruleResource=$('rule-resource');ruleResource.replaceChildren();
-    const ruleResources=new Set();
-    for(const candidate of variants)if(candidate.conditions?.length&&candidate.resource_id&&!ruleResources.has(candidate.resource_id)){
-      ruleResources.add(candidate.resource_id);ruleResource.add(new Option(viewResources()[candidate.resource_id]?.name||candidate.resource_id,candidate.resource_id));
-    }
-    $('technical-review').hidden=!op.evidence?.variant_signature||!ruleResource.options.length;
-    $('rule-reason').value='';$('rule-confirmed').checked=false;renderRuleConditions();
     machine.value=data.definition?.machine_overrides?.[key]?.resource_id||"";
     $("machine-reason").value=data.definition?.machine_overrides?.[key]?.reason||"";
     const alternatives=$("machine-alternatives");alternatives.replaceChildren();
@@ -279,22 +295,6 @@
     }
     renderOperations();
     $("edit-title").scrollIntoView({block:"nearest",behavior:"smooth"});
-  }
-  function renderRuleConditions(){
-    const candidates=data.selectedOperation?.candidates?.filter(c=>c.resource_id===$('rule-resource').value)||[];
-    const box=$('rule-conditions');box.replaceChildren();
-    for(const condition of new Set(candidates.flatMap(c=>c.conditions||[]))){
-      const label=text('label','','check'),input=document.createElement('input');input.type='checkbox';input.value=condition;
-      label.append(input,text('span',conditionLabel(condition)));box.append(label);
-    }
-  }
-  async function saveRule(){
-    const rid=$('rule-resource').value,resource=viewResources()[rid];
-    const resolved=[...$('rule-conditions input:checked')].map(input=>input.value);
-    if(!resolved.length)throw Error('Assinala as condições comprovadas.');
-    await api('rules',{request_id:uuid(),key:data.selected,resource_id:rid,expected_revision:resource.revision,
-      source_references:data.selectedReferences,resolved_conditions:resolved,reason:$('rule-reason').value.trim(),confirmed:$('rule-confirmed').checked});
-    notice('Regra técnica guardada. Atualiza após a publicação dos cálculos para rever as alternativas.');
   }
   async function applyAdjustment() {
     const key=data.selected;if(!key)throw Error("Seleciona uma operação.");
@@ -314,10 +314,8 @@
     else delete pins[key];
     data.definition.pins=pins;
     const overrides={...(data.definition.machine_overrides||{})};
-    if($("machine-choice").value){
-      const reason=$("machine-reason").value.trim();if(!reason)throw Error("Indica o motivo da escolha manual.");
-      overrides[key]={resource_id:$("machine-choice").value,reason};
-    }else delete overrides[key];
+    if($("machine-choice").value)overrides[key]={resource_id:$("machine-choice").value,reason:$("machine-reason").value.trim()};  // motivo opcional
+    else delete overrides[key];
     data.definition.machine_overrides=overrides;
     const scheduleChanged=scheduleBefore!==JSON.stringify([data.definition.urgent,data.definition.picking_year_by_of,data.definition.picking_deadline_by_of,data.definition.pins]);
     if(scheduleChanged){await generate()}
@@ -480,8 +478,6 @@
   $("scale").addEventListener("change",renderTimeline);$("compare").addEventListener("change",()=>{renderTimeline();renderSummary();renderOperations()});
   $("search").addEventListener("input",renderOperations);
   $("edit-form").addEventListener("submit",event=>{event.preventDefault();safe(applyAdjustment)()});
-  $("rule-form").addEventListener("submit",event=>{event.preventDefault();safe(saveRule)()});
-  $("rule-resource").addEventListener("change",renderRuleConditions);
   $("clear-pin").addEventListener("click",()=>{$("pin-resource").value="";$("pin-start").value=""});
   $("restore-auto").addEventListener("click",()=>{$("machine-choice").value="";$("machine-reason").value=""});
   $("areas").addEventListener("change",safe(async()=>{await loadOperations();renderTimeline()}));

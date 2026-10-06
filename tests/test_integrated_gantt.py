@@ -168,7 +168,11 @@ def test_missing_documentary_operation_stays_visible_and_blocked(integrated_db):
              'status':'Em Aberto','operation':None,'planning_active':True,'machine':'PEDDI6'},'area':'cantoneiras'}],{})
     op=service.operations()['operations'][0]
     assert op['operation']=='por_definir' and op['state']=='blocked'
-    assert 'Operação ou aplicabilidade da rota por confirmar.' in op['blocking_reasons']
+    # Desde 07/10/2026 a rota do Excel com a máquina do Excel (PEDDI6) conta como validada: fica como aviso;
+    # bloqueia o que falta mesmo (duração e calendário).
+    assert 'Operação ou aplicabilidade da rota por confirmar.' in op['warnings']
+    assert 'Operação ou aplicabilidade da rota por confirmar.' not in op['blocking_reasons']
+    assert 'Duração admissível por confirmar.' in op['blocking_reasons']
 
 
 def test_only_chosen_orders_with_current_planning_information_enter_gantt(integrated_db):
@@ -285,6 +289,21 @@ def test_technical_review_is_versioned_and_idempotent(integrated_db):
     assert next(c for c in op['candidates'] if c['resource_id']==candidate['resource_id'])['eligibility']=='admissible'
 
 
+def test_old_technical_review_requests_are_still_accepted_without_reason_checkbox_or_same_sources(integrated_db):
+    # A regra técnica saiu do ecrã a 07/10/2026; o pedido antigo continua aceite, sem exigir motivo, caixa nem fontes iguais.
+    from app.sector.decisions import NO_REASON
+    detail=service.options(service.operations()['operations'][0]['key'])
+    candidate=next(c for c in detail['operation']['candidates'] if c['resource_code']=='XPT6')
+    with planning.connect(readonly=True) as c:
+        revision=c.execute('SELECT revision FROM planning_mtg.raw_objects WHERE id=%s',(candidate['resource_id'],)).fetchone()['revision']
+    result=service.confirm_rule({'request_id':str(uuid.uuid4()),'key':detail['operation']['key'],'resource_id':candidate['resource_id'],
+        'expected_revision':revision,'source_references':{'antigas':True},'resolved_conditions':candidate['conditions'],'confirmed':False})
+    assert result['revision']==revision+1
+    with planning.connect(readonly=True) as c:
+        rules=c.execute('SELECT definition FROM planning_mtg.raw_objects WHERE id=%s',(candidate['resource_id'],)).fetchone()['definition']['technical_rules']
+    assert rules[-1]['reason']==NO_REASON and rules[-1]['confirmed'] is True
+
+
 def test_review_can_explicitly_authorize_the_second_code_of_one_machine(integrated_db):
     p=package();p['metadata']['capacities'].append({**p['metadata']['capacities'][0],'id':'alternative119','operacao_codigo':'CPIS:119'})
     with planning.connect() as c:research.publish(c,p)
@@ -379,7 +398,10 @@ def test_cpis_tables_reimport_and_correction_publish_one_coherent_head(integrate
         projection.publish(c,'planning:cantoneiras','cpis-route-test',[{'key':'macro:line','values':
             {'of':'OF1000','component_ref':'PART','profile':'L80X80X8','quantity_required':10,'length_mm':1000,'status':'Em Aberto','operation':'112','planning_active':True,'machine':'PEDDI6'},'area':'cantoneiras'}],{})
         c.execute("UPDATE planning_mtg.sector_selection SET production_order_no='OF1000'")
-    assert 'Rota CPIS atual difere da informação de planeamento.' in service.operations()['operations'][0]['blocking_reasons']
+    # Com a máquina do Excel (PEDDI6) a rota do Excel conta como validada (07/10/2026): a diferença fica como aviso.
+    op=service.operations()['operations'][0]
+    assert 'Rota CPIS atual difere da informação de planeamento.' in op['warnings']
+    assert 'Rota CPIS atual difere da informação de planeamento.' not in op['blocking_reasons']
     tables['cpis_ordensfabricolinexp'][0]['idpai']=999
     with pytest.raises(planning.PlanningError,match='incoerente'):cpis_tables.validate(tables)
 
@@ -447,6 +469,62 @@ def test_planner_machine_out_of_range_is_kept_and_placed_with_calendar_and_rate(
     assert op['state'] == 'ready', op['blocking_reasons']
     assert op['options'] and all(o['eligibility'] == 'admissible' and o['eligibility_basis'] == 'escolha_do_planeador' for o in op['options'])
     assert baseline.build(snapshot)['bars'][op['key']]['resource_id'] == rid
+
+
+def _ready_machine(c, code, operation):
+    """Máquina confirmada, com taxa e calendário da semana do ensaio (para só sobrarem as razões em estudo)."""
+    from app.raw import objects
+    from tests.test_planning_gantt import calendar
+    rid = research.resource_id(code)
+    resource = objects.get(rid, c)
+    objects.save({'request_id': str(uuid.uuid4()), 'id': rid, 'expected_revision': resource['revision'], 'name': resource['name'],
+                  'area': 'cantoneiras', 'definition': {**resource['definition'], 'confirmed': True}}, 'resource', conn=c)
+    objects.save({'request_id': str(uuid.uuid4()), 'name': f'Taxa {code}', 'area': 'cantoneiras', 'definition':
+        {'resource_id': rid, 'area': 'cantoneiras', 'operation': operation, 'method': 'metres_hour', 'value': 10,
+         'setup_minutes': 0, 'valid_from': '2026-09-01', 'confirmed': True}}, 'rate', conn=c)
+    objects.save({'request_id': str(uuid.uuid4()), 'name': f'{code} · 2026-W39', 'area': 'cantoneiras',
+                  'definition': {**calendar(), 'resource_id': rid}}, 'calendar', conn=c)
+    return rid
+
+
+def test_excel_machine_and_route_count_as_validated_route_compatibility_and_sequence(integrated_db):
+    """Plano de 07/10/2026: com a máquina do planeador/Excel, rota, compatibilidade e sequência não bloqueiam."""
+    from app.raw import projection
+    p = package()
+    p['metadata']['resources'].append({'codigo': 'SACA', 'designacao': 'SACA', 'setor': 'MTG3', 'tipo': 'equipamento',
+                                       'quantidade_operadores': None})
+    p['rows'].append(row(operacao_id='op2', ocorrencia=2, fase='complementar', operacao_codigo='CPIS:111', codigo_original='111',
+                         recurso_atual='SACA', maquina_original='SACA'))
+    p['metadata']['dependencies'] = [{'predecessora': 'op', 'sucessora': 'op2', 'validada': False}]
+    with planning.connect() as c:
+        research.publish(c, p)
+        projection.publish(c, 'planning:cantoneiras', 'validated-route', [{'key': 'macro:line', 'values':
+            {'of': 'OF100', 'component_ref': 'PART', 'profile': 'L80X80X8', 'quantity_required': 10, 'length_mm': 1000,
+             'status': 'Em Aberto', 'operation': '112', 'planning_active': True, 'machine': 'XPT6'}, 'area': 'cantoneiras'}], {})
+        main, following = _ready_machine(c, 'XPT6', '112'), _ready_machine(c, 'SACA', '111')
+    with planning.connect(readonly=True) as c:
+        snapshot = integrated.capture(c, {'areas': ['cantoneiras']}, MONDAY.isoformat())
+    ops = {op['operation']: op for op in snapshot['operations']}
+    first, second = ops['CPIS:112'], ops['CPIS:111']
+    assert first['assignment']['resource_id'] == main and first['assignment']['eligibility'] == 'conditional'
+    assert first['state'] == 'ready', first['blocking_reasons']
+    # A 2.ª operação fica na máquina do Excel (fora da ficha) e a sequência não validada deixa de bloquear.
+    assert second['assignment']['resource_id'] == following and second['assignment']['basis'] == 'escolha_do_planeador'
+    assert second['state'] == 'ready', second['blocking_reasons']
+    assert 'Sequência operacional por validar.' in second['warnings']
+    assert baseline.build(snapshot)['bars'][second['key']]['resource_id'] == following
+
+
+def test_automatic_machine_still_waits_for_compatibility_and_sequence():
+    """Sem máquina escolhida por uma pessoa, a escolha automática condicional continua por confirmar."""
+    candidates = [{'resource_id': 'a', 'eligibility': 'conditional', 'conditions': ['revisao_tecnica_por_validar']}]
+    selected, _ = machines.choose(candidates, None)
+    assert selected['resource_id'] == 'a' and selected['eligibility'] == 'conditional'
+    assert integrated.chosen_by_planner(selected, None, None, None) is False
+    assert integrated.chosen_by_planner(selected, 'a', None, None) is True  # Carteira, Tabela/Excel ou conjunto
+    assert integrated.chosen_by_planner(selected, None, 'a', None) is True  # escolha manual no Gantt
+    assert integrated.chosen_by_planner(selected, 'b', None, {'mode': 'prefer', 'resource_id': 'a'}) is True
+    assert integrated.chosen_by_planner(selected, 'a', 'b', None) is False  # a escolha manual ganhou a outra máquina
 
 
 def test_member_planned_line_stays_in_the_gantt_after_a_new_import(integrated_db):
@@ -660,3 +738,15 @@ def test_local_cantoneiras_line_with_composite_second_operation_gives_one_occurr
     # Na MTG2 não se divide nada.
     record['area']='perfis'
     assert 'CPIS:111-1034' in [r['operacao_codigo'] for r in scope.local_rows([record],{})[0]]
+
+
+@pytest.mark.parametrize('mark,operations', [(None, ['LOCAL:PRINCIPAL']), ('', ['LOCAL:PRINCIPAL']), ('?', ['LOCAL:PRINCIPAL']),
+                                             ('-', ['LOCAL:PRINCIPAL']), ('X', ['LOCAL:PRINCIPAL', 'LOCAL:ABOCARDAR'])])
+def test_unknown_abocardar_is_no_abocardar_without_route_review(mark, operations):
+    # Plano de 07/10/2026: abocardar desconhecido = «-» (também nos registos antigos); só «X»/«sim» cria a operação.
+    from app.sector import scope
+    record={'area':'perfis','row_key':'k1','values_json':{'of':'OF1','component_ref':'R','quantity_required':4,'abocardar':mark},
+            'detail':{'calculation':{}}}
+    rows,deps=scope.local_rows([record],{})
+    assert [r['operacao_codigo'] for r in rows]==operations
+    assert not any(r['route_review_required'] for r in rows) and all(d['validada'] for d in deps)

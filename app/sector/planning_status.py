@@ -3,7 +3,8 @@
 Regra do Luís (02/10/2026), uma partição — cada linha tem um só estado:
 1. planeado: decisão Planear efetiva e Máquina preenchida (o trabalho que o Gantt recebe);
 2. nesting: tem Máquina (já tem a informação de planeamento) mas ainda não foi planeada;
-3. sem_maquina: sem Máquina. Uma decisão antiga sem máquina também fica aqui: sem máquina não se planeia.
+3. sem_maquina: sem Máquina. Uma decisão antiga sem máquina também fica aqui. Desde 07/10/2026 o Planear numa
+   linha sem máquina grava primeiro a máquina sugerida (selection.py), e a linha passa a «Planeado».
 A Máquina é a coluna Máquina da Tabela/Excel.
 Uma linha excluída (decisão antiga «Excluir», que o backend mantém) fica fora da partição: não é nenhum dos
 três estados, tal como já não conta na lista vermelha do quadro (auditoria 06/10/2026, A8-5).

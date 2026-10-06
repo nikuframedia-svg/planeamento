@@ -70,6 +70,12 @@ def conn(database):
         yield c
 
 
+@pytest.fixture(autouse=True)
+def no_suggestions(monkeypatch):
+    """Sem camada de pesquisa nesta base: nenhuma máquina sugerida, salvo quando o teste a dá."""
+    monkeypatch.setattr(selection, "suggested_machines", lambda sector, lines: {})
+
+
 P8 = "Peddi 8"  # Planear só grava linhas com máquina
 D = data(raw("OF1", "DLT319", 10, 1000, machine=P8), raw("OF1", "DLT20", 5, 2000, machine=P8), raw("OF2", "DLT319", 4, 1000, machine=P8),
          raw("OF3", "ED4T40", 8, 500, cut="2026-11-30", machine=P8))
@@ -113,11 +119,16 @@ def test_the_same_request_is_not_saved_twice_and_a_reused_id_is_refused(conn):
     assert error.value.status == 409
 
 
-def test_excluding_needs_a_reason_in_the_app_and_in_the_database(conn):
-    with pytest.raises(planning.PlanningError, match="motivo"):
-        selection.apply(payload(acao="excluir"), data=D, conn=conn)
-    selection.apply(payload(acao="excluir", motivo="Aguarda validação do EP"), data=D, conn=conn)
-    assert {r["decision"] for r in member_rows(conn)} == {"excluded"}
+def test_excluding_without_a_reason_keeps_the_author_and_time(conn):
+    # Motivo opcional desde 07/10/2026; a base continua a exigir texto numa exclusão, por isso fica «Sem motivo indicado».
+    selection.apply(payload(acao="excluir"), data=D, conn=conn)
+    rows = conn.execute("SELECT decision, reason, actor, decided_at FROM planning_mtg.sector_member_selection").fetchall()
+    assert {(r["decision"], r["reason"]) for r in rows} == {("excluded", resolution.NO_REASON)}
+    assert all(r["actor"] and r["decided_at"] for r in rows)
+    assert {e["reason"] for e in conn.execute("SELECT reason FROM planning_mtg.sector_decision_events").fetchall()} == {None}
+    selection.apply(payload(acao="excluir", motivo="Aguarda validação do EP", caminho=["ED4", "ED4T40"]), data=D, conn=conn)
+    assert conn.execute("SELECT reason FROM planning_mtg.sector_member_selection WHERE reference = 'ED4T40'").fetchone()["reason"] \
+        == "Aguarda validação do EP"
     with pytest.raises(psycopg.errors.CheckViolation):
         conn.execute("INSERT INTO planning_mtg.sector_member_selection (area, member_key, production_order_no, reference, decision, actor, request_id) "
                      "VALUES ('cantoneiras', 'k', 'OF9', 'X', 'excluded', 'teste', gen_random_uuid())")
@@ -168,16 +179,32 @@ def test_same_of_reference_with_two_profiles_and_an_inherited_whole_order_decisi
     assert [(r["member_key"], r["decision"], r["revision"]) for r in member_rows(conn)] == [("k:b", "selected", 2)]
 
 
-def test_a_changed_member_is_a_conflict_and_nothing_is_written(conn):
+def test_a_changed_member_stays_out_and_the_others_are_planned(conn):
+    # Antes de 07/10/2026 um só membro mudado recusava o pedido inteiro (409, nada gravado).
     d = eighteen()
-    stale = [{"chave": x["key"], "token": portfolio.member_token(x, 0)} for x in d["lines"][:3]]
+    stale = [{"chave": x["key"], "token": portfolio.member_token(x, 0)} for x in d["lines"][:3]] + [{"chave": "nao-existe"}]
     changed = data(*[raw("OF7", "DLT319", 2 if i else 9, 1000 + i, key=f"macro:s:plan:{i}", machine=P8) for i in range(18)])  # o saldo do 1.º mudou
-    with pytest.raises(selection.Conflict) as error:
-        selection.apply({"setor": "cantoneiras", "acao": "selecionar", "membros": stale, "request_id": str(uuid.uuid4())}, data=changed, conn=conn)
-    assert error.value.status == 409 and error.value.fields["conflicts"][0]["key"] == "macro:s:plan:0"
-    assert member_rows(conn) == [] and conn.execute("SELECT count(*) AS n FROM planning_mtg.sector_decision_events").fetchone()["n"] == 0
-    with pytest.raises(selection.Conflict):  # membro que já não está na carteira
-        selection.apply({"setor": "cantoneiras", "acao": "selecionar", "membros": [{"chave": "nao-existe"}], "request_id": str(uuid.uuid4())}, data=d, conn=conn)
+    request = {"setor": "cantoneiras", "acao": "selecionar", "membros": stale, "request_id": str(uuid.uuid4())}
+    result = selection.apply(request, data=changed, conn=conn)
+    assert result["changed"] == 2 and sorted(result["keys"]) == ["macro:s:plan:1", "macro:s:plan:2"]
+    assert result["skipped_count"] == 2 and {s["key"]: s["reason"] for s in result["skipped"]} == {
+        "macro:s:plan:0": selection.CHANGED, "nao-existe": selection.GONE}
+    assert sorted(r["member_key"] for r in member_rows(conn)) == ["macro:s:plan:1", "macro:s:plan:2"]
+    again = selection.apply(request, data=changed, conn=conn)  # repetição: o resultado gravado, sem nova escrita
+    assert again["repeated"] and again["skipped_count"] == 2 and len(member_rows(conn)) == 2
+    with pytest.raises(selection.Conflict) as error:  # nada a gravar: só membros mudados ou que já não estão na carteira
+        selection.apply({**request, "request_id": str(uuid.uuid4()), "membros": [stale[0], stale[3]]}, data=changed, conn=conn)
+    assert error.value.status == 409 and {c["key"] for c in error.value.fields["conflicts"]} == {"macro:s:plan:0", "nao-existe"}
+
+
+def test_a_member_marked_before_a_new_import_is_found_by_its_old_key(conn):
+    old = data(raw("OF1", "R", 10, 1000, key="old:1", machine=P8))
+    token = portfolio.member_token(old["lines"][0], 0)
+    new = data(raw("OF1", "R", 10, 1000, key="new:1", machine=P8))
+    new["lines"][0]["aliases"] = ["old:1"]
+    result = selection.apply({"setor": "cantoneiras", "acao": "selecionar", "request_id": str(uuid.uuid4()),
+                              "membros": [{"chave": "old:1", "token": token}]}, data=new, conn=conn)
+    assert result["changed"] == 1 and result["keys"] == ["new:1"] and result["skipped_count"] == 0
 
 
 def test_select_all_of_a_large_group_uses_the_frozen_seal(conn):
@@ -185,14 +212,21 @@ def test_select_all_of_a_large_group_uses_the_frozen_seal(conn):
     decisions = selection.current("cantoneiras", conn=conn)
     page = portfolio.members("cantoneiras", "of_perfil", ["OF8", "L45X45X5"], limit=200, data=d, decisions=decisions)
     assert page["total"] == 1200 and len(page["items"]) == 200 and len(page["keys"]) == 1200 and page["next_cursor"] == 200
-    with pytest.raises(selection.Conflict):
-        selection.apply({"setor": "cantoneiras", "acao": "selecionar", "request_id": str(uuid.uuid4()),
-                         "grupo": {"vista": "of_perfil", "caminho": ["OF8", "L45X45X5"], "selo": "antigo"}}, data=d, conn=conn)
     result = selection.apply({"setor": "cantoneiras", "acao": "selecionar", "request_id": str(uuid.uuid4()),
                               "grupo": {"vista": "of_perfil", "caminho": ["OF8", "L45X45X5"], "selo": page["seal"], "exceto": ["big:7"]}},
                              data=d, conn=conn)
-    assert result["changed"] == 1199
+    assert result["changed"] == 1199 and not result["group_changed"]
     assert conn.execute("SELECT count(*) AS n FROM planning_mtg.sector_member_selection").fetchone()["n"] == 1199
+
+
+def test_a_group_that_changed_since_it_was_opened_is_planned_as_it_is_now(conn):
+    # Antes de 07/10/2026 um selo antigo recusava o grupo inteiro (409); agora conta o grupo atual e diz que mudou.
+    d = data(*[raw("OF8", "DLT319", 1, 1000, key=f"g:{i}", machine=P8) for i in range(5)])
+    d["lines"][4]["aliases"] = ["antiga:4"]  # exceção marcada antes da última importação
+    result = selection.apply({"setor": "cantoneiras", "acao": "selecionar", "request_id": str(uuid.uuid4()),
+                              "grupo": {"vista": "of_perfil", "caminho": ["OF8", "L45X45X5"], "selo": "antigo", "exceto": ["antiga:4"]}},
+                             data=d, conn=conn)
+    assert result["changed"] == 4 and result["group_changed"] and "g:4" not in result["keys"]
 
 
 def test_old_contract_resolves_exact_members_and_refuses_list_filters(conn):
@@ -221,12 +255,13 @@ def test_a_new_import_finds_the_member_by_alias_and_new_lines_stay_out(conn):
     assert member_rows(conn) == []
 
 
-def test_planear_skips_members_without_machine_and_refuses_when_none_has_one(conn):
+def test_planear_leaves_out_only_lines_without_any_suggestion_and_refuses_when_none_can_go(conn):
     d = data(raw("OF1", "A", 10, 1000, key="m:1", machine=P8), raw("OF1", "B", 10, 1000, key="m:2"))
     tokens = {x["key"]: portfolio.member_token(x, 0) for x in d["lines"]}
     result = selection.apply({"setor": "cantoneiras", "acao": "selecionar", "request_id": str(uuid.uuid4()),
                               "membros": [{"chave": k, "token": t} for k, t in tokens.items()]}, data=d, conn=conn)
-    assert result["changed"] == 1 and result["skipped_no_machine"] == 1
+    assert result["changed"] == 1 and result["skipped_no_machine"] == 1 and result["suggested_machine"] == 0
+    assert result["skipped"] == [{"key": "m:2", "of": "OF1", "reference": "B", "reason": selection.NO_SUGGESTION}]
     assert [r["member_key"] for r in member_rows(conn)] == ["m:1"]
     decisions = selection.current("cantoneiras", conn=conn)
     assert {x["key"]: portfolio.status_of(x, decisions) for x in d["lines"]} == {
@@ -240,6 +275,109 @@ def test_planear_skips_members_without_machine_and_refuses_when_none_has_one(con
     # Uma decisão antiga numa linha sem máquina não a faz «Planeado».
     legacy = resolution.Decisions({("OF1", "*"): {"decision": "selected"}})
     assert portfolio.status_of(d["lines"][1], legacy) == {"planeado": False, "nesting": False, "sem_maquina": True}
+
+
+RAPID25 = {"resource_id": "rid-25", "machine": "Ficep Rapid 25T", "origin": "aprendida",
+           "label": "80% de 5 escolhas em ZG L45X45X5"}
+
+
+def test_planear_without_machine_saves_the_suggested_machine_and_the_line_is_planned(conn, monkeypatch):
+    from app.sector import machine_choice, planning_status, scope
+    d = data(raw("OF1", "A", 10, 1000, key="s:1"), raw("OF1", "B", 10, 1000, key="s:2", machine=P8),
+             raw("OF1", "C", 5, 1000, key="s:3"))
+    asked = []
+    monkeypatch.setattr(selection, "suggested_machines", lambda sector, lines: asked.extend(x["key"] for x in lines) or {"s:1": RAPID25})
+    tokens = {x["key"]: portfolio.member_token(x, 0) for x in d["lines"]}
+    result = selection.apply({"setor": "cantoneiras", "acao": "selecionar", "request_id": str(uuid.uuid4()),
+                              "membros": [{"chave": k, "token": t} for k, t in tokens.items()]}, data=d, conn=conn)
+    assert sorted(asked) == ["s:1", "s:3"]  # só as linhas sem máquina pedem sugestão
+    assert result["changed"] == 2 and result["suggested_machine"] == 1 and result["skipped_no_machine"] == 1
+    assert [s["key"] for s in result["skipped"]] == ["s:3"]
+    # A sugerida fica como escolha da Carteira (a mesma de «Atribuir máquina»), com a origem marcada.
+    row = conn.execute("SELECT member_key, resource_id, machine_name, actor, seen FROM planning_mtg.sector_member_machine").fetchone()
+    assert (row["member_key"], row["resource_id"], row["machine_name"]) == ("s:1", "rid-25", "Ficep Rapid 25T")
+    assert row["seen"]["origem"] == "sugerida" and row["actor"] == "Utilizador não identificado"
+    event = conn.execute("SELECT action, detail FROM planning_mtg.sector_decision_events WHERE kind = 'machine'").fetchone()
+    assert event["action"] == "machine" and event["detail"]["origem"] == "sugerida"
+    assert event["detail"]["after"]["carteira"] == "Ficep Rapid 25T"
+    # A linha fica «Planeado» e entra no âmbito do Gantt com a máquina da Carteira.
+    ctx = machine_choice.context("cantoneiras", conn=conn)
+    decisions = selection.current("cantoneiras", conn=conn)
+    line = next(x for x in d["lines"] if x["key"] == "s:1")
+    machine = machine_choice.effective(ctx, ["s:1"], None, "")
+    assert machine == {"machine": "Ficep Rapid 25T", "resource_id": "rid-25", "source": "carteira"}
+    assert planning_status.classify(portfolio.effective(line, decisions), machine["machine"])["planeado"]
+    assert scope.decision(scope.read(conn), "cantoneiras", "OF1", "A", ["s:1"]) == "selected"
+    # Planear outra vez (a Carteira já mostra a máquina escolhida): nada a sugerir nem a gravar.
+    now = {**d, "lines": [{**x, "machine": "Ficep Rapid 25T", "machine_source": "carteira"} if x["key"] == "s:1" else x for x in d["lines"]]}
+    again = selection.apply({"setor": "cantoneiras", "acao": "selecionar", "request_id": str(uuid.uuid4()),
+                             "membros": [{"chave": "s:1"}]}, data=now, conn=conn)
+    assert again["changed"] == 0 and again["suggested_machine"] == 0
+    assert conn.execute("SELECT count(*) AS n FROM planning_mtg.sector_member_machine").fetchone()["n"] == 1
+
+
+def test_planear_gives_the_suggested_machine_to_an_already_planned_line_without_machine(conn, monkeypatch):
+    d = data(raw("OF1", "A", 10, 1000, key="s:1"))
+    conn.execute("INSERT INTO planning_mtg.sector_selection (area, production_order_no, reference, decision, actor) "
+                 "VALUES ('cantoneiras', 'OF1', '*', 'selected', 'legado')")
+    conn.commit()
+    monkeypatch.setattr(selection, "suggested_machines", lambda sector, lines: {"s:1": RAPID25})
+    result = selection.apply({"setor": "cantoneiras", "acao": "selecionar", "request_id": str(uuid.uuid4()),
+                              "membros": [{"chave": "s:1"}]}, data=d, conn=conn)
+    assert result["changed"] == 0 and result["suggested_machine"] == 1
+    assert conn.execute("SELECT machine_name FROM planning_mtg.sector_member_machine").fetchone()["machine_name"] == "Ficep Rapid 25T"
+
+
+def test_a_failing_suggestion_never_stops_planning_the_lines_that_have_a_machine(conn, monkeypatch):
+    def broken(sector, lines):
+        raise RuntimeError("camada de pesquisa indisponível")
+    monkeypatch.setattr(selection, "suggested_machines", broken)
+    d = data(raw("OF1", "A", 10, 1000, key="f:1", machine=P8), raw("OF1", "B", 10, 1000, key="f:2"))
+    result = selection.apply({"setor": "cantoneiras", "acao": "selecionar", "request_id": str(uuid.uuid4()),
+                              "membros": [{"chave": "f:1"}, {"chave": "f:2"}]}, data=d, conn=conn)
+    assert result["changed"] == 1 and result["skipped"][0]["reason"] == selection.SUGGESTION_UNAVAILABLE
+
+
+def test_suggested_machine_is_the_carteira_suggestion_then_the_estimate_and_only_of_the_sector(monkeypatch):
+    from contextlib import nullcontext
+    from app.sector import machine_learning, members, occurrences
+    monkeypatch.undo()  # a função verdadeira, sem a sugestão vazia dos outros testes
+    own = {"rid-25": {"name": "Ficep Rapid 25T"}, "rid-p8": {"name": "Peddi 8"}}
+    monkeypatch.setattr(planning, "connect", lambda readonly=False: nullcontext(None))
+    monkeypatch.setattr(members, "members", lambda c, sector: own)
+    monkeypatch.setattr(machine_learning, "model", lambda sector: {"weighted": {}, "raw": {}})
+    # Preferência aprendida já filtrada pela ficha técnica (a «— sugerida» da lupa): A no setor, B noutro setor.
+    monkeypatch.setattr(machine_learning, "technical", lambda sector: {
+        "a": {"resource_id": "rid-25", "machine": "Rapid 25T", "label": "4 de 5 escolhas"},
+        "b": {"resource_id": "rid-mtg2", "machine": "Vanguard", "label": "noutro setor"}})
+    facts = [{"line_key": "b", "phase": "principal", "machine_basis": "sugerida",
+              "suggestion": {"resource_id": "rid-p8", "machine": "Peddi 8", "reason": "Mesma máquina das outras linhas da OF"}},
+             {"line_key": "antiga:c", "phase": "principal", "machine_basis": "sugerida",
+              "suggestion": {"resource_id": "rid-p8", "machine": "Peddi 8", "reason": "precedente em 2 OF"}},
+             {"line_key": "d", "phase": "seguinte", "machine_basis": "sugerida",
+              "suggestion": {"resource_id": "rid-p8", "machine": "Peddi 8", "reason": "operação seguinte"}}]
+    monkeypatch.setattr(occurrences, "load", lambda sector, **kw: {"facts": facts})
+    lines = [{"key": k, "aliases": ["antiga:c"] if k == "c" else [], "sku_family": None, "profile": "L45X45X5"} for k in "abcd"]
+    found = selection.suggested_machines("cantoneiras", lines)
+    assert found == {"a": {"resource_id": "rid-25", "machine": "Ficep Rapid 25T", "origin": "aprendida", "label": "4 de 5 escolhas"},
+                     "b": {"resource_id": "rid-p8", "machine": "Peddi 8", "origin": "previsao", "label": "Mesma máquina das outras linhas da OF"},
+                     "c": {"resource_id": "rid-p8", "machine": "Peddi 8", "origin": "previsao", "label": "precedente em 2 OF"}}
+    monkeypatch.setattr(members, "members", lambda c, sector: {})
+    assert selection.suggested_machines("cantoneiras", lines) == {}  # sem máquinas do setor não há sugestão
+
+
+def test_suggested_machines_do_not_teach_the_learned_preferences(conn, monkeypatch):
+    from app.sector import machine_learning
+    monkeypatch.setattr(machine_learning, "_names", lambda c: {"ficep rapid 25t": ("rid-25", "Ficep Rapid 25T")})
+    monkeypatch.setattr(selection, "suggested_machines", lambda sector, lines: {x["key"]: RAPID25 for x in lines})
+    lines = [raw("OF1", f"R{i}", 10, 1000, key=f"t:{i}") for i in range(4)]
+    for r in lines:
+        r["v"]["sku_family"] = "ZG"
+    selection.apply({"setor": "cantoneiras", "acao": "selecionar", "request_id": str(uuid.uuid4()),
+                     "grupo": {"vista": "of_perfil", "caminho": ["OF1"]}}, data=data(*lines), conn=conn)
+    assert conn.execute("SELECT count(*) AS n FROM planning_mtg.sector_member_machine").fetchone()["n"] == 4
+    learned = machine_learning.build(conn, "cantoneiras", [])
+    assert learned["weighted"] == {}  # só as escolhas do planeador ensinam; a sugestão não se reforça a si própria
 
 
 def test_the_authenticated_user_is_recorded_as_author(conn):

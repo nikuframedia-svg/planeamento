@@ -43,7 +43,7 @@ def apply(payload: dict, *, data: dict | None = None, conn=None) -> dict:
         if repeated:
             return repeated
         decisions = selection.current(sector, conn=c)
-        chosen, scope = selection._requested(payload, data, decisions)
+        chosen, scope, _ = selection._requested(payload, data, decisions)
         ctx = machine_choice.context(sector, conn=c)
         conflicts, changes = [], []
         for line, token in chosen:

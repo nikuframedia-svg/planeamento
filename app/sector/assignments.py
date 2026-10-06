@@ -29,6 +29,7 @@ import uuid
 from psycopg.types.json import Jsonb
 
 from .. import planning, planning_needs as needs
+from .decisions import reason_or_default
 
 MODES = ("assign", "prefer", "automatic", "future_preference", "accept_suggestions", "assign_each")
 SELECTOR_KINDS = {"reference": 4, "set": 3, "sku_family": 2, "profile_group": 1}
@@ -353,9 +354,13 @@ def apply(payload: dict, conn=None) -> dict:
     if mode not in MODES:
         raise planning.PlanningError("Escolhe: atribuir, preferir, automático ou preferência futura.")
     request_id = _request(payload)
+    # Motivo opcional desde 07/10/2026: o autor e a hora ficam na ação; as tabelas que exigem texto recebem
+    # «Sem motivo indicado».
     reason = str(payload.get("reason") or payload.get("motivo") or "").strip()
-    if mode != "automatic" and (not reason or len(reason) > 1000):
-        raise planning.PlanningError("Indica o motivo da escolha de máquina.")
+    if len(reason) > 1000:
+        raise planning.PlanningError("O motivo tem no máximo 1000 caracteres.")
+    if mode != "automatic":
+        reason = reason_or_default(reason)
     target = str(payload.get("resource_id") or "") or None
     if mode in ("assign", "prefer", "future_preference") and not target:
         raise planning.PlanningError("Escolhe a máquina.")
