@@ -1456,27 +1456,23 @@ window.Raw = (() => {
       }
       edits.push({ key: row.key, expected_revision: row.revision, values });
     }
-    if (
-      await confirm(
-        "Guardar " + edits.length + " linhas?",
-        smallTable(
-          ["OF", "Referência", "Alterações"],
-          edits.map((x, i) => [
-            state.data.rows[r0 + i].values.of,
-            state.data.rows[r0 + i].values.component_ref,
-            Object.entries(x.values)
-              .map(([k, v]) => k + ": " + fmt(v))
-              .join(" · "),
-          ]),
-        ),
-      )
-    ) {
-      const result=await api(
-        "raw/lotes",
-        request({ area: state.area, version: state.data.version, edits }),
-      );
-      await waitUpdated(result);
-    }
+    // Grava logo, sem pergunta (07/10/2026). As linhas que mudaram entretanto (ex.: nova importação) ficam de fora
+    // e são indicadas; as restantes gravam-se.
+    const result = await api(
+      "raw/lotes",
+      request({ area: state.area, version: state.data.version, edits }),
+    );
+    const skipped = result.skipped || [];
+    await waitUpdated(result);
+    if (skipped.length)
+      $("notice").textContent =
+        `${result.items?.length || 0} linha(s) gravadas. Ficaram de fora ${skipped.length}: ` +
+        skipped
+          .slice(0, 10)
+          .map((x) => [x.of, x.component_ref].filter(Boolean).join(" · ") + " (" + String(x.reason || "").replace(/\.$/, "") + ")")
+          .join("; ") +
+        (skipped.length > 10 ? "; …" : "") +
+        ". Cola-as outra vez na lista atualizada.";
   }
   function copy(e) {
     if (!state.cells || e.target.closest("input,textarea,dialog")) return;

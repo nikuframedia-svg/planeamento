@@ -1,7 +1,7 @@
 """Definições de cada setor: máquinas, turnos, tempos e capacidades (pedido do Luís, 06/10/2026).
 
 Lê e grava sem criar uma segunda fonte de verdade:
-- máquinas = recursos físicos (raw_objects kind='resource'): confirmada, turnos padrão (`default_shifts`)
+- máquinas = recursos físicos (raw_objects kind='resource'): turnos padrão (`default_shifts`)
   e correção local do intervalo da ficha de capacidades (`capacity_override`, aplicada nas candidatas);
 - turnos = calendários semanais (shifts.py) gerados a partir do modelo do setor (horas dos turnos,
   dias de trabalho, feriados) guardado em sector_settings;
@@ -128,7 +128,7 @@ def operation_tabs(machines: list[dict], rates: list[dict]) -> list[dict]:
 
 
 def excel_seed(sector: str, machines: list[dict], study: dict | None, excel_area: dict) -> list[dict]:
-    """«Preencher com as velocidades atuais do Excel»: uma linha por máquina confirmada e operação.
+    """«Preencher com as velocidades atuais do Excel»: uma linha por máquina do setor e operação.
 
     Cantoneiras: a velocidade mais recente do Excel da máquina (moda das linhas com Data Corte nas últimas
     semanas com dados, `productivity.recent_excel_speeds`), igual em todas as operações da máquina — a mesma que
@@ -138,8 +138,8 @@ def excel_seed(sector: str, machines: list[dict], study: dict | None, excel_area
     from .throughput import aliases_to_names
     seed = []
     for m in machines:
-        if not m.get("confirmed") or not m.get("has_object"):
-            continue  # uma taxa confirmada exige a identidade física confirmada (raw/capacity.validate)
+        if not m.get("has_object"):
+            continue  # a taxa pendura-se no recurso gravado (raw/capacity.validate); sem ele não há onde
         if sector == "cantoneiras":
             if not study:
                 continue
@@ -225,7 +225,7 @@ def overview(sector: str) -> dict:
         "Prazo: " + ("Data Corte." if sector == "cantoneiras" else "Picking (semana do Excel; ano deduzido), depois Data Corte."),
         "Máquina de cada linha: escolha da Carteira → coluna Máquina da Tabela → conjunto de famílias.",
         "Estados: Planeado (Planear + máquina) · Planeado para nesting (tem máquina) · Sem máquina atribuída. Sem máquina não se planeia.",
-        "Horas: taxa confirmada da tabela de velocidades; senão histórico válido (só com máquina confirmada); senão velocidade mais recente do Excel.",
+        "Horas: taxa confirmada da tabela de velocidades; senão histórico válido; senão velocidade mais recente do Excel.",
         "Horas = volume ÷ velocidade + peças × (arranque por peça + tempo fixo por peça), depois × (1 + margem). A margem e o tempo fixo não se aplicam ao histórico.",
         ("Se a espessura não estiver na tabela, usa a imediatamente superior." if sector == "cantoneiras" else
          "Tipo de material vazio = todos. Se a área de secção não estiver na tabela, usa a imediatamente superior."),
@@ -253,8 +253,8 @@ def regenerate(c, sector: str, settings: dict, request_id: uuid.UUID, *, machine
     machines = machines if machines is not None else machine_rows(c, sector)
     changed = 0
     for m in machines:
-        if not m.get("confirmed"):
-            continue  # sem identidade física confirmada não há calendário (raw/capacity.py)
+        if not m.get("has_object"):
+            continue  # qualquer máquina do setor tem calendário (07/10/2026); sem recurso gravado não há onde o pendurar
         default_plan = {str(d): (m["default_shifts"] if d in settings["workdays"] else 0) for d in range(1, 8)}
         for year, week in _weeks():
             row = shifts.calendar_row(c, m["id"], year, week)
@@ -272,9 +272,9 @@ def regenerate(c, sector: str, settings: dict, request_id: uuid.UUID, *, machine
 
 
 def missing_weeks(c, sector: str, *, machines: list[dict] | None = None, today: date | None = None) -> list[tuple[str, int, int]]:
-    """Semanas do horizonte (52 semanas) sem calendário nas máquinas confirmadas: [(máquina, ano, semana)]. Só leitura."""
+    """Semanas do horizonte (52 semanas) sem calendário nas máquinas do setor: [(máquina, ano, semana)]. Só leitura."""
     machines = machines if machines is not None else machine_rows(c, sector)
-    return [(m["id"], y, w) for m in machines if m.get("confirmed")
+    return [(m["id"], y, w) for m in machines if m.get("has_object")
             for y, w in _weeks(today) if not shifts.calendar_row(c, m["id"], y, w)]
 
 
@@ -282,7 +282,7 @@ def extend_horizon(sector: str, *, conn=None, today: date | None = None) -> dict
     """Prolonga os calendários: cria só as semanas em falta das próximas 52, com os turnos padrão (auditoria 06/10, C1-5).
 
     Sem isto o horizonte encurta uma semana por semana até alguém gravar as Definições (regenerate só corre aí).
-    Regras: só máquinas confirmadas; semanas existentes (manuais, antigas ou não) não se tocam; feriados do modelo
+    Regras: todas as máquinas do setor com recurso gravado; semanas existentes (manuais, antigas ou não) não se tocam; feriados do modelo
     do setor; um só lote com um só sinal. Pensado para correr uma vez por semana (tarefa agendada); repetir não grava.
     """
     with (planning.connect() if conn is None else nullcontext(conn)) as c:
@@ -453,7 +453,7 @@ def save(payload: dict, *, conn=None) -> dict:
                 if not 0 <= n <= shifts.MAX_SHIFTS:
                     raise planning.PlanningError(f"Os turnos padrão vão de 0 a {shifts.MAX_SHIFTS}.")
                 d["default_shifts"] = n
-            if "confirmada" in payload:
+            if "confirmada" in payload:  # a caixa saiu das Definições (07/10/2026); fica por compatibilidade
                 d["confirmed"] = bool(payload["confirmada"])
             if "ficha" in payload:
                 override = {}

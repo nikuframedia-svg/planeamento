@@ -181,7 +181,9 @@ const fs = require('node:fs');
   assert.match(await page.locator('#holidays').inputValue(), /2026-12-25/);
   assert.ok((await page.locator('#rules').innerText()).length > 20, 'regras do setor visíveis');
   assert.ok(await page.locator('#machines details.names').count() >= 1, 'nomes e operações das máquinas');
+  assert.equal(await page.locator('#machines input[type=checkbox]').count(), 0, 'sem a caixa «confirmada» (07/10)');
   await page.waitForSelector('#worked .worked-form', {timeout: 60000});
+  assert.equal(await page.locator('#worked button', {hasText: 'Conferir'}).count(), 0, 'conferir as folhas faz-se ao gravar (07/10)');
   if (shots) await page.screenshot({path: `${shots}/definicoes.png`, fullPage: true});
 
   // Velocidades das máquinas (plano de 06/10, parte 3): tabela como o ecrã do Corte Térmico, gravações intercetadas.
@@ -190,7 +192,7 @@ const fs = require('node:fs');
   let withRates = false;
   const fakeRates = (body) => {
     const tab = body.speed_table.operations.find((t) => t.code === '112') || body.speed_table.operations[0];
-    const m = body.machines.find((x) => x.confirmed && x.has_object && tab.machines.includes(x.id));
+    const m = body.machines.find((x) => x.has_object && tab.machines.includes(x.id));
     const common = {area: 'cantoneiras', operation: tab.code, operation_code: tab.code, method: 'metres_hour', piece_seconds: 0, profile: '',
       material_type: '', confirmed: true, valid_from: '2026-10-06', valid_until: null, in_force: true, resource_id: m.id};
     m.rates = [{...common, id: 'teste-taxa-1', name: 't1', revision: 3, value: 120, thickness_min: null, thickness_max: 10, notes: '', source: 'Excel'},

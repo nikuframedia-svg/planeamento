@@ -11,7 +11,8 @@ def apply(conn,area,row,base,configs):
         row['values']['hours_pct']=None;rule['reason']=reason
         return {'available':False,'reason':reason,'saved':False}
     if not population.includes(row):return unavailable('Peça fechada: excluída da carga do planeamento ativo.')
-    resources,aliases=capacity.resource_index(configs)
+    from .capacity import physical_ids  # máquinas do setor e confirmadas à mão, como no motor (07/10/2026)
+    resources,aliases=capacity.resource_index(configs,physical_ids(conn,[r for r in configs if r['kind']=='resource']))
     primary=aliases.get((area,row['values'].get('machine')))
     if primary is None:return unavailable('Confirma o recurso físico e o seu calendário para calcular a ocupação semanal.')
     names={r['values'].get('machine') for r in (base,row)}

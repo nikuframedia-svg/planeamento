@@ -9,6 +9,8 @@ from datetime import date
 from .. import planning, planning_needs as needs
 from . import objects, query
 
+MANUAL_SOURCE = 'Correção manual'  # origem por defeito das horas corrigidas à mão (07/10/2026)
+
 
 def observations(conn):
     from ..planning_calculations import number
@@ -84,9 +86,9 @@ def basis(rows):
 
 
 def normalize(conn, d):
-    from .capacity import positive
+    from .capacity import positive, is_physical
     resource = objects.get(d.get('resource_id'), conn)
-    if resource['kind'] != 'resource' or resource['archived'] or not resource['definition'].get('confirmed'):
+    if resource['kind'] != 'resource' or resource['archived'] or not is_physical(conn, resource):
         raise planning.PlanningError('Seleciona uma máquina física confirmada.')
     mode = d.get('mode', 'period')
     if mode not in ('sheet', 'period'):
@@ -129,9 +131,7 @@ def normalize(conn, d):
         seen.add((area,code));normalized.append({'area':area,'operation':code,'hours':positive(allocation.get('hours'),zero=True)})
     if normalized and (abs(sum(a['hours'] for a in normalized)-hours)>.000001 or operation):
         raise planning.PlanningError('A repartição deve somar as horas reais; deixa a operação única vazia quando repartires o período.')
-    reason = str(d.get('source') or '').strip()
-    if not reason:
-        raise planning.PlanningError('Regista a origem ou justificação das horas reais.')
+    reason = str(d.get('source') or '').strip() or MANUAL_SOURCE
     d.update(hours=hours, operation=operation or None, operation_hours=normalized, source=reason, origin='Manual',
              year=start.isocalendar().year, week=start.isocalendar().week,
              start_date=str(start), end_date=str(end), confirmed=bool(d.get('confirmed')))
@@ -166,9 +166,15 @@ def validate(conn, id, d):
     for r in conn.execute("SELECT id,definition FROM planning_mtg.raw_objects WHERE kind='worked_hours' AND NOT archived AND id<>%s", (id,)):
         if d['confirmed'] and r['definition'].get('confirmed') and overlaps(d, r['definition']):
             raise planning.PlanningError('O período sobrepõe outra declaração manual. Corrige ou arquiva essa declaração primeiro.', 409)
-    if d.get('basis_hash') != basis(rows):
+    # A conferência das folhas OCR faz-se ao gravar (07/10/2026): sem base conferida antes, vale a de agora.
+    # Uma base trazida de uma conferência anterior continua a ter de coincidir.
+    if d.get('basis_hash') in (None, ''):
+        d['basis_hash'] = basis(rows)
+    elif d['basis_hash'] != basis(rows):
         raise planning.PlanningError('Revê as declarações OCR antes de guardar: as fontes podem ter mudado.', 409)
-    if any(o['hours'] is not None for o in rows) and not d.get('replace_ocr'):
+    if d.get('replace_ocr') is None:
+        d['replace_ocr'] = bool(rows)  # substituir as folhas OCR deste âmbito é o defeito
+    if any(o['hours'] is not None for o in rows) and not d['replace_ocr']:
         raise planning.PlanningError('Há horas OCR neste âmbito. Confirma a substituição integral para não as duplicar.')
     d['replaces'] = [r['key'] for r in rows]
     return d

@@ -9,7 +9,7 @@ from pydantic_core import from_json, to_json
 from .. import planning, planning_needs as needs, planning_raw as raw, planning_catalogs as catalogs, planning_dates, planning_calendars
 from . import query, projection, objects, workbooks
 
-CONTRACT = 'capacity-20260925-integral-v33'  # v33 (07/10): tabela de velocidades (intervalos, arranque por peça, origem Excel), margem e tempo fixo do setor, vigência das taxas por hoje, velocidade mais recente do Excel por máquina nas cantoneiras; v32 (06/10): janela histórica até hoje (C3-F6); v31 (06/10): MTG3 calendarizada pela Data Corte; v30: códigos CPIS:/LOCAL: aceites; um turno = uma declaração; amostra mínima e plausibilidade do histórico
+CONTRACT = 'capacity-20260925-integral-v34'  # v34 (07/10): máquinas do setor contam sem a caixa «confirmada»; ano da semana W deduzido; v33 (07/10): tabela de velocidades (intervalos, arranque por peça, origem Excel), margem e tempo fixo do setor, vigência das taxas por hoje, velocidade mais recente do Excel por máquina nas cantoneiras; v32 (06/10): janela histórica até hoje (C3-F6); v31 (06/10): MTG3 calendarizada pela Data Corte; v30: códigos CPIS:/LOCAL: aceites; um turno = uma declaração; amostra mínima e plausibilidade do histórico
 NON_PHYSICAL = {'', 'sem máquina', 'mtg3', 'subcontrato', 'abocardar', 'serrote mtg2', 'serrote mtg3'}
 
 
@@ -27,21 +27,15 @@ def cell(row, col):
 
 
 def validate_period(c, area, id, d):
-    try:
-        year=int(d['year']); week=int(d['week']); date.fromisocalendar(year,week,1)
-    except (ValueError,TypeError,KeyError): raise planning.PlanningError('Indica semana e ano ISO válidos.')
-    snap=planning.snapshot(c,area)
-    if d.get('snapshot')!=snap['snapshot_id']: raise planning.PlanningError('A macro mudou. Confirma o ano na versão atual.',409)
-    if not str(d.get('reason') or '').strip(): raise planning.PlanningError('Indica o motivo da associação ao ano.')
-    for x in c.execute("SELECT id,definition FROM planning_mtg.raw_objects WHERE kind='period' AND area=%s AND NOT archived AND id<>%s",(area,id)).fetchall():
-        if x['definition'].get('snapshot')==d['snapshot'] and x['definition'].get('week')==week:
-            raise planning.PlanningError('Já existe uma confirmação para esta semana e versão. Edita-a.',409)
-    return {**d,'year':year,'week':week,'confirmed':True}
+    """O ano da semana W já não se confirma por importação (07/10/2026): é deduzido em `period`."""
+    raise planning.PlanningError('O ano da semana W é deduzido sozinho; já não é preciso confirmá-lo.')
 
 
-def period(v, area, snapshot, periods, primary=True):
-    # MTG3: a Data Corte da operação principal dá o ano e a semana (decisão de 01/10/2026); a semana W
-    # com ano confirmado por versão só serve às linhas sem Data Corte e às operações seguintes.
+def period(v, area, snapshot=None, periods=None, primary=True, *, today=None):
+    # MTG3: a Data Corte da operação principal dá o ano e a semana (decisão de 01/10/2026). Sem ela (e nas
+    # operações seguintes) vale a semana W importada, com o ano deduzido como no Picking: o ano em que essa
+    # semana fica mais perto de hoje (07/10/2026). As antigas confirmações do ano por versão (`snapshot`,
+    # `periods`) já não contam; os argumentos ficam por compatibilidade.
     if area=='cantoneiras' and not primary:v={**v,'cut_date':None}
     y,w,origin=planning_dates.period(v,area=area,operation=v.get('operation') or ('corte' if area=='perfis' else ''),cantoneiras_week=number(v.get('imported_week')))
     if y is not None or (area=='perfis' and origin!='Por calendarizar'):
@@ -49,8 +43,8 @@ def period(v, area, snapshot, periods, primary=True):
     if area=='cantoneiras':
         w=number(v.get('imported_week'))
         if w is not None and w.is_integer() and 1<=w<=53:
-            found=[r for r in periods if r['area']==area and r['definition'].get('snapshot')==snapshot and r['definition'].get('week')==w]
-            if len(found)==1:return found[0]['definition']['year'],int(w),'Ano confirmado para W desta versão'
+            year=planning_dates.infer_iso_year(int(w),today)
+            if year is not None:return year,int(w),'Semana W importada — ano deduzido'
             return None,int(w),'Semana W importada — ano por confirmar'
     return y,w,origin
 
@@ -141,10 +135,13 @@ def summary(items, calendars, resource, year, week, rates, imported_summary=None
             'actual_coverage':{'known':0,'total':0},'lines':[],'draft_lines':[]}
 
 
-def resource_index(configs):
+def resource_index(configs, physical=None):
+    """Recursos e nomes → recurso físico. `physical`: IDs que contam como máquina física (capacity.physical_ids);
+    sem ele, só os confirmados à mão."""
     resources={str(r['id']):needs.serial(r) for r in configs if r['kind']=='resource'}
+    if physical is None:physical={ident for ident,r in resources.items() if r['definition'].get('confirmed')}
     aliases={(alias['area'],alias['name']):ident for ident,r in resources.items()
-             if r['definition'].get('confirmed') for alias in r['definition'].get('aliases',[])}
+             if ident in physical for alias in r['definition'].get('aliases',[])}
     return resources,aliases
 
 
@@ -154,7 +151,8 @@ def calculate(c,configs,sources,gens,*,today,scope=None,rows_override=None,persi
     from . import productivity
     from .. import planning_estimates
     rate_context=rate_context or productivity.Context(c,configs,rows_override=rows_override)
-    resources,aliases=resource_index(configs)
+    physical={str(ident) for ident in rate_context.resources}  # máquinas do setor e confirmadas à mão (07/10/2026)
+    resources,aliases=resource_index(configs,physical)
     periods=[r for r in configs if r['kind']=='period'];rates=[needs.serial(r) for r in configs if r['kind']=='rate']
     def machine_key(area,name):return aliases.get((area,name)) or area+':'+str(name or 'Por definir')
     all_items=[];buckets={};machines={};historical_updates={}
@@ -169,7 +167,7 @@ def calculate(c,configs,sources,gens,*,today,scope=None,rows_override=None,persi
         if not res:continue
         for alias in res['definition'].get('aliases',[]):
             key,b=ensure(alias['area'],alias['name'],d['year'],d['week'])
-            if not any(x.get('id')==str(cal['id']) for x in b['calendar']):b['calendar'].append({'id':str(cal['id']),'revision':cal['revision'],'local':True,'confirmed':bool(d.get('confirmed') and res['definition'].get('confirmed')),'hours':planning_calendars.available_hours(d),'hours_per_shift':d.get('hours_per_shift') or res['definition'].get('shift_hours'),'shifts':d.get('shifts'),'definition':d})
+            if not any(x.get('id')==str(cal['id']) for x in b['calendar']):b['calendar'].append({'id':str(cal['id']),'revision':cal['revision'],'local':True,'confirmed':bool(d.get('confirmed') and d['resource_id'] in physical),'hours':planning_calendars.available_hours(d),'hours_per_shift':d.get('hours_per_shift') or res['definition'].get('shift_hours'),'shifts':d.get('shifts'),'definition':d})
     if scope is not None:
         for area,ids in scope.get('reuse',{}).items():
             if not ids:continue
@@ -230,7 +228,7 @@ def calculate(c,configs,sources,gens,*,today,scope=None,rows_override=None,persi
                 if not is_local and closed and primary:continue
                 name=vals.get('machine')
                 if scope is not None and machine_key(area,name) not in scope['machines']:continue
-                y,w,period_source=period(vals,area,sources[area]['snapshot_id'],periods,primary=primary)
+                y,w,period_source=period(vals,area,sources[area]['snapshot_id'],periods,primary=primary,today=today)
                 bucket,b=ensure(area,name,y,w);mk=b['mk'];res=resources.get(mk)
                 ref,ref_reason,factor=reference_estimate({**vals,'speed_m_h':number(original.get('Mt\\h'))} if area=='cantoneiras' else vals,area,q,imported_rates.get((area,name))) if primary else (None,'Operação adicional: quantidade e parâmetros próprios por confirmar',1)
                 when=str(vals.get('expected_date') or '')[:10]
@@ -246,7 +244,8 @@ def calculate(c,configs,sources,gens,*,today,scope=None,rows_override=None,persi
                 if q==0:hours,reason=0,None
                 if is_local and not local.get('_compatible') and calculated_source is None:hours=None;reason='A preparação local exige revisão da quantidade ou da especificação técnica.'
                 from .capacity import supports
-                if res and not supports(res,op):hours=None;reason='Operação não confirmada para este recurso.'
+                # A lista de operações só limita as máquinas confirmadas à mão (como em productivity.Context.estimate).
+                if res and res['definition'].get('confirmed') and not supports(res,op):hours=None;reason='Operação não confirmada para este recurso.'
                 from .capacity import estimate_rule
                 applied={**applied,'hours':hours,'reason':reason}
                 applied['calculation']=estimate_rule(effective,applied)
@@ -272,7 +271,7 @@ def calculate(c,configs,sources,gens,*,today,scope=None,rows_override=None,persi
     declarations=[needs.serial(r) for r in configs if r['kind']=='worked_hours']
     covered_aliases=set()
     for resource_id,resource in resources.items():
-        if not resource['definition'].get('confirmed'):continue
+        if resource_id not in physical:continue
         resource_aliases=resource['definition']['aliases']
         covered_aliases.update((a['area'],a['name']) for a in resource_aliases)
         for cohort in worked_hours.resolve(resource,declarations,observed):
@@ -319,7 +318,7 @@ def calculate(c,configs,sources,gens,*,today,scope=None,rows_override=None,persi
         r=summary(m['items'],[],resources.get(mk),None,None,[r for r in rates if r['definition']['resource_id']==mk])
         r.update(key=mk,areas=sorted(m['areas']),aliases=sorted(m['aliases'],key=str),source_totals=[{'area':a,'machine':n,'values':imported_totals[(a,n)]} for a,n in m['aliases'] if (a,n) in imported_totals])
         r['values'].update(machine=m['name'],machine_key=mk);r['warnings']=[x for x in r['warnings'] if x not in ('Por calendarizar','Disponibilidade por confirmar.')]
-        r['physical_status']='Recurso físico confirmado' if resources.get(mk,{}).get('definition',{}).get('confirmed') else 'Grupo / destino; capacidade física por definir' if all(str(n or '').casefold() in NON_PHYSICAL for a,n in m['aliases']) else 'Máquina física por confirmar'
+        r['physical_status']='Recurso físico confirmado' if mk in physical else 'Grupo / destino; capacidade física por definir' if all(str(n or '').casefold() in NON_PHYSICAL for a,n in m['aliases']) else 'Máquina física por confirmar'
         r['reference_rates']=[imported_rates[(a,n)] for a,n in m['aliases'] if (a,n) in imported_rates]
         shift_values={v['shift_hours'] for v in r['reference_rates'] if v.get('shift_hours')}
         sh=next(iter(shift_values)) if len(shift_values)==1 else None
@@ -379,10 +378,10 @@ def rebuild(*,force=False):
         if prev and prev['metadata'].get('calculation_fingerprint',prev['metadata'].get('source_fingerprint'))==fp and not force:return
         publication_fp=needs.digest([fp,'forced',prev['id']]) if force and prev else fp
         from . import capacity_scope
-        resources,aliases=resource_index(configs)
+        rate_context=productivity.Context(c,configs,timing=timing,recent_excel=recent)
+        resources,aliases=resource_index(configs,{str(ident) for ident in rate_context.resources})
         def machine_key(area,name):return aliases.get((area,name)) or area+':'+str(name or 'Por definir')
         snapshots={a:src['snapshot_id'] for a,src in sources.items()}
-        rate_context=productivity.Context(c,configs,timing=timing,recent_excel=recent)
         history_hash=rate_context.history_inputs_hash()
         history_unchanged=bool(prev and prev['metadata'].get('history_inputs_hash')==history_hash)
         scope=None if force else capacity_scope.identify(c,prev,gens,versions,snapshots,configs,contract,str(today),machine_key,reference_inputs,history_unchanged=history_unchanged)

@@ -49,7 +49,7 @@ def test_audited_replacement_shared_resource_zero_correction_and_no_calendar_mut
     d = definition(resource)
     preview = hours.preview({'definition': d})
     assert preview['replacement_required'] and len(preview['observations']) == 2
-    with pytest.raises(planning.PlanningError, match='substituição'): save(d)
+    with pytest.raises(planning.PlanningError, match='substituição'): save({**d, 'replace_ocr': False})
     result, p = save({**d, 'replace_ocr': True})
     assert objects.save(p, 'worked_hours') == result
     assert len(objects.history(result['id'])['versions']) == 1
@@ -91,7 +91,7 @@ def test_sheet_scope_missing_hours_and_source_revision_invalidate_review(workspa
     assert any('mudaram' in x for x in weekly()['warnings'])
     assert weekly()['actual_coverage']['sum_known'] == 2
     with pytest.raises(planning.PlanningError, match='substituição'):
-        save(d, id=result['id'], expected_revision=1)
+        save({**d, 'replace_ocr': False}, id=result['id'], expected_revision=1)
     save({**d, 'replace_ocr': True}, id=result['id'], expected_revision=1)
     capacity.rebuild()
     assert weekly()['values']['actual_hours'] == 5
@@ -101,12 +101,19 @@ def test_sheet_scope_missing_hours_and_source_revision_invalidate_review(workspa
     ({'hours': -1}, 'não negativo'), ({'hours': 25}, 'duração'),
     ({'end_date': '2026-09-28'}, 'semana ISO'),
     ({'start_date': '2026-09-24'}, 'semana ISO'),
-    ({'operation': 'inventada'}, 'operação'), ({'source': ''}, 'origem'),
+    ({'operation': 'inventada'}, 'operação'),
 ])
 def test_invalid_declarations_do_not_persist(workspace, change, match):
     resource = setup(workspace)
     with pytest.raises(planning.PlanningError, match=match): save(definition(resource, **change))
     assert objects.listing('worked_hours')['items'] == []
+
+
+def test_empty_origin_becomes_manual_correction(workspace):
+    # 07/10/2026: a origem deixou de ser obrigatória; vazia fica «Correção manual».
+    resource = setup(workspace)
+    result, _ = save(definition(resource, source='', replace_ocr=True))
+    assert result['definition']['source'] == 'Correção manual'
 
 
 def test_stale_review_rejected_and_archive_preserves_history(workspace):

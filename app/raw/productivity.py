@@ -398,7 +398,10 @@ class Context:
         self.recent_excel=recent_excel if recent_excel is not None else current_excel_speeds(conn)
         # Margem e tempo fixo por peça das Definições de cada setor (0 = as horas não mudam).
         self.timing=timing if timing is not None else sector_timing(conn)
-        self.resources={r['id']:r for r in self.configs if r['kind']=='resource' and r['definition'].get('confirmed')}
+        # Máquinas físicas (capacity.physical_ids): as do setor no catálogo e as confirmadas à mão (07/10/2026).
+        from .capacity import physical_ids
+        stored=[r for r in self.configs if r['kind']=='resource'];physical=physical_ids(conn,stored)
+        self.resources={r['id']:r for r in stored if str(r['id']) in physical}
         self.aliases={(a['area'],a['name']):r for r in self.resources.values() for a in r['definition']['aliases']}
         self.observed=worked_hours.observations(conn);self.events=[];self.cache={};self.time_cache={};self.history_hashes={}
         self.scopes={}  # cache_key → máquina e operação da taxa histórica (insights do Gantt, auditoria GT-08)
@@ -492,7 +495,9 @@ class Context:
         resource=self.aliases.get((area,values.get('machine')))
         allowed=operation in ('corte','abocardar') if area=='perfis' else str(operation).isdigit() and str(operation)!='0'
         from .capacity import supports
-        if not allowed or resource and not supports(resource,operation):
+        # A lista de operações só limita as máquinas confirmadas à mão: numa máquina do setor com a lista do catálogo
+        # (às vezes vazia) as horas não desaparecem por isso (07/10/2026).
+        if not allowed or resource and resource['definition'].get('confirmed') and not supports(resource,operation):
             result={**applied,'source':None,'rate':None,'hours':None,'reason':'Operação por confirmar para este recurso.'}
             return {**result,'calculation':estimate_rule(values,result)}
         effective=timed(applied['rate'],applied['source'],getattr(self,'timing',{}).get(area))
@@ -534,7 +539,7 @@ def apply_rows(conn, area, rows, configs, *, persist=True, context=None, source=
             vals={**v,**{k:x for k,x in operation_values.items() if k not in needs.PIECE_FIELDS}}
             vals['quantity_to_plan']=balance['planning_remaining'];vals['quantity_required']=v.get('quantity_required')
             # Operação seguinte MTG3 não herda a Data Corte (mesma regra de capacity_revision.period).
-            y,w,_=capacity_revision.period({**vals,'cut_date':None} if area=='cantoneiras' and not main else vals,area,src['snapshot_id'],periods)
+            y,w,_=capacity_revision.period({**vals,'cut_date':None} if area=='cantoneiras' and not main else vals,area,src['snapshot_id'],periods,today=today)
             when=str(vals.get('expected_date') or (date.fromisocalendar(y,w,1) if y and w else today))[:10]
             excel=None
             if main:

@@ -856,7 +856,6 @@
       ["calendar", "Calendários"],
       ["worked_hours", "Horas reais"],
       ["rate", "Parâmetros"],
-      ["period", "Anos das semanas importadas"],
     ])
       tabs.append(button(label, () => configuration(k)));
     tabs.append(button("Sugestões do Excel", () => suggestions()));
@@ -920,7 +919,6 @@
       resource: "Máquina física",
       calendar: "Calendário semanal",
       rate: "Parâmetro de cálculo",
-      period: "Ano da semana importada",
       worked_hours: "Horas efetivamente trabalhadas",
     }[kind];
     const add = (k, label, node) => {
@@ -965,7 +963,7 @@
           d.resource_id,
         ),
       );
-    if (kind === "calendar" || kind === "period") {
+    if (kind === "calendar") {
       add("year", "Ano ISO", input(d.year ?? state.data.year, "number"));
       add("week", "Semana ISO", input(d.week ?? state.data.week, "number"));
     }
@@ -1079,7 +1077,7 @@
         if(result.scope_conflict)evidence.append(el("p",result.scope_conflict,"warning-box"));
         for(const conflict of result.manual_overlaps)evidence.append(el("p","Sobreposição manual: "+conflict.name+". Corrige ou arquiva essa declaração.","warning-box"));
       }),evidence);
-      const replace=input("","checkbox");replace.checked=d.replace_ocr===true;
+      const replace=input("","checkbox");replace.checked=!obj||d.replace_ocr===true;  // substituir é o defeito (07/10/2026)
       add("replace_ocr","Substituir integralmente as horas OCR apresentadas pelas horas reais acima",replace);
     }
     if (kind === "rate") {
@@ -1134,23 +1132,11 @@
       add("material_type", "Família exata (opcional)", input(d.material_type));
       add("profile", "Perfil exato (opcional)", input(d.profile));
     }
-    if (kind === "period") {
-      const info = await api("raw/ficheiros"),
-        src = info.sources.find((x) => x.area === state.area);
-      d.snapshot = d.snapshot || src.snapshot.snapshot_id;
-      add(
-        "reason",
-        "Motivo da confirmação do ano nesta versão",
-        input(d.reason),
-      );
-      wrap.append(el("p", d.snapshot, "capacity-source-meta"));
-    } else add("source", "Origem / justificação", input(d.source));
+    add("source", "Origem / justificação", input(d.source));
     const check = input("", "checkbox");
-    check.checked = d.confirmed === true;
+    check.checked = !obj || d.confirmed === true;  // marcada por defeito num registo novo (07/10/2026)
     const l = field(
-      kind === "period"
-        ? "Confirmo o ano para esta semana desta versão"
-        : kind === "worked_hours" ? "Confirmo as horas reais, o âmbito e a origem indicados" : "Confirmo a máquina / o calendário / o parâmetro e a sua aplicação",
+      kind === "worked_hours" ? "Confirmo as horas reais, o âmbito e a origem indicados" : "Confirmo a máquina / o calendário / o parâmetro e a sua aplicação",
       check,
     );
     l.classList.add("check");
@@ -1170,10 +1156,9 @@
         else{delete definition.weekly_windows;delete definition.date_overrides;delete definition.reserved_windows;delete definition.timezone;}
       }
       if (kind === "worked_hours")definition.operation_hours=parseHoursAllocations(controls.operation_hours.value);
+      // Sem «Conferir declarações» antes, a conferência faz-se ao gravar (07/10/2026).
       if (kind === "worked_hours" && !definition.basis_hash)
-        throw new Error("Confere as declarações antes de guardar as horas reais.");
-      if (!check.checked && kind === "period")
-        throw new Error("Confirma o ano antes de guardar.");
+        definition.basis_hash = (await api("raw/horas/prever", { id: obj?.id, definition })).basis_hash;
       if (kind === "resource") {
         definition.aliases = controls.aliases.value
           .split("\n")
