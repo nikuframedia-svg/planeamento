@@ -82,12 +82,25 @@ def prepare(p):
     except Candidates as exc:return exc.result
 
 
+EXCEL_IDENTITY=('of','ov','customer','designation','material_description')  # dados do Excel fora do catálogo
+
+
+def excel_signature(row,fields):
+    """Dados do Excel de uma linha da Tabela: os valores de origem dos campos do catálogo e da identidade, e as
+    células em bruto. Não inclui a produção nem os agregados (horas, % de carga), que mudam sem o Excel mudar."""
+    original=row.get('original') or {}
+    return needs.digest([{k:original.get(k) for k in sorted(set(fields)|set(EXCEL_IDENTITY)) if k in original},row.get('raw') or {}])
+
+
 @incremental.retry_serialization
 def update_batch(p):
-    """Grava um lote da Tabela. Uma importação entretanto já não recusa o lote (07/10/2026): cada linha é procurada
-    na versão atual e grava-se se a sua revisão não mudou; as outras ficam de fora e voltam em `skipped`.
-    Só quando nenhuma linha se pode gravar é que o pedido é recusado (409)."""
-    edits=p.get('edits')
+    """Grava um lote da Tabela, tudo ou nada.
+
+    Com `partial: true` (só o ecrã novo o envia, porque é o único que mostra `skipped`; 07/10/2026) uma versão nova
+    entretanto já não recusa o lote: grava as linhas cuja revisão e cujos dados do Excel não mudaram desde a lista
+    do utilizador e devolve as outras em `skipped`. Só quando nenhuma se pode gravar é que o pedido é recusado (409).
+    """
+    edits=p.get('edits');partial=p.get('partial') is True
     if not isinstance(edits,list) or not 1<=len(edits)<=500 or any(not isinstance(e,dict) for e in edits):raise planning.PlanningError('O lote deve conter entre 1 e 500 linhas.')
     area=planning.check_area(p.get('area','perfis'))
     with planning.connect() as c:
@@ -95,11 +108,21 @@ def update_batch(p):
         _,_,old=needs.command(c,p)
         if old:return old
         before=incremental.baseline(c)
-        gen=query.generation(c,area)
+        current=query.generation(c,area);seen_version=None
+        if not partial:
+            gen=query.generation(c,area,p.get('version'))
+            if gen['id']!=current['id']:raise planning.PlanningError('Existem dados novos. Atualiza a lista e compara as alterações.',409)
+        else:
+            gen=current
+            if p.get('version') and str(p['version'])!=str(current['id']):
+                try:seen_version=query.generation(c,area,p['version'])  # a versão que o utilizador tinha à frente
+                except planning.PlanningError:seen_version=False  # já não existe: não se pode comparar
         source_fingerprint=projection.fingerprint(c,area)
         cat=catalogs.catalog(area,c);allowed={f['id'] for f in contracts_for(area) if f['editable']}|{'picking_year','custom_profile','special_profile','geometry','identity_discriminator'}
+        fields={f['id'] for f in cat['fields']}
         results=[];skipped=[];seen=set();orders=set();local_revisions={}
-        def skip(key,row,reason):
+        def refuse(key,row,reason,message):
+            if not partial:raise planning.PlanningError(message,409)
             values=(row or {}).get('values') or {}
             skipped.append({'key':key,'of':values.get('of'),'component_ref':values.get('component_ref'),'reason':reason})
         for i,e in enumerate(edits):
@@ -109,12 +132,17 @@ def update_batch(p):
             if not changes or not isinstance(changes,dict) or set(changes)-allowed:raise planning.PlanningError('Só podes alterar campos locais de preparação.')
             found=query.listing({'area':area,'version':str(gen['id']),'selected':[key]},conn=c)['rows']
             if len(found)!=1:
-                skip(key,None,'Linha não encontrada.');continue
+                refuse(key,None,'Linha não encontrada.','Linha não encontrada.');continue
             row=found[0]
             if not incremental.can_edit_orders(gen,source_fingerprint,[row['values']['of']]):
-                skip(key,row,'As fontes mudaram.');continue
+                refuse(key,row,'As fontes mudaram.','As fontes mudaram. Atualiza a lista antes de guardar.');continue
             if e.get('expected_revision')!=row['revision']:
-                skip(key,row,'A linha mudou entretanto.');continue
+                refuse(key,row,'A linha mudou entretanto.','A linha mudou. Reabre-a para comparar.');continue
+            if seen_version is not None:
+                # As linhas só do Excel ficam sempre na revisão 0: uma importação muda-as sem subir a revisão.
+                shown=query.listing({'area':area,'version':str(seen_version['id']),'selected':[key]},conn=c)['rows'] if seen_version else []
+                if len(shown)!=1 or excel_signature(shown[0],fields)!=excel_signature(row,fields):
+                    refuse(key,row,'O Excel mudou nesta linha.','O Excel mudou nesta linha.');continue
             nid=row['need_id'];revision=row['revision']
             if not nid:
                 resolution=needs.resolve({'request_id':str(uuid.uuid5(needs.uid(p['request_id']),str(i)+'resolve')),'area':area,'source':{'kind':'plan_line','id':row['plan_key'],'version':row.get('calculation',{}).get('macro_snapshot') or gen['metadata']['snapshot']['snapshot_id']},'_allow_unresolved':free.enabled()},conn=c)
@@ -128,11 +156,11 @@ def update_batch(p):
                     of=row['values']['of']
                     saved_context=planning_local_orders.save(c,of,{'values':administrative,'expected_revision':local_revisions.get(of,row.get('local_order_revision',0))},needs.registration.human_actor(p))
                     local_revisions[of]=saved_context['revision']
-            defaults={k:v for k,v in row['values'].items() if k in {f['id'] for f in cat['fields']}}
+            defaults={k:v for k,v in row['values'].items() if k in fields}
             result=needs.save({'request_id':str(uuid.uuid5(needs.uid(p['request_id']),str(i)+'save')),'area':area,'need_id':nid,'expected_revision':revision,'catalog_version':cat['version'],'record_status':'draft','values':changes,
                 'decisions':{'picking_week':'clear'} if 'picking_week' in changes and changes['picking_week'] in (None,'') else {}},conn=c,source_defaults=defaults)
             results.append(result)
-        if not results:  # nada a gravar: erro como antes (também para os ecrãs que ainda não leem `skipped`)
+        if not results:  # nada a gravar (só com `partial`): recusa como antes
             raise planning.PlanningError('Nenhuma linha gravada: '+' '.join(dict.fromkeys(x['reason'] for x in skipped))+' Atualiza a lista e cola outra vez.',409)
         projection.signal(c,'planning:'+area)
         published=incremental.publish(c,before,orders,[r['need_id'] for r in results],p['request_id'])

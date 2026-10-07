@@ -13,6 +13,7 @@ import copy
 import uuid
 from datetime import date, datetime, timedelta, timezone
 
+import psycopg
 import pytest
 from app import planning
 from app.gantt import research, integrated
@@ -134,14 +135,28 @@ def test_mtg3_week_year_is_deduced_without_a_confirmation_per_import():
     assert calc.period({'imported_week': 39}, 'cantoneiras', 's', stale, today=date(2026, 10, 7)) == (2026, 39, 'Semana W importada — ano deduzido')
     assert calc.period({'imported_week': 1}, 'cantoneiras', 'novo', [], today=date(2026, 12, 20))[:2] == (2027, 1)
     assert calc.period({'imported_week': 52}, 'cantoneiras', 'novo', [], today=date(2027, 1, 4))[:2] == (2026, 52)
+    # Puxado para o passado: uma linha aberta em fim de novembro com W21 está atrasada (deste ano), não é do ano que vem.
+    assert calc.period({'imported_week': 21}, 'cantoneiras', 'novo', [], today=date(2026, 11, 25))[:2] == (2026, 21)
+    assert calc.period({'imported_week': 50}, 'cantoneiras', 'novo', [], today=date(2026, 10, 7))[:2] == (2026, 50)
+    from app import planning_dates  # o Picking continua com o ano mais perto (sem viés)
+    assert planning_dates.infer_iso_year(21, date(2026, 11, 25)) == 2027
+    assert planning_dates.infer_iso_year(21, date(2026, 11, 25), prefer_past=True) == 2026
     # A Data Corte continua à frente da semana W; sem semana nem data fica por calendarizar.
     assert calc.period({'imported_week': 39, 'cut_date': '2026-10-07'}, 'cantoneiras', 's', [], today=date(2026, 10, 7))[:2] == (2026, 41)
     assert calc.period({}, 'cantoneiras', 's', [], today=date(2026, 10, 7))[:2] == (None, None)
 
 
-def test_week_year_confirmations_are_no_longer_saved(workspace):
+def test_week_year_confirmations_are_no_longer_saved_but_old_ones_can_be_archived(workspace):
+    from psycopg.types.json import Jsonb
     with pytest.raises(planning.PlanningError, match='deduzido'):
         objects.save(command(area='cantoneiras', name='W39', definition={'snapshot': 'c1', 'week': 39, 'year': 2026, 'reason': 'Ensaio'}), 'period')
+    old = {'snapshot': 'c0', 'week': 39, 'year': 2026, 'reason': 'Confirmação antiga', 'confirmed': True}
+    ident = str(uuid.uuid4())
+    with psycopg.connect(workspace) as c:
+        c.execute("INSERT INTO planning_mtg.raw_objects(id,kind,name,area,definition,actor) VALUES(%s,'period','W39 antiga','cantoneiras',%s,'ensaio')", (ident, Jsonb(old)))
+    archived = objects.save(command(id=ident, expected_revision=1, area='cantoneiras', name='W39 antiga', archived=True, definition={}), 'period')
+    assert archived['revision'] == 2 and archived['definition'] == old
+    assert objects.get(ident)['archived'] is True
 
 
 def row(key):
@@ -161,14 +176,56 @@ def test_table_batch_saves_unchanged_rows_after_an_import_and_reports_the_change
     assert current['revision'] != first['revision'] and current['values']['notes'] == 'Antes'
     with planning.connect(readonly=True) as c:
         assert query.generation(c, 'perfis')['id'] != int(data['version'])
-    result = edits.update_batch(command(area='perfis', version=data['version'], edits=[
-        {'key': first['key'], 'expected_revision': current['revision'], 'values': {'notes': 'Grava'}},
-        {'key': second['key'], 'expected_revision': second['revision'] + 7, 'values': {'notes': 'Mudou'}}]))
+    stale = [{'key': first['key'], 'expected_revision': current['revision'], 'values': {'notes': 'Grava'}},
+             {'key': second['key'], 'expected_revision': second['revision'] + 7, 'values': {'notes': 'Mudou'}}]
+    # Sem `partial` (ecrãs antigos, que não leem `skipped`) fica o tudo-ou-nada de sempre.
+    with pytest.raises(planning.PlanningError, match='Existem dados novos'):
+        edits.update_batch(command(area='perfis', version=data['version'], edits=stale))
+    result = edits.update_batch(command(area='perfis', version=data['version'], partial=True, edits=stale))
     assert len(result['items']) == 1
-    assert [(x['key'], x['of']) for x in result['skipped']] == [(second['key'], second['values']['of'])] and result['skipped'][0]['reason']
+    assert [(x['key'], x['of'], x['reason']) for x in result['skipped']] == [(second['key'], second['values']['of'], 'A linha mudou entretanto.')]
     assert row(first['key'])['values']['notes'] == 'Grava' and row(second['key'])['values'].get('notes') != 'Mudou'
     # A revisão de cada linha continua a contar; sem nenhuma linha para gravar o pedido é recusado, como antes.
     with pytest.raises(planning.PlanningError, match='Nenhuma linha gravada: A linha mudou entretanto') as refused:
-        edits.update_batch(command(area='perfis', version=data['version'], edits=[
+        edits.update_batch(command(area='perfis', version=data['version'], partial=True, edits=[
             {'key': first['key'], 'expected_revision': first['revision'], 'values': {'notes': 'Antiga'}}]))
     assert refused.value.status == 409 and row(first['key'])['values']['notes'] == 'Grava'
+
+
+def test_table_partial_batch_skips_a_row_whose_excel_changed_with_the_same_revision(workspace):
+    projection.rebuild('perfis')
+    data = query.listing({})
+    first, second = data['rows'][:2]
+    # Nova importação: o Excel muda na segunda linha; a revisão local (0, só Excel) não sobe.
+    with psycopg.connect(workspace) as c:
+        c.execute("UPDATE raw_mtg.plan_production_rows SET length_mm=length_mm+100 WHERE source_line_id=%s", (second['plan_key'],))
+    projection.rebuild('perfis', force=True)
+    assert row(second['key'])['revision'] == second['revision'] and row(second['key'])['values']['length_mm'] == second['values']['length_mm'] + 100
+    result = edits.update_batch(command(area='perfis', version=data['version'], partial=True, edits=[
+        {'key': first['key'], 'expected_revision': first['revision'], 'values': {'notes': 'Grava'}},
+        {'key': second['key'], 'expected_revision': second['revision'], 'values': {'notes': 'Sobre o Excel antigo'}}]))
+    assert len(result['items']) == 1
+    assert [(x['key'], x['reason']) for x in result['skipped']] == [(second['key'], 'O Excel mudou nesta linha.')]
+    assert row(first['key'])['values']['notes'] == 'Grava' and row(second['key'])['values'].get('notes') != 'Sobre o Excel antigo'
+    # Uma versão que já não existe não se pode comparar: a linha fica de fora pelo mesmo motivo.
+    with pytest.raises(planning.PlanningError, match='O Excel mudou nesta linha'):
+        edits.update_batch(command(area='perfis', version='999999', partial=True, edits=[
+            {'key': second['key'], 'expected_revision': second['revision'], 'values': {'notes': 'Versão perdida'}}]))
+
+
+def test_capacity_engine_counts_an_unconfirmed_sector_machine_end_to_end(sector_db):
+    prensa = resource('PRENSA')
+    objects.save(command(name='Prensa · 2026-W43', area='cantoneiras', definition=calendar(str(prensa['id']))), 'calendar')
+    for area in planning.AREAS:
+        projection.rebuild(area)
+    calc.rebuild()
+    machines = {r['key']: r for r in query.listing({'dataset': 'capacity_machines', 'area': 'cantoneiras', 'population': 'all'})['rows']}
+    assert machines[str(prensa['id'])]['physical_status'] == 'Recurso físico confirmado'
+    week = next(r for r in query.listing({'dataset': 'capacity', 'area': 'cantoneiras', 'population': 'all', 'page_size': 500})['rows']
+                if r['values']['machine_key'] == str(prensa['id']) and (r['values']['year'], r['values']['week']) == (2026, 43))
+    assert week['source_calendar']['confirmed'] is True and week['values']['available_hours'] > 0
+    assert 'Disponibilidade por confirmar.' not in week['warnings']
+    # O contrato da capacidade conta as máquinas do catálogo: um catálogo diferente obriga a um cálculo completo.
+    with planning.connect(readonly=True) as c:
+        meta = query.generation(c, 'cantoneiras', dataset='capacity')['metadata']
+    assert meta['contract'] != calc.CONTRACT and meta['contract'].startswith(calc.CONTRACT + '|')

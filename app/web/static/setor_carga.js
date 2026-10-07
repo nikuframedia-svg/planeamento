@@ -11,7 +11,7 @@
   const KIND = {plan: 'no plano', due: 'a vencer', suggested: 'a vencer, máquina sugerida'};
   // Nomes com explicação no cursor (a mesma explicação em todas as páginas; ver static/nomes.json).
   const EXPLAIN = {
-    previstas: 'Horas que a Carga usa: taxa confirmada da tabela de velocidades; senão histórico válido (só com máquina confirmada); senão velocidade mais recente do Excel (MTG3) ou taxa mm²/h da folha CapacidadeMáquinas (MTG2). Com margem e tempo fixo por peça das Definições.',
+    previstas: 'Horas que a Carga usa: taxa confirmada da tabela de velocidades; senão histórico válido; senão velocidade mais recente do Excel (MTG3) ou taxa mm²/h da folha CapacidadeMáquinas (MTG2). Com margem e tempo fixo por peça das Definições.',
     excel: 'Horas pela regra do próprio Excel, só na operação principal: MTG3 metros em falta ÷ velocidade Mt\\h da linha; MTG2 área ÷ taxa da folha CapacidadeMáquinas (×3 no Thomas acima de 50 peças). Escalada ao saldo atual.',
     reais: 'Horas declaradas nas folhas OCR validadas e horas corrigidas à mão, pela data de produção.',
     capacidade: 'Horas dos turnos dessa semana no calendário da máquina (na semana atual, só as que faltam).',

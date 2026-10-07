@@ -253,11 +253,11 @@ def regenerate(c, sector: str, settings: dict, request_id: uuid.UUID, *, machine
     machines = machines if machines is not None else machine_rows(c, sector)
     changed = 0
     for m in machines:
-        if not m.get("has_object"):
-            continue  # qualquer máquina do setor tem calendário (07/10/2026); sem recurso gravado não há onde o pendurar
+        weeks = _calendar_weeks(c, m)
+        if weeks is None:
+            continue
         default_plan = {str(d): (m["default_shifts"] if d in settings["workdays"] else 0) for d in range(1, 8)}
-        for year, week in _weeks():
-            row = shifts.calendar_row(c, m["id"], year, week)
+        for (year, week), row in weeks.items():
             if row and shifts.is_legacy(row["definition"]):
                 continue  # calendário antigo só com turnos: não se reescreve sem horários conhecidos
             manual = bool(row and row["definition"].get("manual"))
@@ -271,18 +271,31 @@ def regenerate(c, sector: str, settings: dict, request_id: uuid.UUID, *, machine
     return changed
 
 
+def _calendar_weeks(c, m: dict, today: date | None = None) -> dict | None:
+    """{(ano, semana): calendário ou None} do horizonte de uma máquina que tem calendários; None se não tem.
+
+    Qualquer máquina do setor com recurso gravado pode ter calendário (07/10/2026), mas só se criam semanas quando
+    tem turnos padrão ou já tem alguma semana gravada: semanas a 0 turnos fariam de uma máquina parada uma
+    máquina «com calendário» de 0 h na Carga e nas capacidades.
+    """
+    if not m.get("has_object"):
+        return None  # sem recurso gravado não há onde pendurar o calendário
+    weeks = {(y, w): shifts.calendar_row(c, m["id"], y, w) for y, w in _weeks(today)}
+    return weeks if m.get("default_shifts", 0) > 0 or any(weeks.values()) else None
+
+
 def missing_weeks(c, sector: str, *, machines: list[dict] | None = None, today: date | None = None) -> list[tuple[str, int, int]]:
-    """Semanas do horizonte (52 semanas) sem calendário nas máquinas do setor: [(máquina, ano, semana)]. Só leitura."""
+    """Semanas do horizonte (52 semanas) sem calendário nas máquinas do setor que têm calendários
+    (`_calendar_weeks`): [(máquina, ano, semana)]. Só leitura."""
     machines = machines if machines is not None else machine_rows(c, sector)
-    return [(m["id"], y, w) for m in machines if m.get("has_object")
-            for y, w in _weeks(today) if not shifts.calendar_row(c, m["id"], y, w)]
+    return [(m["id"], y, w) for m in machines for (y, w), row in (_calendar_weeks(c, m, today) or {}).items() if not row]
 
 
 def extend_horizon(sector: str, *, conn=None, today: date | None = None) -> dict:
     """Prolonga os calendários: cria só as semanas em falta das próximas 52, com os turnos padrão (auditoria 06/10, C1-5).
 
     Sem isto o horizonte encurta uma semana por semana até alguém gravar as Definições (regenerate só corre aí).
-    Regras: todas as máquinas do setor com recurso gravado; semanas existentes (manuais, antigas ou não) não se tocam; feriados do modelo
+    Regras: máquinas do setor com recurso gravado e com turnos padrão ou calendário já gravado; semanas existentes (manuais, antigas ou não) não se tocam; feriados do modelo
     do setor; um só lote com um só sinal. Pensado para correr uma vez por semana (tarefa agendada); repetir não grava.
     """
     with (planning.connect() if conn is None else nullcontext(conn)) as c:

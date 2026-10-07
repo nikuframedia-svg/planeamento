@@ -163,12 +163,16 @@ def test_regenerate_covers_every_sector_machine_and_keeps_manual_weeks(monkeypat
     confirmed = {"id": "r1", "name": "Peddi 8", "default_shifts": 2, "confirmed": True, "has_object": True}
     unconfirmed = {"id": "r2", "name": "Prensa", "default_shifts": 1, "confirmed": False, "has_object": True}
     without_object = {"id": "r3", "name": "Sem recurso", "default_shifts": 1, "confirmed": False, "has_object": False}
-    store, saved, _ = _fake_store(monkeypatch, [confirmed, unconfirmed, without_object])
+    # Sem turnos padrão nem calendário não se criam 52 semanas a 0 turnos; com calendário já gravado, mantém-se.
+    no_shifts = {"id": "r4", "name": "Prensa sem turnos", "default_shifts": 0, "confirmed": False, "has_object": True}
+    no_shifts_with_calendar = {"id": "r5", "name": "Fresadora", "default_shifts": 0, "confirmed": False, "has_object": True}
+    store, saved, _ = _fake_store(monkeypatch, [confirmed, unconfirmed, without_object, no_shifts, no_shifts_with_calendar])
     y, w = sector_settings._current_week()
     store[("r1", y, w)] = {"id": 99, "revision": 3, "definition": shifts.definition_for("r1", y, w, WEEKDAYS(3), {}, SETTINGS, manual=True)}
+    store[("r5", y, w)] = {"id": 98, "revision": 1, "definition": shifts.definition_for("r5", y, w, WEEKDAYS(2), {}, SETTINGS, manual=True)}
     changed = sector_settings.regenerate(None, "cantoneiras", {**SETTINGS, "holidays": ["2026-12-25"]}, uuid.uuid4())
-    assert changed == 2 * sector_settings.HORIZON_WEEKS - 1  # a semana manual já estava certa
-    assert {k[0] for k in store} == {"r1", "r2"}
+    assert changed == 3 * sector_settings.HORIZON_WEEKS - 2  # as semanas manuais já estavam certas
+    assert {k[0] for k in store} == {"r1", "r2", "r5"}
     assert store[("r1", y, w)]["definition"]["shift_plan"]["1"] == 3
     christmas = store[("r1", 2026, 52)]["definition"]
     assert christmas["date_overrides"]["2026-12-25"] == []
@@ -263,7 +267,8 @@ def test_extend_horizon_creates_only_missing_weeks_of_sector_machines_in_one_bat
     confirmed = {"id": "r1", "name": "Peddi 8", "default_shifts": 2, "confirmed": True, "area": "cantoneiras", "has_object": True}
     unconfirmed = {"id": "r2", "name": "Prensa", "default_shifts": 1, "confirmed": False, "area": "cantoneiras", "has_object": True}
     without_object = {"id": "r3", "name": "Sem recurso", "default_shifts": 1, "confirmed": False, "area": "cantoneiras", "has_object": False}
-    store, saved, signals = _fake_store(monkeypatch, [confirmed, unconfirmed, without_object])
+    no_shifts = {"id": "r4", "name": "Prensa sem turnos", "default_shifts": 0, "confirmed": False, "area": "cantoneiras", "has_object": True}
+    store, saved, signals = _fake_store(monkeypatch, [confirmed, unconfirmed, without_object, no_shifts])
     monkeypatch.setattr(sector_settings.planning, "connect", lambda *a, **k: _ConnLock())
     weeks = list(sector_settings._weeks(today))
     for y, w in weeks[:11]:  # existentes até 2027-W38, uma delas manual com 3 turnos
@@ -272,7 +277,7 @@ def test_extend_horizon_creates_only_missing_weeks_of_sector_machines_in_one_bat
     out = sector_settings.extend_horizon("cantoneiras", today=today)
     assert out == {"sector": "cantoneiras", "created": 2 * len(weeks) - 11, "machines": 2} and len(signals) == 1
     assert all(store[k]["definition"] == d for k, d in before.items())  # semanas existentes intactas
-    assert len({k for k in store if k[0] == "r2"}) == len(weeks) and not {k for k in store if k[0] == "r3"}
+    assert len({k for k in store if k[0] == "r2"}) == len(weeks) and not {k for k in store if k[0] in ("r3", "r4")}
     last = store[("r1", *weeks[-1])]["definition"]
     assert last["shift_plan"]["1"] == 2 and not last["manual"]
     # Repetir não grava nem sinaliza.

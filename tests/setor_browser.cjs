@@ -239,6 +239,9 @@ const fs = require('node:fs');
     // Com linhas na tabela (simuladas): editar, adicionar, apagar, margem.
     withRates = true;
     await page.reload();
+    // Desde 07/10 contam todas as máquinas do setor: pode haver separadores antes do 112 (ex.: 111); abre o das linhas simuladas.
+    await page.waitForSelector('#speeds .speed-tabs button', {timeout: 60000});
+    await page.locator(`#speeds .speed-tabs button[data-code="${fake.tab.code}"]`).click();
     await page.waitForSelector('#speed-rows tr[data-key="teste-taxa-1"]', {timeout: 60000});
     assert.equal(await page.locator('#speed-seed').count(), 0, 'com linhas, sem botão de preencher');
     assert.ok(await page.locator('#speed-rows tr[data-key="teste-taxa-1"] .tag').count(), 'linha «origem Excel»');

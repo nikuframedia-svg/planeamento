@@ -1456,20 +1456,24 @@ window.Raw = (() => {
       }
       edits.push({ key: row.key, expected_revision: row.revision, values });
     }
-    // Grava logo, sem pergunta (07/10/2026). As linhas que mudaram entretanto (ex.: nova importação) ficam de fora
-    // e são indicadas; as restantes gravam-se.
+    // Grava logo, sem pergunta (07/10/2026). Com `partial`, as linhas cuja revisão ou cujos dados do Excel mudaram
+    // desde esta lista (ex.: outra gravação ou nova importação) ficam de fora e são indicadas; as restantes gravam-se.
     const result = await api(
       "raw/lotes",
-      request({ area: state.area, version: state.data.version, edits }),
+      request({ area: state.area, version: state.data.version, partial: true, edits }),
     );
     const skipped = result.skipped || [];
+    const pasted = new Map(edits.map((x, i) => [x.key, state.data.rows[r0 + i].values]));
     await waitUpdated(result);
     if (skipped.length)
       $("notice").textContent =
         `${result.items?.length || 0} linha(s) gravadas. Ficaram de fora ${skipped.length}: ` +
         skipped
           .slice(0, 10)
-          .map((x) => [x.of, x.component_ref].filter(Boolean).join(" · ") + " (" + String(x.reason || "").replace(/\.$/, "") + ")")
+          .map((x) => {
+            const v = pasted.get(x.key) || {};  // «Linha não encontrada» não traz a OF: usa a da linha colada
+            return [x.of || v.of, x.component_ref || v.component_ref].filter(Boolean).join(" · ") + " (" + String(x.reason || "").replace(/\.$/, "") + ")";
+          })
           .join("; ") +
         (skipped.length > 10 ? "; …" : "") +
         ". Cola-as outra vez na lista atualizada.";

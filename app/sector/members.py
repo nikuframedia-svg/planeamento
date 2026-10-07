@@ -41,19 +41,14 @@ def resource_ids(c, resources: list[dict]) -> set[str]:
 
     Desde 07/10/2026 é isto que conta para calendários, taxas, histórico e horas reais (a caixa «confirmada» saiu).
     A identidade é a do Gantt (integrated._resources): o código do catálogo gravado no recurso ou um nome em comum.
-    Sem a camada de pesquisa não há catálogo: nenhum.
+    Com a camada de pesquisa desligada não há catálogo: nenhum. Ligada mas sem importação utilizável, o erro 503
+    sobe (como em research.overlay_rows): melhor parar o cálculo do que contar as máquinas à antiga sem avisar.
     """
     from datetime import datetime, timezone
-    from .. import planning
     from ..gantt import research, integrated
     if not resources or not research.enabled():
         return set()
-    try:
-        metadata = research.load(c)["metadata"]
-    except planning.PlanningError as exc:
-        if exc.status != 503:
-            raise
-        return set()
+    metadata = research.load(c)["metadata"]
     now = datetime.now(timezone.utc)
     _, by_id = integrated._resources(metadata, [r for r in resources if r["kind"] == "resource"], now, now)
     stored = {str(r["id"]) for r in resources}

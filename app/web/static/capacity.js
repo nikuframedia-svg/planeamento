@@ -1156,9 +1156,10 @@
         else{delete definition.weekly_windows;delete definition.date_overrides;delete definition.reserved_windows;delete definition.timezone;}
       }
       if (kind === "worked_hours")definition.operation_hours=parseHoursAllocations(controls.operation_hours.value);
-      // Sem «Conferir declarações» antes, a conferência faz-se ao gravar (07/10/2026).
-      if (kind === "worked_hours" && !definition.basis_hash)
-        definition.basis_hash = (await api("raw/horas/prever", { id: obj?.id, definition })).basis_hash;
+      // A conferência das declarações faz-se sempre ao gravar (07/10/2026): a base guardada de uma edição anterior
+      // deixaria de valer se a máquina, as datas ou a folha mudassem.
+      if (kind === "worked_hours")
+        definition.basis_hash = (await api("raw/horas/prever", { id: obj?.id, definition: { ...definition, basis_hash: undefined } })).basis_hash;
       if (kind === "resource") {
         definition.aliases = controls.aliases.value
           .split("\n")

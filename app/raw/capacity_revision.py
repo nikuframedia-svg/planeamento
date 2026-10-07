@@ -33,9 +33,9 @@ def validate_period(c, area, id, d):
 
 def period(v, area, snapshot=None, periods=None, primary=True, *, today=None):
     # MTG3: a Data Corte da operação principal dá o ano e a semana (decisão de 01/10/2026). Sem ela (e nas
-    # operações seguintes) vale a semana W importada, com o ano deduzido como no Picking: o ano em que essa
-    # semana fica mais perto de hoje (07/10/2026). As antigas confirmações do ano por versão (`snapshot`,
-    # `periods`) já não contam; os argumentos ficam por compatibilidade.
+    # operações seguintes) vale a semana W importada, com o ano deduzido e puxado para o passado: uma linha aberta
+    # com a semana já passada fica atrasada, não salta para o ano seguinte (07/10/2026). As antigas confirmações
+    # do ano por versão (`snapshot`, `periods`) já não contam; os argumentos ficam por compatibilidade.
     if area=='cantoneiras' and not primary:v={**v,'cut_date':None}
     y,w,origin=planning_dates.period(v,area=area,operation=v.get('operation') or ('corte' if area=='perfis' else ''),cantoneiras_week=number(v.get('imported_week')))
     if y is not None or (area=='perfis' and origin!='Por calendarizar'):
@@ -43,7 +43,7 @@ def period(v, area, snapshot=None, periods=None, primary=True, *, today=None):
     if area=='cantoneiras':
         w=number(v.get('imported_week'))
         if w is not None and w.is_integer() and 1<=w<=53:
-            year=planning_dates.infer_iso_year(int(w),today)
+            year=planning_dates.infer_iso_year(int(w),today,prefer_past=True)
             if year is not None:return year,int(w),'Semana W importada — ano deduzido'
             return None,int(w),'Semana W importada — ano por confirmar'
     return y,w,origin
@@ -371,7 +371,14 @@ def rebuild(*,force=False):
         # mesmo das que não mudaram no ficheiro; por isso entra no contrato e uma mudança obriga a um cálculo completo.
         recent=productivity.current_excel_speeds(c)
         speeds={m:r['value'] for m,r in sorted(recent.items())}
-        varying={k:v for k,v in (('timing',timing if any(v for t in timing.values() for v in t.values()) else None),('excel_speeds',speeds or None)) if v}
+        # Máquinas do setor que contam sem estarem confirmadas à mão (07/10/2026): vêm do catálogo da camada de pesquisa,
+        # não dos registos; uma mudança muda as horas, os calendários e as horas reais dessas máquinas, por isso entra
+        # no contrato (cálculo completo) e na impressão digital. Sem catálogo (MES, testes) o contrato fica igual.
+        from .capacity import physical_ids
+        physical=physical_ids(c,[r for r in configs if r['kind']=='resource'])
+        catalogue=sorted(physical-{str(r['id']) for r in configs if r['kind']=='resource' and r['definition'].get('confirmed')})
+        varying={k:v for k,v in (('timing',timing if any(v for t in timing.values() for v in t.values()) else None),('excel_speeds',speeds or None),
+                                 ('catalogue_machines',catalogue or None)) if v}
         contract=CONTRACT if not varying else CONTRACT+'|'+needs.digest(varying)
         fp=needs.digest([contract,str(today),versions,needs.serial(configs),{a:s['snapshot_id'] for a,s in sources.items()},reference_inputs])
         prev=c.execute("SELECT * FROM planning_mtg.raw_generations WHERE dataset='capacity:perfis' ORDER BY id DESC LIMIT 1").fetchone()
@@ -379,7 +386,7 @@ def rebuild(*,force=False):
         publication_fp=needs.digest([fp,'forced',prev['id']]) if force and prev else fp
         from . import capacity_scope
         rate_context=productivity.Context(c,configs,timing=timing,recent_excel=recent)
-        resources,aliases=resource_index(configs,{str(ident) for ident in rate_context.resources})
+        resources,aliases=resource_index(configs,physical)
         def machine_key(area,name):return aliases.get((area,name)) or area+':'+str(name or 'Por definir')
         snapshots={a:src['snapshot_id'] for a,src in sources.items()}
         history_hash=rate_context.history_inputs_hash()

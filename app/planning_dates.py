@@ -128,16 +128,33 @@ def _as_date(value):
         return None
 
 
-def infer_iso_year(week, anchor=None, *, timezone='Europe/Lisbon'):
+PAST_BIAS_WEEKS = 13  # prefer_past: uma semana até 13 semanas à frente ainda é deste ciclo; mais à frente, já passou
+
+
+def infer_iso_year(week, anchor=None, *, timezone='Europe/Lisbon', prefer_past=False):
     """Ano ISO em que a semana fica mais perto da data de referência (Data Corte; sem ela, hoje).
 
     Regra do Luís (06/10/2026): em dezembro, Picking semana 1 é do ano seguinte; em janeiro,
     semana 52 é do ano anterior. A semana 53 só conta nos anos que a têm.
+
+    `prefer_past` (07/10/2026, semana W das cantoneiras): o ano mais recente em que a semana começa no máximo
+    13 semanas depois da referência. Uma linha aberta com uma semana já passada fica atrasada neste ano em vez
+    de saltar para o ano seguinte (ex.: W21 em fim de novembro é deste ano).
     """
     week = positive_week(week)
     if week is None:
         return None
     anchor = _as_date(anchor) or datetime.now(ZoneInfo(timezone)).date()
+    if prefer_past:
+        limit = anchor + timedelta(weeks=PAST_BIAS_WEEKS)
+        years = []
+        for year in (anchor.year - 1, anchor.year, anchor.year + 1):
+            try:
+                if date.fromisocalendar(year, week, 1) <= limit:
+                    years.append(year)
+            except ValueError:
+                continue
+        return max(years) if years else None
     best = None
     for year in (anchor.year - 1, anchor.year, anchor.year + 1):
         try:
