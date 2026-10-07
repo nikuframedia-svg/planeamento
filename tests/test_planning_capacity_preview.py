@@ -13,9 +13,10 @@ def cmd(**kw):return {'request_id':str(uuid.uuid4()),**kw}
 
 
 def payload(area,of,q,reference):
-    v={**vals(),'component_ref':reference,'quantity_required':q,'abocardar':False,'expected_date':'2026-09-23'}
+    # A semana vem da Data Corte: a Previsão de execução saiu do registo e já não decide o prazo (07/10/2026).
+    v={**vals(),'component_ref':reference,'quantity_required':q,'abocardar':False,'cut_date':'2026-09-23'}
     if area=='cantoneiras':v={'component_ref':reference,'quantity_required':q,'length_mm':2000,
-        'material_type':'Cantoneira','profile':'L TEST','operation':'112','machine':'Ficep XP T4','expected_date':'2026-09-23'}
+        'material_type':'Cantoneira','profile':'L TEST','operation':'112','machine':'Ficep XP T4','cut_date':'2026-09-23'}
     return {'area':area,'production_order_no':of,'catalog_version':'s1' if area=='perfis' else 'c1','values':v}
 
 
@@ -104,7 +105,7 @@ def test_quantity_preview_matches_save_and_counts_shared_area_once(shared,area,i
 
 
 def test_move_machine_and_week_removes_old_load_and_uses_new_calendar(shared):
-    machine,other,saved=shared;p=edit_payload(saved[0],quantity_required=40,machine='OTHER',expected_date='2026-09-30')
+    machine,other,saved=shared;p=edit_payload(saved[0],quantity_required=40,machine='OTHER',cut_date='2026-09-30')
     result=preview.preview(p);periods={r['key']:r for r in result['capacity_preview']['weekly']}
     assert periods[machine['id']+'|2026|39']['values']['planned_hours']==13
     assert periods[other['id']+'|2026|40']['values']['planned_hours']==4
@@ -177,10 +178,12 @@ def test_secondary_preparation_preserves_primary_and_shared_occupancy(shared,wor
     capacity.rebuild()
     row=query.listing({'area':'cantoneiras','selected':[second['need_id']]})['rows'][0]
     assert row['values']['operation']=='112' and row['values']['theoretical_hours']==5
-    assert row['values']['hours_pct']==pytest.approx(1750/14)  #2+8+5+2.5
+    # A 2.ª operação MTG3 não herda a Data Corte e a Previsão por operação saiu do registo (07/10/2026):
+    # as horas dela calculam-se, mas ficam fora da semana 39 (2+8+5).
+    assert row['values']['hours_pct']==pytest.approx(1500/14)
     proposed={**p,'expected_revision':second['revision'],'values':{**p['values'],'quantity_required':60,'operation':'209'}}
     result=preview.preview(proposed)
     assert result['row']['values']['operation']=='112'
     assert {e['operation']:e['hours'] for e in result['row']['calculation']['operation_estimates']}=={'112':3,'209':1.5}
-    assert result['row']['values']['hours_pct']==pytest.approx(1450/14)
+    assert result['row']['values']['hours_pct']==pytest.approx(1300/14)  #2+8+3
     verify_save(proposed,result)

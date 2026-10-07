@@ -24,6 +24,7 @@ DEFAULTS = {'perfis': {'operation': 'corte'},
 
 # Os únicos avisos do registo (07/10/2026): dizem o que fica sem cálculo e nunca bloqueiam.
 WARNINGS = {
+    'quantity_missing': 'Sem QTD: não entra na Carteira',
     'quantity_required': 'QTD tem de ser um número inteiro (senão não entra na Carteira)',
     'length_mm': 'Sem comprimento: sem metros nem horas',
     'machine': 'Sem máquina: será usada a sugerida ao planear',
@@ -31,6 +32,9 @@ WARNINGS = {
     'operation': 'Operação não numérica: sem horas',
 }
 ESSENTIAL = frozenset(WARNINGS.values())
+
+# Datas que saíram do registo (07/10/2026) e já não decidem o prazo de uma peça registada.
+HIDDEN_DATES = ('expected_date', 'planned_week', 'planned_year')
 
 
 def iso_date(value):
@@ -95,7 +99,7 @@ def normalize(raw, cat, previous=None, *, sections=None):
     for name, value in DEFAULTS.get(area, {}).items():
         if data.get(name) in (None, ''):
             data[name] = value
-    return data, warnings_for(data, area, sections)
+    return data, warnings_for(data, area, sections, entered=raw.get('quantity_required', previous.get('quantity_required')))
 
 
 def machine(value):
@@ -107,11 +111,14 @@ def machine(value):
     return normalize(value)
 
 
-def warnings_for(data, area, sections=None):
-    """Avisos essenciais, por campo. A área de corte só é verificada quando há tabela de secções."""
+def warnings_for(data, area, sections=None, *, entered=None):
+    """Avisos essenciais, por campo. A área de corte só é verificada quando há tabela de secções.
+
+    `entered` é a QTD tal como foi escrita: vazia ou fora de inteiro dão avisos diferentes.
+    """
     found = []
     if data.get('quantity_required') is None:
-        found.append(('quantity_required', WARNINGS['quantity_required']))
+        found.append(('quantity_required', WARNINGS['quantity_required' if str(entered or '').strip() else 'quantity_missing']))
     if data.get('length_mm') is None:
         found.append(('length_mm', WARNINGS['length_mm']))
     if not machine(data.get('machine')):

@@ -8,20 +8,21 @@ import urllib.request
 import sqlite3
 import json
 import pytest
-from tests.test_planning_needs import canonical, registry, postgres16
+from tests.test_raw_workspace import workspace, database, canonical, registry, postgres16  # noqa: F401
 
 @pytest.mark.skipif(os.environ.get('RUN_PLANNING_BROWSER')!='1',reason='Browser opt-in')
-def test_common_editor_browser(canonical,tmp_path):
+def test_common_editor_browser(workspace,tmp_path):
     root=Path(__file__).resolve().parents[1]
     import psycopg
     from psycopg.types.json import Jsonb
-    with psycopg.connect(canonical) as conn:
+    with psycopg.connect(workspace) as conn:
         header=[None]*18;header[17]='Perfil U'
         conn.execute("UPDATE raw_mtg.other_sheet_rows SET row_data=%s WHERE sheet_name='AreaSecaoCorte' AND excel_row=1",(Jsonb({'values':header}),))
         conn.execute("UPDATE raw_mtg.other_sheet_rows SET row_data=%s WHERE sheet_name='AreaSecaoCorte' AND excel_row=2",(Jsonb({'values':[None]*17+['UPN50x25']}),))
         conn.execute("INSERT INTO raw_mtg.other_sheet_rows VALUES ('s1','AreaSecaoCorte',4,%s)",(Jsonb({'values':['Perfil U']+[None]*16+['UPN50x38']}),))
     with socket.socket() as sock:sock.bind(('127.0.0.1',0));port=sock.getsockname()[1]
-    env={**os.environ,'MES_PG_DSN':os.environ['MES_PG_DSN'],'MES_DATA_DIR':str(tmp_path),'MES_DOSSIER_WORKER_DISABLED':'1','MES_PLANNING_NEEDS_ENABLED':'1'}
+    env={**os.environ,'MES_PG_DSN':os.environ['MES_PG_DSN'],'MES_DATA_DIR':str(tmp_path),'MES_DOSSIER_WORKER_DISABLED':'1','MES_PLANNING_NEEDS_ENABLED':'1',
+         'MES_PLANNING_RAW_ENABLED':'1','MES_RAW_WORKSPACE_ENABLED':'1'}
     from app.dossiers.store import SCHEMA
     from tests.test_planning_needs import vals
     archive=tmp_path/'dossiers';archive.mkdir()

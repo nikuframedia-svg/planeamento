@@ -3,7 +3,7 @@ from contextlib import nullcontext
 import uuid
 from .. import planning,planning_needs as needs,planning_catalogs as catalogs
 from ..dossiers.models import order_number
-from . import query,projection,incremental,registration as free
+from . import query,projection,incremental,workbooks,registration as free
 
 
 class Candidates(Exception):
@@ -53,16 +53,24 @@ def current_source(conn,source,area):
         raise
 
 
+def agrees(typed,line):
+    """A peça escrita não contradiz a linha do Excel: os campos técnicos escritos coincidem e a QTD é igual ou vazia."""
+    mine,theirs=needs.signature(typed),needs.signature(line)
+    if any(value is not None and value!=theirs[key] for key,value in mine.items()):return False
+    quantity=planning._number(typed.get('quantity_required'))
+    return quantity is None or quantity==planning._number(line.get('quantity_required'))
+
+
 @incremental.retry_serialization
 def prepare(p):
     """Gravar do formulário de registo: grava sempre (07/10/2026).
 
     Se a peça ou a origem mudaram entretanto (importação do Excel, outra pessoa), só os campos que o
-    formulário mudou (changed_fields) vão por cima da versão atual. Um pedido sem essa informação
-    (cliente antigo) grava tudo o que trouxe, como antes de haver conflitos de revisão.
+    formulário mudou (changed_fields) vão por cima da versão atual. Um pedido sem essa lista (separador
+    antigo) recebe o 409 de antes, para não repor valores que entretanto mudaram.
     """
     try:
-        with planning.connect() as c:
+        with planning.connect() as c,workbooks.interactive():
             c.execute('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ')
             _,_,old=needs.command(c,p)
             if old:return old
@@ -72,16 +80,25 @@ def prepare(p):
             # Um PDF de outra OF usa a OF do PDF; o formulário avisa e não bloqueia.
             of=order_number(src['of'] if src else p.get('production_order_no'))
             nid=p.get('need_id');revision=None;chosen=None
-            stale=bool(source) and (src is None or (source.get('version') is not None and str(source['version'])!=str(src['version'])))
+            changed=p['changed_fields'] if isinstance(p.get('changed_fields'),list) else None
+            entered=dict(p.get('values') or {});decisions=dict(p.get('decisions') or {})
+            typed=set(decisions)|set(changed or [])
+            source_changed=bool(source) and (src is None or (source.get('version') is not None and str(source['version'])!=str(src['version'])))
             if nid:
                 revision=needs.refresh(c,needs.load(c,nid))['revision']
-                stale=stale or p.get('expected_revision')!=revision
-            entered=dict(p.get('values') or {});decisions=dict(p.get('decisions') or {})
-            if stale and isinstance(p.get('changed_fields'),list):
-                keep=set(p['changed_fields'])|({'operation'} if nid else set())
+                stale=source_changed or p.get('expected_revision')!=revision
+            else:
+                # Peça nova cuja linha do Excel desapareceu: os valores do formulário são a base.
+                stale=source_changed and src is not None
+            if stale:
+                if changed is None:raise planning.PlanningError('A peça mudou entretanto. Reabre a ficha para ver a versão atual.',409)
+                keep=set(changed)|({'operation'} if nid else set())
                 entered={k:v for k,v in entered.items() if k in keep}
                 decisions={k:v for k,v in decisions.items() if k in keep}
                 if src and not nid:entered={**{k:v for k,v in src['values'].items() if k in editor_fields(area)},**entered}
+            # A 1.ª Oper. vazia no formulário não apaga a da origem (o valor por defeito só entra sem nenhuma).
+            if src and entered.get('operation') in (None,'') and src['values'].get('operation'):
+                entered['operation']=src['values']['operation']
             values={**(src['values'] if src else {}),**entered}
             if nid and src:
                 linked=needs.resolve({'request_id':str(uuid.uuid5(needs.uid(p['request_id']),'link')),'area':area,'source':{k:v for k,v in source.items() if k!='version'},'need_id':nid,'expected_revision':revision,'reason':p.get('reason') or 'Reabertura da origem já associada.'},conn=c)
@@ -91,18 +108,18 @@ def prepare(p):
             if not nid:
                 if not of:raise planning.PlanningError('Seleciona uma OF válida.')
                 possible=macro_candidates(c,area,of,values) if not src or src['kind']!='plan_line' else []
+                # Abocardar só conta como escrito quando o utilizador lhe mexeu (o formulário envia sempre falso).
+                mine={k:v for k,v in entered.items() if v not in (None,'') and (k!='abocardar' or k in typed)}
                 chosen=next((r for r in possible if r['plan_key']==p.get('selected_plan_key')),None)
-                if not chosen and possible and not p.get('create_distinct'):
-                    # Peça possivelmente repetida (07/10/2026): com uma só linha do Excel livre com a mesma
-                    # OF e Referência, liga-se a ela; com nenhuma ou várias, conta como peça própria.
-                    taken=linked_plan_lines(c,area,of)
-                    free_lines=[r for r in possible if r['plan_key'] not in taken]
-                    exact=[r for r in free_lines if r['exact'] and r['same_quantity']]
-                    chosen=exact[0] if len(exact)==1 else free_lines[0] if len(free_lines)==1 else None
+                if not chosen and len(possible)==1 and not p.get('create_distinct'):
+                    # Peça possivelmente repetida (07/10/2026): liga-se à linha do Excel só quando é a única com a
+                    # mesma OF e Referência, ninguém a tem e nada do que foi escrito a contradiz; senão é peça própria.
+                    candidate=possible[0]
+                    line=needs.source_data({'kind':'plan_line','id':candidate['plan_key']},area,c)['values']
+                    if agrees(mine,line) and candidate['plan_key'] not in linked_plan_lines(c,area,of):chosen=candidate
                 if chosen:
-                    # O que ficou por escrever vem da linha do Excel, para a peça continuar compatível com o saldo dela.
                     line=needs.source_data({'kind':'plan_line','id':chosen['plan_key']},area,c)['values']
-                    entered={**{k:v for k,v in line.items() if k in editor_fields(area)},**{k:v for k,v in entered.items() if v not in (None,'')}}
+                    entered={**{k:v for k,v in line.items() if k in editor_fields(area)},**mine}
                     values={**values,**entered}
                 resolution={k:p[k] for k in ('area','production_order_no','reason','create_distinct') if k in p}
                 if src:resolution['source']={k:v for k,v in source.items() if k!='version'}
@@ -110,10 +127,12 @@ def prepare(p):
                 result=needs.resolve(resolution,conn=c)
                 if result.get('needs_decision'):raise Candidates(result)
                 nid=result['need_id'];revision=result['revision']
+                # Nunca duas linhas do Excel na mesma peça: a peça reaproveitada que já tem uma fica como está.
+                if chosen and any(s['kind']=='plan_line' for s in needs.linked_sources(c,nid)):chosen=None
             if chosen:
                 result=needs.resolve({'request_id':str(uuid.uuid5(needs.uid(p['request_id']),'macro')),'area':area,'source':{'kind':'plan_line','id':chosen['plan_key'],'version':chosen['source_version']},'need_id':nid,'expected_revision':revision,'reason':p.get('reason') or 'Única linha do Excel com a mesma OF e Referência.'},conn=c)
                 revision=result['revision']
-            save_values=dict(entered);typed=set(decisions)|set(p.get('changed_fields') or [])
+            save_values=dict(entered)
             if src:
                 for f in c.execute('SELECT * FROM planning_mtg.field_state WHERE need_id=%s',(nid,)).fetchall():
                     if f['field'] in save_values and f['field'] not in typed and f.get('human_decision'):save_values[f['field']]=f['value']
@@ -126,7 +145,8 @@ def prepare(p):
                 result['local_order']=needs.serial(context)
             projection.signal(c,'planning:'+area)
             published=incremental.publish(c,before,[needs.load(c,nid)['production_order_no']],[nid],p['request_id'])
-            return needs.finish(c,p,{**result,'publication':published,'raw_url':'/planeamento/raw?area='+area+'&need='+str(nid)})
+            return needs.finish(c,p,{**result,'publication':published,'raw_url':'/planeamento/raw?area='+area+'&need='+str(nid),
+                                     'excel_link':chosen['plan_key'] if chosen else None})
     except Candidates as exc:return exc.result
 
 
@@ -135,7 +155,7 @@ def update_batch(p):
     edits=p.get('edits')
     if not isinstance(edits,list) or not 1<=len(edits)<=500 or any(not isinstance(e,dict) for e in edits):raise planning.PlanningError('O lote deve conter entre 1 e 500 linhas.')
     area=planning.check_area(p.get('area','perfis'))
-    with planning.connect() as c:
+    with planning.connect() as c,workbooks.interactive():
         c.execute('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ')
         _,_,old=needs.command(c,p)
         if old:return old

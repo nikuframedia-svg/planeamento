@@ -151,6 +151,11 @@ def build_rows(conn,area,*,orders=None,facts=None):
         if need:
             for source in links.get(key,[]):
                 if source['payload'].get('source_state')=='unavailable':warn.append(source['payload'].get('source_error') or 'Origem documental por confirmar.')
+            # Previsão de execução e Semana/Ano de planeamento saíram do registo (07/10/2026): numa peça registada
+            # valem as da linha do Excel (ou nenhuma), para a Carga e o Gantt usarem o prazo da Carteira.
+            from .registration import HIDDEN_DATES
+            excel_dates={k:v.get(k) for k in HIDDEN_DATES}
+            records[key]=[{**r,'values_json':{**r['values_json'],**excel_dates}} for r in records[key]]
             v.update(need['specification'])
             primary=v.get('operation') if area=='cantoneiras' else 'corte'
             if area=='cantoneiras' and not primary:

@@ -40,18 +40,20 @@ def test_new_of_ov_atomic_persistent_partial_edits_and_zero_initial(local_worksp
     assert d['local_order']['values_json']['designation']=='Obra revista'
     assert d['need']['specification']['length_mm']==1000
     before=d['need']['revision']
-    # 07/10/2026: os dados da OF mudados entretanto já não dão 409. Com a lista do que o formulário mudou,
-    # só esses campos vão por cima; sem ela (cliente antigo), grava tudo o que veio.
+    # 07/10/2026: com a lista do que o formulário mudou, os dados da OF mudados entretanto já não dão 409 e só
+    # esses campos vão por cima; sem ela (separador antigo) fica o 409 de antes.
     edits.prepare({**p,'request_id':str(uuid.uuid4()),'need_id':edited['need_id'],'expected_revision':before,
                    'local_order':{'expected_revision':1,'values':{'customer':'Cliente antigo','designation':'Conflito'}},
                    'local_order_changed_fields':['designation']})
     order=needs.detail(edited['need_id'])['local_order']['values_json']
     assert order['designation']=='Conflito' and order['customer']=='Cliente local'
-    edits.prepare({**p,'request_id':str(uuid.uuid4()),'need_id':edited['need_id'],'expected_revision':needs.detail(edited['need_id'])['need']['revision'],
-                   'local_order':{'expected_revision':1,'values':{'customer':'Cliente antigo'}}})
-    assert needs.detail(edited['need_id'])['local_order']['values_json']['customer']=='Cliente antigo'
+    current=needs.detail(edited['need_id'])['need']['revision']
+    with pytest.raises(planning.PlanningError,match='dados desta OF mudaram'):
+        edits.prepare({**p,'request_id':str(uuid.uuid4()),'need_id':edited['need_id'],'expected_revision':current,
+                       'local_order':{'expected_revision':1,'values':{'customer':'Cliente antigo'}}})
+    assert needs.detail(edited['need_id'])['local_order']['values_json']['customer']=='Cliente local'
     with planning.connect(readonly=True) as c:
-        assert c.execute("SELECT count(*) n FROM planning_mtg.local_order_history WHERE production_order_no='OF998877'").fetchone()['n']==4
+        assert c.execute("SELECT count(*) n FROM planning_mtg.local_order_history WHERE production_order_no='OF998877'").fetchone()['n']==3
         assert c.execute("SELECT count(*) n FROM mes_kanban.production_records WHERE production_order='OF998877'").fetchone()['n']==0
 
 

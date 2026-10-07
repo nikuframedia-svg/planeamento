@@ -18,8 +18,8 @@ def read(conn, of):
 def save(conn, of, payload, actor, *, merge=False, changed_fields=None):
     """Grava o contexto local da OF.
 
-    Com merge=True (registo manual, 07/10/2026) uma revisão mudada entretanto não dá 409: só os campos
-    em changed_fields vão por cima da versão atual; sem essa lista grava tudo o que veio.
+    Com merge=True e a lista changed_fields (registo manual, 07/10/2026) uma revisão mudada entretanto não
+    dá 409: só esses campos vão por cima da versão atual. Sem a lista (separador antigo) fica o 409 de antes.
     """
     if not isinstance(payload,dict) or set(payload)-{'values','expected_revision'}:
         raise planning.PlanningError('Contexto local da ordem inválido.')
@@ -30,14 +30,15 @@ def save(conn, of, payload, actor, *, merge=False, changed_fields=None):
     if not number:raise planning.PlanningError('Indica uma OF válida.')
     prior=conn.execute('SELECT * FROM planning_mtg.local_orders WHERE production_order_no=%s FOR UPDATE',(number,)).fetchone()
     stale=payload.get('expected_revision',0)!=(prior['revision'] if prior else 0)
-    if stale and merge and isinstance(changed_fields,list):
+    merging=merge and isinstance(changed_fields,list)
+    if stale and merging:
         values={k:v for k,v in values.items() if k in changed_fields}
     merged={**(prior['values_json'] if prior else {}),**values}
     for field,value in merged.items():
         if value is not None and (not isinstance(value,str) or len(value)>2000):raise planning.PlanningError('Texto administrativo inválido.')
         merged[field]=value.strip() if value else None
     if prior and merged==prior['values_json']:return prior
-    if stale and not merge:
+    if stale and not merging:
         raise planning.PlanningError('Os dados desta OF mudaram. Reabre a ordem antes de os alterar.',409)
     result=conn.execute('''INSERT INTO planning_mtg.local_orders(production_order_no,values_json,actor)
         VALUES(%s,%s,%s) ON CONFLICT(production_order_no) DO UPDATE

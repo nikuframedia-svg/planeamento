@@ -12,6 +12,9 @@ import re
 
 CONTRACT = 'planning-integral-20260925-v10'  # v10 (07/10): «Qtd em falta» do registo manual, aço 7850 sem Qual. e PDF sem Excel começa a 0; v9 (06/10): semana prevista MTG3 pela Data Corte; v8: contador Excel vazio conta 0 quando a folha o confirma
 
+# Origem do saldo quando o planeador escreve a «Qtd em falta» no registo manual (07/10/2026).
+DECLARED_ORIGIN = 'Qtd em falta (registo manual)'
+
 # Keep the attempted rule visible even when its operands are unavailable/invalid.
 GEOMETRY = {
     'varão redondo': ('π × d² / 4', ('outer_diameter_mm',)),
@@ -149,15 +152,18 @@ def section(values, table=None):
 
 
 def calculate(values, *, area='perfis', raw=None, operations=(), local_initial=False,
-              compatible=True, sections=None, weights=None, today=None, density=None, declared_remaining=None):
+              compatible=True, sections=None, weights=None, today=None, density=None, declared_remaining=None,
+              declared_produced=None):
     """Pure calculation used by projection and previews; returns values + provenance.
 
-    `declared_remaining` é a «Qtd em falta» escrita no registo manual: passa a ser o saldo da operação
-    principal (no máximo a QTD), com a produção implícita Q − saldo.
+    `declared_remaining` é a «Qtd em falta» escrita no registo manual e `declared_produced` a produção que o
+    cálculo conhecia quando foi escrita. Saldo = máx(escrito − produção registada depois, 0), no máximo a QTD;
+    sem produção conhecida nesse momento não se desconta nada. Cada saldo guarda a produção medida
+    (`measured`), com ou sem «Qtd em falta».
     """
     v = dict(values); raw = raw or {}; today = today or date.today(); rules = {}
     q = quantity(v.get('quantity_required')); length = positive(v.get('length_mm'))
-    declared = quantity(declared_remaining)
+    declared = quantity(declared_remaining); typed_at = quantity(declared_produced)
     v['quantity_required'] = q
     ops = {str(op['operation']): dict(op) for op in operations}
     mark = abocardar(v.get('abocardar'))
@@ -181,8 +187,11 @@ def calculate(values, *, area='perfis', raw=None, operations=(), local_initial=F
         result = production_source(op, macro, compatible=compatible, local_initial=local_initial)
         if other_operation_excel and result['value'] is None:
             result['reason'] += f' O acumulado Excel pertence à operação {original_primary}.'
+        result['measured'] = result['value']
         if code == primary and declared is not None and q is not None:
-            result.update(value=q-min(declared, q), origin='Qtd em falta (registo manual)', reason=None)
+            measured = result['value']
+            since = max(0, measured - typed_at) if measured is not None and typed_at is not None else 0
+            result.update(value=q - max(min(declared, q) - since, 0), origin=DECLARED_ORIGIN, reason=None)
         made = result['value']
         result.update(operation=code, remaining=max(q-made,0) if q is not None and made is not None else None,
                       percent=100*made/q if q and made is not None else None,

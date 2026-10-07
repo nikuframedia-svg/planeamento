@@ -13,7 +13,8 @@ const assert=require('node:assert/strict');
  assert.equal(await page.locator('#field-picking_year').count(),0);
  const sections=await page.locator('#preparation>section>h2').allTextContents();
  assert.deepEqual(sections.slice(0,2),['Dados da peça','Características de corte']);
- assert.match(await page.locator('#picking-summary').innerText(),/ano 20\d\d deduzido pela semana/);
+ // O resumo está num bloco fechado: lê-se o texto, não o que está desenhado.
+ assert.match(await page.locator('#picking-summary').textContent(),/ano 20\d\d deduzido pela semana/);
  await page.locator('#field-component_ref').fill('BROWSER-AUTO-PICKING');
  await page.locator('#field-material_type').fill('Tubo redondo');
  await page.locator('#field-profile').fill('88.9x3');

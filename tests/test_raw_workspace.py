@@ -151,7 +151,9 @@ def test_new_macro_generation_preserves_identity(workspace):
     from app.raw.edits import prepare
     from app import planning_catalogs as cat
     with planning.connect(readonly=True) as c:source=needs.source_data({'kind':'plan_line','id':'s1:10'},'perfis',c)
-    p={'request_id':str(uuid.uuid4()),'area':'perfis','production_order_no':'OF4200','catalog_version':'s1','values':{**source['values'],'operation':'corte'},'record_status':'draft'}
+    # Ligada à linha do Excel pela origem: com duas linhas REF-A na OF, uma peça escrita à mão já não se liga sozinha (07/10/2026).
+    p={'request_id':str(uuid.uuid4()),'area':'perfis','production_order_no':'OF4200','catalog_version':'s1','values':{**source['values'],'operation':'corte'},'record_status':'draft',
+       'source':{'kind':'plan_line','id':'s1:10','version':'s1'}}
     saved=prepare(p)
     with psycopg.connect(workspace) as c:
         c.execute("INSERT INTO audit_mtg.snapshots SELECT 's2',dataset_id,source_filename,source_path,source_sha256,now()+interval '1 second' FROM audit_mtg.snapshots WHERE snapshot_id='s1'")

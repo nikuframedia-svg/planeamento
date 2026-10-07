@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from .. import planning, planning_needs as needs, planning_catalogs as catalogs
 from .. import planning_associations as associations, planning_dates
 from ..dossiers.models import order_number
-from . import projection, calculations, productivity, contracts, capacity_preview
+from . import projection, calculations, productivity, contracts, capacity_preview, workbooks
 
 
 def preview(payload):
@@ -18,7 +18,7 @@ def preview(payload):
     decisions=payload.get('decisions') or {}
     if not isinstance(decisions,dict) or any(v not in ('write','select','accept','clear') for v in decisions.values()):
         raise planning.PlanningError('Decisões de preparação inválidas.')
-    with planning.connect(readonly=True) as conn:
+    with planning.connect(readonly=True) as conn,workbooks.interactive():
         conn.execute('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ')
         # Sem 409 (07/10/2026): calcula sobre o catálogo, a origem e a peça na versão atual.
         cat=catalogs.catalog(area,conn)
@@ -81,6 +81,9 @@ def preview(payload):
         if primary and op!=primary and base['preparations']:
             row['values'].update({k:vals.get(k) for k in needs.PIECE_FIELDS})
         else:row['values'].update(vals)
+        # Uma «Qtd em falta» escrita agora ainda não tem produção registada depois dela.
+        if vals.get('remaining_declared')!=((previous_preparation or {}).get('values_json') or {}).get('remaining_declared'):
+            row['values'].pop('remaining_declared_produced',None)
         if area=='perfis':
             override=None
             if 'picking_week' in raw and (decisions.get('picking_week') or planning_dates.positive_week(raw['picking_week'])):

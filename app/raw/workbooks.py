@@ -2,6 +2,8 @@
 from __future__ import annotations
 import hashlib, json, os, subprocess, re
 from pathlib import Path
+from contextlib import contextmanager
+from contextvars import ContextVar
 from zipfile import ZipFile
 from xml.etree import ElementTree as ET
 from datetime import datetime, timezone, timedelta
@@ -100,6 +102,19 @@ def extract(path, area):
     return result
 
 
+_interactive = ContextVar('workbooks_interactive', default=False)
+
+
+@contextmanager
+def interactive():
+    """Gravações de quem está no ecrã (registo, pré-visualização, Tabela): sem 409 por causa do Excel no disco."""
+    token = _interactive.set(True)
+    try:
+        yield
+    finally:
+        _interactive.reset(token)
+
+
 def capture(conn, area, path=None):
     snap = planning.snapshot(conn, area)
     if conn.execute('SELECT 1 FROM planning_mtg.raw_workbook_evidence WHERE snapshot_id=%s', (snap['snapshot_id'],)).fetchone():
@@ -108,14 +123,16 @@ def capture(conn, area, path=None):
     path = Path(path or os.getenv('MES_RAW_WORKBOOK_ROOT', '/home/luis/projects/DATARESEARCHMTG'))
     if path.is_dir(): path = path / src['source_filename']
     if not path.is_file(): return
-    # Excel mudado no disco depois da importação (07/10/2026): sem 409 a quem grava; valem os valores
-    # importados (source) até a cópia voltar a coincidir ou chegar a importação seguinte.
     digest = hashlib.sha256(path.read_bytes()).hexdigest()
     if digest != src['source_sha256']:
-        return
+        # Quem grava no formulário ou na Tabela não recebe 409 (07/10/2026): valem os valores importados.
+        # O worker continua a parar, para não publicar horas de turno vazias.
+        if _interactive.get(): return
+        raise planning.PlanningError('A cópia Excel difere da versão importada; evidência de fórmulas pendente.', 409)
     sheets = extract(path, area)
     if hashlib.sha256(path.read_bytes()).hexdigest() != digest:
-        return
+        if _interactive.get(): return
+        raise planning.PlanningError('O Excel mudou durante a leitura. Repete a consulta.', 409)
     conn.execute('INSERT INTO planning_mtg.raw_workbook_evidence(snapshot_id,source_sha256,source_filename,sheets) VALUES(%s,%s,%s,%s) ON CONFLICT DO NOTHING',
                  (snap['snapshot_id'], digest, src['source_filename'], Jsonb(sheets)))
 
