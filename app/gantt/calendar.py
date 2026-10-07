@@ -67,11 +67,24 @@ def working_offset(available, instant, *, end=False):
     return None
 
 
+def limits_hours(resource):
+    """Um grupo de operadores sem calendário próprio limita só QUANTOS trabalham ao mesmo tempo (08/10).
+
+    É o caso dos 2 operadores dos serrotes do pav.1 (OPERADORES_PAV1): o horário
+    vem da máquina e o grupo entra só na capacidade partilhada (AddCumulative).
+    Com calendário confirmado (mesmo fechado), o grupo continua a limitar o horário.
+    """
+    return not (resource.get('type') == 'grupo_operadores' and not resource.get('windows')
+                and resource.get('calendar_status', 'unknown') == 'unknown')
+
+
 def option_windows(snapshot, option):
     result = windows(snapshot, option['resource_id'])
     for pool in option.get('shared_demands', {}):
         if pool not in snapshot['resources']:
             return []
+        if not limits_hours(snapshot['resources'][pool]):
+            continue
         available = windows(snapshot, pool)
         result = [(max(a, c), min(b, d)) for a, b in result for c, d in available
                   if max(a, c) < min(b, d)]
