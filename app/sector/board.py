@@ -11,6 +11,8 @@ Só leitura. Duas partes:
   máquina, de um dia a outro, com as peças em falta somadas — nunca uma barra por operação.
 - Só as máquinas do setor (members.py). Trabalho do setor em máquinas de outro setor fica numa nota
   (`elsewhere`), nunca como linha (pedido do Luís, 06/10/2026).
+- 2.ª operação das cantoneiras (08/10, second_operation.py): as operações seguintes da MTG3 saem da lista das
+  que não aparecem no quadro (`source.missing`) e ficam só contadas em `source.second_operation`.
 - Turnos e dia (06/10/2026): cada caixa diz as horas por dia e turno; `day()` dá o Gantt de um dia com
   eixo de horas, faixas dos turnos e totais por turno. Previsões sem horas recebem a estimativa da
   Carteira (`hours_estimated`).
@@ -25,7 +27,7 @@ from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 from .. import cpis_copies, planning, planning_needs as needs
-from . import cache, portfolio, selection
+from . import cache, portfolio, second_operation, selection
 
 LISBON = ZoneInfo("Europe/Lisbon")
 RECENT_DAYS = 91  # «Sem peças nos planos»: só as OF registadas há menos de 3 meses (decisão de 28/09)
@@ -253,6 +255,22 @@ def forecast_only(plan: dict, operations: list[dict], placed: set) -> list[dict]
     return out
 
 
+def missing_operations(sector: str, plan: dict, operations: list[dict], placed: set) -> tuple[list[dict], int]:
+    """Operações escolhidas que não ficam em caixa nenhuma (sem hora na proposta e sem dia/máquina na previsão),
+    com o motivo; e quantas delas são 2.ª operação das cantoneiras (08/10), que saem da lista e só se contam.
+
+    A fase de uma operação do Gantt vem da ocorrência (a 1.ª é a principal, second_operation.phase)."""
+    seconds = [op for op in operations if second_operation.operation(sector, {"phase": second_operation.phase(op.get("occurrence"))})]
+    second = {op["key"] for op in seconds}
+    kept = [op for op in operations if op["key"] not in second]
+    ops = {op["key"]: op for op in kept}
+    pending = [p for p in plan.get("pending") or [] if p["key"] not in placed]
+    missing = [{"of": ops[p["key"]]["of"], "reference": ops[p["key"]].get("reference"), "operation": ops[p["key"]].get("operation"),
+                "reasons": p.get("reasons") or []} for p in pending if p["key"] in ops]
+    missing += forecast_only(plan, kept, placed)
+    return missing, sum(p["key"] in second for p in pending) + len(forecast_only(plan, seconds, placed))
+
+
 def boxes_from_proposal(snapshot: dict, proposal: dict, *, area: str | None = None, today: date | None = None) -> list[dict]:
     """Caixas da proposta (ou do plano aceite); com `area`, só as operações desse setor.
 
@@ -419,11 +437,7 @@ def _build(sector: str) -> tuple[dict, dict]:
             boxes = boxes_from_source_plan(plan, snapshot["operations"], estimates=estimates, today=data["today"])
             source = {"kind": "previsoes", "selected_orders": selected}
             placed = set()
-        # Operações escolhidas que não ficam em caixa nenhuma (sem hora na proposta e sem dia/máquina na previsão).
-        ops = {op["key"]: op for op in snapshot["operations"]}
-        source["missing"] = [{"of": ops[p["key"]]["of"], "reference": ops[p["key"]].get("reference"), "operation": ops[p["key"]].get("operation"),
-                              "reasons": p.get("reasons") or []} for p in plan.get("pending") or [] if p["key"] in ops and p["key"] not in placed]
-        source["missing"] += forecast_only(plan, snapshot["operations"], placed)
+        source["missing"], source["second_operation"] = missing_operations(sector, plan, snapshot["operations"], placed)
     with planning.connect(readonly=True) as c:
         template = sector_settings.read(c, sector)["template"]
         own = set(members(c, sector))

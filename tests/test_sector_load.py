@@ -54,10 +54,18 @@ class _Conn:
 
 
 def test_sector_machine_without_calendar_but_with_work_shows_with_zero_capacity(monkeypatch):
-    """A7-3: Plasma manual (sem calendário, operações sem prazo nem horas) aparece como linha «Sem calendário»."""
-    from app.sector import load_sources
-    machines = [{"id": "plasma", "name": "Plasma manual", "code": "PLASMA", "process": "Corte", "default_shifts": 1},
-                {"id": "idle", "name": "Saca bocados", "code": "SACA", "process": "Corte", "default_shifts": 1}]
+    """A7-3: o Abocardar da MTG2 (sem calendário, operações sem prazo nem horas) aparece como linha «Sem calendário».
+
+    Desde 08/10 (2.ª operação, opção A) nas cantoneiras as máquinas da 2.ª operação saem das linhas e as operações
+    seguintes ficam só contadas à parte; na MTG2 nada muda.
+    """
+    from app.sector import drive_notice, load_sources
+    machines = {"perfis": [{"id": "aboc", "name": "Abocardar", "code": "ABOCARDAR", "process": "Abocardar", "default_shifts": 1},
+                           {"id": "idle", "name": "Quinadora MTG2", "code": "QUINADORA_MTG2", "process": "Quinagem", "default_shifts": 1}],
+                "cantoneiras": [{"id": "peddi", "name": "Peddi 8", "code": "PEDDI8", "process": "Punção", "default_shifts": 1},
+                                {"id": "plasma", "name": "Plasma manual", "code": "PLASMA_MANUAL", "process": "Corte adicional", "default_shifts": 0},
+                                {"id": "saca", "name": "Saca bocados", "code": "SACA_BOCADOS", "process": "Corte adicional", "default_shifts": 0}]}
+    facts = []
 
     @contextmanager
     def connect(readonly=True):
@@ -65,16 +73,27 @@ def test_sector_machine_without_calendar_but_with_work_shows_with_zero_capacity(
 
     monkeypatch.setattr(load.planning, "check_area", lambda sector: None)
     monkeypatch.setattr(load.planning, "connect", connect)
-    monkeypatch.setattr(load, "_context", lambda sector, today=None: ({"lines": []}, set(), {"facts": [
-        fact("p1", "plasma", None, None, basis="sugerida", phase="seguinte"), fact("p2", "plasma", None, None, basis="sugerida", phase="seguinte")]}))
+    monkeypatch.setattr(load, "_context", lambda sector, today=None: ({"lines": []}, set(), {"facts": facts}))
     monkeypatch.setattr(sector_settings, "read", lambda c, sector: sector_settings.default(TODAY))
-    monkeypatch.setattr(sector_settings, "machine_rows", lambda c, sector: machines)
+    monkeypatch.setattr(sector_settings, "machine_rows", lambda c, sector: machines[sector])
     monkeypatch.setattr(load_sources, "context", lambda c, sector: {"lines": {}, "actual": {}})
     monkeypatch.setattr(load_sources, "fact_values", lambda f, lines: (None, None, False))
-    result = load.overview("cantoneiras", today=TODAY, now=datetime(2026, 10, 6, 12, tzinfo=timezone.utc))
+    monkeypatch.setattr(drive_notice, "text", lambda sector: None)
+    now = datetime(2026, 10, 6, 12, tzinfo=timezone.utc)
+    facts[:] = [fact("a1", "aboc", None, None, basis="sugerida", phase="seguinte"), fact("a2", "aboc", None, None, basis="sugerida", phase="seguinte")]
+    result = load.overview("perfis", today=TODAY, now=now)
     [row] = result["machines"]  # a máquina sem trabalho e sem calendário continua escondida
-    assert row["id"] == "plasma" and row["no_date"] == {"hours": 0.0, "unknown": 2, "operations": 2}
+    assert row["id"] == "aboc" and row["no_date"] == {"hours": 0.0, "unknown": 2, "operations": 2}
     assert all(w["capacity"] == 0 and w["status"] == "sem_calendario" and w["advice"]["text"] == "Sem calendário" for w in row["weeks"])
+    assert result["second_operation"]["operations"] == 0 and result["second_operation"]["text"] == ""
+    # Cantoneiras: a Plasma manual com trabalho da 2.ª operação já não é linha; as operações ficam contadas à parte.
+    facts[:] = [{**fact("p1", "plasma", None, None, basis="sugerida", phase="seguinte"), "planning_machine": "Plasma manual"},
+                {**fact("p2", "plasma", None, None, basis="sugerida", phase="seguinte"), "planning_machine": "Plasma manual"}]
+    result = load.overview("cantoneiras", today=TODAY, now=now)
+    assert result["machines"] == [] and [t["id"] for t in result["totals"]] == ["peddi"]
+    assert result["elsewhere"]["operations"] == 0
+    assert result["second_operation"] == {"operations": 2, "hours": 0.0, "unknown": 2, "machines": [{"name": "Plasma manual", "operations": 2}],
+                                          "text": "2 operações de 2.ª operação fora do plano (Plasma manual 2). Continuam na Tabela."}
 
 
 def test_estimated_hours_show_the_estimate_calculation_not_the_engine_proof():
@@ -132,11 +151,20 @@ def test_production_rows_get_the_hours_of_their_sheet_once(monkeypatch):
     assert load._sheet_hours("cantoneiras", date(2026, 9, 28), []) == {} and len(calls) == 1
 
 
-def _overview_with_calendar(monkeypatch, facts, shifts_per_day=2, *, planned=(), lines=(), machines=None, src=None):
+NOW = datetime(2026, 10, 6, 12, tzinfo=timezone.utc)
+
+
+def _overview_with_calendar(monkeypatch, facts, shifts_per_day=2, *, planned=(), lines=(), machines=None, src=None, sector="cantoneiras"):
     """overview() com uma máquina «m1» com calendário em todas as semanas (turnos seg–sex) e os factos dados."""
+    _install_world(monkeypatch, facts, shifts_per_day, planned=planned, lines=lines, machines=machines, src=src)
+    return load.overview(sector, today=TODAY, now=NOW)
+
+
+def _install_world(monkeypatch, facts, shifts_per_day=2, *, planned=(), lines=(), machines=None, src=None):
+    """O mundo da Carga: máquinas (por defeito «m1») com calendário em todas as semanas (turnos seg–sex) e os factos."""
     from app.sector import drive_notice, load_sources, shifts
     settings = sector_settings.default(TODAY)
-    machines = machines or [{"id": "m1", "name": "Peddi 8", "code": "P8", "process": "Corte", "default_shifts": 2}]
+    machines = machines or [{"id": "m1", "name": "Peddi 8", "code": "P8", "process": "Punção", "default_shifts": 2}]
     plan = {str(d): (shifts_per_day if d <= 5 else 0) for d in range(1, 8)}
     calendars = [{"definition": shifts.definition_for(m["id"], y, w, plan, {}, settings, manual=False)}
                  for m in machines for y, w in load.week_list(TODAY)]
@@ -157,7 +185,6 @@ def _overview_with_calendar(monkeypatch, facts, shifts_per_day=2, *, planned=(),
     monkeypatch.setattr(load_sources, "context", lambda c, sector: src or {"lines": {}, "actual": {}})
     monkeypatch.setattr(load_sources, "fact_values", lambda f, lines: (None, None, False))
     monkeypatch.setattr(drive_notice, "text", lambda sector: None)
-    return load.overview("cantoneiras", today=TODAY, now=datetime(2026, 10, 6, 12, tzinfo=timezone.utc))
 
 
 def test_zero_shift_weeks_are_not_a_calendar(monkeypatch):
@@ -321,10 +348,17 @@ def test_machines_of_a_post_show_the_shared_capacity_and_stay_as_rows(monkeypatc
 
 
 def test_work_on_other_sector_machines_is_counted_even_without_hours(monkeypatch):
-    """F14 (08/10): as operações noutro setor aparecem na nota mesmo sem horas (antes a nota ficava escondida)."""
+    """F14 (08/10): as operações noutro setor aparecem na nota mesmo sem horas (antes a nota ficava escondida).
+
+    Nas cantoneiras as operações seguintes são 2.ª operação (fora do plano, contadas à parte): só a MTG2 e as
+    operações principais chegam à nota «noutro setor».
+    """
     facts = [fact("x", "outra", None, None, phase="seguinte"), fact("y", "outra", None, None, phase="seguinte")]
-    result = _overview_with_calendar(monkeypatch, facts)
+    result = _overview_with_calendar(monkeypatch, facts, sector="perfis")
     assert result["elsewhere"]["operations"] == 2 and result["elsewhere"]["hours"] == 0 and result["elsewhere"]["unknown"] == 2
+    result = _overview_with_calendar(monkeypatch, [*facts, fact("z", "outra", "2026-10-08", 1.5)])
+    assert result["elsewhere"]["operations"] == 1 and result["elsewhere"]["hours"] == 1.5
+    assert result["second_operation"]["operations"] == 2 and result["second_operation"]["unknown"] == 2
 
 
 def test_lisbon_day_between_23_and_midnight(monkeypatch):
@@ -344,3 +378,83 @@ def test_lisbon_day_between_23_and_midnight(monkeypatch):
     # Carteira e ocorrências usam o mesmo dia por omissão (as chaves das caches batem com a Carga).
     assert portfolio.lisbon_today is occurrences.lisbon_today is week.lisbon_today
     assert "lisbon_today" in board.not_in_plans.__code__.co_names
+
+
+def test_kpis_week_equals_load_cell(monkeypatch):
+    """P4 (08/10): os KPIs da semana da Carteira leem as células da Carga. Para cada máquina e semana, a carga é a da
+    célula (na semana atual sem o atrasado), a capacidade é a da semana inteira (full_capacity, o número que a célula
+    mostra) e a cor é a mesma; na semana atual vem também o atrasado de semanas anteriores (coluna Atrasado)."""
+    from app.sector import decisions as resolution, portfolio_kpis
+    machines = [{"id": "peddi", "name": "Peddi 8", "code": "PEDDI8", "process": "Punção", "default_shifts": 2},
+                {"id": "rapid", "name": "Ficep Rapid 25T", "code": "RAPID25", "process": "Broca", "default_shifts": 2}]
+    facts = [fact("p-old", "peddi", "2026-09-30", 30.0, line_key="L1"), fact("p-mon", "peddi", "2026-10-05", 4.0, line_key="L2"),
+             fact("p-now", "peddi", "2026-10-08", 50.0, line_key="L3", basis="sugerida"), fact("r-now", "rapid", "2026-10-09", 6.0, line_key="L4"),
+             fact("r-unk", "rapid", "2026-10-09", None, line_key="L5"), fact("r-next", "rapid", "2026-10-14", 7.0, line_key="L6"),
+             fact("nodate", "peddi", None, 3.0, line_key="L7"), fact("2op", "rapid", "2026-10-08", 9.0, line_key="L4", phase="seguinte")]
+    _install_world(monkeypatch, facts, planned={"L2"}, machines=machines)
+    grid = load.overview("cantoneiras", today=TODAY, now=NOW)
+    resources = {m["id"]: {"id": m["id"], "code": m["code"], "name": m["name"], "type": "maquina"} for m in machines}
+    catalog = {m["code"]: {"process": m["process"], "unit": "MTG3", "type": "maquina"} for m in machines}
+    occ = {"facts": facts, "resources": resources, "stamp": "s", "stale": False}
+    d = {"generation": 1, "imported_at": None, "lines": []}
+    assert [r["id"] for r in grid["machines"]] == ["peddi", "rapid"]
+    for i, (y, w) in enumerate(load.week_list(TODAY)[:3]):
+        code = f"{y}-W{w:02d}"
+        k = portfolio_kpis.overview("cantoneiras", [code], today=TODAY, data=d, decisions=resolution.Decisions(),
+                                    occurrences_data=occ, resources_catalog=catalog)
+        assert k["scope"]["weeks"] == [code] and k["scope"]["current"] is (i == 0)
+        shown = {m["id"]: m["week"] for p in k["panels"] for m in p["machines"]}
+        for row in grid["machines"]:
+            cell, week = row["weeks"][i], shown[row["id"]]
+            assert (week["load"], week["capacity"], week["status"]) == (cell["load"], cell["full_capacity"], cell["status"]), (code, row["id"])
+            assert (week["plan"], week["due"], week["suggested"], week["unknown"]) == (cell["plan"], cell["due"], cell["suggested"], cell["unknown"])
+            assert week["late_before"] == (row["late_before"]["hours"] if i == 0 else None)
+        assert k["week_totals"]["capacity"] == sum(r["weeks"][i]["full_capacity"] for r in grid["machines"])
+    # A semana atual: Peddi 8 com 4 + 50 h (segunda e quinta) contra 60 h e 30 h atrasadas à parte; a 2.ª operação não entra.
+    current = load.week_slice("cantoneiras", [f"{TODAY.isocalendar()[0]}-W{TODAY.isocalendar()[1]:02d}"], today=TODAY)["machines"]
+    assert (current["peddi"]["load"], current["peddi"]["late_before"], current["rapid"]["load"], current["rapid"]["unknown"]) == (54.0, 30.0, 6.0, 1)
+
+
+def test_past_cells_sum_to_late_before(monkeypatch):
+    """P4 (08/10): o atrasado guardado por semana passada soma o «Atrasado» da Carga; uma semana passada no filtro
+    Prazo dá as horas atrasadas dessa semana, sem capacidade («—») nem cor."""
+    facts = [fact("a", "m1", "2026-09-30", 30.0), fact("b", "m1", "2026-09-22", 5.5, basis="sugerida"), fact("c", "m1", "2026-09-21", None),
+             fact("d", "m1", "2026-10-05", 4.0)]
+    _install_world(monkeypatch, facts)
+    [row] = load.overview("cantoneiras", today=TODAY, now=NOW)["machines"]
+    agg = load._aggregate("cantoneiras", TODAY)
+    past = {(y, w): c for (rid, y, w), c in agg["past"].items() if rid == "m1"}
+    assert set(past) == {(2026, 40), (2026, 39)}
+    assert sum(c["plan"] + c["due"] + c["suggested"] for c in past.values()) == row["late_before"]["hours"] == 35.5
+    assert sum(c["unknown"] for c in past.values()) == row["late_before"]["unknown"] == 1
+    assert sum(c["operations"] for c in past.values()) == row["late_before"]["operations"] == 3
+    w39 = load.week_slice("cantoneiras", ["2026-W39"], today=TODAY)["machines"]["m1"]
+    assert (w39["load"], w39["suggested"], w39["capacity"], w39["status"], w39["unknown"], w39["late_before"]) == (5.5, 5.5, None, None, 1, None)
+    assert load.week_slice("cantoneiras", ["2026-W40", "2026-W39"], today=TODAY)["machines"]["m1"]["load"] == 35.5
+    # «Sem semana definida» e estacionadas: horas sem prazo, também sem capacidade.
+    _install_world(monkeypatch, [fact("x", "m1", None, 3.0), {**fact("y", "m1", None, 2.0), "priority": {"parked": True}}])
+    sliced = load.week_slice("cantoneiras", ["estacionada", "sem"], today=TODAY)
+    assert sliced["codes"] == ["sem", "estacionada"] and sliced["machines"]["m1"]["load"] == 5.0 and sliced["machines"]["m1"]["capacity"] is None
+    assert load.week_slice("cantoneiras", ["estacionada"], today=TODAY)["machines"]["m1"]["load"] == 2.0
+
+
+def test_line_and_principal_operation_use_one_week_function():
+    """P4 (08/10): uma só função de semana. A semana da linha no filtro Prazo (portfolio.week_code) e a da operação
+    principal na Carga (load._week_of) saem do mesmo prazo pela mesma função (portfolio.iso_week), com as mesmas
+    expressões de portfolio.line_from_row e occurrences.build: com Data Corte, na viragem do ano ISO, sem prazo e
+    estacionada (W 2026/53)."""
+    from app.sector import priority
+    from tests.test_sector_portfolio import raw
+    assert load._week_of.__code__.co_names.count("iso_week") == 1
+    for cut, w in (("2026-10-05", None), ("2026-12-28", None), ("2027-01-01", None), ("2027-01-04", None), (None, None),
+                   ("2026-10-07", "2026/53")):
+        row = raw("OF1", "A", 5, 1000, cut=cut)
+        row["detail"] = {"raw": {"W": w}} if w else {}
+        line = portfolio.line_from_row(row, TODAY)
+        values, detail_raw = row["v"], (row.get("detail") or {}).get("raw") or {}
+        marks = priority.milestones_from_values(priority.engine_values({}, values), detail_raw)  # occurrences.build
+        marks["parked"] = priority.parked_week(detail_raw.get("W"))
+        due = priority.resolve("cantoneiras", "principal", marks, policy=priority.default("cantoneiras"))
+        week = load._week_of(due["priority_day"])
+        code = f"{week[0]}-W{week[1]:02d}" if week else portfolio.PARKED_WEEK if due.get("parked") else portfolio.NO_WEEK
+        assert code == portfolio.week_code(line), (cut, w, code, portfolio.week_code(line))

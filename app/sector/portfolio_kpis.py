@@ -1,8 +1,11 @@
 """KPIs da Carteira: carga por máquina, acréscimo da seleção e resumo por estado (plano de 02/10/2026).
 
 Três conjuntos separados (GD01): F, a lista filtrada (portfolio.groups); S, os membros marcados no
-rascunho; B, a carga já planeada do setor. Nada aqui aceita filtros da lista: o resumo depende só do
-setor, das fontes e das decisões gravadas.
+rascunho; B, a carga já planeada do setor. O único filtro da lista aceite é o Prazo (semanas, P4 08/10): com
+semanas escolhidas cada máquina mostra a carga e a capacidade dessas semanas, lidas das mesmas células da Carga
+e turnos (load.week_slice), e o Resumo dá metros e toneladas das linhas dessas semanas e horas pela semana da
+operação principal (Planeado ← no plano, nesting ← a vencer, sem máquina ← na sugerida). Os outros filtros
+continuam sem mexer nos KPIs.
 
 - B (carga atual de cada máquina): linhas «Planeado» (Planear e Máquina) — o trabalho que o Gantt
   recebe. Uma máquina sugerida nunca entra em B.
@@ -16,13 +19,16 @@ setor, das fontes e das decisões gravadas.
   parte.
 - Máquinas agrupadas pelo ID físico do catálogo (aliases incluídos); nomes fora do catálogo (por
   exemplo Ficep XP T7) aparecem com o nome, sem serem classificados.
+- 2.ª operação das cantoneiras (08/10, second_operation.py): fora do plano; não soma horas nem «horas
+  desconhecidas» (como na Carga, que a tira das células e dos totais).
 """
 from __future__ import annotations
 
 from collections import defaultdict
+from datetime import date, timedelta
 
 from .. import planning, planning_needs as needs
-from . import planning_status, portfolio
+from . import planning_status, portfolio, second_operation
 
 PANELS = {
     "cantoneiras": [("puncao", "Punção", {"Punção"}), ("broca", "Broca", {"Broca"})],
@@ -36,7 +42,7 @@ def _empty():
     return {"metres": 0.0, "hours": 0.0, "hours_unknown": 0, "metres_unknown": 0, "lines": set()}
 
 
-def _add(target, fact, line):
+def _add(target, fact, line, sector=None):
     """Horas por ocorrência; metros da linha (os mesmos da lista) só na ocorrência principal."""
     target["lines"].add(line["key"])
     if fact.get("phase", "principal") == "principal":
@@ -47,6 +53,8 @@ def _add(target, fact, line):
     hours = fact.get("load_hours") if fact.get("machine_basis") == "atribuída" else None
     if not fact.get("hours_counted", True):
         return  # linha sem ocorrência principal: as horas estão nas ocorrências seguintes
+    if second_operation.operation(sector, fact):
+        return  # 2.ª operação das cantoneiras: fora do plano, não soma horas nem desconhecidas (08/10)
     if hours is None:
         target["hours_unknown"] += 1
     else:
@@ -157,13 +165,50 @@ def version(ctx) -> str:
     return needs.digest([ctx["data"]["generation"], ctx["occ"].get("stamp"), digest(ctx["decisions"])])[:24]
 
 
-def overview(sector: str, **kw) -> dict:
-    """Carga atual por máquina e resumo por estado. Não depende dos filtros da lista."""
+# Resumo da semana: as horas de cada estado vêm do tipo da célula da Carga com o mesmo significado.
+WEEK_KIND = {"planeado": "plan", "nesting": "due", "sem_maquina": "suggested"}
+
+
+def week_label(codes: list[str], today: date) -> str:
+    """«Semana 41 (05/10–11/10)», «Semanas 41 e 42 (05/10–18/10)», «Sem semana definida»… (códigos do filtro Prazo)."""
+    weeks = [(int(c[:4]), int(c[6:])) for c in codes if c not in (portfolio.NO_WEEK, portfolio.PARKED_WEEK)]
+    parts = []
+    if weeks:
+        year = today.isocalendar()[0]
+        mondays = [date.fromisocalendar(y, w, 1) for y, w in weeks]
+        names = [str(w) if y == year else f"{w} de {y}" for y, w in weeks]
+        text = f"Semana {names[0]}" if len(names) == 1 else "Semanas " + ", ".join(names[:-1]) + " e " + names[-1]
+        if all((b - a).days == 7 for a, b in zip(mondays, mondays[1:])):  # semanas seguidas: o intervalo de datas
+            text += f" ({mondays[0]:%d/%m}–{mondays[-1] + timedelta(days=6):%d/%m})"
+        parts.append(text)
+    if portfolio.NO_WEEK in codes:
+        parts.append("Sem semana definida")
+    if portfolio.PARKED_WEEK in codes:
+        parts.append(portfolio.WINDOWS["estacionada"])
+    return " + ".join(parts)
+
+
+def _week_slice(sector: str, codes: list[str], today: date | None) -> dict:
+    from . import load
+    return load.week_slice(sector, codes, today=today)
+
+
+def overview(sector: str, weeks: list[str] | None = None, *, today: date | None = None, **kw) -> dict:
+    """Carga por máquina e resumo por estado. Só o filtro Prazo (`weeks`, códigos do filtro) muda os números.
+
+    Sem semanas: B (a carga do que está Planeado), como antes. Com semanas: cada máquina leva `week`, as horas e a
+    capacidade dessas semanas lidas das células da Carga (load.week_slice), e o Resumo leva `week` (metros e
+    toneladas das linhas dessas semanas; horas pela semana da operação principal). `scope` diz o âmbito.
+    """
+    from . import load
+    codes = load.week_codes(weeks or [])
     ctx = context(sector, **kw)
     data, decisions = ctx["data"], ctx["decisions"]
+    sliced = _week_slice(sector, codes, today) if codes else None
     machines = _machines(ctx)
     base = defaultdict(_empty)
     summary = {code: {**_empty(), "pieces": 0.0, "ofs": set(), "kg": 0.0, "kg_unknown": 0} for code in planning_status.STATUS}
+    in_week = {code: {"metres": 0.0, "metres_unknown": 0, "kg": 0.0, "kg_unknown": 0, "lines": 0} for code in planning_status.STATUS}
     for line in data["lines"]:
         found = portfolio.effective(line, decisions)
         status = planning_status.classify(found, line["machine"])
@@ -174,7 +219,7 @@ def overview(sector: str, **kw) -> dict:
                 machines[b] = {"id": b, "name": b.removeprefix("nome:"), "code": None, "process": None, "unit": None,
                                "type": None, "in_catalog": False}
             if b and status["planeado"]:
-                _add(base[b], f, line)
+                _add(base[b], f, line, sector)
         code = next((c for c, value in status.items() if value), None)
         if code is None:  # linha excluída: fora do Resumo (planning_status, A8-5)
             continue
@@ -186,7 +231,18 @@ def overview(sector: str, **kw) -> dict:
         else:
             s["kg"] += line["kg"]
         for f in facts:
-            _add(s, f, line)
+            _add(s, f, line, sector)
+        if codes and portfolio.matches(line, {"semanas": codes}):  # a semana da linha = a da operação principal
+            w = in_week[code]
+            w["lines"] += 1
+            if _metres_unknown(line):
+                w["metres_unknown"] += 1
+            else:
+                w["metres"] += line["metres"]
+            if line.get("kg") is None:
+                w["kg_unknown"] += 1
+            else:
+                w["kg"] += line["kg"]
     panels = {code: {"id": code, "label": label, "machines": []} for code, label, _ in PANELS[sector]}
     others = []
     for rid, m in machines.items():
@@ -197,20 +253,42 @@ def overview(sector: str, **kw) -> dict:
             continue
         if PANELS[sector][0][2] is None and rid not in base and m.get("type") != "maquina":
             continue  # MTG2: postos sem carga não ocupam o painel
-        panels[panel]["machines"].append({**{k: m[k] for k in ("id", "name", "code", "process", "in_catalog")},
-                                          "base": _out(base[rid]) if rid in base else _out(_empty())})
+        row = {**{k: m[k] for k in ("id", "name", "code", "process", "in_catalog")},
+               "base": _out(base[rid]) if rid in base else _out(_empty())}
+        if sliced is not None:  # sem célula na Carga (máquina fora das Definições do setor): sem números da semana
+            found = sliced["machines"].get(rid)
+            row["week"] = {k: found[k] for k in WEEK_FIELDS} if found else None
+        panels[panel]["machines"].append(row)
     for p in panels.values():
         p["machines"].sort(key=lambda m: m["name"])
-    return {
+    rows = []
+    for code, label in planning_status.STATUS.items():
+        row = {"code": code, "label": label, "origin": planning_status.ORIGINS[code],
+               **_out(summary[code]), "pieces": round(summary[code]["pieces"]), "ofs": len(summary[code]["ofs"]),
+               "tonnes": round(summary[code]["kg"] / 1000, 2), "weight_unknown": summary[code]["kg_unknown"]}
+        if sliced is not None:
+            w, kind = in_week[code], sliced["kinds"][WEEK_KIND[code]]
+            row["week"] = {"lines": w["lines"], "metres": round(w["metres"], 1), "metres_unknown": w["metres_unknown"],
+                           "tonnes": round(w["kg"] / 1000, 2), "weight_unknown": w["kg_unknown"],
+                           "hours": kind["hours"], "hours_unknown": kind["unknown"], "hours_kind": WEEK_KIND[code]}
+        rows.append(row)
+    out = {
         "sector": sector, "sector_label": portfolio.SECTORS[sector], "version": version(ctx),
-        "generation": data["generation"], "imported_at": data["imported_at"], "stale": bool(ctx["occ"].get("stale") or data.get("stale")),
+        "generation": data["generation"], "imported_at": data["imported_at"],
+        "stale": bool(ctx["occ"].get("stale") or data.get("stale") or (sliced or {}).get("stale")),
         "panels": list(panels.values()), "other_machines": sorted(others, key=lambda m: m["name"]),
-        "summary": [{"code": code, "label": label, "origin": planning_status.ORIGINS[code],
-                     **_out(summary[code]), "pieces": round(summary[code]["pieces"]), "ofs": len(summary[code]["ofs"]),
-                     "tonnes": round(summary[code]["kg"] / 1000, 2), "weight_unknown": summary[code]["kg_unknown"]}
-                    for code, label in planning_status.STATUS.items()],
+        "summary": rows,
+        # Âmbito dos números (P4, 08/10): sem semanas, a carga do que está Planeado; com semanas, a Carga dessas semanas.
+        "scope": {"weeks": codes, "label": week_label(codes, sliced["today"]) if sliced else "todas as semanas",
+                  "sector_label": portfolio.SECTORS[sector], "current": bool(sliced and sliced["current"])},
         "rules": __doc__.split("\n\n", 1)[1].strip(),
     }
+    if sliced is not None:
+        out["week_totals"] = sliced["totals"]
+    return out
+
+
+WEEK_FIELDS = ("load", "capacity", "plan", "due", "suggested", "unknown", "metres", "metres_unknown", "status", "late_before")
 
 
 def preview(payload: dict, **kw) -> dict:
@@ -252,7 +330,7 @@ def preview(payload: dict, **kw) -> dict:
         for f in ctx["facts"].get(key, []):
             b = bucket(f, ctx["names"])
             if b:  # uma operação seguinte ainda sem máquina não tem destino: não acrescenta a nenhuma
-                _add(already if status["planeado"] else delta[b], f, line)
+                _add(already if status["planeado"] else delta[b], f, line, sector)
     return {
         "sector": sector, "version": version(ctx), "stale": bool(ctx["occ"].get("stale") or data.get("stale")),
         "members": len(dict.fromkeys(keys)) - len(unknown), "unknown_keys": unknown[:50], "unknown_count": len(unknown),

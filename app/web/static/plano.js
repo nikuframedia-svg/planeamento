@@ -333,9 +333,23 @@
     for (const m of info.machines) for (const it of m.items) list.append(el("li", `${it.of} · ${m.name} · ${short(it.start)}`));
   }
 
+  // 2.ª operação das cantoneiras fora do plano (08/10): uma linha discreta, só quando a API manda o número e é > 0.
+  function renderSecondOperation() {
+    const box = $("missing"), n = state.data?.source?.second_operation || 0;
+    if (!box) return;
+    let line = $("second-operation");
+    if (!line) {
+      line = el("p", null, "pq-sub"); line.id = "second-operation"; line.hidden = true;
+      box.after(line);
+    }
+    line.hidden = !n;
+    line.textContent = n ? `${plural(n, "operação", "operações")} de 2.ª operação fora do plano` : "";
+  }
+
   // Operações escolhidas que não ficam em caixa nenhuma: ditas com o motivo, nunca escondidas.
   function renderMissing() {
     const box = $("missing"), list = state.data?.source?.missing || [];
+    renderSecondOperation();
     if (!box) return;
     box.hidden = !list.length;
     if (!list.length) return;

@@ -30,6 +30,33 @@
     return result;
   }
   const safe = fn => async (...args) => {try{await fn(...args)}catch(error){notice(error.message||"Não foi possível concluir a ação.",true)}};
+  // Recursos de cada área (08/10): as máquinas do setor nas Definições (a regra de members.py), sem as da 2.ª operação
+  // das cantoneiras (second_operation.py: processo do catálogo fora de Punção e Broca), que ficam fora do plano.
+  // Sem a lista (serviço antigo ou erro) mostram-se todos os recursos, como antes. Um recurso com barras ou previsões
+  // aparece sempre, para nada ficar escondido.
+  const MAIN_PROCESSES=new Set(["Punção","Broca"]);
+  const areaMachines={};
+  async function loadAreaMachines(area) {
+    if(area in areaMachines)return areaMachines[area];
+    try{
+      const response=await fetch(`/planeamento/api/setor/definicoes?setor=${encodeURIComponent(area)}`,{cache:"no-store",headers:{Accept:"application/json"}});
+      if(!response.ok)throw Error(`HTTP ${response.status}`);
+      const machines=(await response.json()).machines||[];
+      const second=machines.filter(m=>area==="cantoneiras"&&m.process&&!MAIN_PROCESSES.has(m.process)).map(m=>m.id);
+      areaMachines[area]={main:new Set(machines.map(m=>m.id).filter(id=>!second.includes(id))),second:new Set(second)};
+    }catch(error){areaMachines[area]=null}
+    return areaMachines[area];
+  }
+  const viewAreas = () => $("areas").value==="both"?["perfis","cantoneiras"]:[$("areas").value];
+  function shownResources(resources, used=new Set()) {
+    const lists=viewAreas().map(a=>areaMachines[a]);
+    const entries=Object.entries(resources||{});
+    if(!lists.length||lists.some(x=>!x))return entries;
+    if(viewAreas().length===1)return entries.filter(([rid])=>lists[0].main.has(rid)||used.has(rid));
+    return entries.filter(([rid])=>!lists.some(x=>x.second.has(rid))||used.has(rid));
+  }
+  // Operações seguintes das cantoneiras bloqueadas = 2.ª operação, fora do plano (08/10): à parte, num bloco fechado.
+  const isSecondOperation = op => op.area==="cantoneiras"&&Number(op.occurrence)>1&&op.state==="blocked";
   function setAcceptance(value) {data.acceptEligible=Boolean(value);$("accept").disabled=!data.acceptEligible||sourceView()}
   function renderFreshness() {
     $("source-state").textContent=data.proposalStale?"Proposta desatualizada · recalcular":"Fontes publicadas atuais";
@@ -65,7 +92,7 @@
   async function loadOperations() {
     const params=new URLSearchParams();if(data.scenario)params.set("scenario_id",data.scenario.id);
     if($("areas").value!=="both")params.set("area",$("areas").value);
-    const info=await api("operations?"+params);
+    const [info]=await Promise.all([api("operations?"+params),...viewAreas().map(loadAreaMachines)]);
     data.operations=info.operations||[];data.resources=info.resources||{};
     data.liveOperations=data.operations;data.liveResources=data.resources;data.sourcePlan=info.source_plan;
     data.sourceStatus=info.source_status;renderFreshness();
@@ -77,7 +104,8 @@
     }
     populateWeeks();
     const machines=$("source-machine-filter"),keepMachine=machines.value;
-    machines.replaceChildren(new Option("Todas as máquinas",""),...Object.entries(data.liveResources).sort((a,b)=>a[1].name.localeCompare(b[1].name)).map(([rid,r])=>new Option(r.name,rid)));
+    const planned=new Set((data.sourcePlan?.entries||[]).map(e=>e.resource_id));
+    machines.replaceChildren(new Option("Todas as máquinas",""),...shownResources(data.liveResources,planned).sort((a,b)=>a[1].name.localeCompare(b[1].name)).map(([rid,r])=>new Option(r.name,rid)));
     machines.value=data.liveResources[keepMachine]?keepMachine:"";
     renderSummary();renderOperations();
     if(info.orphaned_pins?.length)notice(`${info.orphaned_pins.length} fixações pedem revisão antes da aceitação.`,true);
@@ -219,25 +247,36 @@
     const bars=shown?.bars||{};
     const rows=viewOperations().filter(x=>!term||[x.of,x.reference,x.operation,x.key,x.source_machine,...(x.blocking_reasons||[])].join(" ").toLocaleLowerCase("pt-PT").includes(term));
     rows.sort((a,b)=>(a.state==="blocked"?0:a.state==="ready"?1:2)-(b.state==="blocked"?0:b.state==="ready"?1:2)||a.priority_group-b.priority_group||(a.deadline||"").localeCompare(b.deadline||"")||a.key.localeCompare(b.key));
-    const wrap=$("operations");wrap.replaceChildren();
+    const wrap=$("operations");const secondOpen=Boolean(wrap.querySelector("details.second-operation")?.open);wrap.replaceChildren();
     $("pending-count").textContent=`${rows.length} de ${viewOperations().length} operações · seleção visual não altera o cálculo`;
     if(!rows.length){wrap.append(text("p",data.liveOperations.length?"Sem operações neste filtro.":"Marca as OFs ou referências com Planear na Carteira. O Gantt recebe apenas a seleção com informação ativa de planeamento.","operations-empty"));
       if(data.selectionSummary?.pending?.length)wrap.append(text('p',`${data.selectionSummary.pending.length} seleções aguardam informação de planeamento ou correspondência de identidade.`,'hint'));
       return}
-    for(const op of rows.slice(0,500)){
-      const state=shown?.states?.[op.key]||op.state;
-      const provisional=Boolean(bars[op.key]?.provisional||op.provisional);
-      let status=(state==="complete"?"Concluída":state==="scheduled"?"Calendarizada":state==="overflow"?(shown?.unplaced_reasons?.[op.key]||"Fora do horizonte"):op.blocking_reasons?.join("; ")||"A aguardar proposta")+
-        (op.milestones?.picking_provisional?" · Picking: ano 2026 assumido":"");
-      if(sourceView() && state!=="complete")status=`${viewResources()[op.assignment?.resource_id]?.name||op.source_machine||"Máquina por indicar"}${op.assignment?.eligibility==="conditional"?" · condicional":""} · ${op.source_duration?.hours==null?"Duração por confirmar":Number(op.source_duration.hours).toFixed(2)+" h"} · previsão ${op.milestones?.operation_forecast|| (op.milestones?.period_week?`W${op.milestones.period_week}/${op.milestones.period_year}`:"por indicar")} · ${status}`;
-      const row=text("button","","operation-row"+(data.selected===op.key?" selected":""));row.type="button";
-      row.append(text("span",op.of,"of"),text("span",`${op.reference||"Sem referência"} · ${op.operation}`),
-        text("span",`${op.planning_remaining??"?"} un.`),text("span",provisional?"Provisório":"Confirmado",provisional?"provisional":""),
-        text("span",status,state==="complete"?"done":"reason"));
-      row.title=`${op.key}\nMáquina no planeamento: ${op.source_machine||"—"}\nDuração calculada: ${op.source_duration?.hours??"—"} h · ${op.source_duration?.origin||"—"}\nOrigem do saldo: ${op.balance_origin||"desconhecida"}\n${(bars[op.key]?.provisional_reasons||[]).join("; ")}\nPrevisão: ${op.milestones?.operation_forecast||"—"}\nPicking: ${format(op.milestones?.picking)}\nFim previsto da Produção: ${op.milestones?.planned_finish_date||"—"}\nData de entrega: ${op.milestones?.delivery_date||"—"}\nObservações Kanban: ${op.observations?.length||0}`;
-      row.addEventListener("click",()=>selectOperation(op.key));wrap.append(row);
+    const second=rows.filter(isSecondOperation),main=rows.filter(op=>!isSecondOperation(op));
+    for(const op of main.slice(0,500))wrap.append(operationRow(op,shown,bars));
+    if(main.length>500)wrap.append(text('p',`A mostrar as primeiras 500 de ${main.length} operações. Pesquisa para encontrar uma OF ou referência; o cálculo usa toda a seleção.`,'hint'));
+    if(second.length){
+      const box=document.createElement("details");box.className="second-operation";box.open=secondOpen;
+      const summary=text("summary",`2.ª operação fora do plano (${second.length})`);
+      summary.style.cssText="padding:11px 20px;border-top:1px solid #edf1f2;cursor:pointer;color:var(--muted)";
+      box.append(summary);
+      for(const op of second.slice(0,500))box.append(operationRow(op,shown,bars));
+      wrap.append(box);
     }
-    if(rows.length>500)wrap.append(text('p',`A mostrar as primeiras 500 de ${rows.length} operações. Pesquisa para encontrar uma OF ou referência; o cálculo usa toda a seleção.`,'hint'));
+  }
+  function operationRow(op, shown, bars) {
+    const state=shown?.states?.[op.key]||op.state;
+    const provisional=Boolean(bars[op.key]?.provisional||op.provisional);
+    let status=(state==="complete"?"Concluída":state==="scheduled"?"Calendarizada":state==="overflow"?(shown?.unplaced_reasons?.[op.key]||"Fora do horizonte"):op.blocking_reasons?.join("; ")||"A aguardar proposta")+
+      (op.milestones?.picking_provisional?" · Picking: ano 2026 assumido":"");
+    if(sourceView() && state!=="complete")status=`${viewResources()[op.assignment?.resource_id]?.name||op.source_machine||"Máquina por indicar"}${op.assignment?.eligibility==="conditional"?" · condicional":""} · ${op.source_duration?.hours==null?"Duração por confirmar":Number(op.source_duration.hours).toFixed(2)+" h"} · previsão ${op.milestones?.operation_forecast|| (op.milestones?.period_week?`W${op.milestones.period_week}/${op.milestones.period_year}`:"por indicar")} · ${status}`;
+    const row=text("button","","operation-row"+(data.selected===op.key?" selected":""));row.type="button";
+    row.append(text("span",op.of,"of"),text("span",`${op.reference||"Sem referência"} · ${op.operation}`),
+      text("span",`${op.planning_remaining??"?"} un.`),text("span",provisional?"Provisório":"Confirmado",provisional?"provisional":""),
+      text("span",status,state==="complete"?"done":"reason"));
+    row.title=`${op.key}\nMáquina no planeamento: ${op.source_machine||"—"}\nDuração calculada: ${op.source_duration?.hours??"—"} h · ${op.source_duration?.origin||"—"}\nOrigem do saldo: ${op.balance_origin||"desconhecida"}\n${(bars[op.key]?.provisional_reasons||[]).join("; ")}\nPrevisão: ${op.milestones?.operation_forecast||"—"}\nPicking: ${format(op.milestones?.picking)}\nFim previsto da Produção: ${op.milestones?.planned_finish_date||"—"}\nData de entrega: ${op.milestones?.delivery_date||"—"}\nObservações Kanban: ${op.observations?.length||0}`;
+    row.addEventListener("click",()=>selectOperation(op.key));
+    return row;
   }
   function localLisbon(iso) {
     if(!iso)return "";
@@ -369,7 +408,8 @@
     const capacity=$("weekly-capacity");
     capacity.append(text("p",`Carga e disponibilidade na semana de ${first.split("-").reverse().join("/")}`,"hint"));
     const cards=text("div","","capacity-cards");
-    for(const [rid,resource] of Object.entries(data.liveResources).sort((a,b)=>a[1].name.localeCompare(b[1].name))){
+    const planned=new Set(plan.entries.map(e=>e.resource_id));
+    for(const [rid,resource] of shownResources(data.liveResources,planned).sort((a,b)=>a[1].name.localeCompare(b[1].name))){
       const load=plan.weekly_load.find(r=>r.resource_id===rid&&isoMonday(r.year,r.week)===first);
       const avail=load?.availability,known=avail?.hours!=null;
       const card=text("div","","capacity-card"+(avail?.status==="conflict"?" conflict":""));
@@ -392,7 +432,7 @@
       const label=text("span",day.slice(8,10)+"/"+day.slice(5,7),"tick");label.style.left=`${i*width}px`;track.append(label);
     }
     head.append(track);wrapper.append(head);
-    for(const [rid,resource] of Object.entries(data.liveResources).sort((a,b)=>a[1].name.localeCompare(b[1].name))){
+    for(const [rid,resource] of shownResources(data.liveResources,planned).sort((a,b)=>a[1].name.localeCompare(b[1].name))){
       if(selectedResource&&selectedResource!==rid)continue;
       const rows=visible.filter(e=>e.resource_id===rid);
       const group=text("div","","source-machine");group.append(text("strong",resource.name),text("span",`${rows.length} previsões nesta janela`));wrapper.append(group);
@@ -435,7 +475,7 @@
     head.append(track);wrapper.append(head);
     const ops=new Map(snapshot.operations.map(op=>[op.key,op]));
     const grouped=new Map();for(const [key,bar] of Object.entries(proposal.bars||{})){if(!grouped.has(bar.resource_id))grouped.set(bar.resource_id,[]);grouped.get(bar.resource_id).push([key,bar])}
-    for(const [rid,resource] of Object.entries(snapshot.resources)){
+    for(const [rid,resource] of shownResources(snapshot.resources,new Set(grouped.keys()))){
       const line=text("div","","resource-row");line.append(text("div",resource.name,"resource-label"));
       const lane=text("div","","time-track");lane.style.width=`${total}px`;lane.style.setProperty("--unit-width",`${width}px`);
       for(const [key,bar] of grouped.get(rid)||[]){

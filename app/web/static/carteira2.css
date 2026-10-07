@@ -32,6 +32,14 @@
 .machines li { display: grid; grid-template-columns: minmax(5.5rem, 1fr) auto auto; gap: .8rem; padding: .15rem 0; }
 .machines .m-metres, .machines .m-hours { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .delta { color: #15525c; font-weight: 700; }
+/* KPIs da semana (filtro Prazo, 08/10): linha de âmbito e «carga / capacidade h» com a cor da Carga e turnos. */
+.kpis-scope { grid-column: 1 / -1; margin: 0; }
+.machines .m-load { padding: 0 .3rem; border-radius: 4px; }
+.machines .m-load.st-folga { background: #dff2e6; }
+.machines .m-load.st-apertado { background: #fde9c8; }
+.machines .m-load.st-falta { background: #f8d4d4; }
+.machines .m-load.st-sem_calendario { background: #f6f7f8; }
+.machines .m-late { grid-column: 2 / -1; text-align: right; white-space: nowrap; }
 .resumo table { width: 100%; border-collapse: collapse; }
 .resumo tbody th { white-space: normal; }
 .resumo th, .resumo td { padding: .15rem .3rem; text-align: left; font-weight: normal; background: transparent;
@@ -40,6 +48,7 @@
 .resumo .num { text-align: right; font-variant-numeric: tabular-nums; }
 .marked-line { margin: .3rem 0 0; color: #15525c; font-weight: 700; }
 .assign-line { margin: .3rem 0 0; display: flex; gap: .4rem; align-items: center; flex-wrap: wrap; }
+.assign-line[hidden] { display: none; } /* o display:flex acima ganhava ao atributo hidden: aparecia sem linhas marcadas */
 .assign-line select { flex: 1 1 14rem; min-width: 0; max-width: 100%; border: 1px solid #c9d4d7; padding: .2rem .4rem; }
 .assign-line .assign { background: #10384b; color: #fff; border: 1px solid #10384b; padding: .15rem .8rem; font-weight: 600; }
 .sets-link { margin-left: auto; color: #15525c; }

@@ -21,12 +21,19 @@ Para cada máquina e semana ISO (a atual e as 12 seguintes):
   Excel, horas reais declaradas, calendário do Excel; e totais por máquina (separador Máquinas);
 - peso = peso unitário da linha da Carteira × saldo, como na Carteira (08/10); sem peso conta à parte, nunca 0 kg;
 - máquinas de um posto (ex.: Fita pav.1 com o Doall e a Thomas) continuam em linhas próprias, com a nota da
-  capacidade conjunta do posto (capacity.counted, 08/10).
+  capacidade conjunta do posto (capacity.counted, 08/10);
+- 2.ª operação das cantoneiras (08/10, second_operation.py): as máquinas da 2.ª operação (Saca bocados, Plasma
+  manual, Fresadora, Prensa) saem das linhas e as operações seguintes saem das células, dos totais e de «noutro
+  setor»; ficam só contadas à parte («N operações de 2.ª operação fora do plano»). Na MTG2 nada muda;
+- os KPIs da semana da Carteira leem estas mesmas células (week_slice, 08/10): os números são iguais por construção.
 Prazo pela política do setor (MTG3 Data Corte; MTG2 Picking, depois Data Corte). As horas são as mesmas da
 Carteira (occurrences + estimates); horas desconhecidas nunca contam como zero — são contadas à parte.
 """
 from __future__ import annotations
 
+import re
+import threading
+import time
 from collections import defaultdict
 from datetime import date, datetime, timedelta, timezone
 
@@ -39,11 +46,13 @@ PLAN, DUE, SUGGESTED = "plan", "due", "suggested"
 
 
 def _week_of(day) -> tuple[int, int] | None:
+    """Semana ISO do prazo pela mesma função da linha da Carteira (portfolio.iso_week, P4 08/10): a semana de uma
+    ocorrência principal é a da sua linha no filtro Prazo."""
+    from .portfolio import iso_week
     if not day:
         return None
-    d = day if isinstance(day, date) else date.fromisoformat(str(day)[:10])
-    y, w, _ = d.isocalendar()
-    return y, w
+    code = iso_week(day if isinstance(day, date) else date.fromisoformat(str(day)[:10]))
+    return int(code[:4]), int(code[6:])
 
 
 def _today() -> date:
@@ -80,7 +89,8 @@ def classify(fact: dict, planned_keys: set, current: tuple[int, int], horizon: s
 
 
 def _empty_cell():
-    return {PLAN: 0.0, DUE: 0.0, SUGGESTED: 0.0, "late": 0.0, "unknown": 0, "operations": 0, "excel": 0.0, "excel_unknown": 0}
+    return {PLAN: 0.0, DUE: 0.0, SUGGESTED: 0.0, "late": 0.0, "unknown": 0, "operations": 0, "excel": 0.0, "excel_unknown": 0,
+            "metres": 0.0, "metres_unknown": 0, "unknown_" + PLAN: 0, "unknown_" + DUE: 0, "unknown_" + SUGGESTED: 0}
 
 
 def _empty_total():
@@ -208,54 +218,149 @@ def shared_posts(rows: list[dict], posts: dict, names: dict) -> None:
 
 def _context(sector: str, today: date | None = None):
     """Linhas, decisões e ocorrências da Carga (só leituras: as linhas e as ocorrências podem ser as anteriores
-    enquanto se refazem em segundo plano; as decisões são sempre as atuais)."""
-    from . import occurrences, portfolio, selection, settings as sector_settings
+    enquanto se refazem em segundo plano; as decisões são sempre as atuais).
+
+    As ocorrências devolvidas levam `decisions`, o digest das decisões atuais (chave da memória de _aggregate): as
+    ocorrências anteriores podem vir com o carimbo antigo enquanto se refazem, o plano e as exclusões não."""
+    from . import occurrences, portfolio, scope, selection
     data = portfolio.current(sector, allow_stale=True)
     decisions = selection.current(sector)
     planned = {x["key"] for x in data["lines"] if portfolio.status_of(x, decisions)["planeado"]}
     occ = occurrences.load(sector, allow_stale=True)
     # Linha excluída na Carteira não é trabalho a planear: não conta na Carga, como na lista vermelha (A8-5).
     excluded = {x["key"] for x in data["lines"] if portfolio.decision_of(x, decisions) == "excluded"}
-    if excluded:
-        occ = {**occ, "facts": [f for f in occ["facts"] if f.get("line_key") not in excluded]}
-    return data, planned, occ
+    facts = [f for f in occ["facts"] if f.get("line_key") not in excluded] if excluded else occ["facts"]
+    return data, planned, {**occ, "facts": facts, "decisions": scope.digest(decisions)}
 
 
-def overview(sector: str, *, today: date | None = None, now: datetime | None = None) -> dict:
-    from . import load_sources, settings as sector_settings
+# Memória curta das células (P4, 08/10): a Carga e os KPIs da semana da Carteira leem as mesmas células, por isso
+# os números são iguais por construção. Uma entrada por setor; a chave segue o dia de Lisboa, as ocorrências, a
+# geração das linhas, as decisões, os calendários/recursos e as Definições do setor. O resto (horas reais
+# declaradas, catálogo) fica no máximo MEMORY_SECONDS atrasado. A capacidade da semana atual (que depende da hora)
+# calcula-se sempre fora da memória.
+MEMORY_SECONDS = 120
+_memory: dict[str, tuple] = {}
+_memory_lock = threading.Lock()
+
+
+def _calendar_stamp(c) -> tuple:
+    row = c.execute("SELECT count(*) n, max(updated_at) m FROM planning_mtg.raw_objects WHERE kind = ANY(%s) AND NOT archived",
+                    (["calendar", "resource"],)).fetchone()
+    return row["n"], row["m"]
+
+
+def _remembered(key: tuple):
+    with _memory_lock:
+        found = _memory.get(key[0])
+        if found and found[0] == key and time.monotonic() - found[1] < MEMORY_SECONDS:
+            return found[2]
+    return None
+
+
+def _remember(key: tuple, value: dict) -> None:
+    with _memory_lock:
+        _memory[key[0]] = (key, time.monotonic(), value)
+
+
+def forget() -> None:
+    with _memory_lock:
+        _memory.clear()
+
+
+def status_of(load_hours: float, full: float) -> str:
+    """Cor da célula da Carga: carga da semana contra a capacidade da semana inteira, os números que a célula mostra
+    (revisão 07/10/2026); a mesma regra nos KPIs da semana da Carteira."""
+    room = full - load_hours
+    return "falta" if room < -0.05 else "apertado" if full and room < 0.15 * full else "folga"
+
+
+def _parked(fact: dict) -> bool:
+    return bool((fact.get("priority") or {}).get("parked"))
+
+
+def _add_cell(target: dict, f: dict, kind: str, late: bool, excel, applies: bool) -> None:
+    target["operations"] += 1
+    if applies:
+        if excel is None:
+            target["excel_unknown"] += 1
+        else:
+            target["excel"] += excel
+    if f.get("phase", "principal") == "principal":  # metros só na operação principal, como na Carteira
+        if f.get("metres") is None:
+            target["metres_unknown"] += 1
+        else:
+            target["metres"] += f["metres"]
+    if f.get("load_hours") is None:
+        target["unknown"] += 1
+        target["unknown_" + kind] += 1
+        return
+    target[kind] += f["load_hours"]
+    if late:
+        target["late"] += f["load_hours"]
+
+
+def _merge_cell(target: dict, cell: dict | None) -> dict:
+    for k, v in (cell or {}).items():
+        target[k] += v
+    return target
+
+
+def _aggregate(sector: str, today: date | None = None, *, memo: bool = False) -> dict:
+    """As células da Carga (máquina × semana) e o resto do que a Carga e os KPIs da semana leem.
+
+    - cells[(máquina, ano, semana)]: as 13 semanas (a atual sem o atrasado); later: semanas depois das 13;
+    - past[(máquina, ano, semana)]: o atrasado de cada semana passada; a soma por máquina é late_before;
+    - undated/parked: sem prazo e estacionadas no Excel (no_date = as duas, como antes);
+    - cada célula tem horas por tipo (no plano / a vencer / sugerida), as desconhecidas por tipo, metros (só a
+      operação principal) e as horas segundo o Excel;
+    - 2.ª operação das cantoneiras (second_operation.operation): fora das células, dos totais e de «noutro setor»,
+      só contada em `second_operation`; as máquinas da 2.ª operação saem das linhas (MTG2 igual).
+    `memo`: usa a memória curta (pedidos sem dia nem hora fixos); os testes passam o dia e calculam sempre.
+    """
+    from . import load_sources, second_operation, settings as sector_settings
     planning.check_area(sector)
     today = today or _today()
-    now = now or datetime.now(timezone.utc)
     weeks = week_list(today)
     horizon = set(weeks)
     current = weeks[0]
     data, planned, occ = _context(sector, today)
     with planning.connect(readonly=True) as c:
         settings = sector_settings.read(c, sector)
-        machines = sector_settings.machine_rows(c, sector)
+        key = None
+        if memo:
+            key = (sector, today, occ.get("stamp"), data.get("generation"), occ.get("decisions"), _calendar_stamp(c),
+                   settings.get("revision"), bool(occ.get("stale") or data.get("stale")))
+            found = _remembered(key)
+            if found is not None:
+                return found
+        machines = [m for m in sector_settings.machine_rows(c, sector) if not second_operation.machine(sector, m.get("process"))]
         ids = [m["id"] for m in machines]
         calendars = c.execute("SELECT definition FROM planning_mtg.raw_objects WHERE kind='calendar' AND NOT archived "
                               "AND definition->>'resource_id' = ANY(%s)", (ids,)).fetchall()
         src = load_sources.context(c, sector)
     cal = {(str(r["definition"]["resource_id"]), int(r["definition"]["year"]), int(r["definition"]["week"])): r["definition"] for r in calendars}
-    cells = defaultdict(_empty_cell)
-    no_date = defaultdict(_empty_cell)
-    late_before = defaultdict(_empty_cell)  # prazo antes da semana atual: coluna Atrasado, fora da semana atual
+    cells, later, past = defaultdict(_empty_cell), defaultdict(_empty_cell), defaultdict(_empty_cell)
+    undated, parked = defaultdict(_empty_cell), defaultdict(_empty_cell)
     monday_now = date.fromisocalendar(*current, 1)
     totals = defaultdict(_empty_total)
     own = set(ids)
     elsewhere = defaultdict(lambda: {"operations": 0, "hours": 0.0, "unknown": 0})
     elsewhere_work = _empty_total()  # peças, metros e kg dessas operações: para o fecho com a Carteira (08/10)
+    second = []
     weights = weights_of(data["lines"])
     for f in occ["facts"]:
+        if second_operation.operation(sector, f):  # 2.ª operação das cantoneiras: fora do plano (08/10)
+            second.append(f)
+            continue
         found = classify(f, planned, current, horizon, today)
         excel, _, applies = load_sources.fact_values(f, src["lines"])
         weight = fact_weight(f, weights)
         if not found:  # sem máquina: só entra nos totais («Sem máquina»)
             _add_total(totals[None], f, "sem_data" if not f.get("priority_day") else None, False, excel, weight, applies)
             continue
-        if f["planning_resource_id"] not in own:  # trabalho do setor numa máquina de outro setor: nota à parte
-            e = elsewhere[f["planning_resource_id"]]
+        rid = f["planning_resource_id"]
+        if rid not in own:  # trabalho do setor numa máquina de outro setor: nota à parte
+            e = elsewhere[rid]
             e["operations"] += 1
             e["hours"] += f.get("load_hours") or 0
             e["unknown"] += f.get("load_hours") is None
@@ -263,23 +368,41 @@ def overview(sector: str, *, today: date | None = None, now: datetime | None = N
             continue
         kind, week, late = found
         before = week == current and _before_week(f, monday_now)
-        _add_total(totals[f["planning_resource_id"]], f, week, late, excel, weight, applies, before)
-        if week == "depois":
-            continue
-        target = (no_date[f["planning_resource_id"]] if week == "sem_data" else late_before[f["planning_resource_id"]] if before
-                  else cells[(f["planning_resource_id"], *week)])
-        target["operations"] += 1
-        if applies:
-            if excel is None:
-                target["excel_unknown"] += 1
-            else:
-                target["excel"] += excel
-        if f.get("load_hours") is None:
-            target["unknown"] += 1
-            continue
-        target[kind] += f["load_hours"]
-        if late:
-            target["late"] += f["load_hours"]
+        _add_total(totals[rid], f, week, late, excel, weight, applies, before)
+        if week == "sem_data":
+            target = (parked if _parked(f) else undated)[rid]
+        elif week == "depois":
+            target = later[(rid, *_week_of(f["priority_day"]))]
+        elif before:
+            target = past[(rid, *_week_of(f["priority_day"]))]
+        else:
+            target = cells[(rid, *week)]
+        _add_cell(target, f, kind, late, excel, applies)
+    late_before, no_date = defaultdict(_empty_cell), defaultdict(_empty_cell)
+    for (rid, _, _), cell in past.items():
+        _merge_cell(late_before[rid], cell)
+    for part in (undated, parked):
+        for rid, cell in part.items():
+            _merge_cell(no_date[rid], cell)
+    result = {"sector": sector, "today": today, "weeks": weeks, "current": current, "machines": machines, "settings": settings,
+              "cal": cal, "src": src, "cells": dict(cells), "later": dict(later), "past": dict(past), "late_before": dict(late_before),
+              "undated": dict(undated), "parked": dict(parked), "no_date": dict(no_date), "totals": dict(totals),
+              "elsewhere": dict(elsewhere), "elsewhere_work": elsewhere_work, "second_operation": second_operation.summary(second),
+              "names": {rid: (r.get("name") or rid) for rid, r in (occ.get("resources") or {}).items()},
+              "stale": bool(occ.get("stale") or data.get("stale"))}
+    if key is not None:
+        _remember(key, result)
+    return result
+
+
+def overview(sector: str, *, today: date | None = None, now: datetime | None = None) -> dict:
+    """A grelha da Carga, formatada a partir de _aggregate (a mesma memória que os KPIs da semana da Carteira)."""
+    from . import drive_notice, second_operation
+    agg = _aggregate(sector, today, memo=today is None and now is None)
+    today, settings, src, cal = agg["today"], agg["settings"], agg["src"], agg["cal"]
+    now = now or datetime.now(timezone.utc)
+    weeks, current, machines = agg["weeks"], agg["current"], agg["machines"]
+    cells, totals, late_before, no_date = agg["cells"], agg["totals"], agg["late_before"], agg["no_date"]
     rows = []
     for m in machines:
         has_load = any(cells.get((m["id"], y, w)) for y, w in weeks)
@@ -317,14 +440,12 @@ def overview(sector: str, *, today: date | None = None, now: datetime | None = N
             balance = capacity - need
             # A cor bate com o que a célula mostra («carga / capacidade da semana inteira»): o atrasado tem a sua
             # coluna e não pinta a semana atual; só a recomendação o conta (revisão 07/10/2026).
-            room = full - load
-            status = "falta" if room < -0.05 else "apertado" if full and room < 0.15 * full else "folga"
             extra = src["actual"].get((m["id"], y, w)) or {}
             out.append({"year": y, "week": w, "monday": monday, "shifts": n, "manual": bool((d or {}).get("manual")),
                         "day_changes": len(days), "capacity": round(capacity, 1), "full_capacity": round(full, 1), "plan": round(cell[PLAN], 1),
                         "due": round(cell[DUE], 1), "suggested": round(cell[SUGGESTED], 1), "late": round(cell["late"], 1),
                         "unknown": cell["unknown"], "operations": cell["operations"], "load": round(load, 1),
-                        "balance": round(balance, 1), "status": status if d else "sem_calendario", "advice": advice,
+                        "balance": round(balance, 1), "status": status_of(load, full) if d else "sem_calendario", "advice": advice,
                         "excel_hours": round(cell["excel"], 1), "excel_unknown": cell["excel_unknown"],
                         "actual_hours": extra.get("actual_hours") if (y, w) == current else None,
                         "excel_calendar_hours": extra.get("excel_calendar_hours"),
@@ -338,7 +459,7 @@ def overview(sector: str, *, today: date | None = None, now: datetime | None = N
                      "late_before": {"hours": round(lb_hours, 1), "unknown": lb["unknown"], "operations": lb["operations"],
                                      PLAN: round(lb[PLAN], 1), DUE: round(lb[DUE], 1), SUGGESTED: round(lb[SUGGESTED], 1)},
                      "after": round(after, 1)})
-    names = {rid: (r.get("name") or rid) for rid, r in (occ.get("resources") or {}).items()}
+    names = agg["names"]
     shared_posts(rows, src.get("posts") or {}, {**names, **(src.get("names") or {})})
     recent = [(today - timedelta(weeks=i)).isocalendar()[:2] for i in range(4, 0, -1)]  # 4 semanas completas antes desta
     machine_totals = []
@@ -353,19 +474,107 @@ def overview(sector: str, *, today: date | None = None, now: datetime | None = N
     if totals.get(None):
         machine_totals.append({"id": None, "name": "Sem máquina", "process": None, **_round_total(totals[None]), "actual_recent": []})
     other = [{"id": rid, "name": names.get(rid) or rid, "operations": e["operations"], "hours": round(e["hours"], 1), "unknown": e["unknown"]}
-             for rid, e in sorted(elsewhere.items(), key=lambda x: -x[1]["hours"])]
-    work = _round_total(elsewhere_work)
-    from . import drive_notice
+             for rid, e in sorted(agg["elsewhere"].items(), key=lambda x: -x[1]["hours"])]
+    work = _round_total(agg["elsewhere_work"])
+    second = agg["second_operation"]
     return needs.serial({"sector": sector, "today": today, "weeks": [{"year": y, "week": w, "monday": date.fromisocalendar(y, w, 1)} for y, w in weeks],
                          "machines": rows, "totals": machine_totals,
                          "elsewhere": {"operations": sum(o["operations"] for o in other), "hours": round(sum(o["hours"] for o in other), 1),
                                        "unknown": sum(o["unknown"] for o in other), "machines": other,
                                        **{k: work[k] for k in ("pieces", "metres", "weight_kg", "weight_unknown")}},
+                         # 2.ª operação das cantoneiras fora do plano (08/10): só a contagem, para uma linha discreta.
+                         "second_operation": {**second, "text": second_operation.label(second)},
                          # Excel do setor no Drive mais recente do que o importado (F16, 08/10): uma linha de aviso.
                          "source_notice": drive_notice.text(sector),
                          "settings": {k: settings[k] for k in ("template", "workdays", "holidays")},
-                         "shift_hours": shifts.shift_hours(settings["template"]), "stale": bool(occ.get("stale") or data.get("stale")),
+                         "shift_hours": shifts.shift_hours(settings["template"]), "stale": agg["stale"],
                          "rules": __doc__.split("\n\n", 1)[1].strip()})
+
+
+_CODE = re.compile(r"^(\d{4})-W(\d{2})$")
+
+
+def week_codes(codes) -> list[str]:
+    """Códigos do filtro Prazo da Carteira (portfolio.week_code): «2026-W41», «sem», «estacionada». Semanas por ordem,
+    depois «sem» e «estacionada»; repetidos uma vez. Outro valor → erro «Prazo inválido.»."""
+    from .portfolio import NO_WEEK, PARKED_WEEK
+    weeks, special = set(), set()
+    for code in codes or []:
+        found = _CODE.match(code) if isinstance(code, str) else None
+        if found:
+            try:
+                date.fromisocalendar(int(found[1]), int(found[2]), 1)
+            except ValueError:
+                raise planning.PlanningError("Prazo inválido.") from None
+            weeks.add(code)
+        elif code in (NO_WEEK, PARKED_WEEK):
+            special.add(code)
+        else:
+            raise planning.PlanningError("Prazo inválido.")
+    return sorted(weeks) + [c for c in (NO_WEEK, PARKED_WEEK) if c in special]
+
+
+def week_slice(sector: str, codes, *, today: date | None = None) -> dict:
+    """Carga das semanas do filtro Prazo da Carteira, por máquina e por tipo, das mesmas células da Carga (P4, 08/10).
+
+    Por máquina: load = no plano + a vencer + sugerida (na semana atual sem o atrasado, como a célula); capacidade =
+    a da semana inteira (full_capacity, o número que a célula mostra), somada com várias semanas; cor pela mesma
+    regra (status_of). Semanas passadas: as horas atrasadas dessa semana, sem capacidade (None, «—»); «sem» e
+    «estacionada»: sem prazo e estacionadas, sem capacidade. Na semana atual, `late_before` = o atrasado de semanas
+    anteriores (a coluna Atrasado). Os totais somam a capacidade sem contar a dobrar os postos (capacity.counted).
+    """
+    from .capacity import counted
+    from .portfolio import NO_WEEK
+    codes = week_codes(codes)
+    agg = _aggregate(sector, today, memo=today is None)
+    current, horizon = agg["current"], set(agg["weeks"])
+    chosen = [(int(c[:4]), int(c[6:])) for c in codes if _CODE.match(c)]
+    special = [c for c in codes if not _CODE.match(c)]
+    machines, kinds = {}, {k: {"hours": 0.0, "unknown": 0} for k in (PLAN, DUE, SUGGESTED)}
+    caps = {}
+    for m in agg["machines"]:
+        rid = m["id"]
+        acc, full, with_calendar, timeless = _empty_cell(), 0.0, False, bool(special)
+        for y, w in chosen:
+            if (y, w) < current:
+                _merge_cell(acc, agg["past"].get((rid, y, w)))
+                timeless = True
+                continue
+            _merge_cell(acc, (agg["cells"] if (y, w) in horizon else agg["later"]).get((rid, y, w)))
+            d = agg["cal"].get((rid, y, w))
+            if d:
+                with_calendar = True
+                full += shifts.week_hours(d)
+        for code in special:
+            _merge_cell(acc, (agg["undated"] if code == NO_WEEK else agg["parked"]).get(rid))
+        load = acc[PLAN] + acc[DUE] + acc[SUGGESTED]
+        dated = any((y, w) >= current for y, w in chosen)
+        status = None if not dated else "sem_calendario" if not with_calendar else None if timeless else status_of(load, full)
+        lb = agg["late_before"].get(rid) or _empty_cell()
+        machines[rid] = {"id": rid, "name": m["name"], "load": round(load, 1), "capacity": round(full, 1) if dated else None,
+                         PLAN: round(acc[PLAN], 1), DUE: round(acc[DUE], 1), SUGGESTED: round(acc[SUGGESTED], 1),
+                         "unknown": acc["unknown"], "operations": acc["operations"], "metres": round(acc["metres"], 1),
+                         "metres_unknown": acc["metres_unknown"], "status": status,
+                         "late_before": round(lb[PLAN] + lb[DUE] + lb[SUGGESTED], 1) if current in chosen else None}
+        caps[rid] = full if dated and with_calendar else None
+        for k in (PLAN, DUE, SUGGESTED):
+            kinds[k]["hours"] += acc[k]
+            kinds[k]["unknown"] += acc["unknown_" + k]
+    posts = agg["src"].get("posts") or {}
+    members = {x for ms in posts.values() for x in ms}
+    shape = {"roles": {rid: "maquina" for rid in caps if rid not in posts or rid in members},
+             "members": {post: list(ms) for post, ms in posts.items()}}
+    resources = {rid: {"id": rid} for rid in {*caps, *posts, *members}}
+    known = [caps[rid] for rid in counted(resources, caps, shape=shape) if caps.get(rid) is not None]
+    any_dated = any((y, w) >= current for y, w in chosen)
+    return {"sector": sector, "codes": codes, "today": agg["today"], "current": current in chosen,
+            "current_week": f"{current[0]}-W{current[1]:02d}", "machines": machines,
+            "kinds": {k: {"hours": round(v["hours"], 1), "unknown": v["unknown"]} for k, v in kinds.items()},
+            "totals": {"capacity": round(sum(known), 1) if any_dated and known else None,
+                       "load": round(sum(x["load"] for x in machines.values()), 1),
+                       "late_before": round(sum(x["late_before"] or 0 for x in machines.values()), 1) if current in chosen else None,
+                       "no_date": round(sum(c[PLAN] + c[DUE] + c[SUGGESTED] for c in agg["undated"].values()), 1)},
+            "stale": agg["stale"]}
 
 
 def _round_total(t: dict) -> dict:
