@@ -205,6 +205,73 @@ def test_drive_choice_sees_a_newer_plan_in_a_subfolder():
     assert workbooks.drive_choice([sub],name) is sub
 
 
+def test_drive_choice_follows_the_automatic_load_between_root_and_saida():
+    # F16 (08/10): a carga automática lê o mais recente, pelo nome exato, entre a raiz e SAIDA/.
+    name='Met3_Plan_Cantoneiras.xlsm'
+    root=_drive_file(name,'2026-10-02T07:04:45Z','cdd4')
+    saida=_drive_file('SAIDA/'+name,'2026-10-07T07:05:55Z','8412')
+    assert workbooks.drive_choice([root,saida],name) is saida
+    assert workbooks.drive_choice([root,{**saida,'Hashes':{'sha256':'cdd4'}}],name) is root
+    assert workbooks.drive_choice([_drive_file('SAIDA/'+name,'2026-10-02T07:04:45Z','other'),root],name) is root  # empate: raiz
+    later=_drive_file("Kanban's MTG3/"+name,'2026-10-08T06:00:00Z','k')
+    assert workbooks.drive_choice([root,saida,later],name) is later
+    assert workbooks.drive_choice([root,saida,{**later,'ModTime':'2026-10-05T06:00:00Z'}],name) is saida
+
+
+def test_local_copy_with_the_imported_hash_is_found_in_root_or_saida(tmp_path,monkeypatch):
+    import hashlib
+    sha=lambda b:hashlib.sha256(b).hexdigest()
+    name='Met3_Plan_Cantoneiras.xlsm'
+    (tmp_path/'SAIDA').mkdir()
+    (tmp_path/name).write_bytes(b'raiz 02/10');(tmp_path/'SAIDA'/name).write_bytes(b'saida 07/10')
+    # Snapshot de antes de 08/10: só o nome, e o caminho de outra pasta.
+    old={'source_filename':name,'source_path':'/outra/pasta/'+name,'source_sha256':sha(b'saida 07/10')}
+    assert workbooks.imported_file(old,tmp_path)==name
+    assert workbooks.local_copies(old,tmp_path)==[tmp_path/name,tmp_path/'SAIDA'/name]
+    assert workbooks.locate(old,tmp_path)==(tmp_path/'SAIDA'/name,True)
+    # Desde 08/10 o snapshot guarda o caminho relativo real; sem ele, a pasta sai do source_path.
+    new={**old,'source_filename':'SAIDA/'+name}
+    assert workbooks.imported_file(new,tmp_path)=='SAIDA/'+name and workbooks.local_copies(new,tmp_path)[0]==tmp_path/'SAIDA'/name
+    assert workbooks.imported_file({**old,'source_path':str(tmp_path/'SAIDA'/name)},tmp_path)=='SAIDA/'+name
+    # Nenhuma cópia com o sha importado → 409 no worker; nenhuma cópia → sem evidência, sem erro.
+    assert workbooks.locate({**old,'source_sha256':sha(b'outra')},tmp_path)==(None,True)
+    assert workbooks.locate(old,tmp_path/'vazia')==(None,False)
+    monkeypatch.setenv('MES_RAW_WORKBOOK_FOLDERS','.')
+    assert workbooks.locate(old,tmp_path)==(None,True)
+
+
+def test_capture_reads_the_imported_copy_from_saida_and_status_says_where(workspace,tmp_path,monkeypatch):
+    # F16 (08/10): o importado veio de SAIDA/ e a raiz tem outra versão; o worker não pára com 409.
+    import hashlib,json,subprocess
+    from openpyxl import Workbook
+    book=Workbook();book.active.title='CapacidadeMáquinas';book.active['A1']='Serrote';book.active['B1']=7.5
+    (tmp_path/'SAIDA').mkdir()
+    saida=tmp_path/'SAIDA'/'Met2_Plan_Perfis.xlsm';book.save(saida)
+    (tmp_path/'Met2_Plan_Perfis.xlsm').write_bytes(b'raiz antiga')
+    digest=hashlib.sha256(saida.read_bytes()).hexdigest()
+    with psycopg.connect(workspace,row_factory=dict_row) as c:
+        c.execute('UPDATE audit_mtg.snapshots SET source_sha256=%s,source_filename=%s,source_path=%s WHERE snapshot_id=%s',
+                  (digest,'SAIDA/Met2_Plan_Perfis.xlsm',str(saida),planning.snapshot(c,'perfis')['snapshot_id']))
+    with planning.connect() as c:
+        workbooks.capture(c,'perfis')
+        assert workbooks.source(c,'perfis')['sheets']['CapacidadeMáquinas'][0]['cells']['B']['value']==7.5
+        cantoneiras=c.execute('SELECT source_sha256 FROM audit_mtg.snapshots WHERE snapshot_id=%s',(planning.snapshot(c,'cantoneiras')['snapshot_id'],)).fetchone()['source_sha256']
+    # Versão nova de cantoneiras em SAIDA/: fica «por importar» sem pasta, porque a carga seguinte a lê.
+    files=[_drive_file('Met2_Plan_Perfis.xlsm','2026-09-21T12:00:00Z','raiz-antiga'),
+           _drive_file('SAIDA/Met2_Plan_Perfis.xlsm','2026-10-07T07:00:00Z',digest),
+           _drive_file('Met3_Plan_Cantoneiras.xlsm','2026-10-02T07:04:45Z',cantoneiras),
+           _drive_file('SAIDA/Met3_Plan_Cantoneiras.xlsm','2026-10-07T07:05:55Z','saida-nova')]
+    monkeypatch.setenv('MES_RAW_DRIVE_CHECK','1')
+    monkeypatch.setattr(workbooks.subprocess,'run',lambda command,**kw:subprocess.CompletedProcess(command,0,json.dumps(files),''))
+    workbooks.observe_drive(force=True)
+    by_area={x['area']:x for x in workbooks.status()['sources']}
+    assert by_area['perfis']['imported_file']=='SAIDA/Met2_Plan_Perfis.xlsm' and by_area['perfis']['imported_folder']=='SAIDA'
+    assert not by_area['perfis']['newer_available']
+    assert by_area['cantoneiras']['imported_folder'] is None
+    assert by_area['cantoneiras']['newer_available'] and by_area['cantoneiras']['newer_folder'] is None
+    assert by_area['cantoneiras']['drive']['remote_filename']=='SAIDA/Met3_Plan_Cantoneiras.xlsm'
+
+
 def test_drive_observation_reports_newer_plan_in_subfolder(workspace,monkeypatch):
     import json,subprocess
     imported={}

@@ -10,7 +10,7 @@ import uuid
 from .. import planning, planning_needs as needs, planning_calendars
 from ..raw.capacity import estimate
 from . import research, machines
-from .calendar import option_fit
+from .calendar import option_fit, limits_hours
 from .contracts import utc, minute
 
 
@@ -574,9 +574,10 @@ def capture(c, definition, started_at, *, expected_references=None):
             reasons.append('Duração admissível por confirmar.')
         if options and not any(resources[o['resource_id']]['windows'] for o in options):
             reasons.append('Calendário horário por confirmar.')
-        # Shared operators require their own confirmed availability.
+        # Shared operators require their own confirmed availability. Um grupo sem calendário só limita
+        # quantos trabalham ao mesmo tempo (08/10): OPERADORES_PAV1 deixava os serrotes do pav.1 sem horário.
         for option in options:
-            if any(not resources[p]['windows'] for p in option.get('shared_demands', {})):
+            if any(not resources[p]['windows'] and limits_hours(resources[p]) for p in option.get('shared_demands', {})):
                 reasons.append('Calendário dos operadores partilhados por confirmar.')
             if any(resources[p].get('capacity',1)<=0 for p in option.get('shared_demands',{})):
                 reasons.append('Capacidade dos operadores partilhados por confirmar.')

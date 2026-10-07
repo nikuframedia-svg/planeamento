@@ -366,6 +366,60 @@ def test_shared_operators_and_multiple_predecessors_use_wall_time():
     assert not validation.validate(snap,bad)['valid']
 
 
+def test_operator_group_without_calendar_limits_only_how_many_work_at_once():
+    """F17 (08/10): um grupo de operadores sem calendário (OPERADORES_PAV1) deixava os serrotes sem janelas."""
+    from app.gantt.calendar import option_windows
+    def plan(capacity, **group):
+        ops=[operation(str(i),120,machine=str(i)) for i in range(3)]
+        snap=synthetic(ops,resources=('0','1','2','pav1'))
+        snap['resources']['pav1'].update({'windows':[],'type':'grupo_operadores','calendar_status':'unknown','capacity':capacity,**group})
+        for op in ops:op['options'][0]['shared_demands']={'pav1':1}
+        return snap,ops
+    snap,ops=plan(2)
+    # O horário vem da máquina; o grupo só entra na capacidade partilhada.
+    assert option_windows(snap,ops[0]['options'][0])==option_windows(snap,{'resource_id':'0'})!=[]
+    first=baseline.build(snap)
+    assert sorted(first['bars'][str(i)]['end_minute'] for i in range(3))==[120,120,240]  # 2 de cada vez
+    best,_=solver.optimize(snap,first,seconds=2)
+    assert validation.validate(snap,best)['valid'] and len(best['bars'])==3
+    snap,_=plan(1)
+    assert sorted(b['end_minute'] for b in baseline.build(snap)['bars'].values())==[120,240,420]  # um de cada vez
+    # Com calendário confirmado, mesmo fechado, o grupo continua a limitar o horário.
+    snap,ops=plan(2,calendar_status='closed')
+    assert option_windows(snap,ops[0]['options'][0])==[] and not baseline.build(snap)['bars']
+
+
+def test_shared_operator_group_without_calendar_does_not_block_the_saws(integrated_db):
+    """F17 (08/10): no Gantt técnico, a máquina com calendário do grupo partilhado entra na proposta."""
+    from app.raw import projection
+    p=package()
+    p['metadata']['resources'].append({'codigo':'OPERADORES','designacao':'Operadores partilhados','setor':'MTG3',
+                                       'tipo':'grupo_operadores','quantidade_operadores':2})
+    p['metadata']['relations']=[{'pai':'OPERADORES','relacao':'partilha_operadores','filho':'XPT6'}]
+    with planning.connect() as c:
+        research.publish(c,p)
+        projection.publish(c,'planning:cantoneiras','shared-operators',[{'key':'macro:line','values':
+            {'of':'OF100','component_ref':'PART','profile':'L80X80X8','quantity_required':10,'length_mm':1000,
+             'status':'Em Aberto','operation':'112','planning_active':True,'machine':'XPT6'},'area':'cantoneiras'}],{})
+        rid=_ready_machine(c,'XPT6','112')
+    with planning.connect(readonly=True) as c:
+        snapshot=integrated.capture(c,{'areas':['cantoneiras']},MONDAY.isoformat())
+    op=snapshot['operations'][0]
+    group=research.resource_id('OPERADORES')
+    assert snapshot['resources'][group]['capacity']==2 and not snapshot['resources'][group]['windows']
+    assert op['options'] and all(o['shared_demands']=={group:1} for o in op['options'])
+    assert 'Calendário dos operadores partilhados por confirmar.' not in op['blocking_reasons']
+    assert op['state']=='ready',op['blocking_reasons']
+    bar=baseline.build(snapshot)['bars'][op['key']]
+    assert bar['resource_id']==rid and bar['segments']
+    # Sem o número de operadores, continua por confirmar.
+    p['metadata']['resources'][-1]['quantidade_operadores']=None
+    with planning.connect() as c:research.publish(c,p)
+    with planning.connect(readonly=True) as c:
+        op=integrated.capture(c,{'areas':['cantoneiras']},MONDAY.isoformat())['operations'][0]
+    assert 'Capacidade dos operadores partilhados por confirmar.' in op['blocking_reasons']
+
+
 def test_temporal_evaluation_never_trains_on_a_held_out_order():
     cohorts=[{'key':'train','orders':['OF1'],'start_date':'2026-08-01','end_date':'2026-08-02','hours':2,'volume':20},
         {'key':'leak','orders':['OF2'],'start_date':'2026-08-02','end_date':'2026-08-03','hours':1,'volume':100},
