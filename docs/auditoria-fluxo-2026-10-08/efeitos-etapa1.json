@@ -1,0 +1,27 @@
+{
+  "descricao": "Efeitos esperados da Etapa 1 (dados certos), declarados antes de corrigir. Usado por scripts/auditoria_fluxo.py --comparar.",
+  "efeitos": [
+    {"defeito": "F01", "verificacao": "C06", "campo": "horas", "pagina": "carga", "filtro": {"defeito": "F01"}, "fecha": true,
+     "descricao": "F01: horas calculadas na máquina efetiva (Carteira), não na da Tabela."},
+    {"defeito": "F02", "verificacao": "C06", "campo": "horas", "pagina": "carga", "filtro": {"defeito": "F02"}, "fecha": true,
+     "descricao": "F02: velocidade do Excel em todas as páginas (Histórico só mostrado), ×3 da Thomas, coluna E/F na MTG2."},
+    {"defeito": "F05", "verificacao": "C02", "filtro": {"defeito": "F05"}, "fecha": true,
+     "descricao": "F04/F05: a camada v2 deixa de substituir o saldo principal."},
+    {"defeito": "F05", "verificacao": "C03", "filtro": {"defeito": "F05"}, "fecha": true,
+     "descricao": "F04/F05: metros seguem o saldo da app."},
+    {"defeito": "F05", "verificacao": "C04", "filtro": {"defeito": "F05"}, "fecha": true,
+     "descricao": "F04/F05: peso segue o saldo da app."},
+    {"defeito": "F05", "verificacao": "C13", "filtro": {"defeito": "F05"}, "fecha": true,
+     "descricao": "F04/F05: saldo das linhas planeadas = saldo da app."},
+    {"defeito": "F08", "verificacao": "C04", "campo": "kg", "filtro": {"defeito": "F08"}, "fecha": true,
+     "descricao": "F08: peso das cantoneiras pela geometria quando a Tabela de pesos não tem o perfil."},
+    {"defeito": "F09", "verificacao": "C04", "campo": "kg", "filtro": {"defeito": "F09"}, "fecha": true,
+     "descricao": "F09/F21: o desconhecido deixa de aparecer como 0; uma só fonte de kg."},
+    {"defeito": "F21", "verificacao": "C04", "campo": "kg", "pagina": "carga", "filtro": {"defeito": "F21"}, "fecha": true,
+     "descricao": "F21: kg da Carga e da Carteira da mesma fonte."},
+    {"defeito": "F06", "verificacao": "C09", "campo": "repetida", "fecha": true,
+     "descricao": "F06: aviso «repetida n×» na lupa."},
+    {"defeito": "F24", "verificacao": "C07", "filtro": {"defeito": "F24"}, "fecha": true,
+     "descricao": "F24: dia de Lisboa em todo o lado."}
+  ]
+}
