@@ -49,7 +49,8 @@ def _call(function):
     return call(function)
 
 
-PAGE_FILES = ("static/carteira2.js", "static/carteira2.css")  # Carteira com seleção por membro (plano de 02/10/2026)
+# Carteira com seleção por membro (plano de 02/10/2026); tabela_fixa.js = cabeçalho fixo (P2, 08/10), também na Carga.
+PAGE_FILES = ("static/carteira2.js", "static/carteira2.css", "static/tabela_fixa.js")
 
 
 @router.get("/planeamento/carteira", response_class=HTMLResponse)
@@ -71,6 +72,7 @@ def groups(setor: str = "cantoneiras", vista: str = "referencia", caminho: list[
            familia: str | None = None, familia_sku: str | None = None, janela: str | None = None, maquina: str | None = None,
            sinal: str | None = None, estado: str | None = None, q: str | None = None, ordem: str = "urgencia",
            semanas: list[str] = Query(default=[])):
+    """Grupos de um nível. `ordem`: corte | picking (só MTG2) | urgencia | metros; a resposta repete-a em `order`."""
     _guard()
     filters = _filters(familia, familia_sku, janela, maquina, sinal, estado, q, semanas)
     return _call(lambda: needs.serial(portfolio.groups(setor, vista, caminho, filters, ordem, data=portfolio.current(setor, allow_stale=True),
@@ -81,8 +83,9 @@ def groups(setor: str = "cantoneiras", vista: str = "referencia", caminho: list[
 def members(setor: str = "cantoneiras", vista: str = "referencia", caminho: list[str] = Query(default=[]),
             cursor: int = 0, limite: int = 200, pesquisa: str | None = None,
             familia: str | None = None, familia_sku: str | None = None, janela: str | None = None, maquina: str | None = None,
-            sinal: str | None = None, estado: str | None = None, q: str | None = None, semanas: list[str] = Query(default=[])):
-    """Membros exatos de um grupo (lupa): total integral, todas as chaves e a página pedida."""
+            sinal: str | None = None, estado: str | None = None, q: str | None = None, semanas: list[str] = Query(default=[]),
+            ordem: str | None = None):
+    """Membros exatos de um grupo (lupa): total integral, todas as chaves e a página pedida, pela ordem da lista."""
     _guard()
     filters = {k: v for k, v in _filters(familia, familia_sku, janela, maquina, sinal, estado, q, semanas).items() if v}
     def build():
@@ -99,7 +102,7 @@ def members(setor: str = "cantoneiras", vista: str = "referencia", caminho: list
                 return {}
         return needs.serial(portfolio.members(sector, vista, caminho, cursor=cursor, limit=limite, q=pesquisa, filters=filters,
                                               data=portfolio.current(sector, allow_stale=True), decisions=selection.current(setor),
-                                              suggest=suggest))
+                                              suggest=suggest, sort=ordem))
     return _call(build)
 
 
@@ -246,7 +249,7 @@ async def settings_save(request: Request):
 @router.get("/planeamento/setor/carga", response_class=HTMLResponse)
 def load_page(request: Request):
     _guard()
-    return _page(request, "setor_carga.html", ("static/setor_carga.js", "static/setor_carga.css"))
+    return _page(request, "setor_carga.html", ("static/setor_carga.js", "static/setor_carga.css", "static/tabela_fixa.js"))
 
 
 @router.get("/planeamento/api/setor/carga")

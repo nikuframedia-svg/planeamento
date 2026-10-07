@@ -484,3 +484,119 @@ def test_newer_excel_on_drive_is_one_line_on_top_of_the_carteira(monkeypatch):
     drive_notice.clear()
     assert drive_notice.text("cantoneiras") is None
     drive_notice.clear()
+
+
+# --- Ordem por data (P6, 08/10): grupos pela data mais antiga com saldo; a lupa segue a mesma ordem.
+
+
+def _row(of, ref, *, cut, quantity=10, length=1000, key=None, raw_w=None, galvanizing=None, picking=None, area="cantoneiras", made=0):
+    r = raw(of, ref, quantity, length, cut=cut, key=key or f"k-{of}-{ref}", made=made)
+    r["detail"] = {"area": area, "raw": {k: v for k, v in (("W", raw_w), ("Data Galvanização", galvanizing)) if v}}
+    if picking:
+        r["v"]["picking_week"], r["v"]["picking_year"] = picking
+    return r
+
+
+def _sector_data(area, *rows):
+    return {**data(*rows), "sector": area}
+
+
+def test_cut_date_order_puts_the_oldest_late_group_first_then_future_without_date_and_parked(monkeypatch):
+    _quiet_notice(monkeypatch)
+    closed = _row("OF5", "OLD", cut="2026-01-01", made=10)
+    closed["v"]["planning_remaining"] = 0
+    closed["detail"]["calculation"] = {"integrated_operations": [{"operation": "CPIS:111", "occurrence": 2, "remaining": 5}]}
+    d = data(_row("OF1", "A", cut="2026-07-20"), _row("OF1", "B", cut="2026-10-05"),
+             _row("OF2", "A", cut="2026-10-02"), _row("OF3", "A", cut="2026-07-01"),
+             _row("OF4", "A", cut=None), _row("OF6", "A", cut="2026-03-02", raw_w="2026/53"),
+             closed, _row("OF5", "NEW", cut="2026-10-10"),
+             _row("OF7", "P", cut="2026-03-01", raw_w="2026/53"), _row("OF7", "Q", cut="2026-10-20"))
+    view = portfolio.groups("cantoneiras", "of_perfil", sort="corte", data=d)
+    assert [g["key"] for g in view["groups"]] == ["OF3", "OF1", "OF2", "OF5", "OF7", "OF4", "OF6"]
+    assert view["order"] == "corte" and view["capabilities"] == {"ordem_data": True}
+    tags = {g["key"]: g["due_tag"] for g in view["groups"]}
+    assert tags["OF1"] == {"day": date(2026, 7, 20), "field": "cut_date", "late": True, "late_days": 70, "provisional": False}
+    assert tags["OF2"]["late"] is False and tags["OF2"]["late_days"] == 0 and "week" not in tags["OF2"]
+    assert tags["OF5"]["day"] == date(2026, 10, 10)    # a linha já cortada (só falta a 2.ª operação) não conta
+    assert tags["OF7"]["day"] == date(2026, 10, 20)    # a estacionada não conta; o grupo não é «só estacionadas»
+    assert tags["OF4"] == {"none": "sem data"} and tags["OF6"] == {"none": "estacionada"}
+    # Grupo já todo cortado (só falta a 2.ª operação): fica pela data das suas linhas, não vai para «sem data».
+    only_closed = data(_row("OF1", "A", cut="2026-10-02"), {**closed, "row_key": "k-closed"})
+    view = portfolio.groups("cantoneiras", "of_perfil", sort="corte", data=only_closed)
+    assert [(g["key"], g["due_tag"]["day"]) for g in view["groups"]] == [("OF5", date(2026, 1, 1)), ("OF1", date(2026, 10, 2))]
+    # Data igual: mais metros primeiro, depois a chave.
+    tie = data(_row("OF1", "A", cut="2026-10-01"), _row("OF2", "A", cut="2026-10-01", quantity=30), _row("OF3", "A", cut="2026-10-01"))
+    assert [g["key"] for g in portfolio.groups("cantoneiras", "of_perfil", sort="corte", data=tie)["groups"]] == ["OF2", "OF1", "OF3"]
+    # As outras ordens não trazem etiqueta e a de picking não existe na MTG3.
+    assert "due_tag" not in portfolio.groups("cantoneiras", "of_perfil", sort="urgencia", data=d)["groups"][0]
+    with pytest.raises(portfolio.planning.PlanningError, match="Ordem inválida"):
+        portfolio.groups("cantoneiras", "of_perfil", sort="picking", data=d)
+    assert portfolio.orders("cantoneiras") == ("corte", "urgencia", "metros") and portfolio.default_order("cantoneiras") == "corte"
+    assert portfolio.orders("perfis")[:2] == ("corte", "picking") and portfolio.default_order("perfis") == "picking"
+
+
+def test_picking_order_with_deduced_year_and_profiles_without_picking_by_the_policy_deadline(monkeypatch):
+    _quiet_notice(monkeypatch)
+    rows = [_row("P1", "A", cut="2026-10-20", picking=(41, 2026), area="perfis"),
+            _row("P2", "A", cut="2026-09-30", picking=(40, None), area="perfis"),          # ano deduzido
+            _row("P3", "A", cut="2026-10-20", picking=(38, 2026), area="perfis"),
+            # Sem Picking: o prazo da política (Galvanização 01/10) e não a Data Corte crua (01/09).
+            _row("P4", "A", cut="2026-09-01", galvanizing="2026-10-01", area="perfis"),
+            _row("P5", "A", cut="2026-09-10", area="perfis"),
+            _row("P6", "A", cut=None, area="perfis")]
+    d = _sector_data("perfis", *rows)
+    line = {x["of"]: x for x in d["lines"]}
+    assert line["P2"]["picking_day"] == date(2026, 9, 28) and line["P2"]["picking_provisional"]
+    assert line["P1"]["picking_day"] == date(2026, 10, 5) and not line["P1"]["picking_provisional"]
+    view = portfolio.groups("perfis", "of_perfil", sort="picking", data=d)
+    assert [g["key"] for g in view["groups"]] == ["P3", "P2", "P1", "P5", "P4", "P6"]
+    tags = {g["key"]: g["due_tag"] for g in view["groups"]}
+    assert tags["P2"] == {"day": date(2026, 9, 28), "field": "picking", "late": False, "late_days": 0, "provisional": True, "week": "2026-W40"}
+    assert tags["P3"]["late"] and tags["P3"]["late_days"] == 14 and tags["P3"]["week"] == "2026-W38"
+    assert tags["P4"]["field"] == "galvanizing" and tags["P4"]["day"] == date(2026, 10, 1) and "week" not in tags["P4"]
+    assert tags["P5"]["field"] == "cut_date" and tags["P6"] == {"none": "sem data"}
+    # A data com o ano confirmado numa linha confirma o grupo: deixa de ser «S40?».
+    both = _sector_data("perfis", _row("P2", "A", cut="2026-09-30", picking=(40, None), area="perfis"),
+                        _row("P2", "B", cut="2026-09-30", picking=(40, 2026), area="perfis"))
+    assert portfolio.groups("perfis", "of_perfil", sort="picking", data=both)["groups"][0]["due_tag"]["provisional"] is False
+    # Pela data de corte, os perfis seguem a Data Corte.
+    assert [g["key"] for g in portfolio.groups("perfis", "of_perfil", sort="corte", data=d)["groups"]][:3] == ["P4", "P5", "P2"]
+
+
+def test_zero_metre_group_is_ranked_by_its_lines_not_sent_to_the_end(monkeypatch):
+    """F10: um grupo de 0 m (sem comprimento) atrasado ia para o fim na «Mais urgente primeiro»."""
+    _quiet_notice(monkeypatch)
+    d = data(_row("OF1", "A", cut="2026-10-10"), _row("OF2", "A", cut="2026-09-01", length=None), _row("OF3", "A", cut=None))
+    urgent = portfolio.groups("cantoneiras", "of_perfil", sort="urgencia", data=d)["groups"]
+    assert [g["key"] for g in urgent] == ["OF2", "OF1", "OF3"] and urgent[0]["metres"] == 0
+    assert urgent[0]["window_lines"]["atrasado"] == 1
+    by_cut = portfolio.groups("cantoneiras", "of_perfil", sort="corte", data=d)["groups"]
+    assert [g["key"] for g in by_cut] == ["OF2", "OF1", "OF3"] and by_cut[0]["due_tag"]["late_days"] == 27
+
+
+def test_lupa_follows_the_date_order_of_the_list():
+    d = data(_row("OF1", "C", cut="2026-10-10", key="k-late-2"), _row("OF1", "A", cut=None, key="k-nodate"),
+             _row("OF1", "B", cut="2026-08-01", key="k-late-1"), _row("OF1", "D", cut="2026-03-01", raw_w="2026/53", key="k-parked"))
+    path = ["OF1", "L45X45X5"]
+    by_cut = portfolio.members("cantoneiras", "of_perfil", path, data=d, sort="corte")
+    assert [i["key"] for i in by_cut["items"]] == ["k-late-1", "k-late-2", "k-nodate", "k-parked"] and by_cut["order"] == "corte"
+    assert by_cut["keys"] == [i["key"] for i in by_cut["items"]]
+    assert [i["reference"] for i in portfolio.members("cantoneiras", "of_perfil", path, data=d)["items"]] == ["A", "B", "C", "D"]
+    with pytest.raises(portfolio.planning.PlanningError):
+        portfolio.members("cantoneiras", "of_perfil", path, data=d, sort="picking")
+
+
+def test_api_echoes_the_order_and_the_lupa_receives_it(client, monkeypatch):
+    _quiet_notice(monkeypatch)
+    body = client.get("/planeamento/api/carteira", params={"setor": "cantoneiras", "vista": "of_perfil", "ordem": "corte"}).json()
+    assert body["order"] == "corte" and body["capabilities"]["ordem_data"] is True
+    assert body["groups"][0]["due_tag"]["field"] == "cut_date" and body["groups"][0]["due_tag"]["day"] == "2026-09-20"
+    assert client.get("/planeamento/api/carteira", params={"setor": "cantoneiras"}).json()["order"] == "urgencia"
+    wrong = client.get("/planeamento/api/carteira", params={"setor": "cantoneiras", "ordem": "picking"})
+    assert wrong.status_code == 422 and wrong.json()["error"] == "Ordem inválida."
+    members = client.get("/planeamento/api/carteira/membros", params=[("setor", "cantoneiras"), ("vista", "of_perfil"), ("caminho", "OF1"),
+                                                                      ("caminho", "L45X45X5"), ("ordem", "corte")]).json()
+    assert members["order"] == "corte" and members["total"] == 2
+    page = client.get("/planeamento/carteira").text
+    assert "/static/tabela_fixa.js?v=" in page and 'id="cart-table"' in page and "planeamento_ui.css?v=20261008" in page
+    assert '<option value="corte">Data de corte mais próxima</option>' in page

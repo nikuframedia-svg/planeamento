@@ -12,6 +12,17 @@
   const metresFine = new Intl.NumberFormat('pt-PT', {maximumFractionDigits: 1}); // na lupa: uma peça curta não aparece como «0 m»
   const STATE_LABEL = {planeado: 'Planeado', nesting: 'Nesting', sem_maquina: 'Sem máquina', excluida: 'Excluída'};
   const SOURCE_LABEL = {carteira: 'Escolhida na Carteira', tabela: 'Coluna Máquina da Tabela', conjunto: 'Conjunto de famílias'};
+  // Ordem (P6, 08/10): as duas por data ordenam pela data mais antiga com saldo de cada grupo; «picking» só na MTG2.
+  const ORDERS = {
+    cantoneiras: [['corte', 'Data de corte mais próxima'], ['urgencia', 'Mais urgente primeiro'], ['metros', 'Mais metros primeiro']],
+    perfis: [['picking', 'Data de picking mais próxima'], ['corte', 'Data de corte mais próxima'], ['urgencia', 'Mais urgente primeiro'],
+             ['metros', 'Mais metros primeiro']],
+  };
+  const BY_DATE = new Set(['corte', 'picking']);
+  const DUE_TITLE = {cut_date: 'Data de corte mais antiga com saldo', picking: 'Picking mais antigo com saldo',
+                     galvanizing: 'Galvanização mais antiga com saldo', planned_period: 'Semana escolhida mais antiga com saldo',
+                     override: 'Prazo corrigido mais antigo com saldo'};
+  const dayMonth = new Intl.DateTimeFormat('pt-PT', {day: '2-digit', month: '2-digit'});
 
   const state = {
     sector: null,
@@ -23,6 +34,7 @@
     tickets: {list: 0, kpis: 0, preview: 0, counts: 0, suggest: 0},
     kpisWeek: false,  // KPIs da semana (filtro Prazo, 08/10): números das células da Carga, sem os acréscimos (+…)
     kpisBase: null,   // a última resposta sem semanas, para «Limpar filtros» voltar logo a ela
+    noDateOrder: false, // Python antiga sem as ordens por data (P6, 08/10)
   };
 
   function el(tag, attrs = {}, ...children) {
@@ -207,7 +219,7 @@
       el('th', {scope: 'row', class: 'name'},
         el('div', {class: 'name-cell', style: `--depth:${depth}`},
           el('input', {type: 'checkbox', class: 'group-pick'}), toggle,
-          el('strong', {}, group.key), lupa, el('span', {class: 'pick-count'}))),
+          el('strong', {}, group.key), dueTag(group.due_tag, data.order), lupa, el('span', {class: 'pick-count'}))),
       planCell(st, [plan, clear]),
       el('td', {class: 'num'}, metresKnown(group.metres, unknownMetres(group))),
       el('td', {class: 'num'}, number.format(group.pieces)),
@@ -220,6 +232,19 @@
     plan.addEventListener('click', () => act(key, 'selecionar', tr));
     clear.addEventListener('click', () => act(key, 'limpar', tr));
     return tr;
+  }
+
+  // Data do grupo, só nas ordens por data (P6, 08/10): «28/07» (vermelho se atrasada), «S42», «S42?» (ano deduzido),
+  // «sem data», «estacionada». O título diz de onde vem.
+  function dueTag(tag, order) {
+    if (!tag || !BY_DATE.has(order)) return null;
+    if (tag.none) return el('span', {class: 'due', title: tag.none === 'estacionada' ? 'Só linhas estacionadas no Excel (W 2026/53)' : 'Sem data nas linhas com saldo'}, tag.none);
+    const day = dayMonth.format(new Date(`${tag.day}T12:00:00`));
+    const what = DUE_TITLE[tag.field] || 'Prazo mais antigo com saldo';
+    const title = [order === 'picking' && tag.field !== 'picking' ? `Sem Picking · ${what}` : what, tag.week ? `semana de ${day}` : null,
+      tag.provisional ? 'ano deduzido' : null,
+      tag.late ? `${number.format(tag.late_days)} ${tag.late_days === 1 ? 'dia' : 'dias'} de atraso` : null].filter(Boolean).join(' · ');
+    return el('span', {class: `due${tag.late ? ' late' : ''}`, title}, tag.week ? `S${tag.week.slice(-2)}${tag.provisional ? '?' : ''}` : day);
   }
 
   function subtotal(t) {
@@ -303,12 +328,20 @@
   async function load() {
     const ticket = ++state.tickets.list;
     const sector = state.sector;
+    const order = $('ordem').value;
     $('error').hidden = true;
     history.replaceState(null, '', `?${query()}`);
     state.groups.clear();
     try {
       const data = await api('/planeamento/api/carteira', query());
       if (ticket !== state.tickets.list || sector !== state.sector) return;
+      // Python antiga, sem «order» (P6, 08/10): ordenava por metros sem dizer. Fica a ordem de hoje e uma nota.
+      if (!('order' in data) && BY_DATE.has(order)) {
+        state.noDateOrder = true;
+        orderOptions('urgencia');
+        if ($('order-note')) $('order-note').hidden = false;
+        return load();
+      }
       subtotal(data.list_totals || data.totals);
       $('source').textContent = `Excel importado a ${new Date(data.imported_at).toLocaleString('pt-PT')}`;
       // Excel no Drive mais recente do que o importado (08/10): uma linha, só quando a API a manda.
@@ -741,8 +774,18 @@
     weeksSummary();
   }
 
+  // Opções de Ordem do setor (P6, 08/10): por defeito MTG3 pela data de corte e MTG2 pelo Picking.
+  function orderOptions(keep) {
+    const list = ORDERS[state.sector] || ORDERS.cantoneiras;
+    const off = (v) => state.noDateOrder && BY_DATE.has(v);
+    $('ordem').replaceChildren(...list.map(([value, label]) => el('option', {value, disabled: off(value)}, label)));
+    $('ordem').value = list.some(([v]) => v === keep) && !off(keep) ? keep : state.noDateOrder ? 'urgencia' : list[0][0];
+  }
+
   async function switchSector(initial = {}) {
     state.sector = $('setor').value;
+    // Ao mudar de setor, uma ordem por data volta à do novo setor; «urgência» e «metros» ficam.
+    orderOptions(initial.ordem || (BY_DATE.has($('ordem').value) ? null : $('ordem').value));
     state.open = [];
     state.counts.clear();
     state.preview = null;
@@ -756,12 +799,12 @@
 
   async function start() {
     const initial = new URLSearchParams(location.search);
-    for (const id of ['setor', 'vista', 'estado', 'q', 'ordem']) {
+    for (const id of ['setor', 'vista', 'estado', 'q']) {
       const value = initial.get(id);
       if (value && (id === 'q' || [...$(id).options].some((o) => o.value === value))) $(id).value = value;
     }
     const first = {familia: initial.get('familia') || '', familia_sku: initial.get('familia_sku') || '', maquina: initial.get('maquina') || '',
-                   semanas: initial.getAll('semanas')};
+                   semanas: initial.getAll('semanas'), ordem: initial.get('ordem')};
     let timer;
     const reload = (wait) => { clearTimeout(timer); timer = setTimeout(load, wait); };
     for (const id of ['vista', 'ordem', 'familia', 'familia_sku', 'maquina', 'estado']) $(id).addEventListener('change', () => {
@@ -787,6 +830,8 @@
         if (state.kpisBase && state.kpisBase.sector === state.sector) renderKpis(state.kpisBase.data);
       }
     });
+    // Cabeçalho e Subtotal presos por baixo do menu (P2, 08/10).
+    if (window.stickyHead) window.stickyHead($('cart-table'), $('tree'), {extra: $('subtotal')});
     await switchSector(first);
   }
 

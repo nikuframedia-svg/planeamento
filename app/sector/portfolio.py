@@ -69,6 +69,28 @@ SIGNALS = {
     "estado_cpis": "Estado CPIS por confirmar",
 }
 
+# Ordem dos grupos (P6, 08/10/2026). As duas por data ordenam pela data mais antiga com saldo de cada grupo:
+# primeiro as atrasadas (a mais antiga à frente), depois as futuras, sem data e só estacionadas. «picking» só na
+# MTG2. Os rótulos estão no ecrã (carteira2.html/js); aqui só os códigos.
+ORDERS = ("corte", "picking", "urgencia", "metros")
+DATE_ORDERS = ("corte", "picking")
+
+
+def orders(sector: str) -> tuple:
+    return tuple(o for o in ORDERS if o != "picking" or sector == "perfis")
+
+
+def default_order(sector: str) -> str:
+    """Por defeito no ecrã: MTG3 pela Data Corte, MTG2 pelo Picking."""
+    return "picking" if sector == "perfis" else "corte"
+
+
+def check_order(sector: str, order: str) -> str:
+    if order not in orders(sector):
+        raise planning.PlanningError("Ordem inválida.")
+    return order
+
+
 STATES = {  # decisão Planear de cada linha (informação da linha; o filtro Estado usa STATUS)
     "proposta": "Proposta por decidir",
     "selecionado": "Marcado para planear",
@@ -233,6 +255,9 @@ def line_from_row(row: dict, today: date, *, policy: dict | None = None, overrid
                            urgent=signals["prioridade"] is not None)
     window = priority.window(due, today)
     priority_day = _day(due["priority_day"])
+    # Picking da linha (P6, 08/10): dia de Lisboa da segunda-feira da semana; provisório com o ano deduzido.
+    picking = marks.get("picking")
+    picking_day = datetime.fromisoformat(picking["at"]).astimezone(priority.LISBON).date() if picking else None
     return {
         "key": row["row_key"],
         "aliases": list(detail.get("selection_aliases") or []),
@@ -281,6 +306,10 @@ def line_from_row(row: dict, today: date, *, policy: dict | None = None, overrid
         "priority_day": priority_day,
         "iso_week": iso_week(priority_day),
         "priority_source": due["priority_source"] or due["missing_reason"],
+        "priority_field": due["priority_field"],
+        "priority_provisional": bool(due.get("provisional")),
+        "picking_day": picking_day,
+        "picking_provisional": bool(picking and picking.get("provisional")),
         "parked": bool(due.get("parked")),
         "delivery_date": _day(v.get("delivery_date")),
         "window": window,
@@ -526,16 +555,24 @@ def _summary(lines: list[dict], decisions: dict | None = None) -> dict:
                 s["ofs"].add(x["of"])
     by_machine = defaultdict(float)
     windows = defaultdict(float)
+    window_lines = defaultdict(int)
     signals = defaultdict(int)
     for x in lines:
         by_machine[x["machine"] or "Sem máquina"] += x["metres"]
         windows[x["window"]] += x["metres"]
+        window_lines[x["window"]] += 1
         for name, value in x["signals"].items():
             if value and name != "entrega_escrita":
                 signals[name] += 1
     cut_dates = [x["cut_date"] for x in lines if x["cut_date"]]
     priority_days = [x["priority_day"] for x in lines if x.get("priority_day")]
     priorities = [x["signals"]["prioridade"] for x in lines if x["signals"]["prioridade"] is not None]
+    # Datas das ordens por data (P6, 08/10): só as linhas com saldo (ou por confirmar) e não estacionadas. Um grupo
+    # já todo cortado, só com a operação seguinte por fazer (ex.: OF2629695, L100X50X8), usa as datas das suas linhas
+    # não estacionadas: senão ia para «sem data», no fim, com trabalho atrasado.
+    pending = [x for x in lines if open_line(x)] or [x for x in lines if not x.get("parked")]
+    picking = _earliest(pending, "picking_day", "picking_provisional")
+    due = _earliest(pending, "priority_day", "priority_provisional")
     return {
         "lines": len(lines),
         "ofs": len({x["of"] for x in lines}),
@@ -556,7 +593,13 @@ def _summary(lines: list[dict], decisions: dict | None = None) -> dict:
                    for code, s in status.items()},
         "earliest_cut_date": min(cut_dates) if cut_dates else None,
         "earliest_priority_day": min(priority_days) if priority_days else None,
+        "earliest_open_cut": min((x["cut_date"] for x in pending if x["cut_date"]), default=None),
+        "earliest_open_picking": picking["day"], "earliest_open_picking_provisional": picking["provisional"],
+        # Prazo da política das linhas com saldo (MTG2 sem Picking: Semana escolhida → Galvanização → Data Corte).
+        "earliest_open_due": due["day"], "earliest_open_due_field": due["field"], "earliest_open_due_provisional": due["provisional"],
+        "only_parked": bool(lines) and all(x.get("parked") for x in lines),
         "windows": {k: round(windows.get(k, 0.0), 1) for k in WINDOWS},
+        "window_lines": {k: window_lines.get(k, 0) for k in WINDOWS},
         "machines": [{"machine": m, "metres": round(v, 1)} for m, v in sorted(by_machine.items(), key=lambda kv: -kv[1])[:4]],
         "signals": dict(signals),
         "priority": min(priorities) if priorities else None,
@@ -570,10 +613,69 @@ def _summary(lines: list[dict], decisions: dict | None = None) -> dict:
     }
 
 
+def open_line(line: dict) -> bool:
+    """Linha com saldo de corte (> 0 ou por confirmar) e não estacionada: a que conta para a data do grupo."""
+    return not line.get("parked") and (line["pieces"] is None or line["pieces"] > 0)
+
+
+def _earliest(lines: list[dict], field: str, provisional: str) -> dict:
+    """{day, field, provisional} da data mais antiga em `field`. Provisória só quando todas as linhas desse dia
+    o são (uma com o ano confirmado confirma a data)."""
+    days = [x[field] for x in lines if x.get(field)]
+    if not days:
+        return {"day": None, "field": None, "provisional": False}
+    day = min(days)
+    first = [x for x in lines if x.get(field) == day]
+    source = first[0].get("priority_field") if field == "priority_day" else "picking"
+    return {"day": day, "field": source, "provisional": all(x.get(provisional) for x in first)}
+
+
 def _urgency(group: dict):
-    rank = min((list(WINDOWS).index(w) for w, m in group["windows"].items() if m > 0), default=len(WINDOWS))
+    # Janela pelas linhas e não pelos metros (F10, 08/10): um grupo de 0 m (sem comprimento, saldo por confirmar)
+    # ia para o fim da lista. `window_lines` falta em resumos antigos guardados: aí ficam os metros.
+    counts = group.get("window_lines") or group["windows"]
+    rank = min((list(WINDOWS).index(w) for w, n in counts.items() if n > 0), default=len(WINDOWS))
     priority = group["priority"] if group["priority"] is not None else 99
     return (priority, rank, group.get("earliest_priority_day") or group["earliest_cut_date"] or date.max, -group["metres"], group["key"])
+
+
+def by_date(group: dict, order: str, today: date) -> tuple[tuple, dict]:
+    """(chave, etiqueta) de um grupo nas ordens por data (P6, 08/10).
+
+    corte:   (0, Data Corte) | (2) sem data | (3) só estacionadas
+    picking: (0, Picking) | (1, prazo da política) sem Picking | (2) sem data | (3) só estacionadas
+    Desempate: mais metros primeiro, depois a chave. Crescente: as atrasadas à frente, a mais antiga primeiro.
+    A etiqueta diz o dia (ou a semana, no Picking e na Semana escolhida), se está atrasada e se é provisória.
+    """
+    if order == "corte" and group["earliest_open_cut"]:
+        rank, day, field, provisional = 0, group["earliest_open_cut"], "cut_date", False
+    elif order == "picking" and group["earliest_open_picking"]:
+        rank, day, field, provisional = 0, group["earliest_open_picking"], "picking", group["earliest_open_picking_provisional"]
+    elif order == "picking" and group["earliest_open_due"]:
+        rank, day = 1, group["earliest_open_due"]
+        field, provisional = group["earliest_open_due_field"], group["earliest_open_due_provisional"]
+    else:
+        rank = 3 if group["only_parked"] else 2
+        return (rank, date.max, -group["metres"], group["key"]), {"none": "estacionada" if rank == 3 else "sem data"}
+    late = (today - day).days
+    tag = {"day": day, "field": field, "late": late > 0, "late_days": max(late, 0), "provisional": bool(provisional)}
+    if field in ("picking", "planned_period"):
+        tag["week"] = iso_week(day)
+    return (rank, day, -group["metres"], group["key"]), tag
+
+
+def line_date_key(line: dict, order: str) -> tuple:
+    """Ordem das linhas da lupa nas ordens por data, pelas mesmas regras do grupo."""
+    if line.get("parked"):
+        return (3, date.max)
+    pending = open_line(line)
+    if order == "picking" and pending and line.get("picking_day"):
+        return (0, line["picking_day"])
+    if order == "picking" and pending and line.get("priority_day"):
+        return (1, line["priority_day"])
+    if order == "corte" and pending and line["cut_date"]:
+        return (0, line["cut_date"])
+    return (2, line["cut_date"] or date.max)
 
 
 def check_path(view: str, path) -> tuple:
@@ -605,6 +707,7 @@ def groups(sector: str, view: str = "referencia", path: list[str] | None = None,
     path = list(path or [])
     if len(path) >= len(levels):
         raise planning.PlanningError("Não há mais níveis nesta vista.")
+    check_order(sector, sort)
     data = data or current(sector)
     filters = filters or {}
     check_estado(filters.get("estado"))
@@ -619,7 +722,14 @@ def groups(sector: str, view: str = "referencia", path: list[str] | None = None,
         if x[level] in buckets:
             totals[x[level]] += 1
     result = [{"key": k, **_summary(v, decisions), "member_total": totals[k]} for k, v in buckets.items()]
-    result.sort(key=_urgency if sort == "urgencia" else (lambda g: (-g["metres"], g["key"])))
+    if sort in DATE_ORDERS:
+        keyed = []
+        for g in result:
+            key, g["due_tag"] = by_date(g, sort, data["today"])
+            keyed.append((key, g))
+        result = [g for _, g in sorted(keyed, key=lambda kg: kg[0])]
+    else:
+        result.sort(key=_urgency if sort == "urgencia" else (lambda g: (-g["metres"], g["key"])))
     subtotal = _summary(selected, decisions)
     # Produção acima da QTD (F07, 08/10): as linhas da lista e as que já saíram da Carteira por isso, com os filtros.
     done = [x for x in group_lines({"lines": data.get("excess_done") or []}, view, path) if matches(x, filters, decisions)]
@@ -634,6 +744,8 @@ def groups(sector: str, view: str = "referencia", path: list[str] | None = None,
         "level": {"id": level, "label": LEVELS[level]}, "path": path, "has_children": len(path) + 1 < len(levels),
         "generation": data["generation"], "snapshot": data["snapshot"], "imported_at": data["imported_at"], "today": data["today"], "stale": bool(data.get("stale")),
         "list_totals": subtotal, "totals": subtotal, "groups": result[:limit], "truncated": len(result) > limit, "group_count": len(result),
+        # Eco da ordem e o que esta versão sabe (P6, 08/10): o ecrã só mostra as datas quando vê isto.
+        "order": sort, "capabilities": {"ordem_data": True},
         "windows": WINDOWS, "signals": SIGNALS, "states": STATES, "status": STATUS,
         "rules": {
             "saldo": "Saldo por operação segundo a reconciliação comum; sobreposições por resolver ficam desconhecidas. O saldo documental conserva a origem. Concluir a primeira operação não encerra as seguintes.",
@@ -681,21 +793,25 @@ def group_seal(lines: list[dict], decisions: dict | None) -> str:
 
 def members(sector: str, view: str, path: list[str], *, cursor: int = 0, limit: int = 200, q: str | None = None,
             filters: dict | None = None, data: dict | None = None, decisions: dict | None = None, learned: dict | None = None,
-            checked: dict | None = None, suggest=None) -> dict:
+            checked: dict | None = None, suggest=None, sort: str | None = None) -> dict:
     """Membros exatos de um grupo, com o total integral e todas as chaves.
 
     `keys` traz sempre todas as chaves do grupo (para «selecionar todos» nunca ficar limitado à página);
     `items` é paginado. `q` pesquisa dentro do grupo sem mudar o total; `filters` só marca quais membros
     estão visíveis na lista. `suggest(linhas) -> {chave: sugestão}`: a máquina que o Planear gravaria
     (selection.suggested_machines, 07/10/2026); sem ele, a preferência aprendida (`learned`, `checked`).
+    `sort`: nas ordens por data a lupa segue a data da lista (P6, 08/10); nas outras, por OF e referência.
     """
+    if sort is not None:
+        check_order(sector, sort)
     data = data or current(sector)
     if not path:
         raise planning.PlanningError("Escolhe um grupo da Carteira.")
     universe = group_lines(data, view, path)
     if not universe:
         raise planning.PlanningError("Esse grupo já não tem trabalho aberto. Atualiza a Carteira.", 409)
-    universe = sorted(universe, key=lambda x: (x["of"], x["reference"], x["profile"], x["length_mm"] or 0, x["key"]))
+    by_line = (lambda x: line_date_key(x, sort)) if sort in DATE_ORDERS else (lambda x: ())
+    universe = sorted(universe, key=lambda x: (*by_line(x), x["of"], x["reference"], x["profile"], x["length_mm"] or 0, x["key"]))
     shown = universe
     text = (q or "").strip().upper()
     if text:
@@ -714,7 +830,7 @@ def members(sector: str, view: str, path: list[str], *, cursor: int = 0, limit: 
              for x in page]
     statuses = [planning_status.classify(effective(x, decisions), x["machine"]) for x in universe]
     return {
-        "sector": sector, "view": view, "path": path, "total": len(universe), "matching": len(shown),
+        "sector": sector, "view": view, "path": path, "order": sort, "total": len(universe), "matching": len(shown),
         "keys": [x["key"] for x in universe],
         "tokens": [member_token(x, effective(x, decisions)["revision"]) for x in universe], "items": items,
         "next_cursor": cursor + limit if cursor + limit < len(shown) else None,
