@@ -38,6 +38,9 @@ def test_planear_is_offered_for_orders_whose_lines_all_lack_a_machine():
     marked = board.unplanned("cantoneiras", data=data(line("OF1"), line("OF1", reference="R2", machine="Peddi 8")),
                              decisions={("OF1", "*"): {"decision": "selected"}})
     assert marked["orders"][0]["marked"] and marked["orders"][0]["plannable"] == 1  # marcada, falta a máquina sugerida
+    # «Subcontrato» na Tabela não recebe máquina sugerida: não conta, e a OF só com estas linhas não mostra Planear.
+    sub = board.unplanned("cantoneiras", data=data({**line("OF1"), "tabela_machine": "Subcontrato"}), decisions={})
+    assert sub["orders"][0]["plannable"] == 0
 
 
 def test_excluded_lines_do_not_count_and_partial_orders_show_missing_part():

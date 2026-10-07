@@ -17,7 +17,7 @@ def test_planear_without_machine_saves_the_suggestion_and_the_line_reaches_the_g
     line = line_of("MAN-3")
     assert not line["machine"] and portfolio.status_of(line, selection.current("perfis"))["sem_maquina"]
     suggestion = {"resource_id": "rid-meba", "machine": "MEBA", "origin": "previsao", "label": "Única candidata"}
-    monkeypatch.setattr(selection, "suggested_machines", lambda sector, lines: {x["key"]: suggestion for x in lines})
+    monkeypatch.setattr(selection, "suggested_machines", lambda sector, lines, **kw: {x["key"]: suggestion for x in lines})
 
     result = selection.apply({"setor": "perfis", "acao": "selecionar", "request_id": str(uuid.uuid4()),
                               "membros": [{"chave": line["key"], "token": portfolio.member_token(line, 0)}]},

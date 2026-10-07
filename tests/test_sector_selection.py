@@ -281,16 +281,29 @@ RAPID25 = {"resource_id": "rid-25", "machine": "Ficep Rapid 25T", "origin": "apr
            "label": "80% de 5 escolhas em ZG L45X45X5"}
 
 
-def test_planear_without_machine_saves_the_suggested_machine_and_the_line_is_planned(conn, monkeypatch):
+def test_planear_without_machine_saves_the_suggested_machine_and_the_line_is_planned(conn, monkeypatch, database):
     from app.sector import machine_choice, planning_status, scope
     d = data(raw("OF1", "A", 10, 1000, key="s:1"), raw("OF1", "B", 10, 1000, key="s:2", machine=P8),
              raw("OF1", "C", 5, 1000, key="s:3"))
-    asked = []
-    monkeypatch.setattr(selection, "suggested_machines", lambda sector, lines: asked.extend(x["key"] for x in lines) or {"s:1": RAPID25})
+    asked, how = [], []
+
+    def suggest(sector, lines, **kw):
+        asked.extend(x["key"] for x in lines)
+        how.append(kw)
+        return {"s:1": RAPID25}
+    monkeypatch.setattr(selection, "suggested_machines", suggest)
     tokens = {x["key"]: portfolio.member_token(x, 0) for x in d["lines"]}
-    result = selection.apply({"setor": "cantoneiras", "acao": "selecionar", "request_id": str(uuid.uuid4()),
-                              "membros": [{"chave": k, "token": t} for k, t in tokens.items()]}, data=d, conn=conn)
+    request = {"setor": "cantoneiras", "acao": "selecionar", "request_id": str(uuid.uuid4()),
+               "membros": [{"chave": k, "token": t} for k, t in tokens.items()]}
+    result = selection.apply(request, data=d, conn=conn)
     assert sorted(asked) == ["s:1", "s:3"]  # só as linhas sem máquina pedem sugestão
+    # A mesma sugestão que a lupa mostra (a versão em memória): o Planear não refaz a previsão a cada clique.
+    assert how == [{"allow_stale": True}]
+    with psycopg.connect(database) as other:  # bloqueios por esta ordem: seleção → conjuntos de famílias → máquina
+        held = [other.execute("SELECT pg_try_advisory_xact_lock(hashtext(%s))", (f"{name}:cantoneiras",)).fetchone()[0]
+                for name in ("sector_member_selection", "sector_family_sets", "sector_member_machine")]
+    assert held == [False, False, False]
+    assert selection.apply(request, data=d, conn=conn)["repeated"] and len(how) == 1  # repetição: sem calcular sugestões
     assert result["changed"] == 2 and result["planned"] == 2 and result["suggested_machine"] == 1 and result["skipped_no_machine"] == 1
     assert [s["key"] for s in result["skipped"]] == ["s:3"]
     # A sugerida fica como escolha da Carteira (a mesma de «Atribuir máquina»), com a origem marcada.
@@ -321,7 +334,7 @@ def test_planear_gives_the_suggested_machine_to_an_already_planned_line_without_
     conn.execute("INSERT INTO planning_mtg.sector_selection (area, production_order_no, reference, decision, actor) "
                  "VALUES ('cantoneiras', 'OF1', '*', 'selected', 'legado')")
     conn.commit()
-    monkeypatch.setattr(selection, "suggested_machines", lambda sector, lines: {"s:1": RAPID25})
+    monkeypatch.setattr(selection, "suggested_machines", lambda sector, lines, **kw: {"s:1": RAPID25})
     result = selection.apply({"setor": "cantoneiras", "acao": "selecionar", "request_id": str(uuid.uuid4()),
                               "membros": [{"chave": "s:1"}]}, data=d, conn=conn)
     assert result["changed"] == 0 and result["planned"] == 1 and result["suggested_machine"] == 1  # a linha passa a «Planeado»
@@ -370,12 +383,12 @@ def test_a_whole_group_sent_as_members_keeps_the_exclusions(conn):
 def test_planear_never_suggests_over_a_tabela_placeholder(conn, monkeypatch):
     # «Subcontrato», «Serrote MTG3»… contam como «sem máquina» mas não são linhas por decidir: nunca se sugere máquina.
     d = data(raw("OF1", "A", 10, 1000, key="p:1", machine="Subcontrato"), raw("OF1", "B", 10, 1000, key="p:2"),
-             raw("OF1", "C", 10, 1000, key="p:3", machine="Por definir"))
+             raw("OF1", "C", 10, 1000, key="p:3", machine="Por definir"), raw("OF1", "D", 10, 1000, key="p:4", machine="Sem máquina"))
     asked = []
     monkeypatch.setattr(selection, "suggested_machines", lambda sector, lines, **kw: asked.extend(x["key"] for x in lines) or {x["key"]: RAPID25 for x in lines})
     result = selection.apply({"setor": "cantoneiras", "acao": "selecionar", "request_id": str(uuid.uuid4()),
-                              "membros": [{"chave": "p:1"}, {"chave": "p:2"}, {"chave": "p:3"}]}, data=d, conn=conn)
-    assert sorted(asked) == ["p:2", "p:3"] and result["planned"] == 2 and result["suggested_machine"] == 2
+                              "membros": [{"chave": "p:1"}, {"chave": "p:2"}, {"chave": "p:3"}, {"chave": "p:4"}]}, data=d, conn=conn)
+    assert sorted(asked) == ["p:2", "p:3", "p:4"] and result["planned"] == 3 and result["suggested_machine"] == 3
     assert result["skipped"] == [{"key": "p:1", "of": "OF1", "reference": "A", "reason": "Na Tabela: Subcontrato"}]
 
 
@@ -392,7 +405,7 @@ def test_the_lupa_shows_the_machine_planear_would_write():
 
 
 def test_a_failing_suggestion_never_stops_planning_the_lines_that_have_a_machine(conn, monkeypatch):
-    def broken(sector, lines):
+    def broken(sector, lines, **kw):
         raise RuntimeError("camada de pesquisa indisponível")
     monkeypatch.setattr(selection, "suggested_machines", broken)
     d = data(raw("OF1", "A", 10, 1000, key="f:1", machine=P8), raw("OF1", "B", 10, 1000, key="f:2"))
@@ -425,7 +438,7 @@ def test_suggested_machine_is_the_carteira_suggestion_then_the_estimate_and_only
     lines = [{"key": k, "aliases": ["antiga:c"] if k == "c" else [], "sku_family": None, "profile": "L45X45X5", "machine": "",
               "tabela_machine": "Subcontrato" if k == "e" else ""} for k in "abcde"]
     found = selection.suggested_machines("cantoneiras", lines)
-    assert loads == [{"allow_stale": False}]  # o Planear lê as ocorrências atuais
+    assert loads == [{"allow_stale": False}]  # por omissão lê as ocorrências atuais; o Planear e a lupa pedem a versão em memória
     # «e» diz «Subcontrato» na Tabela: nunca recebe máquina, mesmo com preferência aprendida.
     assert found == {"a": {"resource_id": "rid-25", "machine": "Ficep Rapid 25T", "origin": "aprendida", "label": "4 de 5 escolhas"},
                      "b": {"resource_id": "rid-p8", "machine": "Peddi 8", "origin": "previsao", "label": "Mesma máquina das outras linhas da OF"},

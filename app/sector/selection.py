@@ -189,9 +189,10 @@ def previous_request(c, request_id, content):
     return {**found["result"], "repeated": True, "changed": 0}
 
 
-# Coluna Máquina da Tabela: só «vazia» ou «Por definir» quer dizer «por decidir». Os outros textos sem máquina
-# física (Subcontrato, Serrote MTG3, Abocardar…) são uma decisão: nunca recebem a máquina sugerida.
-UNDECIDED = {"", "por definir"}
+# Coluna Máquina da Tabela: «vazia», «Por definir» ou «Sem máquina» quer dizer «por decidir» (os mesmos textos que o
+# Gantt trata como sem máquina, gantt/inputs.py). Os outros textos sem máquina física (Subcontrato, Serrote MTG3,
+# Abocardar…) são uma decisão: nunca recebem a máquina sugerida.
+UNDECIDED = {"", "por definir", "sem máquina", "sem maquina"}
 NO_MEMBER_MACHINE = "A máquina por linha ainda não está instalada (migração 048)."
 
 
@@ -211,8 +212,9 @@ def suggested_machines(sector: str, lines: list[dict], *, allow_stale: bool = Fa
     2. senão a máquina sugerida da previsão (estimates.apply): a das outras linhas da OF com o mesmo perfil e
        operação (estimates.peer_machine), o processo da regra das séries, o precedente da peça e o equilíbrio
        de carga — também só entre as candidatas da ficha técnica.
-    Uma linha sem nenhuma das duas não tem sugestão. As gravações leem as ocorrências atuais; as leituras da
-    lupa podem passar `allow_stale` e mostrar a versão anterior enquanto se refazem.
+    Uma linha sem nenhuma das duas não tem sugestão. A lupa e o Planear passam `allow_stale`: a sugestão é um
+    conselho que se muda depois, e assim o Planear grava exatamente o que a lupa mostra, sem refazer a previsão a
+    cada clique (cada «Atribuir máquina» ou Planear muda a chave da cache das ocorrências).
     """
     from . import machine_learning, members, occurrences
     lines = [x for x in lines if not x["machine"] and tabela_note(x) is None]
@@ -256,11 +258,19 @@ def _suggestions(sector: str, lines: list[dict]) -> tuple[dict, str | None]:
     if not lines:
         return {}, None
     try:
-        return suggested_machines(sector, lines), None
+        return suggested_machines(sector, lines, allow_stale=True), None
     except Exception:  # a sugestão não pode impedir planear as linhas que já têm máquina
         import logging
         logging.getLogger(__name__).exception("Máquinas sugeridas indisponíveis ao Planear")
         return {}, SUGGESTION_UNAVAILABLE
+
+
+def _repeated_early(request_id, content, conn):
+    """Resultado já gravado deste pedido, lido sem bloqueio (volta a conferir-se sob o bloqueio)."""
+    with (planning.connect(readonly=True) if conn is None else nullcontext(conn)) as c:
+        if not c.execute("SELECT to_regclass('planning_mtg.sector_selection_requests') t").fetchone()["t"]:
+            return None
+        return previous_request(c, request_id, content)
 
 
 def apply(payload: dict, *, data: dict | None = None, conn=None) -> dict:
@@ -274,16 +284,19 @@ def apply(payload: dict, *, data: dict | None = None, conn=None) -> dict:
     except ValueError:
         raise planning.PlanningError("Pedido sem identificador; recarrega a página.") from None
 
+    content = request_hash(payload, action)
+    repeated = _repeated_early(request_id, content, conn)
+    if repeated:  # um pedido repetido (por exemplo depois de um erro de rede) volta logo, sem calcular nada
+        return repeated
     data = data or portfolio.current(sector)
     actor = registration.human_actor(payload)
-    # As sugestões calculam-se antes de qualquer bloqueio, com ligações próprias só de leitura e as ocorrências
-    # atuais (uma gravação nunca usa allow_stale): nenhum outro pedido espera pela previsão.
+    # As sugestões calculam-se antes de qualquer bloqueio, com ligações próprias só de leitura: nenhum outro pedido
+    # espera pela previsão. Sob os bloqueios voltam a conferir-se os tokens e a máquina de cada linha.
     suggestions, unavailable = _suggestions(sector, _to_suggest(payload, data)) if action == "selected" else ({}, None)
     with (planning.connect() if conn is None else nullcontext(conn)) as c:
         if not c.execute("SELECT to_regclass('planning_mtg.sector_member_selection') t").fetchone()["t"]:
             raise planning.PlanningError("A gravação por membro ainda não está instalada (migração 046).", 503)
         c.execute("SELECT pg_advisory_xact_lock(hashtext('sector_member_selection:' || %s))", (sector,))
-        content = request_hash(payload, action)
         repeated = previous_request(c, request_id, content)
         if repeated:
             return repeated
@@ -328,8 +341,10 @@ def apply(payload: dict, *, data: dict | None = None, conn=None) -> dict:
 
 
 def _with_machines(c, sector, ready, skipped, suggestions, unavailable):
-    """Máquina das linhas sem máquina, lida sob o bloqueio de «Atribuir máquina» (revisão de 07/10/2026).
+    """Máquina das linhas sem máquina, lida sob os bloqueios dos conjuntos de famílias e de «Atribuir máquina».
 
+    Ordem fixa dos bloqueios (revisão de 07/10/2026): seleção → conjuntos de famílias → máquina por linha.
+    family_sets.py só toma o dos conjuntos e member_machine.py só o da máquina, por isso não há ciclo.
     Uma escolha da Carteira ou um conjunto de famílias gravados entretanto ganham sempre à sugestão: a linha
     planeia-se com essa máquina, ou fica de fora como mudada se foi marcada (token) quando não tinha máquina.
     Só a linha ainda sem máquina e por decidir na Tabela recebe a sugestão calculada antes; as outras ficam de
@@ -338,6 +353,7 @@ def _with_machines(c, sector, ready, skipped, suggestions, unavailable):
     from . import machine_choice
     ctx = None
     if c.execute("SELECT to_regclass('planning_mtg.sector_member_machine') t").fetchone()["t"]:
+        c.execute("SELECT pg_advisory_xact_lock(hashtext('sector_family_sets:' || %s))", (sector,))
         c.execute("SELECT pg_advisory_xact_lock(hashtext('sector_member_machine:' || %s))", (sector,))
         ctx = machine_choice.context(sector, conn=c)
     out, machines, no_machine = [], [], 0

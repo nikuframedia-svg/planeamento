@@ -99,6 +99,8 @@
     $("horizon").value=String(data.definition?.horizon_weeks||12);
     $("selected-detail").replaceChildren();
     data.proposal=null;data.snapshot=null;data.selected=null;data.proposalStale=false;
+    data.autoRecalculations=0;  // cada escolha ou atualização é uma ação nova, antes de qualquer cálculo seguido
+    const scenario=ticketOf(data.scenario);
     await Promise.all([loadOperations(),loadAccepted()]);
     let latest=null;
     if(data.scenario?.latest_job_id){
@@ -111,12 +113,11 @@
       }
       data.proposal=latest.result?.proposal||latest.result?.initial||null;
       setAcceptance(latest.status==="done"&&!latest.stale&&latest.result?.phase==="done"&&latest.result?.validation?.valid);
-      if(latest.status==="queued"||latest.status==="running")pollJob(data.jobId).catch(error=>notice(error.message,true));
+      if(latest.status==="queued"||latest.status==="running")pollJob(data.jobId,scenario).catch(error=>notice(error.message,true));
     }else{setAcceptance(false);data.jobId=null;$("compare").value=data.accepted?"accepted":"source"}
     renderTimeline();renderSummary();
     renderOperations();
-    data.autoRecalculations=0;
-    if(data.proposalStale&&latest?.status==="done"&&canRecalculate(latest))await recalculate("A proposta usava fontes anteriores: a recalcular sozinha.");
+    if(data.proposalStale&&latest?.status==="done"&&canRecalculate(latest))await recalculate("A proposta usava fontes anteriores: a recalcular sozinha.",scenario);
     else if(data.proposalStale)notice(staleNotice(latest?.stale_reason),true);
     else if(data.stale)notice("O plano aceite usa fontes anteriores. Gera uma nova proposta.",true);
   }
@@ -127,15 +128,20 @@
   const staleNotice = reason => reason==="motor"?"A proposta foi calculada com outra versão do motor. Gera uma nova proposta.":
     reason==="fontes_em_atualizacao"?"Os cálculos estão a ser publicados. Gera uma nova proposta quando terminarem.":
     "A proposta usa fontes anteriores. Gera uma nova proposta.";
-  async function recalculate(message) {
+  // O cálculo pertence ao cenário e à revisão em que foi pedido: se entretanto se escolheu outro cenário ou se
+  // gravou outra revisão, o resultado deixa de interessar e nunca se recalcula o cenário errado.
+  const ticketOf = scenario => scenario?{id:scenario.id,revision:scenario.revision}:null;
+  const stillOn = ticket => Boolean(ticket)&&data.scenario?.id===ticket.id&&data.scenario?.revision===ticket.revision;
+  async function recalculate(message, scenario) {
     // Fontes ou motor mudaram (07/10/2026): recalcula sozinho, sem nova revisão do cenário; aceita-se depois.
-    if(!data.scenario)return;
+    if(!stillOn(scenario))return;
     data.autoRecalculations=(data.autoRecalculations||0)+1;
     $("compare").value="proposal";
-    const result=await api("solve",{request_id:uuid(),id:data.scenario.id,expected_revision:data.scenario.revision});
+    const result=await api("solve",{request_id:uuid(),id:scenario.id,expected_revision:scenario.revision});
+    if(!stillOn(scenario))return;
     data.jobId=result.job_id;data.proposalStale=false;setAcceptance(false);renderFreshness();
     notice(message);
-    await pollJob(result.job_id);
+    await pollJob(result.job_id,scenario);
   }
   async function saveScenario() {
     const payload={request_id:uuid(),id:data.scenario?.id,expected_revision:data.scenario?.revision||0,
@@ -153,17 +159,18 @@
     const result=await api("solve",{request_id:uuid(),id:saved.id,expected_revision:saved.revision});
     data.jobId=result.job_id;data.proposal=null;data.snapshot=null;data.proposalStale=false;renderFreshness();
     notice("Proposta na fila. A sequência inicial aparecerá primeiro.");
-    await pollJob(result.job_id);
+    await pollJob(result.job_id,{id:saved.id,revision:saved.revision});
   }
-  async function pollJob(id) {
+  async function pollJob(id, scenario) {
     for(;;){
       const run=await api(`jobs/${id}`);
+      if(data.jobId!==id||!stillOn(scenario))return;  // outro cálculo ou outro cenário entretanto: este já não conta
       data.proposalStale=Boolean(run.stale);renderFreshness();
       if(run.result?.snapshot){data.snapshot=run.result.snapshot;data.operations=data.snapshot.operations;data.resources=data.snapshot.resources}
       if(run.result?.proposal||run.result?.initial){data.proposal=run.result.proposal||run.result.initial;renderSummary();renderOperations();renderTimeline()}
       if(run.status==="done"){
         // Fontes mudadas durante o cálculo: recalcula sozinho, dentro do limite de cada ação (07/10/2026).
-        if(run.stale&&canRecalculate(run))return recalculate("As fontes mudaram durante o cálculo: a recalcular sozinha.");
+        if(run.stale&&canRecalculate(run))return recalculate("As fontes mudaram durante o cálculo: a recalcular sozinha.",scenario);
         notice(run.stale?staleNotice(run.stale_reason):run.result?.phase==="diagnostic" ? (run.result.diagnostic?.message||"Proposta com fixações para rever.") :
           `Proposta ${run.result?.proposal?.origin||"inicial"} concluída · ${coverage(run.result?.proposal?.coverage)}.${run.result?.backlog?` Atraso concluído em ${run.result.backlog.proposal.window_days} dias: ${run.result.backlog.proposal.late_completed_hours} de ${run.result.backlog.proposal.late_reference_hours} h de referência (sequência inicial ${run.result.backlog.reference.late_completed_hours} h) · ${run.result.backlog.proposal.orders_completed} de ${run.result.backlog.proposal.orders_due} OF com prazo completas.`:""}`,run.stale||run.result?.phase==="diagnostic");
         setAcceptance(run.result?.phase==="done"&&!run.stale&&run.result?.validation?.valid);
@@ -180,7 +187,7 @@
       // As fontes mudaram depois da proposta: o servidor recalculou em vez de recusar; aceita-se a nova (07/10/2026).
       data.jobId=response.job_id;data.proposalStale=false;data.autoRecalculations=1;setAcceptance(false);renderFreshness();
       notice("As fontes mudaram: a recalcular a proposta. Aceita quando terminar.");
-      await pollJob(response.job_id);
+      await pollJob(response.job_id,ticketOf(data.scenario));
       return;
     }
     await loadScenarios(response.id);await loadAccepted();
