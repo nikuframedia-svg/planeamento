@@ -233,7 +233,7 @@ def build(c, area: str, today: date | None = None) -> dict:
     policies = priority.policies(c)
     overrides = priority.overrides(c)
     selection = scope.read(c)
-    decisions = assignments.resolver(c)
+    decisions = assignments.resolver(c, today)  # vigência das preferências no mesmo dia de Lisboa (F24)
     from . import machine_choice
     mctx = machine_choice.context(area, conn=c)
     facts = []

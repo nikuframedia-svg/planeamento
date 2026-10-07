@@ -396,7 +396,18 @@ def sector_timing(conn):
         margin=max(number(r['m']) or 0.0,0.0)
         if margin and not efficiency:efficiency={'*':100/(1+margin/100)}
         result[r['area']]={'piece_minutes':max(number(r['p']) or 0.0,0.0),'efficiency':efficiency}
-    return result
+    return shared_efficiency(result)
+
+
+def shared_efficiency(timing):
+    """A eficiência é da máquina física, não do setor (achado A-efic-setor, 08/10): uma linha MTG2 numa máquina
+    com eficiência gravada nas Definições MTG3 usa essa eficiência. Junta as eficiências por máquina dos setores;
+    a do próprio setor ganha se houver duas. O tempo fixo e a margem antiga ('*') ficam por setor."""
+    machines={}
+    for area in timing:
+        for rid,value in (timing[area].get('efficiency') or {}).items():
+            if rid!='*':machines.setdefault(rid,value)
+    return {area:{**t,'efficiency':{**machines,**(t.get('efficiency') or {})}} for area,t in timing.items()}
 
 
 def efficiency_of(timing, resource_id=None):

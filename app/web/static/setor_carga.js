@@ -165,7 +165,8 @@
       el('tbody', {}, (data.totals || []).map((t) => {
         const recent = (t.actual_recent || []).filter((x) => x.hours !== null && x.hours !== undefined);
         const cap = normal(t);
-        const title = [`Peças por fazer: ${h.format(t.pieces)}`, `Peso: ${h.format(t.weight_kg)} kg${t.weight_unknown ? ` (${t.weight_unknown} sem peso)` : ''}`,
+        const title = [`Peças por fazer: ${h.format(t.pieces)}${t.pieces_unknown ? ` (${t.pieces_unknown} com saldo por confirmar, não contam)` : ''}`,
+          t.metres_unknown ? `Metros: ${t.metres_unknown} linha(s) por saber (não contam)` : '', `Peso: ${h.format(t.weight_kg)} kg${t.weight_unknown ? ` (${t.weight_unknown} sem peso)` : ''}`,
           `Horas segundo o Excel: ${h1.format(t.excel_hours)} h${t.excel_unknown ? ` (${t.excel_unknown} operações principais sem horas do Excel)` : ''}`,
           `Horas reais (4 semanas): ${recent.length ? recent.map((x) => `S${x.week} ${h1.format(x.hours)}`).join(' · ') : '—'}`,
           t.unknown ? `Operações sem horas: ${h.format(t.unknown)}` : '', cap ? `Semana normal: ${h1.format(cap)} h` : 'Sem turnos padrão'].filter(Boolean).join('\n');

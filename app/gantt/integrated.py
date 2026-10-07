@@ -359,6 +359,7 @@ def references(c):
 
 def capture(c, definition, started_at, *, expected_references=None):
     from .inputs import reconcile_pins, reconcile_decisions
+    from ..sector.week import lisbon_today
     refs = references(c)
     if expected_references and refs != expected_references:
         raise planning.PlanningError('As fontes ou decisões mudaram antes do cálculo.', 409)
@@ -421,7 +422,7 @@ def capture(c, definition, started_at, *, expected_references=None):
         definition.get('machine_overrides', {}), definition.get('override_bindings', {}))
     from ..sector import priority, assignments
     sector_policies = priority.policies(c); sector_overrides = priority.overrides(c)
-    sector_decisions = assignments.resolver(c)
+    sector_decisions = assignments.resolver(c, lisbon_today(start))
     raw_to_key = {}; operations = []; orders = defaultdict(list)
     # Machine of the OF's other lines with the same operation and profile (shared set-up), when a line has none.
     peers = defaultdict(lambda: defaultdict(int))
@@ -481,7 +482,7 @@ def capture(c, definition, started_at, *, expected_references=None):
                 candidate.update(eligibility='excluded', reasons=['Correspondência de recurso ambígua.']); continue
             # Vigência das taxas pela data de hoje (início do cenário), igual à Carteira, à Carga e ao motor
             # (plano de 06/10, parte 3): uma taxa futura só vale quando chegar o seu dia.
-            days = {start.date().isoformat()}
+            days = {lisbon_today(start).isoformat()}  # dia de Lisboa do início, como a Carteira e o motor (F24)
             durations = {}
             for day in sorted(days):
                 duration = _duration(row,candidate,resource,configs,templates,start.isoformat(),context,rate_day=day)

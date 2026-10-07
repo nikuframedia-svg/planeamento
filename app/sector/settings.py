@@ -24,6 +24,7 @@ from psycopg.types.json import Jsonb
 
 from .. import planning, planning_needs as needs, planning_registration as registration
 from . import shifts
+from .week import lisbon_today
 
 UNIT = {"cantoneiras": "MTG3", "perfis": "MTG2"}
 HORIZON_WEEKS = 52
@@ -208,8 +209,9 @@ def measured_view(m: dict, measured: dict) -> list[dict]:
     Só informação (08/10): as horas usam a velocidade do Excel × eficiência. Amostra pequena (abaixo do mínimo do
     histórico) mostra-se com o aviso, nunca escondida.
     """
-    from ..raw.productivity import PLAUSIBLE
+    from ..raw.productivity import PLAUSIBLE, THOMAS_MIN_QUANTITY, thomas_factor
     excel = m.get("excel_rate") or {}
+    names = [m.get("name")] + [a.get("name") for a in m.get("aliases") or []]
     out = []
     for key, h in sorted(measured.items()):
         rid, _, operation = key.partition("|")
@@ -217,11 +219,18 @@ def measured_view(m: dict, measured: dict) -> list[dict]:
             continue
         rate = h["volume"] / h["hours"]
         ratio = rate / excel["value"] * 100 if excel.get("value") and excel.get("unit") == h.get("unit") else None
+        # Thomas (achado A-medido-thomas): com QTD > 50 o Excel já conta 3 × a taxa E/F, e o medido não diz quantas linhas
+        # foram dessas. Comparar com a taxa base daria ~300 % e, passado à eficiência, contaria o × 3 duas vezes.
+        thomas = thomas_factor(m.get("area"), operation, names + [h.get("machine")], THOMAS_MIN_QUANTITY + 1) != 1
+        if thomas:
+            ratio = None
         out.append({"operation": operation, "value": round(rate, 1), "unit": h.get("unit"), "hours": round(h["hours"], 1),
                     "sheets": h.get("sheet_count"), "events": h.get("event_count"), "window": h.get("window"),
                     "enough": h.get("value") is not None, "reason": h.get("reason"),
                     "ratio_pct": round(ratio) if ratio is not None else None,
-                    "plausible": ratio is None or PLAUSIBLE[0] <= ratio / 100 <= PLAUSIBLE[1]})
+                    "plausible": ratio is None or PLAUSIBLE[0] <= ratio / 100 <= PLAUSIBLE[1],
+                    **({"note": "O × 3 da Thomas (QTD > 50) já está nas horas: este medido não se compara com a taxa base "
+                                "nem deve ir para a eficiência."} if thomas else {})})
     return out
 
 
@@ -239,7 +248,7 @@ def overview(sector: str) -> dict:
     from ..gantt import research
     from ..raw.productivity import efficiency_of, sector_timing
     planning.check_area(sector)
-    today = date.today().isoformat()
+    today = lisbon_today().isoformat()  # vigência das taxas no dia de Lisboa, como as contas (F24)
     with planning.connect(readonly=True) as c:
         settings = read(c, sector)
         machines = machine_rows(c, sector)
@@ -490,16 +499,23 @@ def _efficiency_store(current: dict, changes: dict, machines: dict) -> dict:
 
     Uma margem antiga ≠ 0 sem eficiências gravadas passa à eficiência equivalente em todas as máquinas do setor
     antes de aplicar a alteração (08/10), para as outras máquinas não mudarem de horas; a margem fica a 0.
+
+    Só máquinas com recurso gravado (has_object): o motor de capacidade conhece a máquina pelo recurso gravado
+    (aliases), e numa máquina só do catálogo (ID 'v2:…') a eficiência valeria na Carteira e no Gantt mas não na
+    Tabela nem nas horas documentais da Carga (achado A-efic-id, 08/10). Tirar a eficiência (vazio/100) é sempre
+    possível.
     """
     stored = {str(k): v for k, v in (current.get("efficiency") or {}).items()}
     margin = float(current.get("margin_pct") or 0)
     if margin and not stored:
         equivalent = round(100 / (1 + margin / 100), 4)
-        stored = {rid: equivalent for rid in machines}
+        stored = {rid: equivalent for rid, m in machines.items() if m.get("has_object")}
     for rid, pct in changes.items():
         if str(rid) not in machines:
             raise planning.PlanningError("Máquina desconhecida neste setor.")
         value = _validate_efficiency(pct)
+        if value is not None and not machines[str(rid)].get("has_object"):
+            raise planning.PlanningError("Esta máquina ainda não tem recurso gravado: a eficiência só se indica em máquinas com recurso.")
         if value is None:
             stored.pop(str(rid), None)
         else:
@@ -556,7 +572,7 @@ def _save_rate(c, sector: str, payload: dict, machines: dict, request_id: uuid.U
                   "method": method, "value": payload.get("valor"), "setup_minutes": 0,
                   "profile": str(payload.get("perfil") or "").strip(),
                   "material_type": str(payload.get("tipo_material") or "").strip() if sector == "perfis" else "",
-                  "valid_from": str(payload.get("desde") or (row["definition"].get("valid_from") if row else None) or date.today().isoformat()),
+                  "valid_from": str(payload.get("desde") or (row["definition"].get("valid_from") if row else None) or lisbon_today().isoformat()),
                   "valid_until": str(payload["ate"]) if payload.get("ate") else None,
                   "confirmed": True, "source": origin}
     for field, name in RATE_FIELDS.items():

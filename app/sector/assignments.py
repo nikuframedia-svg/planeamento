@@ -30,6 +30,7 @@ from psycopg.types.json import Jsonb
 
 from .. import planning, planning_needs as needs
 from .decisions import reason_or_default
+from .week import lisbon_today
 
 MODES = ("assign", "prefer", "automatic", "future_preference", "accept_suggestions", "assign_each")
 SELECTOR_KINDS = {"reference": 4, "set": 3, "sku_family": 2, "profile_group": 1}
@@ -81,7 +82,7 @@ class Resolver:
 
     def __init__(self, decisions=(), preferences=(), families=None, sets=None, today=None):
         self.decisions = {(d["area"], d["occurrence_key"]): d for d in decisions}
-        self.today = (today or date.today()).isoformat()
+        self.today = (today or lisbon_today()).isoformat()  # dia de Lisboa, como as ocorrências (F24, 08/10)
         self.preferences = [p for p in preferences if not p["archived"]
                             and (not p["valid_from"] or str(p["valid_from"]) <= self.today)
                             and (not p["valid_until"] or str(p["valid_until"]) >= self.today)]
@@ -453,7 +454,7 @@ def _future(c, area, payload, target, reason, actor, request_id):
                           (needs.uid(value), area)).fetchone()
         if not found or found["archived"] or found["mode"] != "frozen":
             raise planning.PlanningError("A preferência por conjunto exige um conjunto congelado deste setor.")
-    valid_from, valid_until = payload.get("valid_from") or date.today().isoformat(), payload.get("valid_until") or None
+    valid_from, valid_until = payload.get("valid_from") or lisbon_today().isoformat(), payload.get("valid_until") or None
     try:
         valid_from = date.fromisoformat(valid_from)
         valid_until = date.fromisoformat(valid_until) if valid_until else None

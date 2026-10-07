@@ -221,14 +221,23 @@
     const margin = el('input', {value: shown((st.timing || {}).margin_pct ?? 0), inputmode: 'decimal', class: 'n', id: 'speed-margin', 'aria-label': labels.margin_pct || 'Margem (%)'});
     const fixed = el('input', {value: shown((st.timing || {}).piece_minutes ?? 0), inputmode: 'decimal', class: 'n', id: 'speed-fixed', 'aria-label': labels.piece_minutes || 'Tempo fixo por peça (min)'});
     const save = el('button', {type: 'button', class: 'small', id: 'speed-timing-save'}, 'Gravar');
+    // 08/10: a margem do setor deixou de se editar (a eficiência de cada máquina é o único fator); sem o campo,
+    // «Gravar» envia só o tempo fixo. Uma API antiga sem margin_editable mantém o campo.
+    const editable = st.margin_editable !== false;
     save.addEventListener('click', () => {
-      const m = num(margin.value), f = num(fixed.value);
-      if (Number.isNaN(m) || Number.isNaN(f)) { error(new Error('Margem e tempo fixo: indica números.')); return; }
-      queued(() => send({tipo: 'tempos', expected_revision: data.settings.revision, margin_pct: m ?? 0, piece_minutes: f ?? 0}))
-        .then(() => { notice(`Margem ${fmt.format(m ?? 0)} % e tempo fixo ${fmt.format(f ?? 0)} min por peça gravados.`); return load(); }).catch(error);
+      const m = editable ? num(margin.value) : null, f = num(fixed.value);
+      if (Number.isNaN(m) || Number.isNaN(f)) { error(new Error(editable ? 'Margem e tempo fixo: indica números.' : 'Tempo fixo: indica um número.')); return; }
+      const body = {tipo: 'tempos', expected_revision: data.settings.revision, piece_minutes: f ?? 0};
+      if (editable) body.margin_pct = m ?? 0;
+      queued(() => send(body))
+        .then(() => {
+          notice(editable ? `Margem ${fmt.format(m ?? 0)} % e tempo fixo ${fmt.format(f ?? 0)} min por peça gravados.`
+            : `Tempo fixo ${fmt.format(f ?? 0)} min por peça gravado.`);
+          return load();
+        }).catch(error);
     });
     return el('div', {class: 'speed-timing'},
-      el('label', {}, labels.margin_pct || 'Margem sobre os tempos estimados (%)', margin),
+      editable ? el('label', {}, labels.margin_pct || 'Margem sobre os tempos estimados (%)', margin) : null,
       el('label', {}, labels.piece_minutes || 'Tempo fixo por peça (min)', fixed), save,
       el('span', {class: 'muted'}, '0 = as horas não mudam.'));
   }
