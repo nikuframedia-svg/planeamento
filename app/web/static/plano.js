@@ -25,9 +25,9 @@
     box.hidden = !message; box.textContent = message || ""; box.classList.toggle("error", error);
   }
 
-  async function load() {
+  async function load(quiet = false) {
     const serial = ++state.loading;
-    $("source").textContent = "A carregar o plano…";
+    if (!quiet) $("source").textContent = "A carregar o plano…";
     try {
       const response = await fetch(`/planeamento/api/setor/quadro?setor=${encodeURIComponent(state.sector)}`, {cache: "no-store"});
       const result = await response.json().catch(() => ({}));
@@ -37,8 +37,10 @@
       state.data = result; notice("");
       render();
       if (state.day) openDay(state.day, state.dayMachine, false);
+      // Versão anterior enquanto o servidor refaz o quadro (07/10/2026): volta a pedir, sem aviso.
+      if (result.stale) setTimeout(() => { if (serial === state.loading) load(true); }, 8000);
     } catch (error) {
-      if (serial !== state.loading) return;
+      if (serial !== state.loading || quiet) return;
       $("source").textContent = "";
       notice(error.message || "Não foi possível carregar o plano.", true);
     }

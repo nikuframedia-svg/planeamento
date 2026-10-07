@@ -1,6 +1,11 @@
-"""HTTP da Carteira (plano de 28/09/2026). Só leitura nesta fase; ligada por MES_PLANNING_SELECTION_ENABLED=1."""
+"""HTTP da Carteira (plano de 28/09/2026). Só leitura nesta fase; ligada por MES_PLANNING_SELECTION_ENABLED=1.
+
+As leituras (GET e as consultas que nada gravam) aceitam o resultado anterior enquanto as caches se refazem
+em segundo plano (`allow_stale`, 07/10/2026); as gravações e os tokens leem sempre as versões atuais.
+"""
 import hashlib
 import os
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, Query, Request
@@ -11,7 +16,21 @@ from ..web.templates_env import install
 from .. import planning, planning_needs as needs
 from . import portfolio, selection
 
-router = APIRouter()
+
+@asynccontextmanager
+async def _lifespan(app):
+    """Aquecimento das caches do setor em segundo plano, junto ao arranque da aplicação que inclui estas rotas
+    (o MES não as inclui; planning_app.py fica igual)."""
+    from . import warmup
+    stop = warmup.start() if warmup.enabled() else None
+    try:
+        yield
+    finally:
+        if stop is not None:
+            stop.set()
+
+
+router = APIRouter(lifespan=_lifespan)
 WEB = Path(__file__).resolve().parents[1] / "web"
 templates = install(Jinja2Templates(directory=str(WEB / "templates")))
 
@@ -54,7 +73,8 @@ def groups(setor: str = "cantoneiras", vista: str = "referencia", caminho: list[
            semanas: list[str] = Query(default=[])):
     _guard()
     filters = _filters(familia, familia_sku, janela, maquina, sinal, estado, q, semanas)
-    return _call(lambda: needs.serial(portfolio.groups(setor, vista, caminho, filters, ordem, decisions=selection.current(setor))))
+    return _call(lambda: needs.serial(portfolio.groups(setor, vista, caminho, filters, ordem, data=portfolio.current(setor, allow_stale=True),
+                                                       decisions=selection.current(setor))))
 
 
 @router.get("/planeamento/api/carteira/membros")
@@ -78,7 +98,8 @@ def members(setor: str = "cantoneiras", vista: str = "referencia", caminho: list
                 logging.getLogger(__name__).exception("Máquinas sugeridas indisponíveis")
                 return {}
         return needs.serial(portfolio.members(sector, vista, caminho, cursor=cursor, limit=limite, q=pesquisa, filters=filters,
-                                              decisions=selection.current(setor), suggest=suggest))
+                                              data=portfolio.current(sector, allow_stale=True), decisions=selection.current(setor),
+                                              suggest=suggest))
     return _call(build)
 
 
@@ -94,7 +115,7 @@ async def counts(request: Request):
             raise planning.PlanningError("Filtros inválidos.")
         return needs.serial(portfolio.counts(sector, str(p.get("vista") or "referencia"), p.get("caminho") or [],
                                              portfolio.keys_from(p), {k: v for k, v in filters.items() if v},
-                                             decisions=selection.current(sector)))
+                                             data=portfolio.current(sector, allow_stale=True), decisions=selection.current(sector)))
     return await _post(request, build)
 
 
@@ -103,7 +124,7 @@ def kpis(setor: str = "cantoneiras"):
     """Carga por máquina e resumo por estado do setor. Não aceita filtros da lista."""
     _guard()
     from . import portfolio_kpis
-    return _call(lambda: needs.serial(portfolio_kpis.overview(portfolio.check_sector(setor))))
+    return _call(lambda: needs.serial(portfolio_kpis.overview(portfolio.check_sector(setor), allow_stale=True)))
 
 
 @router.post("/planeamento/api/carteira/previsao")
@@ -111,7 +132,7 @@ async def kpis_preview(request: Request):
     """Acréscimo dos membros marcados por máquina (consulta; nada é gravado)."""
     _guard()
     from . import portfolio_kpis
-    return await _post(request, lambda p: needs.serial(portfolio_kpis.preview(p)))
+    return await _post(request, lambda p: needs.serial(portfolio_kpis.preview(p, allow_stale=True)))
 
 
 @router.post("/planeamento/api/carteira/selecao")
@@ -153,7 +174,7 @@ async def machine_suggestion(request: Request):
         from . import family_sets
         sector = portfolio.check_sector(str(p.get("setor") or ""))
         keys = set(portfolio.keys_from(p))
-        marked = [x for x in portfolio.current(sector)["lines"] if x["key"] in keys]
+        marked = [x for x in portfolio.current(sector, allow_stale=True)["lines"] if x["key"] in keys]
         votes, labels = Counter(), {}
         for found in selection.suggested_machines(sector, marked, allow_stale=True).values():
             votes[found["resource_id"]] += 1
@@ -269,7 +290,7 @@ def options(setor: str = "cantoneiras"):
     _guard()
 
     def build():
-        data = portfolio.current(setor)
+        data = portfolio.current(setor, allow_stale=True)
         return needs.serial({"families": portfolio.families(setor, data=data), "sku_families": portfolio.sku_families(setor, data=data),
                              "machines": portfolio.machines(setor, data=data), "weeks": portfolio.weeks(setor, data=data),
                              "status": portfolio.STATUS})
@@ -281,7 +302,7 @@ def board(setor: str = "cantoneiras"):
     """Gantt simples e lista vermelha das OF por planear (pedido de 02/10/2026). Só leitura."""
     _guard()
     from . import board as quadro
-    return _call(lambda: needs.serial(quadro.board(setor)))
+    return _call(lambda: needs.serial(quadro.board(setor, allow_stale=True)))
 
 
 @router.get("/planeamento/api/setor/quadro/dia")
@@ -289,7 +310,7 @@ def board_day(setor: str = "cantoneiras", dia: str = "", maquina: str | None = N
     """Gantt de um dia por máquina do setor: horas, turnos e o que não tem hora (pedido de 06/10/2026)."""
     _guard()
     from . import board as quadro
-    return _call(lambda: quadro.day(setor, dia, maquina or None))
+    return _call(lambda: quadro.day(setor, dia, maquina or None, allow_stale=True))
 
 
 # --- Vistas por família e capacidade (plano de 01/10/2026). Interruptor próprio, desligado por defeito.

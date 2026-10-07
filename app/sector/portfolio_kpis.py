@@ -99,11 +99,16 @@ def catalog(c, sector: str) -> dict:
                           "unit": r.get("setor"), "type": r.get("tipo")} for r in metadata.get("resources", [])}
 
 
-def context(sector: str, *, data=None, decisions=None, occurrences_data=None, resources_catalog=None) -> dict:
-    """Everything the KPIs read, loaded once; tests pass synthetic parts."""
+def context(sector: str, *, data=None, decisions=None, occurrences_data=None, resources_catalog=None,
+            allow_stale: bool = False) -> dict:
+    """Everything the KPIs read, loaded once; tests pass synthetic parts.
+
+    `allow_stale` (consultas): as linhas podem ser as da geração anterior enquanto a nova se calcula; as
+    decisões são sempre as atuais e as ocorrências já aceitavam a versão anterior.
+    """
     from . import selection
     portfolio.check_sector(sector)
-    data = data or portfolio.current(sector)
+    data = data or portfolio.current(sector, allow_stale=allow_stale)
     decisions = selection.current(sector) if decisions is None else decisions
     if occurrences_data is None:
         from . import occurrences
@@ -193,7 +198,7 @@ def overview(sector: str, **kw) -> dict:
         p["machines"].sort(key=lambda m: m["name"])
     return {
         "sector": sector, "sector_label": portfolio.SECTORS[sector], "version": version(ctx),
-        "generation": data["generation"], "imported_at": data["imported_at"], "stale": bool(ctx["occ"].get("stale")),
+        "generation": data["generation"], "imported_at": data["imported_at"], "stale": bool(ctx["occ"].get("stale") or data.get("stale")),
         "panels": list(panels.values()), "other_machines": sorted(others, key=lambda m: m["name"]),
         "summary": [{"code": code, "label": label, "origin": planning_status.ORIGINS[code],
                      **_out(summary[code]), "pieces": round(summary[code]["pieces"]), "ofs": len(summary[code]["ofs"]),
@@ -244,7 +249,7 @@ def preview(payload: dict, **kw) -> dict:
             if b:  # uma operação seguinte ainda sem máquina não tem destino: não acrescenta a nenhuma
                 _add(already if status["planeado"] else delta[b], f, line)
     return {
-        "sector": sector, "version": version(ctx), "stale": bool(ctx["occ"].get("stale")),
+        "sector": sector, "version": version(ctx), "stale": bool(ctx["occ"].get("stale") or data.get("stale")),
         "members": len(dict.fromkeys(keys)) - len(unknown), "unknown_keys": unknown[:50], "unknown_count": len(unknown),
         "delta": {b: {"name": (machines.get(b) or {}).get("name") or b.removeprefix("nome:"), **_out(v)} for b, v in delta.items()},
         "already_planned": _out(already),

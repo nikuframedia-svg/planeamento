@@ -18,7 +18,7 @@ from contextlib import nullcontext
 from datetime import date, datetime, timedelta
 
 from .. import planning, planning_needs as needs, planning_population as population
-from . import decisions as resolution, planning_status
+from . import cache, decisions as resolution, planning_status
 from .references import UNRESOLVED, master_reference
 
 SECTORS = {"cantoneiras": "MTG3 Cantoneiras", "perfis": "MTG2 Perfis"}
@@ -88,9 +88,9 @@ _VALIDATION = re.compile(r"AP[ÓO]S\s+(A\s+)?VALIDA", re.I)
 _WRITTEN_WEEK = re.compile(r"ENTREGA\s*W\s*(\d{1,2})(?:\s*/\s*(\d{4}))?", re.I)
 
 _SQL = """
-WITH g AS (
+WITH g AS (  -- a geração da chave da cache (não «a mais recente»: pode ter chegado outra entretanto)
     SELECT id, dataset, metadata->'snapshot'->>'snapshot_id' AS snapshot
-    FROM planning_mtg.raw_generations WHERE dataset = %(dataset)s ORDER BY id DESC LIMIT 1
+    FROM planning_mtg.raw_generations WHERE dataset = %(dataset)s AND id = %(generation)s
 )
 SELECT m.row_key, c.values_json AS v, c.detail, g.id AS generation, g.snapshot,
        p.row_data->>'Descrição' AS notes, p.row_data->>'P' AS p_value,
@@ -109,7 +109,9 @@ LEFT JOIN raw_mtg.cpis_rows cp ON cp.snapshot_id = g.snapshot AND cp.production_
 WHERE (c.values_json->>'planning_active')::boolean
 """
 
-_cache: dict[str, tuple[tuple, dict]] = {}
+# Por setor: as linhas da última geração lida. As leituras podem receber a geração anterior (marcada «stale»)
+# enquanto a nova se calcula em segundo plano (cache.py); as gravações leem sempre a atual.
+_cache = cache.Cache("Carteira", mark=lambda value: {**value, "stale": True})
 _lock = threading.Lock()
 
 
@@ -312,42 +314,52 @@ def state_of(line: dict, decisions: dict | None) -> str:
     return "proposta" if line["proposal"] else "por_decidir"
 
 
-def load(sector: str, *, today: date | None = None, conn=None) -> dict:
-    """All open lines of the sector from the latest projection, cached per generation and day."""
-    check_sector(sector)
-    today = today or date.today()
-    dataset = f"planning:{sector}"
-    with (planning.connect(readonly=True) if conn is None else nullcontext(conn)) as c:
-        c.execute("SET LOCAL jit = off")
-        head = c.execute("SELECT id, metadata->'snapshot'->>'snapshot_id' AS snapshot, created_at "
-                         "FROM planning_mtg.raw_generations WHERE dataset = %s ORDER BY id DESC LIMIT 1", (dataset,)).fetchone()
-        if not head:
-            raise planning.PlanningError("A preparar a consulta deste setor. Tenta dentro de alguns segundos.", 503)
-        from ..gantt import research
-        from . import priority
-        stamp = (head["id"], today, research.head(c)['version_id'] if research.enabled() else None, priority.digest(c))
-        with _lock:
-            cached = _cache.get(sector)
-        if cached and cached[0] == stamp:
-            return cached[1]
-        rows = c.execute(_SQL, {"dataset": dataset}).fetchall()
-        from ..gantt.research import overlay_rows, enabled
-        if enabled():
-            overlays = [{**(r.get('detail') or {}), 'key':r['row_key'], 'values':dict(r['v'])} for r in rows]
-            overlay_rows(c,sector,overlays)
-            for r,o in zip(rows,overlays):
-                r['v'] = o['values'];r['detail'] = o
-        policies, overrides = priority.policies(c), priority.overrides(c)
+def _stamp(c, sector: str, today: date) -> tuple[tuple, dict]:
+    """(chave, geração): tudo aquilo de que as linhas dependem — geração da projeção do setor, dia, versão da
+    camada de pesquisa e prioridades. As exportações do OCR original (original:*) não entram: a Carteira não as lê."""
+    head = c.execute("SELECT id, metadata->'snapshot'->>'snapshot_id' AS snapshot, created_at "
+                     "FROM planning_mtg.raw_generations WHERE dataset = %s ORDER BY id DESC LIMIT 1", (f"planning:{sector}",)).fetchone()
+    if not head:
+        raise planning.PlanningError("A preparar a consulta deste setor. Tenta dentro de alguns segundos.", 503)
+    from ..gantt import research
+    from . import priority
+    return (head["id"], today, research.head(c)['version_id'] if research.enabled() else None, priority.digest(c)), head
+
+
+def _build(c, sector: str, head: dict, today: date) -> dict:
+    from ..gantt.research import overlay_rows, enabled
+    from . import priority
+    rows = c.execute(_SQL, {"dataset": f"planning:{sector}", "generation": head["id"]}).fetchall()
+    if enabled():
+        overlays = [{**(r.get('detail') or {}), 'key':r['row_key'], 'values':dict(r['v'])} for r in rows]
+        overlay_rows(c,sector,overlays)
+        for r,o in zip(rows,overlays):
+            r['v'] = o['values'];r['detail'] = o
+    policies, overrides = priority.policies(c), priority.overrides(c)
     for r in rows:
         r.setdefault("detail", {})
         if isinstance(r["detail"], dict):
             r["detail"].setdefault("area", sector)
     lines = [line for line in (line_from_row(r, today, policy=policies[sector], overrides=overrides) for r in rows) if line]
-    result = {"sector": sector, "generation": head["id"], "snapshot": head["snapshot"],
-              "imported_at": head["created_at"], "today": today, "lines": lines}
-    with _lock:
-        _cache[sector] = (stamp, result)
-    return result
+    return {"sector": sector, "generation": head["id"], "snapshot": head["snapshot"],
+            "imported_at": head["created_at"], "today": today, "lines": lines, "stale": False}
+
+
+def load(sector: str, *, today: date | None = None, conn=None, allow_stale: bool = False) -> dict:
+    """All open lines of the sector from the latest projection, cached per generation and day.
+
+    `allow_stale` (só leituras): com uma geração nova, devolve logo as linhas da anterior do mesmo dia, com
+    `stale: True`, e calcula a nova uma vez em segundo plano. As gravações nunca o passam.
+    """
+    check_sector(sector)
+    today = today or date.today()
+    with (planning.connect(readonly=True) if conn is None else nullcontext(conn)) as c:
+        if conn is None:  # a chave e as linhas do mesmo retrato da base
+            c.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")
+        c.execute("SET LOCAL jit = off")
+        key, head = _stamp(c, sector, today)
+        return _cache.get(sector, key, lambda: _build(c, sector, head, today), allow_stale=allow_stale,
+                          stale_if=lambda old: old[1] == today, refresh=lambda: load(sector, today=today))
 
 
 def check_estado(value: str | None) -> None:
@@ -358,14 +370,15 @@ def check_estado(value: str | None) -> None:
 _current_cache: dict[str, tuple[tuple, dict]] = {}
 
 
-def current(sector: str, *, today: date | None = None, conn=None) -> dict:
+def current(sector: str, *, today: date | None = None, conn=None, allow_stale: bool = False) -> dict:
     """As linhas de load() com a máquina efetiva (Carteira → Tabela → conjunto de famílias).
 
     load() faz o trabalho pesado e fica em cache por importação; aqui só se aplica, por cima, a máquina
-    escolhida na Carteira e a dos conjuntos — muda a cada «Atribuir máquina» sem refazer a carteira.
+    escolhida na Carteira e a dos conjuntos — muda a cada «Atribuir máquina» sem refazer a carteira. A máquina
+    escolhida é sempre a atual, mesmo quando `allow_stale` dá as linhas da geração anterior.
     """
     from . import machine_choice
-    base = load(sector, today=today, conn=conn)
+    base = load(sector, today=today, conn=conn, allow_stale=allow_stale)
     ctx = machine_choice.context(sector, conn=conn)
     stamp = (base["generation"], base["today"], id(base), ctx["digest"])
     with _lock:
@@ -542,7 +555,7 @@ def groups(sector: str, view: str = "referencia", path: list[str] | None = None,
     return {
         "sector": sector, "sector_label": SECTORS[sector], "view": view, "levels": [{"id": l, "label": LEVELS[l]} for l in levels],
         "level": {"id": level, "label": LEVELS[level]}, "path": path, "has_children": len(path) + 1 < len(levels),
-        "generation": data["generation"], "snapshot": data["snapshot"], "imported_at": data["imported_at"], "today": data["today"],
+        "generation": data["generation"], "snapshot": data["snapshot"], "imported_at": data["imported_at"], "today": data["today"], "stale": bool(data.get("stale")),
         "list_totals": subtotal, "totals": subtotal, "groups": result[:limit], "truncated": len(result) > limit, "group_count": len(result),
         "windows": WINDOWS, "signals": SIGNALS, "states": STATES, "status": STATUS,
         "rules": {
@@ -622,7 +635,7 @@ def members(sector: str, view: str, path: list[str], *, cursor: int = 0, limit: 
         "keys": [x["key"] for x in universe],
         "tokens": [member_token(x, effective(x, decisions)["revision"]) for x in universe], "items": items,
         "next_cursor": cursor + limit if cursor + limit < len(shown) else None,
-        "generation": data["generation"], "seal": group_seal(universe, decisions),
+        "generation": data["generation"], "stale": bool(data.get("stale")), "seal": group_seal(universe, decisions),
         **{code: sum(s[code] for s in statuses) for code in STATUS},
         "hidden_by_filters": len(universe) - len(visible) if visible is not None else 0,
         # O servidor aceita o grupo inteiro como membros com token («todo_o_grupo», 07/10/2026): a Carteira só o

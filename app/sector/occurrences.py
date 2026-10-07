@@ -18,9 +18,9 @@ from collections import defaultdict
 from contextlib import nullcontext
 from datetime import date, datetime, timedelta, timezone
 import math
-import threading
 
 from .. import planning, planning_needs as needs, planning_population
+from . import cache
 from .references import UNRESOLVED, master_reference
 
 UNITS = {"perfis": "MTG2", "cantoneiras": "MTG3"}
@@ -46,8 +46,7 @@ CLASSIFICATION = {  # grouped states shown in the tree
     None: "Sem catálogo",
 }
 
-_cache: dict = {}
-_lock = threading.Lock()
+_cache = cache.Cache("Ocorrências", mark=lambda value: {**value, "stale": True})
 
 
 def _number(value):
@@ -140,7 +139,12 @@ def _cpis_families(c, snapshot):
 
 
 def stamp(c, area, today):
-    """Everything the facts depend on; a change in any of them rebuilds the cache."""
+    """Everything the facts depend on; a change in any of them rebuilds the cache.
+
+    Só o que build() lê (07/10/2026): a seleção e as máquinas escolhidas na Carteira deste setor — um Planear
+    ou «Atribuir máquina» no outro setor não refaz estas ocorrências — e nunca as exportações do OCR original
+    (original:*), que não são lidas aqui.
+    """
     from ..raw import query, sku_families
     from ..gantt import research
     from . import priority, assignments, scope, machine_choice
@@ -155,7 +159,7 @@ def stamp(c, area, today):
     timing = tuple(sorted(sector_timing(c)[area].items()))
     return (area, g["id"], research.head(c)["version_id"] if research.enabled() else None,
             sku_families.token(c, area), priority.digest(c), assignments.digest(c),
-            scope.digest(scope.read(c)), machine_choice.digests(c), calendars, rates, timing, today)
+            scope.area_digest(scope.read(c), area), machine_choice.context(area, conn=c)["digest"], calendars, rates, timing, today)
 
 
 def resources_context(c, start=None):
@@ -316,22 +320,9 @@ def build(c, area: str, today: date | None = None) -> dict:
             "_rows": rows_by_key, "machine_balance": balance_info, "_estimate_inputs": {"table": table, "timing": timing}}
 
 
-_building: set = set()
-
-
-def _rebuild(area, today):
-    try:
-        load(area, today=today)
-    except Exception:  # the next request retries; the previous result stays marked stale
-        import logging
-        logging.getLogger(__name__).exception("Background rebuild of occurrences failed")
-    finally:
-        with _lock:
-            _building.discard(area)
-
-
 def load(area: str, *, today: date | None = None, conn=None, allow_stale: bool = False) -> dict:
-    """Current facts. Reads may get the previous result, marked stale, while a rebuild runs.
+    """Current facts. Reads may get the previous result of the same day, marked stale, while a rebuild runs
+    (one at a time, in the background); a request for a key already being computed waits for it (cache.py).
 
     Writes and previews never pass `allow_stale`: they always decide on the current versions.
     """
@@ -342,23 +333,15 @@ def load(area: str, *, today: date | None = None, conn=None, allow_stale: bool =
             c.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")
         c.execute("SET LOCAL jit = off")
         key = stamp(c, area, today)
-        with _lock:
-            cached = _cache.get(area)
-            if cached and cached[0] == key:
-                return cached[1]
-            if allow_stale and cached and cached[0][-1] == today:
-                if area not in _building:
-                    _building.add(area)
-                    threading.Thread(target=_rebuild, args=(area, today), daemon=True).start()
-                return {**cached[1], "stale": True}
-        result = build(c, area, today)
-    result["stamp"] = needs.digest(key)
-    result["stale"] = False
-    with _lock:
-        _cache[area] = (key, result)
-    return result
+
+        def compute():
+            result = build(c, area, today)
+            result["stamp"] = needs.digest(key)
+            result["stale"] = False
+            return result
+        return _cache.get(area, key, compute, allow_stale=allow_stale, stale_if=lambda old: old[-1] == today,
+                          refresh=lambda: load(area, today=today))
 
 
 def invalidate():
-    with _lock:
-        _cache.clear()
+    _cache.clear()

@@ -111,7 +111,8 @@ def test_registered_excel_line_keeps_the_excel_notes(manual):
         values = __import__("app.planning_needs", fromlist=["x"]).source_data({"kind": "plan_line", "id": source[0]}, "perfis", c)["values"]
     saved = register({**values, "machine": "MEBA", "team": "Equipa 5"}, source={"kind": "plan_line", "id": source[0], "version": "s1"})
     with planning.connect(readonly=True) as c:
-        rows = c.execute(portfolio._SQL, {"dataset": "planning:perfis"}).fetchall()
+        _, head = portfolio._stamp(c, "perfis", date.today())  # a geração que a Carteira lê
+        rows = c.execute(portfolio._SQL, {"dataset": "planning:perfis", "generation": head["id"]}).fetchall()
     mine = [r for r in rows if not r["row_key"].startswith("macro:") and str(r["row_key"]) == str(saved["need_id"])]
     assert mine, [r["row_key"] for r in rows]
     assert mine[0]["observations"] == "Fabricar após validação do cliente" and mine[0]["notes"] == "anulada"
