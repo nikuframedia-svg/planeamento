@@ -41,6 +41,7 @@ def balance(row):
 
 
 def _resources(metadata, configs, start, end):
+    from ..sector.members import is_machine
     by_code = {}; by_id = {}
     objects = [r for r in configs if r['kind'] == 'resource']
     for r in metadata['resources']:
@@ -53,7 +54,9 @@ def _resources(metadata, configs, start, end):
         rid = str(obj['id']) if obj else research.resource_id(r['codigo'])
         resource = {'id': rid, 'code': r['codigo'], 'name': r['designacao'], 'type': r['tipo'],
                     'operations': d.get('operations', []), 'revision': obj.get('revision') if obj else None,
-                    'confirmed': bool(d.get('confirmed')), 'technical_rules': d.get('technical_rules', []),
+                    # Máquina do setor no catálogo ou confirmada à mão: tem horários e histórico (07/10/2026).
+                    'confirmed': bool(d.get('confirmed')) or is_machine(r.get('setor'), r.get('tipo')),
+                    'technical_rules': d.get('technical_rules', []),
                     'capacity_override': d.get('capacity_override') or {},
                     'windows': [], 'calendar_status': 'unknown', 'aliases': d.get('aliases', []),
                     'capacity': (r.get('quantidade_operadores') or 0) if r['tipo'] == 'grupo_operadores' else 1,

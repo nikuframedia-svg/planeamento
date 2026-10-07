@@ -158,6 +158,12 @@ def _overview_with_calendar(monkeypatch, facts, shifts_per_day=2):
     return load.overview("cantoneiras", today=TODAY, now=datetime(2026, 10, 6, 12, tzinfo=timezone.utc))
 
 
+def test_zero_shift_weeks_are_not_a_calendar(monkeypatch):
+    """07/10: semanas gravadas a 0 turnos não contam como calendário (a máquina continua «sem calendário»)."""
+    [row] = _overview_with_calendar(monkeypatch, [fact("now", "m1", "2026-10-08", 6.0)], shifts_per_day=0)["machines"]
+    assert row["has_calendar"] is False
+
+
 def test_late_before_the_current_week_is_apart_from_the_current_week_load(monkeypatch):
     """07/10: o atrasado (prazo antes de segunda) sai da carga da semana atual e vai para «late_before»."""
     facts = [fact("old", "m1", "2026-09-30", 30.0), fact("mon", "m1", "2026-10-05", 4.0), fact("now", "m1", "2026-10-08", 6.0),

@@ -218,7 +218,8 @@ def overview(sector: str, *, today: date | None = None, now: datetime | None = N
     rows = []
     for m in machines:
         has_load = any(cells.get((m["id"], y, w)) for y, w in weeks)
-        has_calendar = any((m["id"], y, w) in cal for y, w in weeks)
+        # Semanas gravadas a 0 turnos não são calendário: a máquina continua «sem calendário» (07/10/2026).
+        has_calendar = any(shifts.week_hours(cal[(m["id"], y, w)]) > 0 for y, w in weeks if (m["id"], y, w) in cal)
         # Máquina do setor sem calendário mas com trabalho (mesmo sem prazo ou sem horas): a linha aparece,
         # com capacidade 0 e «Sem calendário», em vez de o trabalho desaparecer (auditoria 06/10/2026, A7-3).
         has_work = bool((totals.get(m["id"]) or {}).get("operations"))

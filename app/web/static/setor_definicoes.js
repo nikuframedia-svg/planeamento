@@ -87,16 +87,14 @@
       m.excel_rate ? el('span', {class: 'muted', title: m.excel_rate.source || ''}, `Excel: ${fmt.format(m.excel_rate.value)} ${m.excel_rate.unit}`) : null);
   }
 
+  // Sem a caixa «confirmada» (07/10/2026): qualquer máquina do setor tem calendários, velocidades e horas reais.
   function machineRow(m) {
-    const confirm = el('input', {type: 'checkbox', checked: m.confirmed, 'aria-label': `${m.name} confirmada`, disabled: !m.has_object});
-    confirm.addEventListener('change', () => send({tipo: 'maquina', id: m.id, expected_revision: m.revision, confirmada: confirm.checked})
-      .then(() => { notice(`${short(m.name)}: ${confirm.checked ? 'confirmada' : 'por confirmar'}.`); return load(); }).catch((e) => { confirm.checked = !confirm.checked; error(e); }));
     const turns = el('select', {'aria-label': `Turnos padrão ${m.name}`, disabled: !m.has_object}, [0, 1, 2, 3].map((n) => el('option', {value: n}, String(n))));
     turns.value = String(m.default_shifts);
     turns.addEventListener('change', () => send({tipo: 'maquina', id: m.id, expected_revision: m.revision, turnos_padrao: Number(turns.value)})
       .then((r) => { notice(`${short(m.name)}: ${turns.value} turno(s) padrão; ${r.changed - 1} semana(s) atualizadas.`); return load(); }).catch(error));
     return el('tr', {}, el('th', {scope: 'row'}, short(m.name), el('small', {class: 'muted'}, ` ${m.code || ''}`), namesCell(m)),
-      el('td', {}, m.process || '—'), el('td', {}, confirm), el('td', {}, turns), el('td', {}, weeksCell(m)), el('td', {}, fichaCell(m)), el('td', {}, data.speed_table ? inUseCell(m) : ratesCell(m)));
+      el('td', {}, m.process || '—'), el('td', {}, turns), el('td', {}, weeksCell(m)), el('td', {}, fichaCell(m)), el('td', {}, data.speed_table ? inUseCell(m) : ratesCell(m)));
   }
 
   // Nomes da máquina no Excel e nas folhas OCR, operações e janela do histórico (antes em «Capacidades e horas»).
@@ -134,41 +132,34 @@
       const r = await fetch(`/planeamento/api/raw/objects/worked_hours`, {headers: {Accept: 'application/json'}});
       if (r.ok) items = ((await r.json()).items || []).filter((o) => own.has(String(o.definition.resource_id)));
     } catch { items = []; }
-    const machine = el('select', {'aria-label': 'Máquina'}, data.machines.filter((m) => m.confirmed).map((m) => el('option', {value: m.id}, short(m.name))));
+    const machine = el('select', {'aria-label': 'Máquina'}, data.machines.filter((m) => m.has_object).map((m) => el('option', {value: m.id}, short(m.name))));
     const from = el('input', {type: 'date', 'aria-label': 'De'}), to = el('input', {type: 'date', 'aria-label': 'Até'});
     const hours = el('input', {type: 'number', step: '0.1', min: 0, 'aria-label': 'Horas'}), operation = el('input', {'aria-label': 'Operação (opcional)'});
     const origin = el('input', {value: 'Correção manual', 'aria-label': 'Origem'});
-    const replace = el('input', {type: 'checkbox'}), replaceLabel = el('label', {hidden: true}, replace, ' Substituir as horas das folhas OCR deste período');
-    const evidence = el('div', {class: 'muted'});
-    let basis = null;
-    const definition = () => ({resource_id: machine.value, mode: 'period', start_date: from.value, end_date: to.value, hours: hours.value,
+    const replace = el('input', {type: 'checkbox', checked: true}), replaceLabel = el('label', {}, replace, ' Substituir as horas das folhas OCR deste período');
+    const evidence = el('div', {class: 'muted worked-evidence'});
+    const definition = (basis) => ({resource_id: machine.value, mode: 'period', start_date: from.value, end_date: to.value, hours: hours.value,
       operation: operation.value.trim(), operation_hours: [], replace_ocr: replace.checked, source: origin.value.trim() || 'Correção manual', basis_hash: basis, confirmed: true});
-    const check = el('button', {type: 'button'}, 'Conferir as folhas deste período');
-    check.addEventListener('click', async () => {
-      try {
-        const r = await fetch('/planeamento/api/raw/horas/prever', {method: 'POST', headers: {'Content-Type': 'application/json', Accept: 'application/json'},
-          body: JSON.stringify({request_id: crypto.randomUUID(), definition: definition()})});
-        const body = await r.json().catch(() => ({}));
-        if (!r.ok) throw new Error(body.error || `Erro ${r.status}`);
-        basis = body.basis_hash;
-        const obs = body.observations || [];
-        replaceLabel.hidden = !obs.length;
-        evidence.textContent = obs.length ? `Folhas OCR neste período: ${obs.map((o) => `${o.date} ${fmt.format(o.hours)} h`).join(' · ')}` : 'Sem horas OCR neste período.';
-        if (body.scope_conflict) evidence.textContent += ` ${body.scope_conflict}`;
-      } catch (e) { error(e); }
-    });
+    const post = async (url, payload) => {
+      const r = await fetch(url, {method: 'POST', headers: {'Content-Type': 'application/json', Accept: 'application/json'}, body: JSON.stringify({request_id: crypto.randomUUID(), ...payload})});
+      const body = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(body.error || `Erro ${r.status}`);
+      return body;
+    };
+    // Gravar confere logo as folhas OCR do período (07/10/2026): já não há um passo «Conferir» à parte.
     const save = el('button', {type: 'button', class: 'save'}, 'Gravar horas reais');
     save.addEventListener('click', async () => {
       try {
-        if (!basis) throw new Error('Confere as folhas deste período antes de gravar.');
         const m = own.get(machine.value);
-        const r = await fetch('/planeamento/api/raw/objects/worked_hours', {method: 'POST', headers: {'Content-Type': 'application/json', Accept: 'application/json'},
-          body: JSON.stringify({request_id: crypto.randomUUID(), expected_revision: 0, name: `${m.name} · ${from.value} a ${to.value}`, area: $('setor').value, definition: definition()})});
-        const body = await r.json().catch(() => ({}));
-        if (!r.ok) throw new Error(body.error || `Erro ${r.status}`);
+        if (!m) throw new Error('Escolhe a máquina.');
+        const checked = await post('/planeamento/api/raw/horas/prever', {definition: definition(null)});
+        const obs = checked.observations || [];
+        await post('/planeamento/api/raw/objects/worked_hours', {expected_revision: 0, name: `${m.name} · ${from.value} a ${to.value}`, area: $('setor').value,
+          definition: definition(checked.basis_hash)});
         notice(`Horas reais gravadas para ${short(m.name)}.`);
-        basis = null;
         await renderWorked();
+        $('worked').querySelector('.worked-evidence').textContent = obs.length
+          ? `Folhas OCR neste período: ${obs.map((o) => `${o.date} ${fmt.format(o.hours)} h`).join(' · ')}` : 'Sem horas OCR neste período.';
       } catch (e) { error(e); }
     });
     box.replaceChildren(
@@ -176,7 +167,7 @@
         : el('p', {class: 'muted'}, 'Ainda não há horas corrigidas à mão neste setor.'),
       el('div', {class: 'worked-form'}, el('label', {}, 'Máquina', machine), el('label', {}, 'De', from), el('label', {}, 'Até (mesma semana)', to),
         el('label', {}, 'Horas', hours), el('label', {}, 'Operação (opcional)', operation), el('label', {}, 'Origem', origin)),
-      el('div', {class: 'worked-actions'}, check, replaceLabel, save), evidence);
+      el('div', {class: 'worked-actions'}, replaceLabel, save), evidence);
   }
 
   // Velocidades das máquinas (plano de 06/10, parte 3), como o ecrã «Planeamento Corte Térmico»: filtro por máquina,
@@ -218,7 +209,7 @@
   function speedTabs(st, machines, rates) {
     const own = new Set(machines.map((m) => m.id));
     const tabs = new Map();
-    for (const t of st.operations || []) {  // só operações que uma máquina confirmada faz (ou que já têm linhas)
+    for (const t of st.operations || []) {  // só operações que uma máquina do setor faz (ou que já têm linhas)
       if ((t.machines || []).some((id) => own.has(id)) || rates.some((r) => r.operation_code === t.code)) tabs.set(t.code, t);
     }
     for (const r of rates) if (!tabs.has(r.operation_code)) tabs.set(r.operation_code, {code: r.operation_code, label: r.operation_code || 'Todas as operações', machines: []});
@@ -363,13 +354,13 @@
     const keep = active && active.closest('tr[data-key]') && active.dataset.field
       ? {key: active.closest('tr[data-key]').dataset.key, field: active.dataset.field} : null;
     const byId = new Map(data.machines.map((m) => [m.id, m]));
-    const machines = data.machines.filter((m) => m.confirmed && m.has_object);
+    const machines = data.machines.filter((m) => m.has_object);
     const rates = data.machines.flatMap((m) => m.rates || []).map((r) => ({...r, resource_id: String(r.resource_id)}));
     const tabs = speedTabs(st, machines, rates);
     const cols = speedColumns(st);
     const parts = [timingForm(st), el('p', {class: 'muted speed-rule'}, st.rule || '')];
     if (!tabs.length) {
-      box.replaceChildren(...parts, el('p', {class: 'muted'}, 'Ainda não há máquinas confirmadas com operações neste setor.'));
+      box.replaceChildren(...parts, el('p', {class: 'muted'}, 'Ainda não há máquinas com operações neste setor.'));
       return;
     }
     if (!tabs.some((t) => t.code === speed.tab)) speed.tab = tabs[0].code;

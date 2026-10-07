@@ -111,9 +111,9 @@ def save(p,kind,conn=None,*,signal=True):
         if kind=='worked_hours':
             from .worked_hours import validate
             d=prior['definition'] if prior and p.get('archived') else validate(c,id,d)
-        if kind=='period':
+        if kind=='period':  # o ano da semana W já não se confirma (07/10/2026); as antigas só se arquivam
             from .capacity_revision import validate_period
-            d=validate_period(c,area,id,d)
+            d=prior['definition'] if prior and p.get('archived') else validate_period(c,area,id,d)
         revision=prior['revision']+1 if prior else 1;archived=bool(p.get('archived',False))
         c.execute('''INSERT INTO planning_mtg.raw_objects(id,kind,name,area,revision,definition,archived,actor) VALUES(%s,%s,%s,%s,%s,%s,%s,%s)
             ON CONFLICT(id) DO UPDATE SET name=excluded.name,area=excluded.area,revision=excluded.revision,definition=excluded.definition,archived=excluded.archived,actor=excluded.actor,updated_at=now()''',(id,kind,name,area,revision,Jsonb(d),archived,actor))

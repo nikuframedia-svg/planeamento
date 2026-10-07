@@ -6,7 +6,8 @@ import psycopg
 from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
 from tests.test_raw_workspace import workspace,database,canonical,registry,postgres16
-from app import planning,planning_needs as needs
+from datetime import date
+from app import planning,planning_needs as needs,planning_dates
 from app.raw import capacity,capacity_revision as calc,capacity_views as views,projection,query,objects,contracts,workbooks
 
 
@@ -27,17 +28,19 @@ def test_estimates_negative_zero_varied_rates_and_thomas_boundary():
         assert capacity.estimate(v,{'method':'area_hour','value':100},'corte')[0]==2
 
 
-def test_period_mtg3_uses_cut_date_and_keeps_scoped_confirmation_only_without_it():
+def test_period_mtg3_uses_cut_date_and_deduces_the_week_year_without_it():
     # Decisão do Luís (01/10/2026, plano das vistas por família): prazo MTG3 = Data Corte. Antes (22/09) a
     # capacidade MTG3 usava só a semana W importada, com o ano confirmado à mão por versão da macro; a
     # carga ficava sem ano e a ocupação das máquinas MTG3 aparecia a 0 % (auditoria 06/10, C1-1/A9-2).
-    periods=[{'area':'cantoneiras','definition':{'snapshot':'s','week':39,'year':2026}}]
-    assert calc.period({'imported_week':39,'cut_date':'2025-03-14'},'cantoneiras','s',periods)==(2025,11,'Data Corte')
-    assert calc.period({'imported_week':41,'cut_date':'2026-10-07','operation':'119'},'cantoneiras','new-version',[])==(2026,41,'Data Corte')
-    # Operações seguintes não herdam o prazo do corte; sem Data Corte mantém-se a regra antiga da semana W.
-    assert calc.period({'imported_week':39,'cut_date':'2026-10-07'},'cantoneiras','s',periods,primary=False)[:2]==(2026,39)
-    assert calc.period({'imported_week':39},'cantoneiras','s',periods)[:2]==(2026,39)
-    assert calc.period({'imported_week':39},'cantoneiras','new-version',periods)[:2]==(None,39)
+    # Desde 07/10/2026 o ano da semana W é deduzido (o mais perto de hoje); as confirmações por versão não contam.
+    periods=[{'area':'cantoneiras','definition':{'snapshot':'s','week':39,'year':2025}}]
+    today=date(2026,10,7)
+    assert calc.period({'imported_week':39,'cut_date':'2025-03-14'},'cantoneiras','s',periods,today=today)==(2025,11,'Data Corte')
+    assert calc.period({'imported_week':41,'cut_date':'2026-10-07','operation':'119'},'cantoneiras','new-version',[],today=today)==(2026,41,'Data Corte')
+    # Operações seguintes não herdam o prazo do corte; sem Data Corte vale a semana W com o ano deduzido.
+    assert calc.period({'imported_week':39,'cut_date':'2026-10-07'},'cantoneiras','s',periods,primary=False,today=today)[:2]==(2026,39)
+    assert calc.period({'imported_week':39},'cantoneiras','s',periods,today=today)==(2026,39,'Semana W importada — ano deduzido')
+    assert calc.period({'imported_week':39},'cantoneiras','new-version',periods,today=today)[:2]==(2026,39)
     # Uma semana escolhida localmente continua a mandar sobre a Data Corte.
     assert calc.period({'cut_date':'2026-10-07','planned_year':2026,'planned_week':44},'cantoneiras','s',[])[:2]==(2026,44)
     assert calc.period({'cut_date':'2026-09-22','operation':'corte'},'perfis','s',[])[:2]==(2026,39)
@@ -102,12 +105,12 @@ def test_cantoneiras_layout_description_and_operation_zero(workspace):
     capacity.rebuild()
     assert query.listing({'dataset':'capacity_items','area':'cantoneiras'})['total']==1
     with psycopg.connect(workspace,row_factory=dict_row) as c:
-        r=objects.save(command(area='cantoneiras',name='W39 de 2026',definition={'snapshot':'c1','week':39,'year':2026,'reason':'Confirmado para o ensaio.'}),'period',c)
-    for a in planning.AREAS:projection.rebuild(a)
-    capacity.rebuild()
-    row=views.overview({'area':'cantoneiras','year':2026,'week':39})['rows'][0]
-    assert row['values']['year']==2026
-    with pytest.raises(planning.PlanningError):objects.save(command(area='cantoneiras',name='Versão errada',definition={'snapshot':'old','week':39,'year':2026,'reason':'Teste'}),'period')
+        # O ano da semana W já não se confirma (07/10/2026): é deduzido, sem registo por versão.
+        with pytest.raises(planning.PlanningError,match='deduzido'):
+            objects.save(command(area='cantoneiras',name='W39 de 2026',definition={'snapshot':'c1','week':39,'year':2026,'reason':'Confirmado para o ensaio.'}),'period',c)
+    year=planning_dates.infer_iso_year(39)
+    row=views.overview({'area':'cantoneiras','year':year,'week':39})['rows'][0]
+    assert row['values']['year']==year
 
 
 def setup_week(workspace):

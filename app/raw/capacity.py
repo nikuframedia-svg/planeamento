@@ -6,7 +6,7 @@ from .. import planning,planning_needs as needs,planning_raw as old
 from . import objects,projection,query
 
 METHODS={'area_hour':'mm²/h','metres_hour':'m/h','units_hour':'un./h','minutes_unit':'min/un.','fixed_minutes':'min'}
-ESTIMATE_CONTRACT='planning-operation-hours-20260924-v3'  # v3 (07/10): tabela de velocidades (intervalos, arranque por peça), margem e tempo fixo do setor, vigência por hoje; v2 (06/10): janela histórica até hoje, amostra mínima e plausibilidade
+ESTIMATE_CONTRACT='planning-operation-hours-20260924-v4'  # v4 (07/10): máquinas do setor contam sem «confirmada» (taxas, histórico, horas reais), lista de operações só nas confirmadas à mão, ano da semana W deduzido; v3 (07/10): tabela de velocidades (intervalos, arranque por peça), margem e tempo fixo do setor, vigência por hoje; v2 (06/10): janela histórica até hoje, amostra mínima e plausibilidade
 RATE_SOURCES=('Excel','Confirmada')
 
 
@@ -25,6 +25,27 @@ def positive(v,zero=False):
     return n
 
 
+def physical_ids(c,resources):
+    """IDs dos recursos que contam como máquina física: calendários, taxas, histórico e horas reais.
+
+    Desde 07/10/2026 basta ser máquina ou posto de um setor no catálogo (app.sector.members); a confirmação
+    manual antiga continua a contar. O MES não tem o pacote dos setores: aí só conta a confirmação manual.
+    """
+    import importlib.util
+    ids={str(r['id']) for r in resources if r['definition'].get('confirmed')}
+    # Só o MES (sem o pacote sector) fica na regra antiga; aqui, um erro de importação continua visível.
+    if importlib.util.find_spec(__package__.rsplit('.',1)[0]+'.sector') is None:return ids
+    from ..sector.members import resource_ids
+    return ids|resource_ids(c,resources)
+
+
+def is_physical(c,resource):
+    """O recurso conta como máquina física? (regra de `physical_ids`, com a identidade de todos os recursos)."""
+    if resource['definition'].get('confirmed'):return True
+    stored=c.execute("SELECT id,kind,revision,definition FROM planning_mtg.raw_objects WHERE kind='resource' AND NOT archived").fetchall()
+    return str(resource['id']) in physical_ids(c,stored)
+
+
 def validate(c,kind,id,d):
     if kind=='resource':
         from ..gantt.machines import validate_rules
@@ -41,7 +62,7 @@ def validate(c,kind,id,d):
         return {**d,'aliases':aliases,'shift_hours':shift,'history_window_days':int(window),'confirmed':bool(d.get('confirmed'))}
     resource=objects.get(d.get('resource_id'),c)
     if resource['kind']!='resource' or resource['archived']:raise planning.PlanningError('Seleciona um recurso físico ativo.')
-    if d.get('confirmed') and not resource['definition'].get('confirmed'):raise planning.PlanningError('Confirma primeiro a identidade da máquina física.')
+    if d.get('confirmed') and not is_physical(c,resource):raise planning.PlanningError('Confirma primeiro a identidade da máquina física.')
     if kind=='calendar':
         try:year=int(d.get('year'));week=int(d.get('week'));date.fromisocalendar(year,week,1)
         except (TypeError,ValueError):raise planning.PlanningError('Semana e ano ISO inválidos.')
