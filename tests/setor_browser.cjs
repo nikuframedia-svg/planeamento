@@ -422,7 +422,7 @@ const fs = require('node:fs');
     await draft.locator('[data-field="thickness_max"]').fill('40');
     await draft.locator('[data-field="value"]').fill('80');
     n = writes.length;
-    await page.locator('#speed-margin').click();
+    await page.locator('#speeds .speed-rule').click();  // sair da linha (a margem saiu das Velocidades, 08/10)
     await page.waitForFunction(() => /linha nova/.test(document.getElementById('notice').textContent));
     assert.equal(writes.length, n + 1);
     sent = writes.at(-1).body;
@@ -434,13 +434,17 @@ const fs = require('node:fs');
     await page.waitForFunction(() => /Linha apagada/.test(document.getElementById('notice').textContent));
     sent = writes.at(-1).body;
     assert.deepEqual([sent.tipo, sent.id, sent.expected_revision, sent.arquivar], ['taxa', 'teste-taxa-2', 1, true]);
-    // Margem e tempo fixo por peça.
-    await page.fill('#speed-margin', '10');
-    await page.fill('#speed-fixed', '0,5');
-    await page.click('#speed-timing-save');
-    await page.waitForFunction(() => /Margem 10 %/.test(document.getElementById('notice').textContent));
-    sent = writes.at(-1).body;
-    assert.deepEqual([sent.tipo, sent.margin_pct, sent.piece_minutes, typeof sent.expected_revision], ['tempos', 10, 0.5, 'number']);
+    // Margem e tempo fixo por peça: só com o serviço antigo; desde 08/10 estão em «Planeamento» (definicoes_browser.cjs).
+    if (await page.locator('#speed-margin').count()) {
+      await page.fill('#speed-margin', '10');
+      await page.fill('#speed-fixed', '0,5');
+      await page.click('#speed-timing-save');
+      await page.waitForFunction(() => /Margem 10 %/.test(document.getElementById('notice').textContent));
+      sent = writes.at(-1).body;
+      assert.deepEqual([sent.tipo, sent.margin_pct, sent.piece_minutes, typeof sent.expected_revision], ['tempos', 10, 0.5, 'number']);
+    } else if (await page.locator('#planeamento').isVisible()) {
+      assert.equal(await page.locator('#speed-timing-link a').getAttribute('href'), '#planeamento');
+    }
     if (shots) await page.screenshot({path: `${shots}/definicoes-velocidades.png`, fullPage: true});
     // Perfis: tipo de material e área de secção, separador Corte.
     await page.goto(`${base}/planeamento/setor/definicoes?setor=perfis`);

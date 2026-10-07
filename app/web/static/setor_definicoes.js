@@ -19,13 +19,14 @@
   const error = (e) => { $('error').textContent = e.message; $('error').hidden = false; };
   const notice = (t) => { $('notice').textContent = t; $('notice').hidden = false; $('error').hidden = true; };
 
-  async function send(payload) {
-    const r = await fetch('/planeamento/api/setor/definicoes', {method: 'POST', headers: {'Content-Type': 'application/json', Accept: 'application/json'},
+  async function postJson(url, payload) {
+    const r = await fetch(url, {method: 'POST', headers: {'Content-Type': 'application/json', Accept: 'application/json'},
       body: JSON.stringify({setor: $('setor').value, request_id: crypto.randomUUID(), ...payload})});
     const body = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(body.error || `Erro ${r.status}`);
     return body;
   }
+  const send = (payload) => postJson('/planeamento/api/setor/definicoes', payload);
 
   function weeksCell(machine) {
     const w = (data.weeks.find((x) => x.machine === machine.id) || {}).weeks || [];
@@ -216,28 +217,27 @@
     return [...tabs.values()];
   }
 
+  // Tempo fixo (e margem, só com o serviço antigo) aqui; com a secção «Planeamento» (08/10) fica só a ligação para lá.
   function timingForm(st) {
+    if (Array.isArray(data.planning)) {
+      return el('p', {class: 'speed-timing', id: 'speed-timing-link'},
+        el('a', {href: '#planeamento'}, 'Eficiência de cada máquina e tempo fixo por peça: em «Planeamento» ↑'));
+    }
     const labels = st.timing_labels || {};
-    const margin = el('input', {value: shown((st.timing || {}).margin_pct ?? 0), inputmode: 'decimal', class: 'n', id: 'speed-margin', 'aria-label': labels.margin_pct || 'Margem (%)'});
+    const withMargin = st.margin_editable !== false;  // a margem deixou de se editar (08/10)
+    const margin = withMargin ? el('input', {value: shown((st.timing || {}).margin_pct ?? 0), inputmode: 'decimal', class: 'n', id: 'speed-margin', 'aria-label': labels.margin_pct || 'Margem (%)'}) : null;
     const fixed = el('input', {value: shown((st.timing || {}).piece_minutes ?? 0), inputmode: 'decimal', class: 'n', id: 'speed-fixed', 'aria-label': labels.piece_minutes || 'Tempo fixo por peça (min)'});
     const save = el('button', {type: 'button', class: 'small', id: 'speed-timing-save'}, 'Gravar');
-    // 08/10: a margem do setor deixou de se editar (a eficiência de cada máquina é o único fator); sem o campo,
-    // «Gravar» envia só o tempo fixo. Uma API antiga sem margin_editable mantém o campo.
-    const editable = st.margin_editable !== false;
     save.addEventListener('click', () => {
-      const m = editable ? num(margin.value) : null, f = num(fixed.value);
-      if (Number.isNaN(m) || Number.isNaN(f)) { error(new Error(editable ? 'Margem e tempo fixo: indica números.' : 'Tempo fixo: indica um número.')); return; }
-      const body = {tipo: 'tempos', expected_revision: data.settings.revision, piece_minutes: f ?? 0};
-      if (editable) body.margin_pct = m ?? 0;
-      queued(() => send(body))
-        .then(() => {
-          notice(editable ? `Margem ${fmt.format(m ?? 0)} % e tempo fixo ${fmt.format(f ?? 0)} min por peça gravados.`
-            : `Tempo fixo ${fmt.format(f ?? 0)} min por peça gravado.`);
-          return load();
-        }).catch(error);
+      const m = margin ? num(margin.value) : null, f = num(fixed.value);
+      if (Number.isNaN(m) || Number.isNaN(f)) { error(new Error(margin ? 'Margem e tempo fixo: indica números.' : 'Tempo fixo: indica um número.')); return; }
+      const payload = {tipo: 'tempos', expected_revision: data.settings.revision, piece_minutes: f ?? 0};
+      if (margin) payload.margin_pct = m ?? 0;
+      queued(() => send(payload))
+        .then(() => { notice(margin ? `Margem ${fmt.format(m ?? 0)} % e tempo fixo ${fmt.format(f ?? 0)} min por peça gravados.` : `Tempo fixo ${fmt.format(f ?? 0)} min por peça gravado.`); return load(); }).catch(error);
     });
     return el('div', {class: 'speed-timing'},
-      editable ? el('label', {}, labels.margin_pct || 'Margem sobre os tempos estimados (%)', margin) : null,
+      margin ? el('label', {}, labels.margin_pct || 'Margem sobre os tempos estimados (%)', margin) : null,
       el('label', {}, labels.piece_minutes || 'Tempo fixo por peça (min)', fixed), save,
       el('span', {class: 'muted'}, '0 = as horas não mudam.'));
   }
@@ -415,6 +415,176 @@
     if (keep) box.querySelector(`tr[data-key="${keep.key}"] [data-field="${keep.field}"]`)?.focus();
   }
 
+  // Secção «Planeamento» (P9, 08/10): desenhada a partir de `data.planning` (settings.PLANNING, só os parâmetros
+  // ativos). Sem o campo (serviço ainda com o Python antigo) fica escondida e o tempo fixo continua nas Velocidades.
+  const DASH = '—';
+  function opLabel(op) {
+    const code = String(op || '').replace(/^CPIS:/, '').replace(/^LOCAL:PRINCIPAL$/, 'corte');
+    const tab = ((data.speed_table || {}).operations || []).find((t) => t.code === code);
+    return tab ? String(tab.label).split(' · ')[0] : code;
+  }
+
+  // «Medido» da eficiência: velocidade das folhas com horas ÷ velocidade do Excel, com a amostra. Só para comparar.
+  function measuredText(m) {
+    const list = Array.isArray(m.measured) ? m.measured : [];
+    if (!list.length) return {text: 'sem dados'};
+    const many = list.length > 1;
+    const odd = list.some((x) => x.enough && x.plausible === false);
+    const text = list.map((x) => {
+      const op = many ? `${opLabel(x.operation)}: ` : '';
+      const sample = x.sheets ? `${x.sheets} folhas` : null;
+      if (!x.enough) return `${op}amostra insuficiente${sample ? ` (${sample}, ${fmt.format(x.hours || 0)} h)` : ''}`;
+      if (x.ratio_pct === null || x.ratio_pct === undefined || !m.excel_rate) return `${op}${fmt.format(x.value)} ${x.unit || ''}${sample ? ` (${sample})` : ''}`;
+      return `${op}${x.ratio_pct} % (${fmt.format(x.value)} ÷ ${fmt.format(m.excel_rate.value)} ${x.unit || ''} do Excel${sample ? `, ${sample}` : ''})`;
+    }).join(' · ');
+    return {text, title: odd ? 'Muito longe do Excel: confirmar as folhas.' : null};
+  }
+
+  // Uma linha da tabela: Parâmetro | Valor | Unidade | O que muda | Origem | Medido. `span` > 1 junta «O que muda» e
+  // «Origem» das linhas seguintes do mesmo parâmetro (eficiência: uma linha por máquina); `first` = false omite-as.
+  function planRow(p, name, value, measured, {span = 1, first = true, key = null} = {}) {
+    const m = measured || {text: DASH};
+    return el('tr', {'data-param': p.key, 'data-key': key},
+      el('th', {scope: 'row'}, name), el('td', {class: 'val'}, value), el('td', {}, p.unit || DASH),
+      first ? el('td', {class: 'what', rowspan: span > 1 ? span : null}, p.applies_in || DASH) : null,
+      first ? el('td', {class: 'origin', rowspan: span > 1 ? span : null}, p.origin_label || p.origin || DASH) : null,
+      el('td', {class: 'measured', title: m.title || null}, m.text));
+  }
+
+  function planNumber(p, value, label, extra = {}) {
+    return el('input', {value: shown(value), inputmode: 'decimal', class: 'n', placeholder: p.default === null || p.default === undefined ? null : String(p.default),
+      'aria-label': label, 'data-param': p.key, ...extra});
+  }
+
+  function policyCell(p) {
+    const v = p.value || {};
+    const labels = new Map((p.choices || []).map((c) => [c.key, c.label]));
+    const initial = (v.principal || []).filter((k) => labels.has(k));
+    const active = new Set(initial);
+    let order = [...initial, ...[...labels.keys()].filter((k) => !active.has(k))];
+    const chain = () => order.filter((k) => active.has(k)).map((k) => labels.get(k)).join(' → ') || DASH;
+    const summary = el('summary', {}, chain());
+    const list = el('ol', {class: 'policy-list'});
+    const save = el('button', {type: 'button', class: 'small', id: 'policy-save', hidden: true}, 'Gravar prazo');
+    const hint = el('span', {class: 'muted policy-hint', hidden: true}, p.recalcula || '');
+    const chosen = () => order.filter((k) => active.has(k));
+    const update = () => {
+      summary.textContent = chain();
+      const changed = chosen().join('|') !== initial.join('|');
+      save.hidden = !changed; hint.hidden = !changed || !p.recalcula;
+    };
+    const move = (i, d) => { const j = i + d; if (j < 0 || j >= order.length) return; [order[i], order[j]] = [order[j], order[i]]; draw(); };
+    function draw() {
+      list.replaceChildren(...order.map((k, i) => {
+        const box = el('input', {type: 'checkbox', checked: active.has(k), 'aria-label': `Usar ${labels.get(k)}`, 'data-field': k});
+        box.addEventListener('change', () => { if (box.checked) active.add(k); else active.delete(k); draw(); });
+        const up = el('button', {type: 'button', class: 'linklike', 'aria-label': `Subir ${labels.get(k)}`, disabled: i === 0}, '↑');
+        const down = el('button', {type: 'button', class: 'linklike', 'aria-label': `Descer ${labels.get(k)}`, disabled: i === order.length - 1}, '↓');
+        up.addEventListener('click', () => move(i, -1));
+        down.addEventListener('click', () => move(i, 1));
+        return el('li', {class: active.has(k) ? null : 'off', 'data-field': k}, el('label', {}, box, ` ${labels.get(k)}`), up, down);
+      }));
+      update();
+    }
+    save.addEventListener('click', () => {
+      const principal = chosen();
+      if (!principal.length) { error(new Error('Escolhe pelo menos um campo de prazo.')); return; }
+      save.disabled = true;
+      postJson('/planeamento/api/setor/prioridades/politica', {expected_revision: v.revision || 0,
+        definition: {principal, following: v.following, milestone: v.milestone, assume_picking_year: v.assume_picking_year ?? null}})
+        .then(() => { const text = `Prazo gravado: ${chain()}. ${p.recalcula || ''}`.trim(); return load().then(() => notice(text)); })
+        .catch((e) => { save.disabled = false; error(e); });
+    });
+    draw();
+    return el('details', {class: 'policy', id: 'policy'}, summary, list, el('div', {class: 'plan-actions'}, save, hint));
+  }
+
+  function renderPlanning() {
+    const section = $('planeamento'), box = $('planning');
+    if (!section || !box) return;
+    if (!Array.isArray(data.planning)) { section.hidden = true; box.replaceChildren(); return; }
+    section.hidden = false;
+    const fields = [];  // {p, input, machine, initial, part}
+    const body = el('tbody', {id: 'planning-rows'});
+    for (const p of data.planning) {
+      if (p.kind === 'por_maquina') {
+        const values = p.value || {};
+        data.machines.forEach((m, i) => {
+          const value = values[m.id] ?? m.efficiency_pct ?? p.default;
+          const input = planNumber(p, value, `${p.label} ${short(m.name)}`, {'data-machine': m.id});
+          fields.push({p, input, machine: m.id, initial: input.value});
+          body.append(planRow(p, `${p.label} · ${short(m.name)}`, input, measuredText(m), {span: data.machines.length, first: i === 0, key: m.id}));
+        });
+      } else if (p.kind === 'numero') {
+        const input = planNumber(p, p.value ?? p.default, p.label);
+        fields.push({p, input, initial: input.value});
+        body.append(planRow(p, p.label, input));
+      } else if (p.kind === 'lista') {
+        const input = el('textarea', {rows: 3, 'aria-label': p.label, 'data-param': p.key});
+        input.value = (p.value || []).join('\n');
+        fields.push({p, input, initial: input.value});
+        body.append(planRow(p, p.label, input));
+      } else if (p.kind === 'por_turno') {
+        const parts = [0, 1, 2].map((i) => {
+          const input = planNumber(p, (p.value || [])[i] ?? '', `${p.label} ${i + 1}.º turno`, {placeholder: DASH});
+          fields.push({p, input, part: i, initial: input.value});
+          return el('label', {class: 'turn'}, `${i + 1}.º `, input);
+        });
+        body.append(planRow(p, p.label, el('div', {class: 'turns'}, parts)));
+      } else if (p.kind === 'politica') {
+        body.append(planRow(p, p.label, policyCell(p)));
+      } else if (p.kind === 'postos') {
+        body.append(planRow(p, p.label, el('div', {}, (p.value || []).map((x) => el('div', {class: 'post'}, x.text)))));
+      }
+    }
+    const save = el('button', {type: 'button', class: 'save', id: 'planning-save', hidden: true}, 'Gravar');
+    const recalc = el('span', {class: 'muted', id: 'planning-recalc', hidden: true});
+    const changes = () => fields.filter((f) => f.input.value.trim() !== f.initial.trim());
+    const refresh = () => {
+      const changed = changes();
+      const texts = [...new Set(changed.map((f) => f.p.recalcula).filter(Boolean))];
+      save.hidden = !changed.length;
+      recalc.textContent = texts.join(' ');
+      recalc.hidden = !texts.length;
+    };
+    for (const f of fields) f.input.addEventListener('input', refresh);
+    save.addEventListener('click', () => {
+      const valores = {}, names = new Set();
+      try {
+        for (const f of changes()) {
+          const {p} = f;
+          names.add(p.label);
+          if (p.kind === 'lista') { valores[p.key] = f.input.value.split('\n').map((x) => x.trim()).filter(Boolean); continue; }
+          const n = num(f.input.value);
+          if (Number.isNaN(n)) throw new Error(`${p.label}: indica um número.`);
+          if (n !== null && ((p.min !== null && n < p.min) || (p.max !== null && n > p.max))) throw new Error(`${p.label}: entre ${fmt.format(p.min)} e ${fmt.format(p.max)}${p.unit ? ` ${p.unit}` : ''}.`);
+          if (p.kind === 'por_maquina') (valores[p.key] ||= {})[f.machine] = n;  // vazio = por defeito (100 %)
+          else if (p.kind === 'por_turno') {
+            if (!valores[p.key]) valores[p.key] = fields.filter((x) => x.p === p).map((x) => num(x.input.value));
+          } else valores[p.key] = n ?? p.default;
+        }
+      } catch (e) { error(e); return; }
+      const text = recalc.hidden ? '' : ` ${recalc.textContent}`;
+      save.disabled = true;
+      queued(() => send({tipo: 'planeamento', expected_revision: data.settings.revision, valores}))
+        .then(() => load()).then(() => notice(`Gravado: ${[...names].join(' e ')}.${text}`))
+        .catch((e) => { save.disabled = false; error(e); });
+    });
+    box.replaceChildren(
+      el('div', {class: 'scroll'}, el('table', {class: 'grid plan-table', id: 'planning-table'},
+        el('thead', {}, el('tr', {}, ['Parâmetro', 'Valor', 'Unidade', 'O que muda', 'Origem', 'Medido'].map((h) => el('th', {scope: 'col'}, h)))),
+        body)),
+      el('div', {class: 'plan-actions'}, save, recalc));
+  }
+
+  function renderSecondOperation() {
+    const line = $('second-op');
+    if (!line) return;
+    const list = Array.isArray(data.second_operation) ? data.second_operation : [];
+    line.hidden = !list.length;
+    line.textContent = list.length ? `Fora do plano (2.ª operação): ${list.map((m) => short(m.name)).join(', ')}` : '';
+  }
+
   function renderShifts(s) {
     const names = ['1.º turno', '2.º turno', '3.º turno'];
     $('template').replaceChildren(...[0, 1, 2].map((i) => {
@@ -433,6 +603,8 @@
     data = await r.json();
     if (!r.ok) throw new Error(data.error || `Erro ${r.status}`);
     $('machines').replaceChildren(...data.machines.map(machineRow));
+    renderSecondOperation();
+    renderPlanning();
     renderShifts(data.settings);
     $('rules').replaceChildren(...data.rules.map((t) => el('li', {}, t)));
     const head = $('rates-head');

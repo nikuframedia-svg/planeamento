@@ -75,9 +75,28 @@ button.tag { font-size: inherit; }
 .sr { position: absolute; left: 0; top: 0; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 /* planning_hub.css transforma as tabelas em cartões abaixo de 720 px; estas ficam tabela e deslizam dentro da caixa. */
 @media (max-width: 720px) {
-  table.speed-table, table.speed-preview { display: table; }
-  table.speed-table thead, table.speed-preview thead { display: table-header-group; }
-  table.speed-table tbody, table.speed-preview tbody { display: table-row-group; }
-  table.speed-table tr, table.speed-preview tr { display: table-row; border-bottom: 0; padding: 0; }
-  table.speed-table th, table.speed-table td, table.speed-preview th, table.speed-preview td { display: table-cell; padding: .35rem .45rem; }
+  table.speed-table, table.speed-preview, table.plan-table { display: table; }
+  table.speed-table thead, table.speed-preview thead, table.plan-table thead { display: table-header-group; }
+  table.speed-table tbody, table.speed-preview tbody, table.plan-table tbody { display: table-row-group; }
+  table.speed-table tr, table.speed-preview tr, table.plan-table tr { display: table-row; border-bottom: 0; padding: 0; }
+  table.speed-table th, table.speed-table td, table.speed-preview th, table.speed-preview td,
+  table.plan-table th, table.plan-table td { display: table-cell; padding: .35rem .45rem; }
 }
+
+/* Planeamento (P9, 08/10): Parâmetro | Valor | Unidade | O que muda | Origem | Medido; a tabela desliza na caixa. */
+table.plan-table td { vertical-align: middle; }
+table.plan-table td.what { min-width: 16rem; vertical-align: top; }
+table.plan-table td.origin { vertical-align: top; }
+table.plan-table td.measured { min-width: 11rem; }
+table.plan-table input.n { border: 1px solid #c9d4d7; padding: .1rem .3rem; width: 5rem; text-align: right; }
+table.plan-table textarea { border: 1px solid #c9d4d7; min-width: 14rem; }
+table.plan-table .turns { display: flex; gap: .4rem; flex-wrap: wrap; }
+table.plan-table .post + .post { margin-top: .2rem; }
+.plan-actions { display: flex; gap: .6rem; align-items: center; flex-wrap: wrap; margin-top: .4rem; }
+.plan-actions:empty { display: none; }
+details.policy summary { cursor: pointer; white-space: nowrap; }
+ol.policy-list { margin: .3rem 0 0; padding-left: 1.4rem; }
+ol.policy-list li { white-space: nowrap; }
+ol.policy-list li.off { color: #5d737a; }
+ol.policy-list button.linklike { text-decoration: none; padding: 0 .3rem; }
+#second-op { margin: .4rem 0 0; }

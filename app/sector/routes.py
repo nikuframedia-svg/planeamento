@@ -456,9 +456,16 @@ async def reference_set_archive(request: Request):
     return await _post(request, sets.archive)
 
 
+def _policy_guard() -> None:
+    """Política de prazo (P9, 08/10): sai do interruptor das vistas por família e passa a ser das Definições do setor
+    (interruptor da Carteira). Com só as vistas ligadas continua a responder, como antes."""
+    if not (enabled() or views_enabled()):
+        raise HTTPException(status_code=404)
+
+
 @router.get("/planeamento/api/setor/prioridades")
 def priorities():
-    _views()
+    _policy_guard()
     from . import priority
 
     def build():
@@ -471,7 +478,7 @@ def priorities():
 
 @router.post("/planeamento/api/setor/prioridades/politica")
 async def priority_policy(request: Request):
-    _views()
+    _policy_guard()
     from . import priority
     return await _post(request, priority.save_policy)
 
