@@ -7,7 +7,9 @@ pelos 25–30 s de cada cache fria. As caches são por dia: de 5 em 5 minutos o 
 chegue a meio espera pelo mesmo cálculo em vez de o repetir (cache.py).
 
 Desligado quando os trabalhos de fundo do processo estão desligados (MES_DOSSIER_WORKER_DISABLED=1, como nos
-servidores de ensaio), com MES_PLANNING_WARMUP_DISABLED=1, ou com a Carteira desligada.
+servidores de ensaio), com MES_PLANNING_WARMUP_DISABLED=1, ou com a Carteira desligada. Com pouca memória,
+MES_PLANNING_WARMUP_SECTORS=cantoneiras aquece só o MTG3 (medido a 07/10: cerca de 2 GB no processo depois de
+aquecer o MTG3); o outro calcula-se quando alguém o abrir.
 """
 from __future__ import annotations
 
@@ -33,6 +35,16 @@ def enabled() -> bool:
             and os.environ.get("MES_PLANNING_WARMUP_DISABLED") != "1")
 
 
+def sectors() -> tuple[str, ...]:
+    """Os setores a aquecer, pela ordem de SECTORS (MES_PLANNING_WARMUP_SECTORS, separados por vírgulas; por
+    omissão, os dois). Nomes desconhecidos ficam de fora."""
+    asked = os.environ.get("MES_PLANNING_WARMUP_SECTORS")
+    if asked is None:
+        return SECTORS
+    names = {x.strip() for x in asked.split(",")}
+    return tuple(s for s in SECTORS if s in names)
+
+
 def _steps(sector: str):
     from . import board, load, occurrences, portfolio, portfolio_kpis
     return (("Carteira", lambda: portfolio.current(sector)),
@@ -45,16 +57,17 @@ def _steps(sector: str):
 def warm(sectors=SECTORS) -> bool:
     """Calcula as versões atuais das caches de cada setor e regista a duração de cada passo; True se tudo correu bem.
 
-    Um passo de cada vez e nunca ao mesmo tempo que um recálculo em segundo plano (cache.BACKGROUND).
+    Um passo de cada vez e nunca ao mesmo tempo que um recálculo em segundo plano (cache.BACKGROUND); os
+    recálculos pedidos pelas páginas passam à frente dos passos que ainda faltam.
     """
-    from .cache import BACKGROUND
+    from .cache import BACKGROUND, WARMUP
     ok = True
     for sector in sectors:
         started = time.monotonic()
         for label, step in _steps(sector):
             began = time.monotonic()
             try:
-                with BACKGROUND:
+                with BACKGROUND.hold(WARMUP):
                     step()
                 log.info("Aquecimento %s · %s: %.1f s", sector, label, time.monotonic() - began)
             except Exception:
@@ -73,7 +86,7 @@ def _loop(stop: threading.Event, check_seconds: float) -> None:
     while True:
         day = _today()
         if day != done:
-            if warm() or failures + 1 >= ATTEMPTS_PER_DAY:
+            if warm(sectors()) or failures + 1 >= ATTEMPTS_PER_DAY:
                 done, failures = day, 0
             else:
                 failures += 1

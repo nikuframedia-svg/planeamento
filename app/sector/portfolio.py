@@ -110,8 +110,10 @@ WHERE (c.values_json->>'planning_active')::boolean
 """
 
 # Por setor: as linhas da última geração lida. As leituras podem receber a geração anterior (marcada «stale»)
-# enquanto a nova se calcula em segundo plano (cache.py); as gravações leem sempre a atual.
-_cache = cache.Cache("Carteira", mark=lambda value: {**value, "stale": True})
+# enquanto a nova se calcula em segundo plano (cache.py); as gravações leem sempre a atual. Fica sempre a geração
+# mais recente (dia, geração): um cálculo sobre um retrato mais antigo da base (load com a ligação de quem chama)
+# não a substitui.
+_cache = cache.Cache("Carteira", mark=lambda value: {**value, "stale": True}, rank=lambda key: (key[1], key[0]))
 _lock = threading.Lock()
 
 
@@ -367,7 +369,9 @@ def check_estado(value: str | None) -> None:
         raise planning.PlanningError("Estado inválido.")
 
 
-_current_cache: dict[str, tuple[tuple, dict]] = {}
+# Por setor: (carimbo, base de load(), resultado). Guarda a própria base: compara-a por identidade (`is`) e, enquanto
+# está aqui, o endereço dela não pode ser reutilizado por outra.
+_current_cache: dict[str, tuple[tuple, dict, dict]] = {}
 
 
 def current(sector: str, *, today: date | None = None, conn=None, allow_stale: bool = False) -> dict:
@@ -380,11 +384,11 @@ def current(sector: str, *, today: date | None = None, conn=None, allow_stale: b
     from . import machine_choice
     base = load(sector, today=today, conn=conn, allow_stale=allow_stale)
     ctx = machine_choice.context(sector, conn=conn)
-    stamp = (base["generation"], base["today"], id(base), ctx["digest"])
+    stamp = (base["generation"], base["today"], ctx["digest"])
     with _lock:
         cached = _current_cache.get(sector)
-    if cached and cached[0] == stamp:
-        return cached[1]
+    if cached and cached[0] == stamp and cached[1] is base:
+        return cached[2]
     lines = []
     for x in base["lines"]:
         family = x["sku_family"] if x["sku_family"] != "Sem família SKU" else None
@@ -395,7 +399,7 @@ def current(sector: str, *, today: date | None = None, conn=None, allow_stale: b
             lines.append({**x, "machine": found["machine"], "machine_source": found["source"], "machine_resource_id": found["resource_id"]})
     result = {**base, "lines": lines, "machine_digest": ctx["digest"]}
     with _lock:
-        _current_cache[sector] = (stamp, result)
+        _current_cache[sector] = (stamp, base, result)
     return result
 
 

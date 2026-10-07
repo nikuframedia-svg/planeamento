@@ -34,14 +34,17 @@
       if (serial !== state.loading) return;
       if (response.status === 404) throw Error("Esta página precisa que o serviço do planeamento seja reiniciado para ficar ativa.");
       if (!response.ok) throw Error(result.error || result.detail || `Erro ${response.status}`);
+      // Versão anterior enquanto o servidor refaz o quadro (07/10/2026): volta a pedir de 8 em 8 s, sem aviso, e
+      // só volta a desenhar quando chega outra versão (o dia aberto e a página não saltam a cada pedido).
+      const again = () => setTimeout(() => { if (serial === state.loading) load(true); }, 8000);
+      if (quiet && result.stale && result.imported_at === state.data?.imported_at) return again();
       state.data = result; notice("");
       render();
       if (state.day) openDay(state.day, state.dayMachine, false);
-      // Versão anterior enquanto o servidor refaz o quadro (07/10/2026): volta a pedir, sem aviso.
-      if (result.stale) setTimeout(() => { if (serial === state.loading) load(true); }, 8000);
+      if (result.stale) again();
     } catch (error) {
-      if (serial !== state.loading || quiet) return;
-      $("source").textContent = "";
+      if (serial !== state.loading) return;
+      if (!quiet) $("source").textContent = "";
       notice(error.message || "Não foi possível carregar o plano.", true);
     }
   }

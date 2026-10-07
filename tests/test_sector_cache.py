@@ -23,6 +23,12 @@ def wait_until(condition, timeout=5.0):
         time.sleep(0.01)
 
 
+@pytest.fixture(autouse=True)
+def no_refresh_delay(monkeypatch):
+    """Os ensaios não esperam pelos 15 s antes de cada recálculo de fundo (há um ensaio próprio para essa espera)."""
+    monkeypatch.setattr(cache, "REFRESH_DELAY", 0)
+
+
 # --- O mecanismo (app/sector/cache.py)
 
 def test_same_key_is_served_from_memory():
@@ -194,18 +200,108 @@ def test_failed_build_reaches_every_waiter_and_keeps_nothing():
     assert c.get("s", 1, lambda: "depois") == "depois"
 
 
-def test_failed_background_rebuild_keeps_previous_result_and_retries_later():
+def test_failed_background_rebuild_sends_the_error_of_that_key_to_the_next_read():
+    """Um recálculo de fundo que falha não deixa a página na versão anterior o dia inteiro, sem aviso: o pedido
+    seguinte com a mesma chave calcula logo, e o erro chega ao utilizador como antes das caches."""
     c, attempts = cache.Cache("ensaio"), []
     c.get("s", 1, lambda: "v1")
 
-    def refresh():
+    def boom():
         attempts.append(1)
         raise planning.PlanningError("indisponível")
 
-    assert c.get("s", 2, lambda: "x", allow_stale=True, refresh=refresh) == "v1"
+    refresh = lambda: c.get("s", 2, boom)  # noqa: E731
+    assert c.get("s", 2, boom, allow_stale=True, refresh=refresh) == "v1"
     wait_until(lambda: attempts and not c._refreshing)
+    with pytest.raises(planning.PlanningError, match="indisponível"):
+        c.get("s", 2, boom, allow_stale=True, refresh=refresh)
+    assert len(attempts) == 2 and not c._refreshing  # calculou no pedido; nenhum recálculo de fundo condenado
+    assert c.get("s", 2, lambda: "v2", allow_stale=True, refresh=refresh) == "v2"  # corrigido: volta a calcular
+    assert c.get("s", 2, boom, allow_stale=True, refresh=refresh) == "v2"
+
+
+def test_failure_reading_the_key_in_the_background_also_reaches_the_next_read():
+    c, built = cache.Cache("ensaio"), []
+    c.get("s", 1, lambda: "v1")
+
+    def refresh():
+        raise planning.PlanningError("A preparar a consulta deste setor.")
+
     assert c.get("s", 2, lambda: "x", allow_stale=True, refresh=refresh) == "v1"
-    wait_until(lambda: len(attempts) == 2)
+    wait_until(lambda: not c._refreshing)
+    assert c.get("s", 2, lambda: built.append(1) or "v2", allow_stale=True, refresh=refresh) == "v2"
+    assert built == [1]
+
+
+def test_after_a_failure_a_newer_key_serves_the_previous_result_again():
+    c = cache.Cache("ensaio")
+    c.get("s", 1, lambda: "v1")
+
+    def boom():
+        raise planning.PlanningError("indisponível")
+
+    assert c.get("s", 2, boom, allow_stale=True, refresh=lambda: c.get("s", 2, boom)) == "v1"
+    wait_until(lambda: not c._refreshing)
+    release = threading.Event()
+    assert c.get("s", 3, lambda: "v3", allow_stale=True,
+                 refresh=lambda: release.wait(5) and c.get("s", 3, lambda: "v3")) == "v1"
+    release.set()
+    wait_until(lambda: c.get("s", 3, lambda: "x", allow_stale=True, refresh=lambda: None) == "v3")
+
+
+def test_older_data_never_replaces_newer_data_even_if_computed_later():
+    """Com `rank`, o que decide é a idade dos dados e não a ordem dos cálculos: um cálculo começado depois, mas
+    sobre um retrato mais antigo da base (outra ligação), não substitui uma geração mais recente."""
+    c = cache.Cache("ensaio", rank=lambda key: key)
+    assert c.get("s", 2, lambda: "geração 2") == "geração 2"
+    assert c.get("s", 1, lambda: "geração 1") == "geração 1"  # quem pediu recebe o que pediu
+    assert c.get("s", 2, lambda: "outra vez") == "geração 2"  # mas a cache guarda a mais recente
+
+
+def test_background_rebuild_waits_for_the_second_generation_of_a_validation(monkeypatch):
+    """Cada validação do MES publica duas gerações planning com poucos segundos entre elas: o recálculo de
+    fundo espera REFRESH_DELAY e lê a chave nessa altura, por isso calcula uma só vez, já com a segunda."""
+    monkeypatch.setattr(cache, "REFRESH_DELAY", 0.2)
+    c, builds, latest = cache.Cache("ensaio"), [], [2]
+    assert c.refresh_delay is None  # por omissão, a espera do módulo
+    c.get("s", 1, lambda: "v1")
+
+    def refresh():
+        key = latest[0]
+        return c.get("s", key, lambda: builds.append(key) or f"v{key}")
+
+    assert c.get("s", 2, lambda: "x", allow_stale=True, refresh=refresh) == "v1"
+    latest[0] = 3  # a segunda geração chega durante a espera
+    wait_until(lambda: builds)
+    wait_until(lambda: not c._refreshing)
+    assert builds == [3]
+
+
+def test_urgent_background_rebuild_goes_before_the_queued_ones():
+    """Uma vez de fundo para todo o processo, mas as ocorrências (botões da página Máquinas à espera) passam à
+    frente dos recálculos que já estavam na fila; o aquecimento vai sempre no fim."""
+    from app.sector import occurrences
+    assert occurrences._cache.priority == cache.URGENT and occurrences._cache.refresh_delay == 0  # nem espera os 15 s
+    holder, normal, urgent = cache.Cache("ensaio-a"), cache.Cache("ensaio-b"), cache.Cache("ensaio-c", priority=cache.URGENT)
+    for c in (holder, normal, urgent):
+        c.get("s", 1, lambda: "v1")
+    order, inside, release = [], threading.Event(), threading.Event()
+    holder.get("s", 2, lambda: "x", allow_stale=True, refresh=lambda: (inside.set(), release.wait(5), order.append("a")))
+    assert inside.wait(5)  # o primeiro recálculo tem a vez
+
+    def warm_step():
+        with cache.BACKGROUND.hold(cache.WARMUP):
+            order.append("aquecimento")
+
+    threading.Thread(target=warm_step, daemon=True).start()
+    wait_until(lambda: cache.BACKGROUND.waiting() == 1)
+    normal.get("s", 2, lambda: "x", allow_stale=True, refresh=lambda: order.append("b"))
+    wait_until(lambda: cache.BACKGROUND.waiting() == 2)
+    urgent.get("s", 2, lambda: "x", allow_stale=True, refresh=lambda: order.append("c"))
+    wait_until(lambda: cache.BACKGROUND.waiting() == 3)
+    release.set()
+    wait_until(lambda: len(order) == 4)
+    assert order == ["a", "c", "b", "aquecimento"]
 
 
 # --- Carteira (portfolio.load / current)
@@ -233,14 +329,14 @@ def fake_portfolio(monkeypatch):
 
     def stamp(c, sector, today):
         head = {"id": state["generation"], "snapshot": "s", "created_at": None}
-        return (head["id"], today, None, "p"), head
+        return (head["id"], today, None, state.get("priority", "p")), head
 
     def rows(c, sector, head, today):
         state["builds"].append(head["id"])
         if state["release"] is not None:
             state["release"].wait(5)
         return {"sector": sector, "generation": head["id"], "snapshot": "s", "imported_at": None, "today": today,
-                "lines": [], "stale": False}
+                "lines": [], "stale": False, "build": len(state["builds"])}
 
     monkeypatch.setattr(portfolio, "_stamp", stamp)
     monkeypatch.setattr(portfolio, "_build", rows)
@@ -275,6 +371,30 @@ def test_portfolio_previous_day_is_never_served(fake_portfolio, monkeypatch):
     portfolio.load("cantoneiras", today=date(2026, 10, 6))
     data = portfolio.load("cantoneiras", today=date(2026, 10, 7), allow_stale=True)
     assert data["today"] == date(2026, 10, 7) and data["stale"] is False
+
+
+def test_portfolio_older_snapshot_never_replaces_a_newer_generation(fake_portfolio):
+    """machine_learning.model lê portfolio.load(conn=c) num retrato da base mais antigo: esse cálculo começa
+    depois, mas não pode substituir a geração mais recente já guardada (custava outro cálculo de 20–50 s)."""
+    from app.sector import portfolio
+    fake_portfolio["generation"] = 2
+    assert portfolio.current("cantoneiras")["generation"] == 2
+    fake_portfolio["generation"] = 1  # retrato antigo, numa ligação de quem chama
+    assert portfolio.load("cantoneiras", conn=FakeConn())["generation"] == 1
+    fake_portfolio["generation"] = 2
+    data = portfolio.current("cantoneiras", allow_stale=True)
+    assert data["generation"] == 2 and data["stale"] is False and fake_portfolio["builds"] == [2, 1]
+
+
+def test_portfolio_current_follows_the_base_even_when_python_reuses_its_address(fake_portfolio, monkeypatch):
+    """current() não identifica a base pelo endereço (id), que o CPython reutiliza: com a mesma geração mas
+    outras prioridades, as linhas têm de ser as da base nova."""
+    from app.sector import portfolio
+    monkeypatch.setattr(portfolio, "id", lambda obj: 1, raising=False)  # o endereço da base anterior, reutilizado
+    assert portfolio.current("cantoneiras")["build"] == 1
+    fake_portfolio["priority"] = "outras prioridades"
+    assert portfolio.current("cantoneiras")["build"] == 2
+    assert portfolio.current("cantoneiras")["build"] == 2 and fake_portfolio["builds"] == [1, 1]
 
 
 # --- Ocorrências (occurrences.load)
@@ -424,6 +544,22 @@ def test_warm_up_is_off_in_test_servers_and_when_disabled(warmup_module, monkeyp
     monkeypatch.delenv("MES_PLANNING_WARMUP_DISABLED")
     monkeypatch.delenv("MES_PLANNING_SELECTION_ENABLED")
     assert not warmup_module.enabled()
+
+
+def test_warm_up_sectors_can_be_limited_when_memory_is_short(warmup_module, monkeypatch):
+    """Por omissão aquece os dois setores; MES_PLANNING_WARMUP_SECTORS=cantoneiras deixa o MTG2 para quando alguém
+    o abrir (a meio caminho de MES_PLANNING_WARMUP_DISABLED=1)."""
+    assert warmup_module.sectors() == ("cantoneiras", "perfis")
+    monkeypatch.setenv("MES_PLANNING_WARMUP_SECTORS", "cantoneiras")
+    assert warmup_module.sectors() == ("cantoneiras",)
+    monkeypatch.setenv("MES_PLANNING_WARMUP_SECTORS", " perfis , outro ")
+    assert warmup_module.sectors() == ("perfis",)
+    runs = []
+    monkeypatch.setattr(warmup_module, "warm", lambda sectors=None: runs.append(tuple(sectors)) or True)
+    stop = threading.Event()
+    monkeypatch.setattr(stop, "wait", lambda seconds: True)
+    warmup_module._loop(stop, 300)
+    assert runs == [("perfis",)]
 
 
 def test_warm_up_repeats_when_the_day_changes_or_after_a_failure(warmup_module, monkeypatch):

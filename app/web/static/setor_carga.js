@@ -373,10 +373,14 @@
       pager);
   }
 
-  async function load() {
+  async function load(quiet = false) {
     const mine = ++loads;
     const fresh = await getJson(`/planeamento/api/setor/carga?setor=${encodeURIComponent($('setor').value)}`);
     if (mine !== loads) return;  // já foi pedida outra (outro setor ou depois de gravar)
+    // Versão anterior enquanto o servidor refaz as horas (07/10/2026): volta a pedir de 8 em 8 s, sem aviso, e só
+    // volta a desenhar quando chega a versão atual (o detalhe aberto e a produção registada não se fecham).
+    const again = () => setTimeout(() => { if (mine === loads) load(true).catch(error); }, 8000);
+    if (quiet && fresh.stale) return again();
     data = fresh;
     render();
     if (open) {
@@ -384,8 +388,7 @@
       const w = m && m.weeks.find((x) => x.week === open.w && x.year === open.y);
       if (m && w) showDetail(m, w);
     }
-    // Versão anterior enquanto o servidor refaz as horas (07/10/2026): volta a pedir, sem aviso.
-    if (data.stale) setTimeout(() => { if (mine === loads) load().catch(() => {}); }, 8000);
+    if (data.stale) again();
   }
 
   function setView(v) {

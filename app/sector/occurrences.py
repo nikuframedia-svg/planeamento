@@ -46,7 +46,10 @@ CLASSIFICATION = {  # grouped states shown in the tree
     None: "Sem catálogo",
 }
 
-_cache = cache.Cache("Ocorrências", mark=lambda value: {**value, "stale": True})
+# Os recálculos de fundo das ocorrências começam logo e passam à frente dos outros (cache.URGENT, sem a espera de
+# REFRESH_DELAY): depois de cada ação, a página Máquinas desliga os botões até eles acabarem; a Carga, os KPIs e o
+# Gantt também as leem.
+_cache = cache.Cache("Ocorrências", mark=lambda value: {**value, "stale": True}, priority=cache.URGENT, refresh_delay=0)
 
 
 def _number(value):
