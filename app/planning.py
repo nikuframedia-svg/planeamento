@@ -7,9 +7,7 @@ from __future__ import annotations
 
 import json
 import hashlib
-import math
 import os
-import re
 import uuid
 from datetime import date, datetime
 from decimal import Decimal
@@ -69,17 +67,9 @@ def _text(value):
 
 
 def _number(value):
-    try:
-        text = str(value).strip()
-        # Excel sources contain text such as "1 543" in Cantoneiras!Comp.
-        # Accept only complete groups of three, not arbitrary embedded spaces
-        # which could turn two numbers or a malformed value into a new fact.
-        if re.fullmatch(r"[+-]?\d{1,3}(?:[ \u00a0\u202f]\d{3})+(?:[.,]\d+)?", text):
-            text = re.sub(r"[ \u00a0\u202f]", "", text)
-        number = float(text.replace(",", "."))
-        return number if math.isfinite(number) else None
-    except (TypeError, ValueError):
-        return None
+    # Excel sources contain text such as "1 543" in Cantoneiras!Comp. One reader for the whole app (08/10, F19).
+    from .planning_calculations import number
+    return number(value)
 
 
 def _date(value):

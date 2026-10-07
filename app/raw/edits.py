@@ -257,6 +257,9 @@ def update_batch(p):
                     saved_context=planning_local_orders.save(c,of,{'values':administrative,'expected_revision':local_revisions.get(of,row.get('local_order_revision',0))},needs.registration.human_actor(p))
                     local_revisions[of]=saved_context['revision']
             defaults={k:v for k,v in row['values'].items() if k in fields}
+            # O perfil inteiro sugerido (6000/12000) é calculado: gravado como valor ficava «manual» e deixava de
+            # acompanhar o comprimento (08/10, F20).
+            if row['values'].get('stock_length_origin')=='Sugestão automática':defaults['stock_length_mm']=None
             result=needs.save({'request_id':str(uuid.uuid5(needs.uid(p['request_id']),str(i)+'save')),'area':area,'need_id':nid,'expected_revision':revision,'catalog_version':cat['version'],'record_status':'draft','values':changes,
                 'decisions':{'picking_week':'clear'} if 'picking_week' in changes and changes['picking_week'] in (None,'') else {}},conn=c,source_defaults=defaults)
             results.append(result)

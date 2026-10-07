@@ -185,6 +185,46 @@ def test_accepted_suggestion_follows_the_source_and_a_written_value_stays(canoni
     assert detail['need']['input_values']['length_mm']==900
 
 
+def new_import(dsn, changes):
+    """Importação nova (s2) igual à s1, com `changes` na linha 10 do Excel."""
+    with psycopg.connect(dsn) as conn:
+        conn.execute("INSERT INTO audit_mtg.snapshots SELECT 's2',dataset_id,source_filename,source_path,source_sha256,now()+interval '1 second' FROM audit_mtg.snapshots WHERE snapshot_id='s1'")
+        for table in ('raw_mtg.plan_production_rows','analytics_mtg.kanban_plan_lines','core_mtg.production_orders','raw_mtg.cpis_rows',
+                      'raw_mtg.other_sheet_rows','raw_mtg.machine_rows'):
+            columns=[r[0] for r in conn.execute('SELECT column_name FROM information_schema.columns WHERE table_schema=%s AND table_name=%s ORDER BY ordinal_position',tuple(table.split('.'))).fetchall()]
+            selected=["'s2'" if k=='snapshot_id' else "replace("+k+",'s1:','s2:')" if k in ('source_line_id','plan_key') else k for k in columns]
+            conn.execute('INSERT INTO '+table+' SELECT '+','.join(selected)+' FROM '+table+" WHERE snapshot_id='s1'")
+        conn.execute("UPDATE raw_mtg.plan_production_rows SET row_data=row_data||%s WHERE source_line_id='s2:10'",(Jsonb(changes),))
+
+
+def test_a_table_edit_does_not_freeze_the_untyped_operation_fields(canonical):
+    # F20 (08/10): a Tabela grava a linha inteira (source_defaults) ao editar uma célula. Antes só 7 campos da
+    # preparação seguiam o Excel e os outros (Chanfro, Requisição, Lote…) ficavam congelados; as células vazias
+    # nem estado tinham. O valor escrito à mão fica, com o do Excel em nota.
+    n=needs.resolve(request(area='perfis',source={'kind':'plan_line','id':'s1:10','version':'s1'}))
+    with planning.connect(readonly=True) as conn:
+        line=needs.source_data({'kind':'plan_line','id':'s1:10'},'perfis',conn)['values']
+    defaults={f['id']:line[f['id']] for f in catalogs.fields() if f['id'] in line}
+    assert defaults['chanfro']=='' and defaults['machine']=='MEBA'
+    saved=needs.save(request(need_id=n['need_id'],expected_revision=n['revision'],area='perfis',catalog_version='s1',
+                             values={'notes':'Escrito à mão'},record_status='draft'),source_defaults=defaults)
+    new_import(canonical,{'Chanf.':'X','Data requisição de material':'2026-10-20','Nº lote':'L-7',
+                          'Máquina Corte':'Ficep','Observações':'Do Excel'})
+    detail=needs.detail(n['need_id'])
+    record=next(r for r in detail['records'] if r['id']==saved['record_id'])
+    values=record['values_json']
+    assert (values['chanfro'],values['material_request_date'],values['material_lot'],values['machine'])==('X','2026-10-20','L-7','Ficep')
+    assert values['notes']=='Escrito à mão' and record['input_values']['chanfro']=='X'
+    states={f['field']:f for f in detail['fields'] if f['scope']==str(record['operation_id'])}
+    assert states['notes']['requires_review'] and states['notes']['suggestion']=='Do Excel' and states['notes']['human_decision']=='write'
+    assert states['chanfro']['value']=='X' and states['chanfro']['source']['version']=='s2' and not states['chanfro']['requires_review']
+    # A operação, a quantidade a planear e o Picking não seguem: são da ficha, do cálculo e da OF.
+    assert not {'operation','quantity_to_plan','remaining_declared','picking_week','picking_year'}&set(needs.OPERATION_FOLLOW)
+    # Reabrir sem importação nova não mexe em nada.
+    events=len(needs.history(n['need_id'])['events'])
+    assert needs.detail(n['need_id'])['records'][0]['values_json']==values and len(needs.history(n['need_id'])['events'])==events
+
+
 def test_migration_preserves_legacy_record_and_revision(canonical):
     from tests.test_planning_registry import payload
     old=planning.save_record(payload())

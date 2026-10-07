@@ -252,3 +252,52 @@ def test_known_ambiguous_event_prevents_partial_total_becoming_complete():
     op=line['operations'][0]
     assert op['ocr_quantity'] is None
     assert production_source(op,20)['origin']=='Excel provisório'
+
+
+def test_angle_without_weight_table_gets_the_geometric_weight():
+    # F08 (08/10): 1 440 linhas MTG3 sem peso porque a Tabela de pesos não tem o perfil; L a×b×t pesa-se pela geometria.
+    from app.planning_calculations import ANGLE_ORIGIN
+    piece = {'quantity_required': 10, 'length_mm': 2000, 'profile': 'L40X40X3', 'operation': '119'}
+    r = calculate(piece, area='cantoneiras', raw={'Maq.': 4, 'Peso un. Kg': 9.99}, weights={})
+    v, rule = r['values'], r['rules']['weight_unit']
+    kg_m = 3 * (40 + 40 - 3) * 7850 / 1e6  # 1,813 kg/m (nominal 1,84)
+    assert math.isclose(v['weight_unit'], kg_m * 2) and math.isclose(v['weight'], kg_m * 2 * 6)
+    assert rule['source']['rule'] == ANGLE_ORIGIN and math.isclose(rule['inputs']['kg_m'], kg_m)
+    assert (rule['inputs']['a'], rule['inputs']['b'], rule['inputs']['t']) == (40, 40, 3)
+    assert r['rules']['weight']['source']['rule'] == ANGLE_ORIGIN
+    # Abas desiguais e espaços na designação; o «Peso un. Kg» do Excel nunca entra.
+    unequal = calculate({**piece, 'profile': 'L 100x50x6'}, area='cantoneiras', raw={'Maq.': 4})['values']
+    assert math.isclose(unequal['weight_unit'], 6 * (100 + 50 - 6) * 7850 / 1e6 * 2)
+    # Pesos divergentes na Tabela também caem na geometria; um kg/m único da Tabela ganha sempre.
+    divergent = calculate(piece, area='cantoneiras', raw={'Maq.': 4}, weights={'l40x40x3': [{'kg_m': 1.8}, {'kg_m': 2.18}]})
+    assert math.isclose(divergent['values']['weight_unit'], kg_m * 2)
+    table = calculate(piece, area='cantoneiras', raw={'Maq.': 4}, weights={'l40x40x3': [{'kg_m': 1.84, 'row': 9}]})
+    assert table['values']['weight_unit'] == 1.84 * 2 and table['rules']['weight_unit']['source'] == [{'kg_m': 1.84, 'row': 9}]
+
+
+@pytest.mark.parametrize('profile', ['', None, 'UPN100', 'L40X40', 'L40X40X40', 'L0X40X3'])
+def test_profiles_that_are_not_an_angle_stay_without_weight(profile):
+    r = calculate({'quantity_required': 10, 'length_mm': 2000, 'profile': profile, 'operation': '119'},
+                  area='cantoneiras', raw={'Maq.': 4, 'Peso un. Kg': 9.99})
+    assert r['values']['weight_unit'] is None and r['values']['weight'] is None
+    assert r['rules']['weight_unit']['reason'] == 'Sem peso exato ou comprimento conhecido.'
+
+
+@pytest.mark.parametrize('text,expected', [
+    ('1 200', 1200), ('1\u00a0543', 1543), ('1\u202f543,5', 1543.5), ('12 345 678', 12345678), ('-1 000', -1000),
+    (' 7 ', 7), ('3,5', 3.5), (12.5, 12.5), (0, 0),
+    ('1 54', None), ('1 2', None), ('12 34', None), ('1 543 mm', None), ('', None), (None, None), ('abc', None), ('nan', None)])
+def test_one_number_parser_for_every_reader(text, expected):
+    # F19 (08/10): o mesmo texto dá o mesmo número no cálculo, na Tabela e na importação.
+    from app import planning, planning_raw, planning_calculations
+    for read in (planning_calculations.number, planning_raw.number, planning._number):
+        assert read(text) == expected, read
+
+
+def test_space_thousands_in_excel_counters_reach_the_balance():
+    from app.planning_calculations import quantity
+    assert quantity('1 200') == 1200 and quantity('1 200,5') is None and quantity('-1 000') is None
+    v = calculate({'quantity_required': 1500, 'length_mm': 1000, 'operation': '119'}, area='cantoneiras', raw={'Maq.': '1 200'})['values']
+    assert v['made'] == 1200 and v['remaining'] == 300
+    v = calculate({'quantity_required': 1500, 'abocardar': '-'}, raw={'Ser.': '1 200'})['values']
+    assert v['cut'] == 1200 and v['remaining'] == 300

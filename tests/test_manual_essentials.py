@@ -72,7 +72,7 @@ def test_steel_density_when_grade_is_empty_only_for_the_weight():
     assert empty["rules"]["weight_unit"]["source"]["density_kg_m3"] == 7850
     assert calculations.calculate({**piece, "grade": "S355"})["values"]["weight_unit"] == pytest.approx(expected)
     assert calculations.calculate({**piece, "grade": "AISI 304"})["values"]["weight_unit"] is None
-    assert calculations.CONTRACT.endswith("-v10")
+    assert calculations.CONTRACT.endswith("-v11")
 
 
 def test_only_the_essential_warnings_never_blocking():
@@ -486,6 +486,32 @@ def new_import_with_the_same_excel(essential):
             columns = [r[0] for r in c.execute("SELECT column_name FROM information_schema.columns WHERE table_schema=%s AND table_name=%s ORDER BY ordinal_position", tuple(table.split("."))).fetchall()]
             selected = ["'s2'" if k == "snapshot_id" else "replace(" + k + ",'s1:','s2:')" if k in ("source_line_id", "plan_key") else k for k in columns]
             c.execute("INSERT INTO " + table + " SELECT " + ",".join(selected) + " FROM " + table + " WHERE snapshot_id='s1'")
+
+
+def test_a_table_cell_edit_does_not_freeze_the_rest_of_the_line(essential):
+    # F20 (08/10): editar uma célula na Tabela grava a linha inteira. O perfil inteiro sugerido (6000/12000) não passa
+    # a «manual» e o que ninguém escreveu (Chanfro, Requisição) continua a seguir o Excel.
+    from app.raw import edits
+    only_line_ref_a(essential)
+    listed = query.listing({"area": "perfis", "q": "REF-A"})
+    line = next(r for r in listed["rows"] if r["plan_key"] == "s1:10")
+    assert line["values"]["stock_length_origin"] == "Sugestão automática"
+    edits.update_batch({"request_id": str(uuid.uuid4()), "actor": "Teste", "area": "perfis", "version": listed["version"],
+                        "edits": [{"key": line["key"], "expected_revision": line["revision"], "values": {"notes": "Escrito"}}]})
+    edited = next(r for r in rows_of("REF-A") if r["need_id"])
+    assert edited["values"]["notes"] == "Escrito" and edited["values"]["stock_length_origin"] == "Sugestão automática"
+    new_import_with_the_same_excel(essential)
+    with psycopg.connect(essential) as c:
+        c.execute("""UPDATE raw_mtg.plan_production_rows SET row_data=row_data||'{"Chanf.":"X","Data requisição de material":"2026-10-20","Observações":"Do Excel"}'
+                     WHERE source_line_id='s2:10'""")
+    detail = needs.detail(edited["need_id"])
+    record = detail["records"][0]["values_json"]
+    assert record["chanfro"] == "X" and record["material_request_date"] == "2026-10-20" and record["notes"] == "Escrito"
+    notes = next(f for f in detail["fields"] if f["field"] == "notes" and f["scope"] != "piece")
+    assert notes["requires_review"] and notes["suggestion"] == "Do Excel"
+    projection.rebuild("perfis")
+    row = next(r for r in rows_of("REF-A") if r["need_id"] == edited["need_id"])
+    assert row["plan_key"] == "s2:10" and row["values"]["chanfro"] == "X" and row["values"]["notes"] == "Escrito"
 
 
 def test_an_import_with_the_same_excel_keeps_untyped_values(essential):

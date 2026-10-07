@@ -10,7 +10,7 @@ from . import planning_dates
 import math
 import re
 
-CONTRACT = 'planning-integral-20260925-v10'  # v10 (07/10): «Qtd em falta» do registo manual, aço 7850 sem Qual. e PDF sem Excel começa a 0; v9 (06/10): semana prevista MTG3 pela Data Corte; v8: contador Excel vazio conta 0 quando a folha o confirma
+CONTRACT = 'planning-integral-20260925-v11'  # v11 (08/10): peso das cantoneiras pela geometria sem Tabela de pesos (F08) e milhares com espaço («1 200») em todos os números (F19); v10 (07/10): «Qtd em falta» do registo manual, aço 7850 sem Qual. e PDF sem Excel começa a 0; v9 (06/10): semana prevista MTG3 pela Data Corte; v8: contador Excel vazio conta 0 quando a folha o confirma
 
 # Origem do saldo quando o planeador escreve a «Qtd em falta» no registo manual (07/10/2026).
 DECLARED_ORIGIN = 'Qtd em falta (registo manual)'
@@ -34,9 +34,19 @@ GEOMETRY = {
 }
 
 
+# Milhares separados por espaço, como o Excel escreve «1 543» em Cantoneiras!Comp. Só grupos completos de três:
+# espaços soltos podiam juntar dois números num facto novo.
+THOUSANDS = re.compile(r'[+-]?\d{1,3}(?:[ \u00a0\u202f]\d{3})+(?:[.,]\d+)?')
+SPACES = re.compile(r'[ \u00a0\u202f]')
+
+
 def number(value):
+    """O único leitor de números da app (08/10, F19): vírgula decimal e milhares com espaço («1 200»)."""
     try:
-        n = float(str(value).replace(',', '.'))
+        text = str(value).strip()
+        if SPACES.search(text) and THOUSANDS.fullmatch(text):
+            text = SPACES.sub('', text)
+        n = float(text.replace(',', '.'))
         return n if math.isfinite(n) else None
     except (ValueError, TypeError):
         return None
@@ -60,6 +70,30 @@ def abocardar(value):
     if value is True or key(value).lstrip("'") in ('x', 'sim'): return True
     if value is False or key(value) in ('-', 'não', 'nao'): return False
     return None
+
+
+# Peso das cantoneiras pela geometria (08/10, F08): secção L sem raio de concordância, t × (a + b − t) mm², em aço
+# de 7850 kg/m³. Fica a ±2 % do nominal, um pouco abaixo por faltar o raio (L40X40X3: 1,81 contra 1,84 kg/m;
+# L100X100X10: 14,9 contra 15,1 kg/m).
+STEEL_DENSITY = 7850
+ANGLE_ORIGIN = 'Peso estimado pela geometria (±2 %)'
+ANGLE_FORMULA = 't × (a + b − t) × 7850 / 10⁶'
+
+
+def angle_kg_m(profile):
+    """kg/m de uma cantoneira «L a×b×t» (ex.: L40X40X3), ou None quando o perfil não se lê assim."""
+    try:
+        from .gantt.machines import dimensions  # a pedido: o MES partilha este módulo sem o Gantt
+    except ImportError:
+        return None
+    text = str(profile or '').strip()
+    found = dimensions(text) or (dimensions(text.split()[0]) if text else None)
+    if not found:
+        return None
+    a, b, t = found
+    if not 0 < t < min(a, b):
+        return None
+    return {'kg_m': t * (a + b - t) * STEEL_DENSITY / 1e6, 'a': a, 'b': b, 't': t}
 
 
 # Coluna de saldo do próprio Excel para cada contador (Qtd em falta = QTD − contador).
@@ -293,9 +327,18 @@ def calculate(values, *, area='perfis', raw=None, operations=(), local_initial=F
     if area=='cantoneiras':
         candidates=(weights or {}).get(key(v.get('profile')),[])
         rates={positive(r.get('kg_m')) for r in candidates}-{None}
-        if len(rates)==1 and length: weight_unit=next(iter(rates))*length/1000
+        kg_m=next(iter(rates)) if len(rates)==1 else None
         weight_source=candidates
-        weight_inputs={'profile':v.get('profile'),'kg_m':next(iter(rates)) if len(rates)==1 else None,'L':length}
+        weight_inputs={'profile':v.get('profile'),'kg_m':kg_m,'L':length}
+        # Sem um kg/m único na Tabela de pesos, a cantoneira L a×b×t pesa-se pela geometria (08/10, F08).
+        # O «Peso un. Kg» do Excel continua fora: é um PROCV aproximado, errado em vários perfis (auditoria A5-F6).
+        angle=angle_kg_m(v.get('profile')) if kg_m is None else None
+        if angle:
+            kg_m=angle['kg_m']
+            weight_source={'rule':ANGLE_ORIGIN,'designation':v.get('profile'),'kg_m':kg_m,'formula':ANGLE_FORMULA,
+                           'table':candidates}
+            weight_inputs.update(kg_m=kg_m,a=angle['a'],b=angle['b'],t=angle['t'],density_kg_m3=STEEL_DENSITY)
+        if kg_m is not None and length: weight_unit=kg_m*length/1000
         weight_reason='Pesos divergentes para a designação exata.' if len(rates)>1 else 'Sem peso exato ou comprimento conhecido.'
     else:
         # Aço 7850 kg/m³ pela Qual. ou, sem Qual., por defeito (07/10/2026: só para o peso).

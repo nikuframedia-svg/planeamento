@@ -216,16 +216,20 @@ def test_current_preparation_preserves_following_machine_and_changed_technical_i
 def test_portfolio_and_gantt_share_balances_across_import_aliases(integrated_db):
     from app.raw import projection
     from app.sector import portfolio
+    # A pesquisa (retrato de 29/09) diz saldo 10; o Excel atual diz 7. Desde 08/10 (F05) vale o da app nas duas páginas.
     values={'of':'OF100','component_ref':'PART','profile':'L80X80X8','grade':'','quantity_required':10,
-        'length_mm':1000,'operation':'112','status':'Em Aberto','planning_active':True,'machine':'PEDDI6','planning_remaining':None}
-    detail={'key':'macro:reimported-line','values':values,'area':'cantoneiras','selection_aliases':['macro:line']}
+        'length_mm':1000,'operation':'112','status':'Em Aberto','planning_active':True,'machine':'PEDDI6',
+        'planning_remaining':7,'planning_balance_origin':'Excel provisório'}
+    detail={'key':'macro:reimported-line','values':values,'area':'cantoneiras','selection_aliases':['macro:line'],
+        'calculation':{'production_sources':[{'operation':'112','remaining':7,'value':3,'origin':'Excel provisório','records':[]}]}}
     with planning.connect() as c:
         projection.publish(c,'planning:cantoneiras','alias-balance', [detail],{})
     portfolio._cache.clear()
     line=portfolio.load('cantoneiras')['lines'][0]
     op=service.operations()['operations'][0]
-    assert line['pieces']==op['planning_remaining']==10
+    assert line['pieces']==op['planning_remaining']==7
     assert line['balance_origin']==op['balance_origin']=='Excel provisório'
+    values.update(planning_remaining=None,planning_balance_origin='MES parcial')
     detail['calculation']={'production_sources':[{'operation':'112','remaining':None,'origin':'MES parcial',
         'records':[{'id':'event'}],'coverage_reasons':['Cobertura incompleta.']}]}
     with planning.connect() as c:
@@ -586,18 +590,46 @@ def test_newer_excel_counter_keeps_the_raw_balance_over_the_research_snapshot(mo
     assert not any(s.get('v2_evidence') for s in row['calculation']['production_sources'])
 
 
-def test_research_balance_recomputes_the_fields_that_depend_on_it(monkeypatch):
-    # A5-F1: contadores iguais, saldo RAW desconhecido; os derivados seguem o saldo da pesquisa.
+def test_research_never_gives_the_main_balance_but_keeps_the_following_operations(monkeypatch):
+    # F05 (08/10): a v2 está parada a 29/09; a operação principal fica com o saldo da app, mesmo desconhecido
+    # e com os contadores iguais (antes a pesquisa enchia-o, A5-F1). A operação seguinte continua a vir da v2.
+    following=_research_row(fase='complementar',operacao_id='op2',ocorrencia=2,operacao_codigo='LOCAL:ABOCARDAR',
+                            codigo_original='abocardar',saldo_documental=5)
     monkeypatch.setattr(research,'enabled',lambda:True)
-    monkeypatch.setattr(research,'load',lambda c:{'rows':[_research_row()],'head':{'version_id':'v'}})
+    monkeypatch.setattr(research,'load',lambda c:{'rows':[_research_row(),following],'head':{'version_id':'v'}})
     row=_raw_row(None,{'Ser.':None,'Qtd em Falta':8})
+    before=copy.deepcopy(row['values'])
     research.overlay_rows(None,'perfis',[row])
-    v=row['values']
-    assert v['remaining']==8 and v['remaining_m']==8 and v['quantity_to_plan']==8
-    assert v['bars']==2 and v['section_pending']==800 and v['weight']==16
+    assert row['values']==before and row['values']['remaining'] is None
+    assert not any(s.get('v2_evidence') for s in row['calculation']['production_sources'])
+    assert row['calculation']['integrated_operations']==[
+        {'operation':'LOCAL:ABOCARDAR','occurrence':2,'remaining':5,'origin':'Excel provisório'}]
 
 
-def test_gantt_and_load_use_the_newer_excel_balance(monkeypatch):
+def test_research_does_not_touch_closed_lines(monkeypatch):
+    # F04 (08/10): 307 linhas fechadas MTG3 ficavam com saldo 0 e saldo a planear = QTD, e mudavam a cada recálculo.
+    monkeypatch.setattr(research,'enabled',lambda:True)
+    monkeypatch.setattr(research,'load',lambda c:pytest.fail('linhas fechadas não precisam da pesquisa'))
+    row=_raw_row(0,{'Ser.':8,'Qtd em Falta':0,'Fechado':'X'})
+    row['values']['planning_active']=False
+    before=copy.deepcopy(row)
+    research.overlay_rows(None,'perfis',[row])
+    assert row==before
+    # Sem a marca gravada vale a regra de fecho (Fechado = X na macro).
+    del row['values']['planning_active']
+    research.overlay_rows(None,'perfis',[row])
+    assert 'integrated_operations' not in row['calculation']
+
+
+def test_excel_counters_without_the_remaining_column_are_unknown():
+    # F04 (08/10): a vista raw_capacity_contents não guarda «Maq.» nem «Qtd falta»; antes isto dava False.
+    assert research.excel_counters_changed('cantoneiras',{'Maq.':0,'Qtd falta':10},{'Maq.':10}) is None
+    assert research.excel_counters_changed('cantoneiras',{'Qtd falta':10},{'Maq.':0,'Qtd falta':10}) is None
+    assert research.excel_counters_changed('cantoneiras',{'Maq.':0,'Qtd falta':10},{'Maq.':'0','Qtd falta':'10'}) is False
+    assert research.excel_counters_changed('perfis',{'Ser.':None,'Qtd em Falta':8},{'Ser.':7,'Qtd em Falta':1}) is True
+
+
+def test_gantt_and_load_use_the_application_main_balance(monkeypatch):
     from app.raw import query
     monkeypatch.setattr(query,'generation',lambda c,area:{})
     monkeypatch.setattr(query,'source',lambda g:('',[]))
@@ -606,10 +638,21 @@ def test_gantt_and_load_use_the_newer_excel_balance(monkeypatch):
             'detail':{'selection_aliases':raw['selection_aliases'],'raw':raw['raw'],'calculation':raw['calculation']}}
     r={**_research_row(),'matched_application_key':raw['key']}
     balances=research.application_balances(None,[r],records=[record])
-    assert integrated.balance({**r,**balances.get('op1',{})})['planning_remaining']==1
-    # Sem produção posterior, a pesquisa continua a valer.
+    b=integrated.balance({**r,**balances['op1']})
+    assert b['planning_remaining']==1 and b['balance_origin']=='Excel provisório' and b['balance_provisional']
+    # F05 (08/10): sem produção posterior no Excel, o saldo continua a ser o da app (antes voltava o da v2).
     record['detail']['raw']={'Ser.':None,'Qtd em Falta':8}
-    assert research.application_balances(None,[r],records=[record])=={}
+    assert integrated.balance({**r,**research.application_balances(None,[r],records=[record])['op1']})['planning_remaining']==1
+    # Saldo da app desconhecido fica desconhecido, como na Carteira; a coerência da v2 já não o anula.
+    unknown=_raw_row(None,{'Ser.':None,'Qtd em Falta':8})
+    record.update(values_json=unknown['values'],detail={**record['detail'],'calculation':unknown['calculation']})
+    assert integrated.balance({**r,**research.application_balances(None,[r],records=[record])['op1']})['planning_remaining'] is None
+    record.update(values_json=raw['values'],detail={**record['detail'],'calculation':raw['calculation']})
+    assert integrated.balance({**r,'estado_quantidade':'divergente',**research.application_balances(None,[r],records=[record])['op1']})['planning_remaining']==1
+    # Linha sem cálculo publicado (sem saldo da app): fica a pesquisa.
+    bare={**record,'values_json':{k:v for k,v in raw['values'].items() if k not in ('remaining','planning_remaining')},
+          'detail':{**record['detail'],'calculation':{}}}
+    assert research.application_balances(None,[r],records=[bare])=={}
 
 
 def test_application_only_line_keeps_the_portfolio_provisional_balance():
