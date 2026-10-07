@@ -83,7 +83,7 @@ def preview(payload):
         else:row['values'].update(vals)
         # Uma «Qtd em falta» escrita agora ainda não tem produção registada depois dela.
         if vals.get('remaining_declared')!=((previous_preparation or {}).get('values_json') or {}).get('remaining_declared'):
-            row['values'].pop('remaining_declared_produced',None)
+            row['values'].pop('remaining_declared_produced',None);row['values'].pop('remaining_declared_origin',None)
         if area=='perfis':
             override=None
             if 'picking_week' in raw and (decisions.get('picking_week') or planning_dates.positive_week(raw['picking_week'])):

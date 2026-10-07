@@ -54,7 +54,8 @@ def recalculate(row, section_table, weight_table):
         today=datetime.now(ZoneInfo(planning.settings.display_timezone)).date(),
         density=7850 if row['area']=='perfis' and row.get('plan_key') else None,
         # «Qtd em falta»: só o registo manual a guarda, com a produção conhecida quando foi escrita.
-        declared_remaining=v.get('remaining_declared'),declared_produced=v.get('remaining_declared_produced'))
+        declared_remaining=v.get('remaining_declared'),declared_produced=v.get('remaining_declared_produced'),
+        declared_origin=v.get('remaining_declared_origin'))
     row['values']=result['values']
     if manual_quantity:
         row['values']['quantity_to_plan']=declared_quantity

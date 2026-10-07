@@ -14,6 +14,9 @@ CONTRACT = 'planning-integral-20260925-v10'  # v10 (07/10): «Qtd em falta» do 
 
 # Origem do saldo quando o planeador escreve a «Qtd em falta» no registo manual (07/10/2026).
 DECLARED_ORIGIN = 'Qtd em falta (registo manual)'
+# Família da evidência de produção: a «Qtd em falta» só desconta a produção registada depois dela quando
+# a fonte é da mesma família (OCR, incluindo o ainda nada produzido, ou contador do Excel).
+EVIDENCE = {'OCR validado': 'ocr', 'Condição inicial local': 'ocr', 'Excel provisório': 'excel'}
 
 # Keep the attempted rule visible even when its operands are unavailable/invalid.
 GEOMETRY = {
@@ -153,13 +156,14 @@ def section(values, table=None):
 
 def calculate(values, *, area='perfis', raw=None, operations=(), local_initial=False,
               compatible=True, sections=None, weights=None, today=None, density=None, declared_remaining=None,
-              declared_produced=None):
+              declared_produced=None, declared_origin=None):
     """Pure calculation used by projection and previews; returns values + provenance.
 
-    `declared_remaining` é a «Qtd em falta» escrita no registo manual e `declared_produced` a produção que o
-    cálculo conhecia quando foi escrita. Saldo = máx(escrito − produção registada depois, 0), no máximo a QTD;
-    sem produção conhecida nesse momento não se desconta nada. Cada saldo guarda a produção medida
-    (`measured`), com ou sem «Qtd em falta».
+    `declared_remaining` é a «Qtd em falta» escrita no registo manual; `declared_produced` e `declared_origin`
+    são a produção que o cálculo conhecia quando foi escrita e a fonte dela. Saldo = máx(escrito − produção
+    registada depois, 0), no máximo a QTD. Só se desconta quando a fonte de agora é da mesma família
+    (EVIDENCE); sem produção conhecida nesse momento ou com outra fonte, não se desconta nada. Cada saldo
+    guarda a produção medida e a fonte dela (`measured`, `measured_origin`), com ou sem «Qtd em falta».
     """
     v = dict(values); raw = raw or {}; today = today or date.today(); rules = {}
     q = quantity(v.get('quantity_required')); length = positive(v.get('length_mm'))
@@ -187,10 +191,11 @@ def calculate(values, *, area='perfis', raw=None, operations=(), local_initial=F
         result = production_source(op, macro, compatible=compatible, local_initial=local_initial)
         if other_operation_excel and result['value'] is None:
             result['reason'] += f' O acumulado Excel pertence à operação {original_primary}.'
-        result['measured'] = result['value']
+        result.update(measured=result['value'], measured_origin=result['origin'])
         if code == primary and declared is not None and q is not None:
             measured = result['value']
-            since = max(0, measured - typed_at) if measured is not None and typed_at is not None else 0
+            same = EVIDENCE.get(result['origin']) is not None and EVIDENCE.get(result['origin']) == EVIDENCE.get(declared_origin)
+            since = max(0, measured - typed_at) if same and measured is not None and typed_at is not None else 0
             result.update(value=q - max(min(declared, q) - since, 0), origin=DECLARED_ORIGIN, reason=None)
         made = result['value']
         result.update(operation=code, remaining=max(q-made,0) if q is not None and made is not None else None,
@@ -316,6 +321,10 @@ def calculate(values, *, area='perfis', raw=None, operations=(), local_initial=F
             source='Texto original importado' if material_description and material_description==v['original_description'] else 'Dados atuais da peça',
             reason='Sem descrição importada, local ou dados técnicos conhecidos.')
     year,week,period_source=planning_dates.period(v,area=area,operation=primary,cantoneiras_week=v.get('imported_week'))
+    if area=='cantoneiras' and year is None and week is not None and period_source.startswith('Semana W importada'):
+        # Mesmo ano que a capacidade deduz para a semana W (07/10/2026): o mais recente sem saltar para o futuro.
+        deduced=planning_dates.infer_iso_year(week,today,prefer_past=True)
+        if deduced is not None:year,week,period_source=deduced,planning_dates.positive_week(week),'Semana W importada — ano deduzido'
     period_inputs={k:v.get(k) for k in ('expected_date','cut_date','planned_year','planned_week','operation')}
     put('expected_week',f'{year}-W{week:02}' if year is not None else None,'Ano e semana ISO da previsão aplicável',inputs=period_inputs,source=period_source,reason=period_source if year is None else None)
     put('expected_year',year,'Ano ISO da previsão aplicável',inputs=period_inputs,source=period_source,reason=period_source if year is None else None)

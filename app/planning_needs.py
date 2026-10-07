@@ -17,6 +17,8 @@ from . import planning_registration as registration
 
 PIECE_FIELDS=tuple(f['id'] for f in catalogs.fields() if f['scope']=='piece')
 TECH_FIELDS=tuple(k for k in PIECE_FIELDS if k not in ('quantity_required',))
+# Campos da preparação que seguem a origem quando ninguém os escreveu (07/10/2026), como os da peça.
+OPERATION_FOLLOW=('cut_date','machine','team','pavilion','notes','abocardar','operation_detail')
 
 
 def serial(value):
@@ -151,10 +153,12 @@ def follow(conn,need,origin,values):
 
     «Escrito» é uma decisão explícita (write/select/clear); a sugestão aceite e o valor recebido seguem a
     origem. O valor escrito à mão fica e o ecrã mostra o da origem como nota (requires_review) enquanto
-    forem diferentes. Devolve os campos que seguiram; a revisão da peça fica a cargo de quem chama.
+    forem diferentes. Vale para os campos da peça e para os da preparação em OPERATION_FOLLOW (Data Corte,
+    Máquina, Equipa, Pav., Observações…); um campo que a origem não traz fica como está. Devolve os campos
+    que seguiram; a revisão da peça fica a cargo de quem chama.
     """
     taken={}
-    for state in conn.execute("SELECT * FROM planning_mtg.field_state WHERE need_id=%s AND scope='piece' AND field=ANY(%s)",(need['id'],list(PIECE_FIELDS))).fetchall():
+    for state in conn.execute("SELECT * FROM planning_mtg.field_state WHERE need_id=%s AND scope='piece' AND field=ANY(%s)",(need['id'],[k for k in PIECE_FIELDS if k in values])).fetchall():
         name=state['field'];new=values.get(name)
         untouched=state['human_decision'] in (None,'accept')
         if untouched and not equal_value(state['value'],new):taken[name]=new
@@ -168,6 +172,19 @@ def follow(conn,need,origin,values):
             (Jsonb(spec),qty if qty is not None and qty>=0 and qty.is_integer() else None,catalogs.clean(spec.get('component_ref')),
              catalogs.clean(spec.get('identity_discriminator')),Jsonb(serial(taken)),technical,need['id']))
         revision=need['revision'];need.update(load(conn,need['id']));need['revision']=revision
+    followed=[k for k in OPERATION_FOLLOW if k in values]
+    for record in conn.execute('SELECT id,operation_id FROM planning_mtg.records WHERE need_id=%s AND operation_id IS NOT NULL',(need['id'],)).fetchall():
+        scope=str(record['operation_id']);patch={}
+        for state in conn.execute('SELECT * FROM planning_mtg.field_state WHERE need_id=%s AND scope=%s AND field=ANY(%s)',(need['id'],scope,followed)).fetchall():
+            name=state['field'];new=catalogs.abocardar_mark(values[name]) if name=='abocardar' else values[name]
+            untouched=state['human_decision'] in (None,'accept')
+            if untouched and not equal_value(state['value'],new):patch[name]=new
+            conn.execute('UPDATE planning_mtg.field_state SET value=%s,suggestion=%s,source=%s,requires_review=%s WHERE need_id=%s AND scope=%s AND field=%s',
+                         (Jsonb(new if untouched else state['value']),Jsonb(new),Jsonb(origin),not untouched and not equal_value(state['value'],new),need['id'],scope,name))
+        if patch:
+            conn.execute('UPDATE planning_mtg.records SET values_json=values_json||%s,input_values=input_values||%s,updated_at=now() WHERE id=%s',
+                         (Jsonb(serial(patch)),Jsonb(serial(patch)),record['id']))
+            taken.update(patch)
     return taken
 
 
@@ -377,10 +394,13 @@ def save(payload, conn=None, source_defaults=None):
         srcs=linked_sources(conn,need['id']); plan=next((s for s in srcs if s['kind']=='plan_line' and s['payload'].get('area')==area),None)
         # «Qtd em falta»: guarda a produção que o cálculo conhecia quando foi escrita; a produção registada
         # depois desconta-se do valor escrito (planning_calculations.calculate).
+        # Voltar a escrever o mesmo valor (changed_fields) também recomeça a contagem.
         stored=(oldrecord or {}).get('values_json') or {}
         declared=vals.get('remaining_declared')
-        baseline=declared is not None and (declared!=stored.get('remaining_declared') or 'remaining_declared_produced' not in stored)
-        if declared is not None and not baseline:vals['remaining_declared_produced']=stored.get('remaining_declared_produced')
+        retyped=isinstance(listed,list) and 'remaining_declared' in listed
+        baseline=declared is not None and (retyped or declared!=stored.get('remaining_declared') or 'remaining_declared_produced' not in stored)
+        if declared is not None and not baseline:
+            vals.update(remaining_declared_produced=stored.get('remaining_declared_produced'),remaining_declared_origin=stored.get('remaining_declared_origin'))
         values_json=Jsonb(vals)
         if oldrecord:
             conn.execute('UPDATE planning_mtg.records SET values_json=%s,component_ref=%s,revision=%s,actor=%s,record_status=%s,source_version=%s,provenance_json=%s,updated_at=now() WHERE id=%s',
@@ -390,7 +410,7 @@ def save(payload, conn=None, source_defaults=None):
              VALUES (%s,%s,%s,%s,%s,%s,%s,%s,'need',%s,%s,%s,%s,%s,%s,%s,%s)''',
              (rid,area,need['production_order_no'],vals['component_ref'],Jsonb({'need_id':str(need['id'])}),values_json,revision,actor,str(need['id']),version,status,Jsonb(provenance),need['id'],op['id'],plan['source_id'] if plan else None,plan['version'] if plan else None))
         if baseline:
-            vals['remaining_declared_produced']=produced_now(conn,area,need,'corte' if area=='perfis' else code)
+            vals['remaining_declared_produced'],vals['remaining_declared_origin']=produced_now(conn,area,need,'corte' if area=='perfis' else code)
             values_json=Jsonb(vals)
             conn.execute('UPDATE planning_mtg.records SET values_json=%s WHERE id=%s',(values_json,rid))
         conn.execute('''INSERT INTO planning_mtg.record_versions(request_id,request_hash,record_id,revision,source_payload,values_json,actor,source_kind,source_id,source_version,record_status,provenance_json)
@@ -416,12 +436,12 @@ def save(payload, conn=None, source_defaults=None):
 
 
 def produced_now(conn,area,need,operation):
-    """Produção que o cálculo conhece agora para a operação principal da peça (None se desconhecida)."""
+    """(produção, fonte) que o cálculo conhece agora para a operação principal da peça; produção None se desconhecida."""
     from .raw.projection import build_rows
     rows,_,_=build_rows(conn,area,orders=[need['production_order_no']])
     row=next((r for r in rows if r['need_id']==str(need['id'])),None)
     source=next((s for s in ((row or {}).get('calculation') or {}).get('production_sources',[]) if str(s.get('operation'))==str(operation)),None)
-    return (source or {}).get('measured')
+    return (source or {}).get('measured'),(source or {}).get('measured_origin')
 
 
 def history(need_id):

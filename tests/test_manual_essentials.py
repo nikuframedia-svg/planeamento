@@ -119,12 +119,49 @@ def test_sections_are_read_once_per_connection(monkeypatch):
 def test_declared_remaining_expires_with_production_recorded_after_it():
     piece = {"quantity_required": 12, "length_mm": 1000}
     ocr = lambda quantity: [{"operation": "corte", "ocr_records": [{"record_id": 1, "quantity": quantity, "validated": True}]}]
-    assert calculations.calculate(piece, operations=ocr(5), declared_remaining=5, declared_produced=0)["values"]["remaining"] == 0
-    assert calculations.calculate(piece, operations=ocr(2), declared_remaining=5, declared_produced=0)["values"]["remaining"] == 3
+    local = "Condição inicial local"
+    assert calculations.calculate(piece, operations=ocr(5), declared_remaining=5, declared_produced=0, declared_origin=local)["values"]["remaining"] == 0
+    assert calculations.calculate(piece, operations=ocr(2), declared_remaining=5, declared_produced=0, declared_origin=local)["values"]["remaining"] == 3
     # Produção desconhecida quando foi escrita: não se desconta nada.
-    assert calculations.calculate(piece, operations=ocr(2), declared_remaining=5)["values"]["remaining"] == 5
-    measured = calculations.calculate(piece, operations=ocr(2), declared_remaining=5, declared_produced=0)["operations"][0]
-    assert measured["measured"] == 2 and measured["origin"] == calculations.DECLARED_ORIGIN
+    assert calculations.calculate(piece, operations=ocr(2), declared_remaining=5, declared_origin=local)["values"]["remaining"] == 5
+    measured = calculations.calculate(piece, operations=ocr(2), declared_remaining=5, declared_produced=0, declared_origin=local)["operations"][0]
+    assert measured["measured"] == 2 and measured["measured_origin"] == "OCR validado" and measured["origin"] == calculations.DECLARED_ORIGIN
+
+
+def test_declared_remaining_discounts_only_within_the_same_evidence_source():
+    piece = {"quantity_required": 100, "length_mm": 1000}
+    # Escrita com o OCR a 20; agora conta o contador do Excel (60): outra fonte, não se desconta nada.
+    excel = calculations.calculate(piece, raw={"Ser.": 60}, declared_remaining=30, declared_produced=20, declared_origin="OCR validado")
+    assert excel["values"]["remaining"] == 30 and excel["operations"][0]["measured_origin"] == "Excel provisório"
+    # A mesma fonte (Excel 50 → 60) desconta os 10.
+    assert calculations.calculate(piece, raw={"Ser.": 60}, declared_remaining=30, declared_produced=50,
+                                  declared_origin="Excel provisório")["values"]["remaining"] == 20
+
+
+def test_mtg3_w_week_without_year_gets_the_capacity_year():
+    from datetime import date
+    from app import planning_dates
+    result = calculations.calculate({"quantity_required": 5, "length_mm": 100, "operation": "119", "imported_week": 21.0},
+                                    area="cantoneiras", today=date(2026, 11, 25))
+    year = planning_dates.infer_iso_year(21, date(2026, 11, 25), prefer_past=True)
+    assert result["values"]["expected_week"] == f"{year}-W21" and result["values"]["expected_year"] == year == 2026
+    assert result["rules"]["expected_week"]["source"] == "Semana W importada — ano deduzido"
+
+
+def test_hidden_dates_are_read_only_in_the_table():
+    from app.raw import contracts
+    fields = {f["id"]: f for f in contracts.fields("perfis")}
+    for name in free.HIDDEN_DATES:
+        assert not fields[name]["editable"], name
+    assert fields["cut_date"]["editable"] and fields["machine"]["editable"]
+
+
+def test_an_unreadable_typed_number_counts_as_a_contradiction():
+    from app.raw.edits import agrees
+    line = {"component_ref": "REF-A", "quantity_required": 100, "length_mm": 3003}
+    assert agrees({"component_ref": "REF-A", "quantity_required": "100"}, line)
+    assert not agrees({"component_ref": "REF-A", "quantity_required": "1OO"}, line)
+    assert not agrees({"component_ref": "REF-A", "length_mm": "3oo3"}, line)
 
 
 def test_v2_research_overlay_keeps_the_declared_remaining(monkeypatch):
@@ -332,11 +369,15 @@ def test_declared_remaining_keeps_the_production_known_when_typed(essential):
     with planning.connect(readonly=True) as c:
         values = c.execute("SELECT values_json FROM planning_mtg.records WHERE need_id=%s", (linked["need_id"],)).fetchone()["values_json"]
     assert values["remaining_declared"] == 10 and values["remaining_declared_produced"] == 64
+    assert values["remaining_declared_origin"] == "Excel provisório"
     # O Excel regista mais 6 cortadas: a «Qtd em falta» escrita desconta-as.
     with psycopg.connect(essential) as c:
         c.execute("UPDATE raw_mtg.plan_production_rows SET row_data=row_data||'{\"Ser.\":70}' WHERE source_line_id='s1:10'")
     projection.rebuild("perfis", force=True)  # a importação mudada no próprio sítio só se vê com force
     assert next(r for r in rows_of("REF-A") if r["need_id"] == str(typed["need_id"]))["values"]["remaining"] == 4
+    # Voltar a escrever o mesmo valor recomeça a contagem a partir da produção de agora.
+    from_excel_line(changed=["remaining_declared"], remaining_declared="10")
+    assert next(r for r in rows_of("REF-A") if r["need_id"] == str(typed["need_id"]))["values"]["remaining"] == 10
     # Limpar o campo devolve o saldo calculado.
     from_excel_line(changed=["remaining_declared"], remaining_declared="")
     assert next(r for r in rows_of("REF-A") if r["need_id"] == str(typed["need_id"]))["values"]["remaining"] == 30
@@ -381,6 +422,84 @@ def test_empty_cantoneiras_operation_keeps_the_excel_operation(essential):
                      "source": {"kind": "plan_line", "id": "c1:10", "version": "c1"}, "record_status": "ready", "decisions": {},
                      "values": {"component_ref": "REF-A", "quantity_required": 100, "length_mm": 5291, "operation": "", "machine": "Ficep"}})
     assert [o["code"] for o in needs.detail(saved["need_id"])["operations"]] == ["112"]
+
+
+def test_suggested_values_neither_block_nor_overwrite_the_excel_line(essential):
+    from app import planning_suggestions
+    only_line_ref_a(essential)
+    typed = {"component_ref": "REF-A", "quantity_required": "100"}
+    suggested = {k: s["value"] for k, s in planning_suggestions.suggest("perfis", "OF4200", "REF-A", values=typed, learned=False).items()}
+    # A Designação 88.9x3 sugere Ø e Espessura que o Excel não tem: antes impediam a ligação e criavam uma peça a mais.
+    assert suggested.get("outer_diameter_mm") == 88.9 and suggested.get("thickness_mm") == 3
+    form = {**suggested, "team": "Equipa sugerida", "machine": "Máquina sugerida", **typed}
+    saved = register(form, changed_fields=list(typed))
+    assert saved["excel_link"] == "s1:10" and sources_of(saved["need_id"]) == [("plan_line", "s1:10")]
+    detail = needs.detail(saved["need_id"])
+    spec, record = detail["need"]["specification"], detail["records"][0]["values_json"]
+    assert spec["outer_diameter_mm"] is None and spec["thickness_mm"] is None and spec["profile"] == "88.9x3"
+    # A Máquina do Excel ganha à sugerida; a Equipa, que o Excel não tem, fica a sugerida.
+    assert record["machine"] == "MEBA" and record["team"] == "Equipa sugerida"
+    assert next(r for r in rows_of("REF-A") if r["need_id"] == str(saved["need_id"]))["values"]["remaining"] == 36
+
+
+def test_an_unreadable_quantity_creates_its_own_piece(essential):
+    only_line_ref_a(essential)
+    saved = register({"component_ref": "REF-A", "quantity_required": "1OO", "length_mm": "3003"},
+                     changed_fields=["component_ref", "quantity_required", "length_mm"])
+    assert saved["excel_link"] is None and sources_of(saved["need_id"]) == []
+
+
+def test_untouched_operation_fields_follow_a_new_excel_import(essential):
+    linked = from_excel_line(changed=["machine"], machine="Peddi")
+    with psycopg.connect(essential) as c:
+        c.execute("INSERT INTO audit_mtg.snapshots SELECT 's2',dataset_id,source_filename,source_path,source_sha256,now()+interval '1 second' FROM audit_mtg.snapshots WHERE snapshot_id='s1'")
+        for table in ("raw_mtg.plan_production_rows", "analytics_mtg.kanban_plan_lines", "core_mtg.production_orders", "raw_mtg.cpis_rows",
+                      "raw_mtg.other_sheet_rows", "raw_mtg.machine_rows"):
+            columns = [r[0] for r in c.execute("SELECT column_name FROM information_schema.columns WHERE table_schema=%s AND table_name=%s ORDER BY ordinal_position", tuple(table.split("."))).fetchall()]
+            selected = ["'s2'" if k == "snapshot_id" else "replace(" + k + ",'s1:','s2:')" if k in ("source_line_id", "plan_key") else k for k in columns]
+            c.execute("INSERT INTO " + table + " SELECT " + ",".join(selected) + " FROM " + table + " WHERE snapshot_id='s1'")
+        c.execute("""UPDATE raw_mtg.plan_production_rows SET cut_date='2026-12-15',team='Equipa 7',row_data=row_data||'{"Máquina Corte":"Ficep"}'
+                     WHERE source_line_id='s2:10'""")
+    detail = needs.detail(linked["need_id"])  # a importação nova é vista ao abrir (ou pelo worker)
+    record = detail["records"][0]
+    assert record["values_json"]["cut_date"] == "2026-12-15" and record["values_json"]["team"] == "Equipa 7"
+    assert record["values_json"]["machine"] == "Peddi"
+    machine = next(f for f in detail["fields"] if f["field"] == "machine" and f["scope"] == str(record["operation_id"]))
+    assert machine["requires_review"] and machine["suggestion"] == "Ficep" and machine["human_decision"] in ("write", "select")
+    projection.rebuild("perfis")
+    row = next(r for r in rows_of("REF-A") if r["need_id"] == str(linked["need_id"]))
+    assert row["plan_key"] == "s2:10" and row["values"]["cut_date"] == "2026-12-15" and row["values"]["machine"] == "Peddi"
+
+
+def test_pdf_fields_it_does_not_carry_do_not_change_the_technical_revision(essential, monkeypatch):
+    from app.dossiers import store
+    piece = {"component_ref": "PDF-T", "material_type": "Tubo redondo", "profile": "88.9x3", "length_mm": 1000, "quantity_required": 9}
+    document = {"id": "doc-t", "revision": 1, "production_order": "OF4200", "status": "ready",
+                "pieces": [{"id": "p1", "revision": 1, "state": "ready", "values": piece}]}
+    monkeypatch.setattr(store, "get_document", lambda ident: copy.deepcopy(document))
+    saved = prepare({"request_id": str(uuid.uuid4()), "actor": "Teste", "area": "perfis", "production_order_no": "OF4200",
+                     "source": {"kind": "pdf", "id": "doc-t/p1", "version": "1:1"}, "values": piece, "changed_fields": [], "record_status": "ready"})
+    before = needs.detail(saved["need_id"])["need"]["technical_revision"]
+    document["revision"] = 2
+    assert needs.detail(saved["need_id"])["need"]["technical_revision"] == before
+
+
+def test_production_association_ignores_a_changed_excel_on_disk(essential, tmp_path):
+    from app import planning_associations as assoc
+    saved = register({**PIECE, "component_ref": "MAN-OCR"})
+    (tmp_path / "Met2_Plan_Perfis.xlsm").write_bytes(b"ficheiro mudado no disco")
+    with psycopg.connect(essential) as c:
+        c.execute("INSERT INTO mes_kanban.validated_sheets(sheet_uid,sheet_date,template_name,family,operator_name,image_sha256,raw_extraction,sheet_data,validated_by,source_app) "
+                  "VALUES ('wb-sheet','2026-10-01','tpl999','perfis','Teste','hash','{}','{}','Teste','kanban-mes-mtg2')")
+        rid = c.execute("INSERT INTO mes_kanban.production_records(sheet_uid,row_index,sheet_date,family,operator_name,production_order,quantity,validated_at) "
+                        "VALUES ('wb-sheet',0,'2026-10-01','perfis','Teste','4200',4,now()) RETURNING id").fetchone()[0]
+    with planning.connect(readonly=True) as c:
+        record = assoc.fact(c, rid)
+    result = assoc.save({"request_id": str(uuid.uuid4()), "actor": "Teste", "production_record_id": rid, "expected_revision": 0,
+                         "evidence_hash": needs.digest(record), "status": "associated", "reason": "",
+                         "allocations": [{"need_id": saved["need_id"], "operation_id": saved["operation_id"],
+                                          "expected_need_revision": saved["revision"], "quantity": 4}]})
+    assert result["status"] == "associated"
 
 
 def test_declared_remaining_feeds_the_carteira(essential):

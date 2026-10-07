@@ -146,7 +146,9 @@ def pending(of=None,area=None,page=1,state="pending",reason=None,include_unknown
 
 
 def save(payload):
-    with planning.connect() as conn:
+    from .raw import workbooks
+    # Quem associa produção no ecrã não recebe 409 por causa do Excel mudado no disco (07/10/2026).
+    with planning.connect() as conn,workbooks.interactive():
         _,actor,old=needs.command(conn,payload)
         if old:return old
         from .raw import incremental

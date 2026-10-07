@@ -53,8 +53,15 @@ def current_source(conn,source,area):
         raise
 
 
+NUMBERS=('length_mm','outer_diameter_mm','width_mm','height_mm','thickness_mm','angle_deg','quantity_required')
+
+
 def agrees(typed,line):
-    """A peça escrita não contradiz a linha do Excel: os campos técnicos escritos coincidem e a QTD é igual ou vazia."""
+    """A peça escrita não contradiz a linha do Excel: os campos técnicos escritos coincidem e a QTD é igual ou vazia.
+
+    Um número escrito que não se consegue ler (ex.: «1OO») conta como contradição.
+    """
+    if any(str(typed.get(k) if typed.get(k) is not None else '').strip() and planning._number(typed[k]) is None for k in NUMBERS):return False
     mine,theirs=needs.signature(typed),needs.signature(line)
     if any(value is not None and value!=theirs[key] for key,value in mine.items()):return False
     quantity=planning._number(typed.get('quantity_required'))
@@ -108,8 +115,10 @@ def prepare(p):
             if not nid:
                 if not of:raise planning.PlanningError('Seleciona uma OF válida.')
                 possible=macro_candidates(c,area,of,values) if not src or src['kind']!='plan_line' else []
-                # Abocardar só conta como escrito quando o utilizador lhe mexeu (o formulário envia sempre falso).
-                mine={k:v for k,v in entered.items() if v not in (None,'') and (k!='abocardar' or k in typed)}
+                # Só conta o que o utilizador escreveu (changed_fields): as sugestões do «Preencher sozinho» não ligam nem
+                # contradizem. Sem a lista (separador antigo), contam os valores preenchidos, menos o Abocardar não mexido.
+                if changed is not None:mine={k:v for k,v in entered.items() if k in typed and v not in (None,'')}
+                else:mine={k:v for k,v in entered.items() if v not in (None,'') and (k!='abocardar' or k in typed)}
                 chosen=next((r for r in possible if r['plan_key']==p.get('selected_plan_key')),None)
                 if not chosen and len(possible)==1 and not p.get('create_distinct'):
                     # Peça possivelmente repetida (07/10/2026): liga-se à linha do Excel só quando é a única com a
@@ -118,8 +127,12 @@ def prepare(p):
                     line=needs.source_data({'kind':'plan_line','id':candidate['plan_key']},area,c)['values']
                     if agrees(mine,line) and candidate['plan_key'] not in linked_plan_lines(c,area,of):chosen=candidate
                 if chosen:
+                    # A linha do Excel manda no que ninguém escreveu: os dados técnicos e a QTD sempre (para a peça
+                    # ficar compatível com o saldo dela), os outros quando a linha os tem; senão fica a sugestão.
                     line=needs.source_data({'kind':'plan_line','id':chosen['plan_key']},area,c)['values']
-                    entered={**{k:v for k,v in line.items() if k in editor_fields(area)},**mine}
+                    fields=editor_fields(area);technical=set(needs.signature({}))|{'quantity_required'}
+                    suggested={k:v for k,v in entered.items() if k in fields and k not in technical and v not in (None,'')}
+                    entered={**suggested,**{k:v for k,v in line.items() if k in fields and (k in technical or v not in (None,''))},**mine}
                     values={**values,**entered}
                 resolution={k:p[k] for k in ('area','production_order_no','reason','create_distinct') if k in p}
                 if src:resolution['source']={k:v for k,v in source.items() if k!='version'}

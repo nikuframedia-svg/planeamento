@@ -49,16 +49,22 @@ const assert=require('node:assert/strict');
  await page.locator('#more-options>summary').click();await page.locator('#field-notes').fill('Conservar esta observação.');
  await page.locator('#work-details>summary').click();await page.locator('#field-remaining_declared').fill('70');
  await page.locator('#field-abocardar').check();
+ // A Picking semana vem da pré-visualização; limpá-la é uma decisão que tem de chegar ao servidor.
+ await page.waitForFunction(()=>document.querySelector('#field-picking_week').value==='39');
+ await page.locator('#field-picking_week').fill('');
  const sent=page.waitForRequest(r=>r.url().endsWith('/necessidades/registar'));
  await page.locator('button[name=ready]').click();
  const body=(await sent).postDataJSON();
  assert.equal(body.record_status,'ready');assert.ok(Array.isArray(body.changed_fields)&&body.changed_fields.includes('remaining_declared'));
+ assert.equal(body.decisions.picking_week,'clear');assert.ok(body.changed_fields.includes('picking_week'));
  await page.waitForFunction(()=>document.querySelector('#status').textContent.includes('Registo guardado'));
  const needId=new URL(page.url()).searchParams.get('necessidade');assert.ok(needId);
  // Depois de guardar, os avisos essenciais aparecem em todos os campos.
  await page.locator('#note-machine').filter({hasText:'Sem máquina: será usada a sugerida ao planear'}).waitFor();
  assert.equal(await page.locator('#field-notes').inputValue(),'Conservar esta observação.');
  assert.equal(await page.locator('#field-remaining_declared').inputValue(),'70');
+ // Sem produção registada depois, o saldo é o que foi escrito: sem «saldo atual».
+ await previewDone();assert.equal(await page.locator('#balance-remaining_declared').textContent(),'');
  assert.ok(await page.locator('#field-abocardar').isChecked());
  await page.locator('#secondary-details>summary').click();
  assert.equal(await page.getByRole('button',{name:'Confirmar quantidade em falta'}).count(),0);

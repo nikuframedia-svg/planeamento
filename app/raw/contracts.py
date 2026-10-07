@@ -60,6 +60,10 @@ def fields(area='perfis',dataset='planning'):
     from .registration import enabled as free_entry
     if dataset=='planning' and free_entry() and not any(s[0]=='operation' for s in specs):specs.append(('operation','Operação','work','select'))
     if dataset=='planning' and free_entry():specs=[(k,l,g,'number' if k=='quantity_to_plan' else 'text' if k in ('customer','ov','designation','delivery_date') else t) for k,l,g,t in specs]
+    if dataset=='planning':
+        # Previsão de execução e Semana/Ano de planeamento saíram do registo (07/10/2026): só leitura na Tabela.
+        from .registration import HIDDEN_DATES
+        specs=[(k,l,g,None if k in HIDDEN_DATES else t) for k,l,g,t in specs]
     if dataset=='planning' and area=='cantoneiras':specs += [('sku_family','Família de SKU','identity',None),('sku_family_status','Estado da família de SKU','identity',None)]
     if dataset=='planning':specs=[(k,{'cut':'Quantidade cortada','boc':'Quantidade abocardada','hours_pct':'Ocupação da máquina/semana (%)'}.get(k,l),g,t) for k,l,g,t in specs]
     if dataset=='planning' and area=='perfis':
