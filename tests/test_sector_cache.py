@@ -57,6 +57,32 @@ def test_changed_key_answers_previous_result_then_rebuilds_once_in_background():
     assert builds == [2]
 
 
+def test_background_rebuilds_run_one_at_a_time_across_caches():
+    first, second = cache.Cache("ensaio-1"), cache.Cache("ensaio-2")
+    first.get("s", 1, lambda: "a")
+    second.get("s", 1, lambda: "b")
+    running, peak, lock, release = [0], [0], threading.Lock(), threading.Event()
+
+    def refresh(c, value):
+        def run():
+            with lock:
+                running[0] += 1
+                peak[0] = max(peak[0], running[0])
+            release.wait(5)
+            c.get("s", 2, lambda: value)
+            with lock:
+                running[0] -= 1
+        return run
+
+    assert first.get("s", 2, lambda: "x", allow_stale=True, refresh=refresh(first, "a2")) == "a"
+    assert second.get("s", 2, lambda: "x", allow_stale=True, refresh=refresh(second, "b2")) == "b"
+    time.sleep(0.1)
+    release.set()
+    current = lambda c: c.get("s", 2, lambda: "x", allow_stale=True, refresh=lambda: None)  # noqa: E731  (lê sem calcular)
+    wait_until(lambda: current(first) == "a2" and current(second) == "b2")
+    assert peak == [1]  # servidor partilhado: nunca dois cálculos de fundo ao mesmo tempo
+
+
 def test_writes_never_get_the_previous_result():
     c = cache.Cache("ensaio", mark=lambda v: {**v, "stale": True})
     c.get("s", 1, lambda: {"v": 1})

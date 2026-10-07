@@ -11,6 +11,9 @@ Cada cache guarda, por posição (normalmente o setor), o último resultado e a 
 - Um cálculo começado antes nunca substitui um começado depois: o resultado guardado é sempre o mais recente.
 - `max_age` (opcional): um resultado mais velho do que isto conta como antigo, mesmo com a mesma chave (para
   fontes que a chave não segue).
+- Os recálculos em segundo plano (e o aquecimento) correm um de cada vez em todo o processo (`BACKGROUND`): o
+  servidor é partilhado e cada cálculo ocupa 1–2 GB e um núcleo durante 15–40 s; as leituras não esperam por
+  eles, recebem a versão anterior.
 
 As gravações nunca passam `allow_stale`: decidem sempre sobre as versões atuais.
 """
@@ -23,6 +26,10 @@ import time
 from dataclasses import dataclass, field
 
 log = logging.getLogger(__name__)
+
+# Sem ciclos: só os fios de segundo plano o tomam, e um fio só passa a calcular uma chave depois de o tomar;
+# um pedido nunca espera por ele.
+BACKGROUND = threading.BoundedSemaphore(1)
 
 
 @dataclass
@@ -106,9 +113,10 @@ class Cache:
         self._refreshing.add(slot)
 
         def run():
-            started = time.monotonic()
             try:
-                refresh()
+                with BACKGROUND:
+                    started = time.monotonic()
+                    refresh()
                 log.info("%s · %s: atualizado em segundo plano em %.1f s", self.name, slot, time.monotonic() - started)
             except Exception:  # fica o resultado anterior; o próximo pedido volta a tentar
                 log.exception("%s · %s: o recálculo em segundo plano falhou", self.name, slot)

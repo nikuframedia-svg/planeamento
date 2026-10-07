@@ -43,14 +43,19 @@ def _steps(sector: str):
 
 
 def warm(sectors=SECTORS) -> bool:
-    """Calcula as versões atuais das caches de cada setor e regista a duração de cada passo; True se tudo correu bem."""
+    """Calcula as versões atuais das caches de cada setor e regista a duração de cada passo; True se tudo correu bem.
+
+    Um passo de cada vez e nunca ao mesmo tempo que um recálculo em segundo plano (cache.BACKGROUND).
+    """
+    from .cache import BACKGROUND
     ok = True
     for sector in sectors:
         started = time.monotonic()
         for label, step in _steps(sector):
             began = time.monotonic()
             try:
-                step()
+                with BACKGROUND:
+                    step()
                 log.info("Aquecimento %s · %s: %.1f s", sector, label, time.monotonic() - began)
             except Exception:
                 ok = False
