@@ -6,7 +6,30 @@ Plano: [PLANO.md](PLANO.md). Estado: **ativo em produção desde 02/10/2026 ~19:
 
 Plano aprovado: `~/.claude/plans/esta-horrivel-n-o-existe-gleaming-clarke.md`. Pedido do Luís: «se eu não preencher os campos que não são essenciais, deixa validar na mesma… quero o mínimo de burocracias». Decisões dele: Planear numa linha sem máquina usa a sugerida; em «Mais opções» sai tudo menos Observações.
 
-**Estado: pronto no ramo `release-20261007`, ativação pendente.** A paragem dos serviços foi bloqueada pelas permissões (deploy em produção) e fica para o Luís autorizar ou correr `scripts/ativar_2026-10-07.sh`.
+**Estado: ativo desde 07/10/2026 às 09:42**, com autorização do Luís. Os passos foram os de `scripts/ativar_2026-10-07.sh`, feitos à mão, e o recálculo completo terminou às 09:44 (gerações 5951/5952 com o contrato v10; capacidade 5956/5959 com o v34; ~1 GB).
+
+**Verificação depois de ativar** (só leitura, gravações intercetadas):
+- **Browser:** `carteira_browser`, `setor_browser` e `manual_browser` passam contra a produção. O formulário mostra só os campos essenciais, «Mais opções» tem só Observações, as notas não aparecem antes de escrever e o texto está a 11 pt. O link público serve a mesma versão.
+- **Números:**
+  - proposta: MTG2 995 linhas, MTG3 8 210;
+  - sugestões: MTG3 14 355 das 14 396 linhas sem máquina, MTG2 299 de 478;
+  - capacidade: semanas sem ano 932 → 0;
+  - 0 calendários criados;
+  - `identity_pending` 0.
+- Ensaio do Planear só de leitura: L45X45X5 com 1 842 linhas planeadas, das quais 1 501 com a máquina sugerida.
+- **Registos:** sem erros nem 5xx.
+
+**Ficou por fazer depois da ativação:**
+- **Gantt técnico:** a proposta de 24/09 fica «calculada com outra versão do motor» e não recalcula sozinha, porque só recalcula quando mudam as fontes.
+- **Rótulos `.eyebrow`:** continuam a 9 pt em `planeamento_ui.css`.
+- **Motivo das quotas de capacidade:** ainda é obrigatório.
+- **«Ano de Picking confirmado»:** continua no Gantt técnico.
+- **427 linhas fechadas das cantoneiras:** mudam de saldo a cada recálculo completo (problema antigo, desde 06/10).
+- **Primeira chamada da Carga e dos KPI depois de um reinício:** demora 25–31 s.
+- **Disco a 94%** (problemas que já existiam):
+  - cada exportação do OCR regrava ~15 500 linhas em `raw_contents`, porque `detail.source_export.version` faz parte do conteúdo (~60 MB por exportação, 39 só hoje);
+  - pastas de teste do PP1 em `/tmp` (21 GB);
+  - arquivo de WAL do CRM (4,6 GB/dia).
 
 **Como foi feito.** Três partes em cópias isoladas (worktrees), cada uma com dois revisores (correção; produção, MES e hard links), mais uma verificação de cada ronda de correções. Os revisores encontraram dois bloqueios na Parte 1 (a ligação automática ao Excel podia apagar o saldo das duas linhas; uma peça nova de uma linha reimportada ficava quase vazia), corrigidos e verificados.
 
