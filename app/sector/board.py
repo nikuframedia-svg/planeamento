@@ -25,7 +25,7 @@ from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 from .. import cpis_copies, planning, planning_needs as needs
-from . import portfolio, selection
+from . import cache, portfolio, selection
 
 LISBON = ZoneInfo("Europe/Lisbon")
 RECENT_DAYS = 91  # «Sem peças nos planos»: só as OF registadas há menos de 3 meses (decisão de 28/09)
@@ -289,8 +289,11 @@ def _accepted(sector: str) -> tuple[dict, dict, dict] | None:
     return scenario, snapshot, proposal
 
 
-_board_cache: dict[str, tuple[tuple, float, dict, dict]] = {}
+# Por setor: (resposta da semana, pormenores privados por máquina). A chave segue as fontes do Gantt; o que ela
+# não segue (estimativas das ocorrências, Definições do setor…) refaz-se ao fim de 10 minutos. Nos dois casos a
+# leitura recebe logo o quadro anterior (marcado «stale») e o novo calcula-se uma vez em segundo plano (cache.py).
 BOARD_CACHE_SECONDS = 600
+_board = cache.Cache("Quadro", mark=lambda value: ({**value[0], "stale": True}, value[1]), max_age=BOARD_CACHE_SECONDS)
 
 
 def _machine_days(resource_ids, today: date, weeks: int = 14) -> dict[str, dict[str, float]]:
@@ -345,18 +348,38 @@ def _estimates(sector: str) -> dict:
         return {}
 
 
-def _built(sector: str, data: dict) -> tuple[dict, dict]:
-    """(resposta da semana, pormenores privados por máquina) com cache por fontes e 10 minutos."""
-    import time as clock
-    from ..gantt import service, baseline, source_plan, integrated
+def _sources(sector: str) -> str:
+    """Fontes do quadro: as referências do Gantt e os cenários com plano aceite.
+
+    As referências têm as gerações dos dois setores de propósito: as taxas históricas que dão as durações
+    leem a produção dos dois (productivity.Context) e um plano aceite fica antigo com qualquer fonte. As
+    exportações do OCR original (original:*) não entram.
+    """
+    from ..gantt import integrated
+    with planning.connect(readonly=True) as c:
+        c.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")
+        refs = integrated.references(c)
+        accepted = c.execute("SELECT id, revision FROM planning_mtg.raw_objects WHERE kind = 'gantt' AND NOT archived "
+                             "AND definition ? 'accepted' ORDER BY id").fetchall()
+    return needs.digest(needs.serial({"references": refs, "accepted": accepted}))
+
+
+def _built(sector: str, data: dict, *, allow_stale: bool = False) -> tuple[dict, dict]:
+    """(resposta da semana, pormenores privados por máquina), em cache pelas fontes e pelo dia (10 minutos no máximo).
+
+    `allow_stale`: com fontes novas ou passados os 10 minutos, devolve logo o quadro anterior do mesmo dia e
+    refaz uma vez em segundo plano.
+    """
+    today = data["today"]
+    return _board.get(sector, (_sources(sector), today), lambda: _build(sector), allow_stale=allow_stale,
+                      stale_if=lambda old: old[-1] == today, refresh=lambda: _built(sector, {"today": today}))
+
+
+def _build(sector: str) -> tuple[dict, dict]:
+    from ..gantt import service, baseline, source_plan
     from . import settings as sector_settings
     from .members import members
-    with planning.connect(readonly=True) as c:
-        refs = needs.digest(needs.serial(integrated.references(c)))
-    cached = _board_cache.get(sector)
-    key = (refs, data["generation"], data.get("machine_digest"), data["today"])
-    if cached and cached[0] == key and clock.monotonic() - cached[1] < BOARD_CACHE_SECONDS:
-        return cached[2], cached[3]
+    data = portfolio.current(sector)  # as linhas atuais, nunca as da geração anterior
     customers = {}
     for line in data["lines"]:
         customers.setdefault(line["of"], {"customer": line["customer"], "designation": short_text(line["designation"])})
@@ -417,18 +440,22 @@ def _built(sector: str, data: dict) -> tuple[dict, dict]:
     result = {"sector": sector, "sector_label": portfolio.SECTORS[sector], "today": data["today"],
               "imported_at": data["imported_at"], "source": source, "machines": machines, "template": template, "day_view": True,
               "elsewhere": _elsewhere([b for b in boxes if b["resource_id"] not in own], resources),
-              "not_in_plans": not_in_plans(today=data["today"])}
-    _board_cache[sector] = (key, clock.monotonic(), result, private)
+              "not_in_plans": not_in_plans(today=data["today"]), "stale": False}
     return result, private
 
 
-def board(sector: str) -> dict:
-    """Gantt simples: plano aceite; senão proposta automática (com previsões para o que ela não coloca)."""
+def board(sector: str, *, allow_stale: bool = False) -> dict:
+    """Gantt simples: plano aceite; senão proposta automática (com previsões para o que ela não coloca).
+
+    `allow_stale` (a rota GET): o Gantt e as linhas podem ser os anteriores enquanto se refazem; a lista
+    vermelha usa sempre as decisões atuais. `stale` diz se alguma parte é a anterior.
+    """
     portfolio.check_sector(sector)
-    data = portfolio.current(sector)
+    data = portfolio.current(sector, allow_stale=allow_stale)
     decisions = selection.current(sector)
-    result, _ = _built(sector, data)
-    return {**result, "unplanned": unplanned(sector, data=data, decisions=decisions)}
+    result, _ = _built(sector, data, allow_stale=allow_stale)
+    return {**result, "unplanned": unplanned(sector, data=data, decisions=decisions),
+            "stale": bool(result.get("stale") or data.get("stale"))}
 
 
 def _merge_pieces(pieces: list[dict]) -> list[dict]:
@@ -452,7 +479,7 @@ def _merge_pieces(pieces: list[dict]) -> list[dict]:
     return out
 
 
-def day(sector: str, day_text: str, machine: str | None = None) -> dict:
+def day(sector: str, day_text: str, machine: str | None = None, *, allow_stale: bool = False) -> dict:
     """Gantt de um dia: por máquina do setor, janelas e trabalho com hora, por turno, e previsões sem hora."""
     from .week import bands, calendar_days, day_bounds, hour_ticks, labelled_windows, split_by_shift
     portfolio.check_sector(sector)
@@ -460,8 +487,8 @@ def day(sector: str, day_text: str, machine: str | None = None) -> dict:
         the_day = date.fromisoformat(str(day_text))
     except ValueError:
         raise planning.PlanningError("Dia inválido.") from None
-    data = portfolio.current(sector)
-    result, private = _built(sector, data)
+    data = portfolio.current(sector, allow_stale=allow_stale)
+    result, private = _built(sector, data, allow_stale=allow_stale)
     template = private["template"]
     machines = [m for m in result["machines"] if not machine or m["id"] == machine]
     if machine and not machines:
@@ -519,4 +546,5 @@ def day(sector: str, day_text: str, machine: str | None = None) -> dict:
                             "capacity": round(m["days"].get(iso, calendar_days(calendars.get(m["id"], [])).get(iso, 0)), 2)}})
     return needs.serial({"sector": sector, "sector_label": result["sector_label"], "day": the_day, "start": start, "end": end,
                          "template": template, "source": result["source"], "bands": bands(the_day, template),
-                         "ticks": hour_ticks(the_day), "machines": out, "elsewhere": result["elsewhere"], "today": data["today"]})
+                         "ticks": hour_ticks(the_day), "machines": out, "elsewhere": result["elsewhere"], "today": data["today"],
+                         "stale": bool(result.get("stale") or data.get("stale"))})

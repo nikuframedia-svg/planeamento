@@ -25,21 +25,26 @@
     box.hidden = !message; box.textContent = message || ""; box.classList.toggle("error", error);
   }
 
-  async function load() {
+  async function load(quiet = false) {
     const serial = ++state.loading;
-    $("source").textContent = "A carregar o plano…";
+    if (!quiet) $("source").textContent = "A carregar o plano…";
     try {
       const response = await fetch(`/planeamento/api/setor/quadro?setor=${encodeURIComponent(state.sector)}`, {cache: "no-store"});
       const result = await response.json().catch(() => ({}));
       if (serial !== state.loading) return;
       if (response.status === 404) throw Error("Esta página precisa que o serviço do planeamento seja reiniciado para ficar ativa.");
       if (!response.ok) throw Error(result.error || result.detail || `Erro ${response.status}`);
+      // Versão anterior enquanto o servidor refaz o quadro (07/10/2026): volta a pedir de 8 em 8 s, sem aviso, e
+      // só volta a desenhar quando chega outra versão (o dia aberto e a página não saltam a cada pedido).
+      const again = () => setTimeout(() => { if (serial === state.loading) load(true); }, 8000);
+      if (quiet && result.stale && result.imported_at === state.data?.imported_at) return again();
       state.data = result; notice("");
       render();
       if (state.day) openDay(state.day, state.dayMachine, false);
+      if (result.stale) again();
     } catch (error) {
       if (serial !== state.loading) return;
-      $("source").textContent = "";
+      if (!quiet) $("source").textContent = "";
       notice(error.message || "Não foi possível carregar o plano.", true);
     }
   }

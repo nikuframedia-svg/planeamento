@@ -32,7 +32,7 @@ def test_excluded_line_does_not_count_in_the_load(monkeypatch):
     """A8-5: a Carga não conta as ocorrências de uma linha excluída na Carteira (como a lista vermelha)."""
     from app.sector import occurrences, selection
     lines = [{"key": "L1", "of": "OF1", "reference": "R1", "machine": "M"}, {"key": "L2", "of": "OF1", "reference": "R2", "machine": "M"}]
-    monkeypatch.setattr(portfolio, "current", lambda sector: {"lines": lines})
+    monkeypatch.setattr(portfolio, "current", lambda sector, **kw: {"lines": lines})
     monkeypatch.setattr(selection, "current", lambda sector: {("OF1", "R2"): {"decision": "excluded"}})
     monkeypatch.setattr(occurrences, "load", lambda sector, allow_stale=True: {"facts": [fact("o1", "m1", "2026-10-07", 1.0, line_key="L1"),
                                                                                         fact("o2", "m1", "2026-10-07", 1.0, line_key="L2")]})

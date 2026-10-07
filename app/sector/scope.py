@@ -89,6 +89,13 @@ def digest(selection):
     return needs.digest({'legacy':legacy,'members':[dict(r) for _,r in sorted(members.items())]})
 
 
+def area_digest(selection, area):
+    """Decisões de um só setor, para as caches desse setor: uma decisão no outro setor não as refaz."""
+    legacy = [dict(r) for k,r in (selection or {}).items() if k[0]==area]
+    members = [dict(r) for k,r in sorted(getattr(selection,'members',{}).items()) if k[0]==area]
+    return needs.digest({'legacy':legacy,'members':members})
+
+
 def planning_lines(c, selection, areas):
     """Current active app rows, bounded by the user's chosen orders."""
     records = []; missing = []

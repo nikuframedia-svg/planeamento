@@ -17,7 +17,7 @@
     capacidade: 'Horas dos turnos dessa semana no calendário da máquina (na semana atual, só as que faltam).',
     calendarioExcel: 'Turnos × horas por turno da folha PlanDisponibilidadeSemanal do Excel (só MTG2).',
   };
-  let data = null, open = null, ticket = 0;
+  let data = null, open = null, ticket = 0, loads = 0;
   const view = () => new URLSearchParams(location.search).get('vista') === 'maquinas' ? 'maquinas' : 'semanas';
 
   function el(tag, attrs = {}, ...children) {
@@ -373,14 +373,22 @@
       pager);
   }
 
-  async function load() {
-    data = await getJson(`/planeamento/api/setor/carga?setor=${encodeURIComponent($('setor').value)}`);
+  async function load(quiet = false) {
+    const mine = ++loads;
+    const fresh = await getJson(`/planeamento/api/setor/carga?setor=${encodeURIComponent($('setor').value)}`);
+    if (mine !== loads) return;  // já foi pedida outra (outro setor ou depois de gravar)
+    // Versão anterior enquanto o servidor refaz as horas (07/10/2026): volta a pedir de 8 em 8 s, sem aviso, e só
+    // volta a desenhar quando chega a versão atual (o detalhe aberto e a produção registada não se fecham).
+    const again = () => setTimeout(() => { if (mine === loads) load(true).catch(error); }, 8000);
+    if (quiet && fresh.stale) return again();
+    data = fresh;
     render();
     if (open) {
       const m = data.machines.find((x) => x.id === open.m);
       const w = m && m.weeks.find((x) => x.week === open.w && x.year === open.y);
       if (m && w) showDetail(m, w);
     }
+    if (data.stale) again();
   }
 
   function setView(v) {

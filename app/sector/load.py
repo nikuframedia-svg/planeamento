@@ -148,8 +148,10 @@ def _add_total(t: dict, f: dict, week, late: bool, excel, weight, applies: bool,
 
 
 def _context(sector: str, today: date | None = None):
+    """Linhas, decisões e ocorrências da Carga (só leituras: as linhas e as ocorrências podem ser as anteriores
+    enquanto se refazem em segundo plano; as decisões são sempre as atuais)."""
     from . import occurrences, portfolio, selection, settings as sector_settings
-    data = portfolio.current(sector)
+    data = portfolio.current(sector, allow_stale=True)
     decisions = selection.current(sector)
     planned = {x["key"] for x in data["lines"] if portfolio.status_of(x, decisions)["planeado"]}
     occ = occurrences.load(sector, allow_stale=True)
@@ -287,7 +289,7 @@ def overview(sector: str, *, today: date | None = None, now: datetime | None = N
              for rid, e in sorted(elsewhere.items(), key=lambda x: -x[1]["hours"])]
     return needs.serial({"sector": sector, "today": today, "weeks": [{"year": y, "week": w, "monday": date.fromisocalendar(y, w, 1)} for y, w in weeks],
                          "machines": rows, "totals": machine_totals, "elsewhere": {"operations": sum(o["operations"] for o in other), "hours": round(sum(o["hours"] for o in other), 1), "machines": other}, "settings": {k: settings[k] for k in ("template", "workdays", "holidays")},
-                         "shift_hours": shifts.shift_hours(settings["template"]), "stale": bool(occ.get("stale")),
+                         "shift_hours": shifts.shift_hours(settings["template"]), "stale": bool(occ.get("stale") or data.get("stale")),
                          "rules": __doc__.split("\n\n", 1)[1].strip()})
 
 

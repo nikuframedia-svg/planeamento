@@ -67,9 +67,3 @@ def effective(ctx: dict | None, keys, sku_family, tabela) -> dict:
     if found:
         return {"machine": found["machine_name"], "resource_id": found["resource_id"], "source": "conjunto", "set": found["name"]}
     return {"machine": "", "resource_id": None, "source": None}
-
-
-def digests(conn=None) -> str:
-    """Digest dos dois setores (para o carimbo das ocorrências e as referências do Gantt)."""
-    with (planning.connect(readonly=True) if conn is None else nullcontext(conn)) as c:
-        return needs.digest([context(area, conn=c)["digest"] for area in planning.AREAS])
