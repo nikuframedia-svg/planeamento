@@ -1028,12 +1028,15 @@ window.Raw = (() => {
       values.custom_profile = false;
       values.special_profile = null;
     }
+    // `partial`: uma versão nova entretanto não recusa a gravação se esta linha não mudou (07/10/2026); se mudou,
+    // o pedido continua a ser recusado («Nenhuma linha gravada…»), por isso nada se perde sem aviso.
     const result = await api(
       "raw/lotes",
       request({
         area: state.area,
       population: state.population,
         version: state.data.version,
+        partial: true,
         edits: [{ key: row.key, expected_revision: row.revision, values }],
       }),
     );
@@ -1413,7 +1416,8 @@ window.Raw = (() => {
         .map((x) => x.split("\t")),
       cols = visible(),
       [r0, c0] = state.cells.start,
-      edits = [];
+      edits = [],
+      labels = new Map();  // OF e referência de cada linha colada, lidas antes do pedido (a lista pode mudar entretanto)
     if (rows.length > 500) throw Error("Cola até 500 linhas por lote.");
     for (let i = 0; i < rows.length; i++) {
       const row = state.data.rows[r0 + i];
@@ -1455,6 +1459,7 @@ window.Raw = (() => {
         values[f.id] = val;
       }
       edits.push({ key: row.key, expected_revision: row.revision, values });
+      labels.set(row.key, { of: row.values.of, component_ref: row.values.component_ref });
     }
     // Grava logo, sem pergunta (07/10/2026). Com `partial`, as linhas cuja revisão ou cujos dados do Excel mudaram
     // desde esta lista (ex.: outra gravação ou nova importação) ficam de fora e são indicadas; as restantes gravam-se.
@@ -1463,7 +1468,6 @@ window.Raw = (() => {
       request({ area: state.area, version: state.data.version, partial: true, edits }),
     );
     const skipped = result.skipped || [];
-    const pasted = new Map(edits.map((x, i) => [x.key, state.data.rows[r0 + i].values]));
     await waitUpdated(result);
     if (skipped.length)
       $("notice").textContent =
@@ -1471,7 +1475,7 @@ window.Raw = (() => {
         skipped
           .slice(0, 10)
           .map((x) => {
-            const v = pasted.get(x.key) || {};  // «Linha não encontrada» não traz a OF: usa a da linha colada
+            const v = labels.get(x.key) || {};  // «Linha não encontrada» não traz a OF: usa a da linha colada
             return [x.of || v.of, x.component_ref || v.component_ref].filter(Boolean).join(" · ") + " (" + String(x.reason || "").replace(/\.$/, "") + ")";
           })
           .join("; ") +

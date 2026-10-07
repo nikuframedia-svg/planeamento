@@ -83,13 +83,28 @@ def prepare(p):
 
 
 EXCEL_IDENTITY=('of','ov','customer','designation','material_description')  # dados do Excel fora do catálogo
+EXCEL_VOLATILE=('Data Atual',)  # célula com a data da importação (MTG2): muda sem a linha mudar
 
 
 def excel_signature(row,fields):
     """Dados do Excel de uma linha da Tabela: os valores de origem dos campos do catálogo e da identidade, e as
     células em bruto. Não inclui a produção nem os agregados (horas, % de carga), que mudam sem o Excel mudar."""
     original=row.get('original') or {}
-    return needs.digest([{k:original.get(k) for k in sorted(set(fields)|set(EXCEL_IDENTITY)) if k in original},row.get('raw') or {}])
+    raw={k:v for k,v in (row.get('raw') or {}).items() if k not in EXCEL_VOLATILE}
+    return needs.digest([{k:original.get(k) for k in sorted(set(fields)|set(EXCEL_IDENTITY)) if k in original},raw])
+
+
+def rows_by_key(c,area,version,keys):
+    """{chave colada: [linhas]} de uma versão da Tabela, numa só consulta para todas as chaves (pela chave ou pelos
+    nomes antigos da linha, como `selected`). Uma consulta por linha custava segundos cada em versões antigas."""
+    wanted={k for k in keys if isinstance(k,str)};out={k:[] for k in wanted};page=1
+    while wanted:
+        data=query.listing({'area':area,'version':str(version),'selected':sorted(wanted),'page_size':500,'page':page},conn=c)
+        for r in data['rows']:
+            for k in ({r['key']}|set(r.get('selection_aliases') or []))&wanted:out[k].append(r)
+        if page*500>=data['total']:break
+        page+=1
+    return out
 
 
 @incremental.retry_serialization
@@ -103,34 +118,38 @@ def update_batch(p):
     edits=p.get('edits');partial=p.get('partial') is True
     if not isinstance(edits,list) or not 1<=len(edits)<=500 or any(not isinstance(e,dict) for e in edits):raise planning.PlanningError('O lote deve conter entre 1 e 500 linhas.')
     area=planning.check_area(p.get('area','perfis'))
+    allowed={f['id'] for f in contracts_for(area) if f['editable']}|{'picking_year','custom_profile','special_profile','geometry','identity_discriminator'}
+    keys=[e.get('key') for e in edits]
+    if len(set(map(str,keys)))!=len(keys):raise planning.PlanningError('Agrupa as alterações da mesma linha num único pedido.')
+    if any(not e.get('values') or not isinstance(e['values'],dict) or set(e['values'])-allowed for e in edits):raise planning.PlanningError('Só podes alterar campos locais de preparação.')
     with planning.connect() as c:
         c.execute('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ')
         _,_,old=needs.command(c,p)
         if old:return old
+        current=query.generation(c,area);shown=None
+        if partial and p.get('version') and str(p['version'])!=str(current['id']):
+            # A versão que o utilizador tinha à frente lê-se antes dos bloqueios dos publicadores (só leitura; numa
+            # versão antiga pode demorar): os bloqueios ficam só para as gravações.
+            try:seen_version=query.generation(c,area,p['version'])
+            except planning.PlanningError:seen_version=None  # já não existe: não se pode comparar
+            shown=rows_by_key(c,area,seen_version['id'],keys) if seen_version else {}
         before=incremental.baseline(c)
-        current=query.generation(c,area);seen_version=None
         if not partial:
             gen=query.generation(c,area,p.get('version'))
             if gen['id']!=current['id']:raise planning.PlanningError('Existem dados novos. Atualiza a lista e compara as alterações.',409)
-        else:
-            gen=current
-            if p.get('version') and str(p['version'])!=str(current['id']):
-                try:seen_version=query.generation(c,area,p['version'])  # a versão que o utilizador tinha à frente
-                except planning.PlanningError:seen_version=False  # já não existe: não se pode comparar
+        else:gen=current
         source_fingerprint=projection.fingerprint(c,area)
-        cat=catalogs.catalog(area,c);allowed={f['id'] for f in contracts_for(area) if f['editable']}|{'picking_year','custom_profile','special_profile','geometry','identity_discriminator'}
+        cat=catalogs.catalog(area,c)
         fields={f['id'] for f in cat['fields']}
-        results=[];skipped=[];seen=set();orders=set();local_revisions={}
+        now=rows_by_key(c,area,gen['id'],keys)
+        results=[];skipped=[];orders=set();local_revisions={}
         def refuse(key,row,reason,message):
             if not partial:raise planning.PlanningError(message,409)
             values=(row or {}).get('values') or {}
             skipped.append({'key':key,'of':values.get('of'),'component_ref':values.get('component_ref'),'reason':reason})
         for i,e in enumerate(edits):
-            key=e.get('key');changes=e.get('values') or {}
-            if key in seen:raise planning.PlanningError('Agrupa as alterações da mesma linha num único pedido.')
-            seen.add(key)
-            if not changes or not isinstance(changes,dict) or set(changes)-allowed:raise planning.PlanningError('Só podes alterar campos locais de preparação.')
-            found=query.listing({'area':area,'version':str(gen['id']),'selected':[key]},conn=c)['rows']
+            key=e.get('key');changes=e['values']
+            found=now.get(key,[])
             if len(found)!=1:
                 refuse(key,None,'Linha não encontrada.','Linha não encontrada.');continue
             row=found[0]
@@ -138,10 +157,10 @@ def update_batch(p):
                 refuse(key,row,'As fontes mudaram.','As fontes mudaram. Atualiza a lista antes de guardar.');continue
             if e.get('expected_revision')!=row['revision']:
                 refuse(key,row,'A linha mudou entretanto.','A linha mudou. Reabre-a para comparar.');continue
-            if seen_version is not None:
+            if shown is not None:
                 # As linhas só do Excel ficam sempre na revisão 0: uma importação muda-as sem subir a revisão.
-                shown=query.listing({'area':area,'version':str(seen_version['id']),'selected':[key]},conn=c)['rows'] if seen_version else []
-                if len(shown)!=1 or excel_signature(shown[0],fields)!=excel_signature(row,fields):
+                before_row=shown.get(key,[])
+                if len(before_row)!=1 or excel_signature(before_row[0],fields)!=excel_signature(row,fields):
                     refuse(key,row,'O Excel mudou nesta linha.','O Excel mudou nesta linha.');continue
             nid=row['need_id'];revision=row['revision']
             if not nid:

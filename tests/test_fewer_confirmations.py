@@ -229,3 +229,42 @@ def test_capacity_engine_counts_an_unconfirmed_sector_machine_end_to_end(sector_
     with planning.connect(readonly=True) as c:
         meta = query.generation(c, 'cantoneiras', dataset='capacity')['metadata']
     assert meta['contract'] != calc.CONTRACT and meta['contract'].startswith(calc.CONTRACT + '|')
+
+
+def test_table_batch_reads_each_version_once_whatever_the_number_of_rows(workspace, monkeypatch):
+    projection.rebuild('perfis')
+    data = query.listing({})
+    first, second = data['rows'][:2]
+    edits.update_batch(command(area='perfis', version=data['version'], edits=[{'key': first['key'], 'expected_revision': first['revision'], 'values': {'notes': 'Antes'}}]))
+    current = row(first['key'])
+    calls = []
+    listing = query.listing
+    monkeypatch.setattr(query, 'listing', lambda p, conn=None: calls.append(p.get('version')) or listing(p, conn=conn))
+    # Lista antiga (versão anterior): uma leitura dessa versão e uma da atual, para todas as linhas coladas.
+    result = edits.update_batch(command(area='perfis', version=data['version'], partial=True, edits=[
+        {'key': first['key'], 'expected_revision': current['revision'], 'values': {'notes': 'Grava'}},
+        {'key': second['key'], 'expected_revision': second['revision'] + 7, 'values': {'notes': 'Mudou'}}]))
+    assert len(result['items']) == 1 and [x['key'] for x in result['skipped']] == [second['key']]
+    assert len(calls) == 2 and str(data['version']) in calls
+    # Lista atual: uma só leitura.
+    fresh, revision = query.listing({}), row(first['key'])['revision']
+    calls.clear()
+    edits.update_batch(command(area='perfis', version=fresh['version'], partial=True, edits=[
+        {'key': first['key'], 'expected_revision': revision, 'values': {'notes': 'De novo'}},
+        {'key': second['key'], 'expected_revision': second['revision'] + 7, 'values': {'notes': 'Mudou'}}]))
+    assert len(calls) == 1
+
+
+def test_excel_signature_ignores_the_import_date_cell():
+    fields = {'length_mm', 'notes'}
+    base = {'original': {'length_mm': 3003.0, 'of': 'OF1', 'cut': 5}, 'raw': {'Ser.': 64, 'Data Atual': '2026-10-06'}}
+    assert edits.excel_signature(base, fields) == edits.excel_signature({**base, 'raw': {'Ser.': 64, 'Data Atual': '2026-10-07'}}, fields)
+    assert edits.excel_signature(base, fields) == edits.excel_signature({**base, 'original': {**base['original'], 'cut': 9}}, fields)
+    assert edits.excel_signature(base, fields) != edits.excel_signature({**base, 'raw': {'Ser.': 65, 'Data Atual': '2026-10-06'}}, fields)
+    assert edits.excel_signature(base, fields) != edits.excel_signature({**base, 'original': {**base['original'], 'length_mm': 3100.0}}, fields)
+
+
+def test_speed_tabs_put_the_most_used_operations_first():
+    machine = lambda rid, *codes: {'id': rid, 'ficha': [], 'rate_operations_codes': list(codes)}  # noqa: E731
+    machines = [machine('a', '112', '119'), machine('b', '112', '119'), machine('c', '112'), machine('p', '111'), machine('f', '302')]
+    assert [t['code'] for t in sector_settings.operation_tabs(machines, [])] == ['112', '119', '111', '302']

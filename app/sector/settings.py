@@ -110,7 +110,11 @@ def rate_operation_codes(sector: str, m: dict) -> list[str]:
 
 
 def operation_tabs(machines: list[dict], rates: list[dict]) -> list[dict]:
-    """Separadores por operação da tabela de velocidades (ex.: Punção · 112, Broca · 119), com o processo da ficha."""
+    """Separadores por operação da tabela de velocidades (ex.: Punção · 112, Broca · 119), com o processo da ficha.
+
+    As operações mais usadas primeiro (mais máquinas, depois mais linhas na tabela), para o 112 e o 119 não ficarem
+    atrás das operações de um só posto desde que contam todas as máquinas do setor (07/10/2026); empate pelo código.
+    """
     from collections import Counter, defaultdict
     processes = defaultdict(Counter)
     for m in machines:
@@ -119,8 +123,10 @@ def operation_tabs(machines: list[dict], rates: list[dict]) -> list[dict]:
                 processes[_operation_code(cap["operation"])][cap["process"]] += 1
     codes = {code for m in machines for code in m.get("rate_operations_codes") or []}
     codes |= {_operation_code(r.get("operation")) for r in rates if r.get("operation")}
+    used = Counter(code for m in machines for code in set(m.get("rate_operations_codes") or []))
+    lines = Counter(_operation_code(r.get("operation")) for r in rates if r.get("operation"))
     tabs = []
-    for code in sorted(codes, key=lambda c: (not c.isdigit(), int(c) if c.isdigit() else 0, c)):
+    for code in sorted(codes, key=lambda c: (-used[c], -lines[c], not c.isdigit(), int(c) if c.isdigit() else 0, c)):
         name = processes[code].most_common(1)[0][0] if processes[code] else OPERATION_NAMES.get(code)
         tabs.append({"code": code, "label": f"{name} · {code}" if name and code.isdigit() else (name or code),
                      "machines": [m["id"] for m in machines if code in (m.get("rate_operations_codes") or [])]})
