@@ -11,6 +11,8 @@ if(!/^http:\/\/127\.0\.0\.1:\d+$/.test(base)||process.env.PLANNING_TEST_ISOLATED
   page.on('pageerror',e=>report.errors.push(e.message));
   await page.goto(base+'/planeamento/preparar?area='+area+'&necessidade='+need+'&ocr_source=original');
   await page.waitForFunction(()=>document.querySelector('#field-component_ref')?.value);
+  // «Produção e histórico» abre-se primeiro (bloco fechado desde 06/10/2026).
+  await page.locator('#secondary-details>summary').click();
   await page.locator('#evidence-open').click();await page.locator('#production-open').click();
   assert.equal(await page.locator('#production-source').inputValue(),'original');
   const item=page.locator('#production-content .item').first();
@@ -44,7 +46,7 @@ if(!/^http:\/\/127\.0\.0\.1:\d+$/.test(base)||process.env.PLANNING_TEST_ISOLATED
   assert.equal(await page.getByLabel('Quantidade atribuída',{exact:true}).inputValue(),'4');
   await page.screenshot({path:folder+'/t1-association-'+area+'.png',fullPage:true});
   await page.reload();await page.waitForFunction(()=>document.querySelector('#field-component_ref')?.value);
-  await page.locator('#evidence-open').click();
+  await page.locator('#secondary-details>summary').click();await page.locator('#evidence-open').click();
   await page.waitForFunction(()=>/Produção validada no OCR[\s\S]*4/.test(document.querySelector('#evidence')?.textContent||''));
   assert.match(await page.locator('#evidence').innerText(),/Produção validada no OCR[\s\S]*4/);
   assert.deepEqual(report.errors,[]);report.result='passed';

@@ -20,6 +20,7 @@ from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
 
 from .. import planning, planning_needs as needs
+from ..planning_calculations import DECLARED_ORIGIN
 
 PROVIDER = 'research-v2'
 BALANCE_CONTRACT = 'research-balance-v3'  # v3 (06/10): contador Excel mais recente ganha; derivados refeitos
@@ -306,7 +307,8 @@ def overlay_rows(c, area, rows):
         sources = calc.setdefault('production_sources', [])
         operation = 'corte' if area == 'perfis' else str(v.get('operation') or r['codigo_original'] or '')
         source = next((s for s in sources if str(s.get('operation')) == operation), None)
-        if source and source.get('records') and source.get('origin') not in ('Excel provisório', 'Excel documental'):
+        # A «Qtd em falta» escrita pelo planeador (07/10/2026) vale como produção conciliada: a fotografia v2 não a substitui.
+        if source and (source.get('records') or source.get('origin') == DECLARED_ORIGIN) and source.get('origin') not in ('Excel provisório', 'Excel documental'):
             v.update(planning_remaining=source.get('remaining'),remaining=source.get('remaining'),
                 planning_balance_origin=source.get('origin'),planning_balance_provisional=False)
             continue
@@ -363,7 +365,7 @@ def application_balances(c, source_rows, *, records=None):
                 if sum(x['operacao_codigo']==r['operacao_codigo'] for x in candidates.values()) != 1:
                     continue
                 source = next((s for s in detail.get('calculation',{}).get('production_sources',[]) if str(s.get('operation'))==operation),None)
-                if source and source.get('records') and source.get('origin') not in ('Excel provisório','Excel documental'):
+                if source and (source.get('records') or source.get('origin')==DECLARED_ORIGIN) and source.get('origin') not in ('Excel provisório','Excel documental'):
                     result[r['operacao_id']] = {'saldo_confirmado':source.get('remaining'),
                         'saldo_documental':None if source.get('remaining') is None else r.get('saldo_documental'),
                         'application_balance_evidence':source, 'execution_started':bool(source.get('made') or source.get('records'))}

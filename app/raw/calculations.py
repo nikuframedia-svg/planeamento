@@ -1,12 +1,26 @@
 """Auditable derived geometry/weights. Catalog matches are exact, never approximate Excel lookups."""
+import weakref
 from collections import defaultdict
 from datetime import date,datetime
 from zoneinfo import ZoneInfo
 from .. import planning,planning_raw as raw,planning_needs as needs,planning_catalogs as catalogs,planning_dates
 
 
+_sections=weakref.WeakKeyDictionary()
+
+
 def sections(conn, snapshot):
-    """Exact properties from the same B:C table used by Planeamento!AP."""
+    """Exact properties from the same B:C table used by Planeamento!AP.
+
+    As linhas de uma importação não mudam: lê-se uma vez por ligação (07/10/2026), não uma vez por peça
+    gravada num lote da Tabela.
+    """
+    cached=_sections.setdefault(conn,{})
+    if snapshot not in cached:cached[snapshot]=_sections_table(conn,snapshot)
+    return cached[snapshot]
+
+
+def _sections_table(conn, snapshot):
     result=defaultdict(list)
     for row in conn.execute("SELECT excel_row,row_data FROM raw_mtg.other_sheet_rows WHERE snapshot_id=%s AND sheet_name='AreaSecaoCorte' ORDER BY excel_row",(snapshot,)).fetchall():
         cells=row['row_data'].get('values',[])
@@ -31,11 +45,16 @@ def recalculate(row, section_table, weight_table):
     operations=row.get('operations',[])
     manual_quantity=('quantity_to_plan' in row.get('input_values',{}))
     declared_quantity=v.get('quantity_to_plan')
+    # «Nada produzido ainda» vale para qualquer peça sem linha do Excel, também a que veio de um PDF
+    # (07/10/2026); antes só a peça escrita à mão, e a do PDF ficava sem saldo.
+    excel=row.get('plan_key') or any(s.get('kind')=='plan_line' for s in row.get('sources') or [])
     result=calculate(v,area=row['area'],raw=row['raw'],operations=operations,
-        local_initial=bool(row.get('need_id') and not row.get('sources') and not row.get('plan_key')),
+        local_initial=bool(row.get('need_id') and not excel),
         compatible=compatible,sections=section_table,weights=weight_table,
         today=datetime.now(ZoneInfo(planning.settings.display_timezone)).date(),
-        density=7850 if row['area']=='perfis' and row.get('plan_key') else None)
+        density=7850 if row['area']=='perfis' and row.get('plan_key') else None,
+        # «Qtd em falta»: só o registo manual a guarda, com a produção conhecida quando foi escrita.
+        declared_remaining=v.get('remaining_declared'),declared_produced=v.get('remaining_declared_produced'))
     row['values']=result['values']
     if manual_quantity:
         row['values']['quantity_to_plan']=declared_quantity

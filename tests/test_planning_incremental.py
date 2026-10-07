@@ -69,7 +69,8 @@ def test_preview_quantity_keeps_macro_production_and_rejects_stale_revision(work
     projection.rebuild('perfis')
     actual=query.listing({'selected':[saved['need_id']]})['rows'][0]
     assert actual['values']['remaining']==before['row']['values']['remaining']
-    with pytest.raises(planning.PlanningError):preview.preview({**p,'need_id':saved['need_id'],'expected_revision':1})
+    # 07/10/2026: uma revisão antiga já não dá 409; a pré-visualização calcula sobre a peça atual.
+    assert preview.preview({**p,'need_id':saved['need_id'],'expected_revision':1})['need_revision']==saved['revision']
 
 
 def test_save_publishes_current_row_without_worker_then_allows_another_edit(workspace):

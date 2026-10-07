@@ -1,106 +1,105 @@
+// Registo manual só com o essencial (07/10/2026), contra uma base descartável e um arquivo de PDF temporário.
+// Um só «Guardar», avisos discretos só depois de mexer no campo (ou de guardar), «Mais opções» só com
+// Observações, «Qtd em falta», PDF de outra OF sem bloqueio e aviso de saída só com algo escrito.
 const {chromium}=require('./playwright_core.cjs');
 const assert=require('node:assert/strict');
 (async()=>{
  const browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH||process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE,headless:true,args:['--no-sandbox']});
- const proofFolder=process.env.PLANNING_BROWSER_PROOF_FOLDER||'docs/planeamento-campos-2026-09-21';
  const page=await browser.newPage({viewport:{width:1440,height:1050}}),base=process.env.PLANNING_CHECK_BASE,errors=[];page.on('pageerror',e=>{errors.push(e.message);console.error('PAGE ERROR',e.message)});
+ const notes=()=>page.locator('#preparation .field-note').evaluateAll(n=>n.map(x=>x.textContent).filter(Boolean));
+ const previewDone=()=>page.waitForFunction(()=>!/A calcular/.test(document.querySelector('#preview-status')?.textContent||''));
  await page.goto(base+'/planeamento/manual?of=OF4200&area=perfis&new=1');
  await page.locator('#field-component_ref').waitFor({state:'visible'});
  assert.equal(await page.locator('#local-of').inputValue(),'OF4200');
- assert.equal(await page.getByRole('button',{name:'Adicionar referência nova'}).count(),0);
- assert.equal(await page.getByRole('button',{name:'Origem e histórico',exact:true}).count(),0);
- assert.equal(await page.locator('#actor').count(),0);
- // Ecrã simples (06/10/2026): só «Dados da peça» aberta; o resto em blocos fechados; todas as colunas do Excel à vista.
+ // Ecrã simples: «Dados da peça» aberta; o resto em blocos fechados; as colunas do Excel sem o Picking ano.
  assert.deepEqual(await page.locator('#preparation h2').allTextContents(),['Dados da peça','Características de corte']);
  assert.deepEqual(await page.locator('#preparation details.section>summary').allTextContents(),['Mais opções','Trabalho a preparar','Pré-visualização dos cálculos','Produção e histórico']);
  assert.deepEqual(await page.locator('#preparation details.section').evaluateAll(n=>n.map(d=>d.open)),[false,false,false,false]);
- assert.ok(await page.locator('#cut-section').isHidden(),'na MTG2 o corte está na primeira secção');
- assert.equal(await page.locator('#more-options').evaluate(n=>n.tagName),'DETAILS');
- assert.deepEqual(await page.locator('#piece-fields > .field:not([hidden]) label').allTextContents(),['Data Corte','Referência','Tipo de Material','Designação Perfil','QTD','Ø Externo (mm)','Largura (mm)','Altura (mm)','Espessura (mm)','Comp. (mm)','Ang. (°)','Qual.','Abocardar','Picking semana','Picking ano','Equipa','Pav.','Máquina']);
- assert.equal(await page.locator('#piece-fields p.help').count(),0,'sem textos de ajuda na primeira secção');
- assert.equal(await page.locator('#field-cut_date').getAttribute('type'),'date');
- assert.equal(await page.locator('#material-forecast').count(),0,'a previsão de requisição de material saiu (06/10/2026)');
+ assert.deepEqual(await page.locator('#piece-fields > .field:not([hidden]) label').allTextContents(),['Data Corte','Referência','Tipo de Material','Designação Perfil','QTD','Ø Externo (mm)','Largura (mm)','Altura (mm)','Espessura (mm)','Comp. (mm)','Ang. (°)','Qual.','Abocardar','Picking semana','Equipa','Pav.','Máquina']);
+ assert.deepEqual(await page.locator('#extra-fields > .field label').allTextContents(),['Observações']);
+ assert.deepEqual(await page.locator('#operation-fields > .field label').allTextContents(),['Operação','Qtd em falta (un.)']);
+ assert.equal(await page.locator('#piece-fields p.help:not(.field-note)').count(),0,'sem textos de ajuda na primeira secção');
+ for(const id of ['quantity_to_plan','expected_date','planned_week','picking_year','material_requested','stock_length_mm','custom_profile','geometry','identity_discriminator'])assert.equal(await page.locator('#field-'+id).count(),0,id);
+ for(const gone of ['#pdf-conflict','#duplicates','#conference-dialog','#conference-open','button[name=draft]'])assert.equal(await page.locator(gone).count(),0,gone);
+ assert.equal(await page.locator('#preparation button[type=submit]').count(),1);
+ assert.equal(await page.locator('button[name=ready]').textContent(),'Guardar');
  assert.ok(!await page.locator('#field-abocardar').isChecked());
+ // Nenhum aviso antes de escrever.
+ await previewDone();assert.deepEqual(await notes(),[]);
  await page.locator('#field-component_ref').fill('BROWSER-NEW');
- await page.locator('#field-material_type').selectOption('Perfil U');
- assert.deepEqual(await page.locator('#field-profile option').allTextContents(),['Por definir','UPN50x25','UPN50x38','Outra designação…']);
- await page.locator('#field-profile').selectOption('UPN50x25');
- await page.locator('#field-material_type').selectOption('Tubo redondo');
- assert.equal(await page.locator('#field-profile').inputValue(),'');
- assert.equal(await page.locator('#field-profile').evaluate(n=>n.tagName),'INPUT');
+ await page.locator('#field-material_type').fill('Tubo redondo');
  await page.locator('#field-profile').fill('88.9x3');
  await page.locator('#field-outer_diameter_mm').fill('88,9');
  await page.locator('#field-thickness_mm').fill('3');
+ await page.locator('#field-angle_deg').fill('0');
  assert.equal(await page.locator('#field-operation').inputValue(),'corte');
  await page.locator('#field-length_mm').fill('1000');
+ // QTD fora de inteiro: aviso discreto ao lado do campo, sem marcar o campo como erro.
+ await page.locator('#field-quantity_required').fill('2,5');
+ await page.locator('#note-quantity_required').filter({hasText:'número inteiro'}).waitFor();
+ assert.equal(await page.locator('#field-quantity_required').getAttribute('aria-invalid'),null);
  await page.locator('#field-quantity_required').fill('100');
- for(const id of ['quantity_to_plan','chanfro','ponteira','finish_week','finish_year','weekly_capacity_hours','material_available_date','material_lot','material_request_date'])assert.equal(await page.locator('#field-'+id).count(),0);
- await page.locator('#field-machine').selectOption('MEBA');
- // Evidence/history must preserve in-progress edits without requiring a save.
- await page.locator('#secondary-details>summary').click();
- await page.getByRole('button',{name:'Ver origem e alterações',exact:true}).click();
- await page.locator('#history-dialog').waitFor({state:'visible'});await page.locator('#history-dialog [data-close]').click();
- await page.getByRole('button',{name:'Ver produção registada',exact:true}).click();
- await page.locator('#evidence-dialog').waitFor({state:'visible'});await page.locator('#evidence-dialog [data-close]').click();
- assert.equal(await page.locator('#field-component_ref').inputValue(),'BROWSER-NEW');
- // Changing mode needs an explicit choice; cancel retains all fields.
+ await page.waitForFunction(()=>!document.querySelector('#note-quantity_required').textContent);
+ // Máquina vazia: sem aviso enquanto ninguém lhe mexe nem guarda.
+ await previewDone();assert.equal(await page.locator('#note-machine').textContent(),'');
+ // Sair com algo escrito pede uma escolha; continuar mantém tudo.
  await page.locator('#pdf-link').click();await page.locator('#leave-dialog').waitFor({state:'visible'});
+ assert.match(await page.locator('#leave-dialog').innerText(),/Guarda antes de continuar/);
  await page.getByRole('button',{name:'Continuar a editar',exact:true}).click();assert.equal(await page.locator('#field-length_mm').inputValue(),'1000');
- // Supplementary fields in «Mais opções» and inline numeric validation.
- await page.locator('#more-options>summary').click();
- await page.locator('#field-notes').fill('Conservar esta observação.');
- await page.locator('#field-quantity_required').fill('2,5');await page.locator('#error-quantity_required').filter({hasText:'inteiro'}).waitFor();
- await page.locator('#field-quantity_required').fill('100');assert.equal(await page.locator('#error-quantity_required').textContent(),'');
- await page.locator('#field-angle_deg').fill('não é número');
- await page.getByRole('button',{name:'Guardar rascunho',exact:true}).click();await page.locator('#error-angle_deg').filter({hasText:'número'}).waitFor();
- await page.locator('#field-angle_deg').fill('0');await page.locator('#field-abocardar').check();
- await page.getByRole('button',{name:'Guardar rascunho',exact:true}).click();
- await page.waitForFunction(()=>document.querySelector('#status').textContent.includes('Rascunho guardado'));
+ await page.locator('#more-options>summary').click();await page.locator('#field-notes').fill('Conservar esta observação.');
+ await page.locator('#work-details>summary').click();await page.locator('#field-remaining_declared').fill('70');
+ await page.locator('#field-abocardar').check();
+ const sent=page.waitForRequest(r=>r.url().endsWith('/necessidades/registar'));
+ await page.locator('button[name=ready]').click();
+ const body=(await sent).postDataJSON();
+ assert.equal(body.record_status,'ready');assert.ok(Array.isArray(body.changed_fields)&&body.changed_fields.includes('remaining_declared'));
+ await page.waitForFunction(()=>document.querySelector('#status').textContent.includes('Registo guardado'));
+ const needId=new URL(page.url()).searchParams.get('necessidade');assert.ok(needId);
+ // Depois de guardar, os avisos essenciais aparecem em todos os campos.
+ await page.locator('#note-machine').filter({hasText:'Sem máquina: será usada a sugerida ao planear'}).waitFor();
  assert.equal(await page.locator('#field-notes').inputValue(),'Conservar esta observação.');
+ assert.equal(await page.locator('#field-remaining_declared').inputValue(),'70');
  assert.ok(await page.locator('#field-abocardar').isChecked());
- assert.ok(await page.getByRole('button',{name:'Concluir preparação'}).isDisabled());
- await page.getByRole('button',{name:'Confirmar quantidade em falta',exact:true}).click();
- await page.locator('#conference-form [name=accepted_remaining]').fill('70');await page.locator('#conference-form [name=reason]').fill('Conferência em base descartável.');
- await page.getByRole('button',{name:'Guardar confirmação',exact:true}).click();await page.locator('#conference-dialog').waitFor({state:'hidden'});
- await page.getByRole('button',{name:'Ver produção registada',exact:true}).click();
- await page.locator('#evidence-dialog').waitFor({state:'visible'});
- assert.equal(await page.locator('#evidence-operation option').filter({hasText:'Abocardar'}).count(),1);
- await page.locator('#evidence-operation').selectOption({label:'Abocardar'});
- await page.locator('#evidence-dialog [data-close]').click();assert.equal(await page.locator('#field-operation').inputValue(),'corte');
- await page.screenshot({path:proofFolder+'/manual-desktop.png',fullPage:true});
+ await page.locator('#secondary-details>summary').click();
+ assert.equal(await page.getByRole('button',{name:'Confirmar quantidade em falta'}).count(),0);
  await page.getByRole('button',{name:'Ver origem e alterações',exact:true}).click();await page.locator('#history-dialog').waitFor({state:'visible'});
- assert.match(await page.locator('#history-content').innerText(),/Utilizador não identificado/);await page.locator('#history-field').selectOption('notes');
- await page.waitForFunction(()=>document.querySelector('#history-content').textContent.includes('Conservar esta observação.'));await page.locator('#history-dialog [data-close]').click();
+ assert.match(await page.locator('#history-content').innerText(),/Utilizador não identificado/);await page.locator('#history-dialog [data-close]').click();
+ await page.getByRole('button',{name:'Ver produção registada',exact:true}).click();await page.locator('#evidence-dialog').waitFor({state:'visible'});
+ assert.equal(await page.locator('#evidence-operation option').filter({hasText:'Abocardar'}).count(),1);
+ await page.locator('#evidence-dialog [data-close]').click();
  await page.setViewportSize({width:390,height:844});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
- await page.screenshot({path:proofFolder+'/manual-mobile.png',fullPage:true});
  // A 720 CSS-pixel viewport represents desktop at 200%; it must reflow.
  await page.setViewportSize({width:720,height:525});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
- const needId=new URL(page.url()).searchParams.get('necessidade');
- const manualFields=await page.locator('#preparation [id^=field-]').evaluateAll(nodes=>nodes.map(n=>n.id));
  await page.setViewportSize({width:1440,height:1050});
+ // PDF de outra OF: usa a OF do PDF e avisa, sem bloquear; a mesma peça é reconhecida.
  await page.goto(base+'/planeamento/preparar?document=browser-doc&piece=browser-piece&of=OF9999');
- await page.locator('#pdf-conflict').waitFor({state:'visible'});assert.ok(await page.locator('#preparation').isHidden());await page.getByRole('button',{name:'Usar OF do PDF'}).click();
- await page.locator('#field-component_ref').waitFor({state:'visible'});assert.equal(await page.locator('#field-component_ref').inputValue(),'BROWSER-NEW');
- assert.deepEqual(await page.locator('#preparation [id^=field-]').evaluateAll(nodes=>nodes.map(n=>n.id)),manualFields);
- await page.getByRole('button',{name:'Guardar rascunho',exact:true}).click();await page.waitForFunction(()=>document.querySelector('#status').textContent.includes('Rascunho guardado'));
+ await page.locator('#field-component_ref').waitFor({state:'visible'});
+ assert.match(await page.locator('#status').textContent(),/O PDF é da OF OF4200 \(pediste OF9999\)/);
+ assert.equal(await page.locator('#field-component_ref').inputValue(),'BROWSER-NEW');
+ await page.locator('button[name=ready]').click();await page.waitForFunction(()=>document.querySelector('#status').textContent.includes('Registo guardado'));
  assert.equal(new URL(page.url()).searchParams.get('necessidade'),needId);
  assert.equal(await page.locator('#field-notes').inputValue(),'Conservar esta observação.');
- await page.screenshot({path:proofFolder+'/pdf-desktop.png',fullPage:true});
  const list=await page.request.get(base+'/planeamento/api/necessidades/lista?of=OF4200').then(r=>r.json());assert.equal(list.needs.length,1);
- // Reopening a linked PDF presents human values, never overwrites them with raw OCR.
- await page.locator('#more-options>summary').click();await page.locator('#field-notes').fill('Decisão humana depois do PDF.');await page.getByRole('button',{name:'Guardar rascunho',exact:true}).click();
- await page.waitForFunction(()=>document.querySelector('#status').textContent.includes('Rascunho guardado'));
+ // Reabrir o PDF ligado mostra os valores humanos, sem os substituir pelo PDF.
+ await page.locator('#more-options>summary').click();await page.locator('#field-notes').fill('Decisão humana depois do PDF.');
+ await page.locator('button[name=ready]').click();await page.waitForFunction(()=>document.querySelector('#status').textContent.includes('Registo guardado'));
  await page.goto(base+'/planeamento/preparar?document=browser-doc&piece=browser-piece');await page.locator('#field-component_ref').waitFor({state:'visible'});
  assert.equal(await page.locator('#field-notes').inputValue(),'Decisão humana depois do PDF.');
- await page.getByRole('button',{name:'Guardar rascunho',exact:true}).click();await page.getByRole('button',{name:'Abrir peça seguinte do PDF'}).waitFor({state:'visible'});await page.getByRole('button',{name:'Abrir peça seguinte do PDF'}).click();
+ assert.equal(await page.locator('.field-attention').count(),0,'sem caixas amarelas do PDF');
+ await page.locator('button[name=ready]').click();await page.getByRole('button',{name:'Abrir peça seguinte do PDF'}).waitFor({state:'visible'});await page.getByRole('button',{name:'Abrir peça seguinte do PDF'}).click();
  await page.waitForFunction(()=>document.querySelector('#field-component_ref')?.value==='SECOND-PIECE');
- await page.locator('#more-options>summary').click();
- await page.locator('#field-material_type').selectOption('Perfil U');await page.locator('#field-profile').selectOption('__custom__');await page.locator('#field-special_profile').fill('Especial do desenho');assert.ok(await page.locator('#field-geometry').isVisible());
+ // Abrir uma peça não conta como alteração: sair não pergunta nada.
+ await page.locator('#manual-link').click();await page.waitForURL(/\/planeamento\/manual/);
+ assert.ok(!await page.locator('#leave-dialog').isVisible());
+ // Com algo escrito, descartar sai sem gravar.
+ await page.goto(base+'/planeamento/preparar?document=browser-doc&piece=second-piece');
+ await page.waitForFunction(()=>document.querySelector('#field-component_ref')?.value==='SECOND-PIECE');
+ await page.locator('#field-length_mm').fill('1200');
  await page.locator('#manual-link').click();await page.locator('#leave-dialog').waitFor({state:'visible'});await page.getByRole('button',{name:'Descartar alterações'}).click();
  await page.locator('#area').waitFor({state:'visible'});
  // Unknown area: the last sector used (or MTG3) is chosen at once, so the page never shows a different form.
  await page.route('**/api/ordens/OF4200',async route=>{const response=await route.fetch();const json=await response.json();json.context.sources=[];await route.fulfill({response,json})});
  await page.goto(base+'/planeamento/manual?of=OF4200&new=1');await page.locator('#area').waitFor({state:'visible'});await page.locator('#catalog-fields').waitFor({state:'visible'});assert.equal(await page.locator('#area').inputValue(),'perfis');
  assert.ok(await page.locator('#field-angle_deg').isVisible());assert.ok(await page.locator('#field-grade').isVisible());assert.ok(await page.locator('#field-length_mm').isVisible());
- assert.deepEqual(errors,[]);console.log(JSON.stringify({manual:true,pdf:true,sharedNeed:true,conferenceWithoutPlan:true,history:true,cpisGuard:true,mobile:true,zoomReflow:true,unsavedGuard:true,pdfOfMismatch:true,unknownArea:true,errors}));await browser.close();
+ assert.deepEqual(errors,[]);console.log(JSON.stringify({manual:true,pdf:true,sharedNeed:true,notesAfterEdit:true,declaredRemaining:true,history:true,mobile:true,zoomReflow:true,leaveOnlyWhenTyped:true,pdfOfMismatch:true,unknownArea:true,errors}));await browser.close();
 })().catch(e=>{console.error(e);process.exit(1)});

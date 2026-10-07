@@ -29,8 +29,9 @@ def test_calendar_forecast(instant,expected):
 def test_forecast_only_after_success_and_stable_across_pieces(canonical):
     n=create()
     assert registration.read('4200') is None
-    invalid=vals();invalid['length_mm']=-1
-    with pytest.raises(planning.PlanningError):save(n,invalid)
+    # Um valor inválido já não falha (07/10/2026); uma gravação que falha (revisão errada) não regista a previsão.
+    with pytest.raises(planning.PlanningError):
+        needs.save(request(need_id=n['need_id'],expected_revision=n['revision']+1,area='perfis',catalog_version='s1',values=vals()))
     assert registration.read('OF4200') is None
     p=request(need_id=n['need_id'],expected_revision=n['revision'],area='perfis',catalog_version='s1',values=vals())
     p.pop('actor')
@@ -66,29 +67,14 @@ def direct(canonical):
     cpis_sync.publish([direct_row('OF4200')],datetime.now(timezone.utc),central_dsn=canonical)
 
 
-def conference(n,quantity):
-    proof=assoc.get_evidence(n['need_id'],n['operation_id'])
-    p=request(need_id=n['need_id'],operation_id=n['operation_id'],expected_revision=proof['need_revision'],
-        evidence_hash=proof['evidence']['evidence_hash'],accepted_required=100,accepted_remaining=quantity,reason='Saldo físico conferido')
-    p.pop('actor');return assoc.confer(p)
-
-
-@pytest.mark.parametrize('balance',[70,0])
-def test_full_balance_calculated_only_on_conclusion(canonical,balance):
-    n=save(create());direct(canonical)
-    assert needs.detail(n['need_id'])['records'][0]['values_json']['quantity_to_plan'] is None
-    with pytest.raises(planning.PlanningError,match='quantidade em falta'):save(n,record_status='ready')
-    conference(n,balance)
-    # Even an old caller supplying a partial quantity cannot override the rule.
-    n=save(n,{**vals(),'quantity_to_plan':5},record_status='ready')
+def test_save_needs_neither_direct_cpis_nor_a_balance_confirmation(canonical):
+    # Só existe «Guardar» (07/10/2026): sem «Concluir preparação», sem conferência da quantidade em falta.
+    n=save(create(),record_status='ready')
+    assert n['record_status']=='ready' and n['quantity_to_plan']==100
+    direct(canonical)
+    n=save(n,{**vals(),'notes':'Só observações'},record_status='ready')
     record=needs.detail(n['need_id'])['records'][0]
-    assert record['values_json']['quantity_to_plan']==balance
-    state=next(f for f in needs.history(n['need_id'])['fields'] if f['field']=='quantity_to_plan')
-    assert state['actor']=='Sistema' and state['human_decision'] is None
-    if balance==0:assert planning_output._macro_rows([record])==[]
-    # Notes-only draft must preserve a previous concluded quantity.
-    n=save(n,{**vals(),'notes':'Só observações'})
-    assert needs.detail(n['need_id'])['records'][0]['values_json']['quantity_to_plan']==balance
+    assert record['values_json']['quantity_to_plan']==100 and record['values_json']['notes']=='Só observações'
 
 
 def test_abocardar_checkbox_and_hidden_values_are_preserved(canonical):
@@ -102,11 +88,9 @@ def test_abocardar_checkbox_and_hidden_values_are_preserved(canonical):
     for field in ('chanfro','ponteira','material_request_date','picking_week','expected_date'):assert values[field]==v[field]
     with planning.connect(readonly=True) as conn:
         assert conn.execute('SELECT count(*) AS n FROM mes_kanban.production_records').fetchone()['n']==0
-    n=save(n,{**vals(),'abocardar':'???'})
-    assert needs.detail(n['need_id'])['records'][0]['values_json']['abocardar']=='???'
-    direct(canonical)
-    with pytest.raises(planning.PlanningError) as error:save(n,{**vals(),'abocardar':'???'},record_status='ready')
-    assert 'abocardar' in error.value.fields
+    # Só dois estados (07/10/2026): uma indicação desconhecida conta como «-» e grava sem pedir confirmação.
+    n=save(n,{**vals(),'abocardar':'???'},record_status='ready')
+    assert needs.detail(n['need_id'])['records'][0]['values_json']['abocardar']=='-'
 
 
 def test_catalog_families_manual_and_independent_lists(canonical):
@@ -120,9 +104,11 @@ def test_catalog_families_manual_and_independent_lists(canonical):
     assert 'INVENTADO' not in cat['material_types'] and 'Equipa sem máquina' in cat['teams']
     assert cat['profiles']['perfil u']==['UPN50x25','UPN50x38']
     assert cat['profile_modes']['varão quadrado']=='manual'
+    from app.raw import registration as free
     manual={**vals(),'material_type':'Varão quadrado','profile':'Designação do desenho','width_mm':'20,5'}
-    assert catalogs.validate(manual,cat,ready=True)['width_mm']==20.5
-    with pytest.raises(planning.PlanningError):catalogs.validate({**manual,'material_type':'Perfil U'},cat,ready=True)
+    assert free.normalize(manual,cat)[0]['width_mm']==20.5
+    # Um perfil fora da lista da família já não é aviso (07/10/2026).
+    assert free.normalize({**manual,'material_type':'Perfil U'},cat)[1]==[]
     assert [op['value'] for op in cat['operations']]==['corte']
 
 
@@ -193,10 +179,6 @@ def test_macro_balance_used_only_for_compatible_piece(canonical):
     values={**needs.detail(source['need_id'])['need']['specification'],'operation':'corte','outer_diameter_mm':88.9,'thickness_mm':3,'machine':'MEBA'}
     n=save(source,values);direct(canonical)
     assert assoc.get_evidence(n['need_id'],n['operation_id'])['evidence']['macro_remaining']==36
-    n=save(n,values,record_status='ready');assert n['quantity_to_plan']==36
-    values['length_mm']=2000;n=save(n,values)
+    values['length_mm']=2000;n=save(n,values,record_status='ready')
     proof=assoc.get_evidence(n['need_id'],n['operation_id'])
     assert proof['evidence']['macro_remaining'] is None and proof['evidence']['balance_reason']
-    with pytest.raises(planning.PlanningError,match='quantidade em falta'):save(n,values,record_status='ready')
-    conference(n,30)
-    assert save(n,values,record_status='ready')['quantity_to_plan']==30

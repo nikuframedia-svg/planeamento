@@ -15,8 +15,9 @@ if(!base||process.env.PLANNING_TEST_ISOLATED!=='1')throw Error('Isolated test se
   await page.locator('#field-profile').fill('Perfil livre');
   await page.locator('#field-length_mm').fill('por medir');
   await page.locator('#field-quantity_required').fill('10');
+  // «Mais opções» só com as Observações (07/10/2026).
   await page.locator('#more-options>summary').click();
-  await page.locator('#field-quantity_to_plan').fill('25');
+  await page.locator('#field-notes').fill('Observação do registo livre');
   await page.locator('#field-cut_date').fill('2026-10-20');
   // Um só botão «Guardar» (06/10/2026); o rascunho não aparece em entrada livre.
   assert.equal(await page.locator('#preparation button[type=submit]:visible').count(),1);
@@ -27,7 +28,7 @@ if(!base||process.env.PLANNING_TEST_ISOLATED!=='1')throw Error('Isolated test se
   const id=new URL(page.url()).searchParams.get('necessidade');assert.ok(id);
   await page.reload();await page.locator('#field-component_ref').waitFor({state:'visible'});
   assert.equal(await page.locator('#field-length_mm').inputValue(),'por medir');
-  assert.equal(await page.locator('#field-quantity_to_plan').inputValue(),'25');
+  assert.equal(await page.locator('#field-notes').inputValue(),'Observação do registo livre');
   assert.equal(await page.locator('#local-delivery_date').inputValue(),'2026-10-30');
   assert.equal(await page.locator('#field-cut_date').inputValue(),'2026-10-20');
   const response=await page.request.get(base+'/planeamento/api/necessidades/'+id);

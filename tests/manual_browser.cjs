@@ -9,7 +9,7 @@ const fs=require('node:fs');
 const base=process.env.PLANNING_CHECK_BASE||'http://127.0.0.1:8113';
 const fixture=process.env.MANUAL_FIXTURE?JSON.parse(fs.readFileSync(process.env.MANUAL_FIXTURE,'utf8')):null;
 const FIELDS={
- perfis:['Data Corte','Referência','Tipo de Material','Designação Perfil','QTD','Ø Externo (mm)','Largura (mm)','Altura (mm)','Espessura (mm)','Comp. (mm)','Ang. (°)','Qual.','Abocardar','Picking semana','Picking ano','Equipa','Pav.','Máquina'],
+ perfis:['Data Corte','Referência','Tipo de Material','Designação Perfil','QTD','Ø Externo (mm)','Largura (mm)','Altura (mm)','Espessura (mm)','Comp. (mm)','Ang. (°)','Qual.','Abocardar','Picking semana','Equipa','Pav.','Máquina'],
  cantoneiras:['Data Corte','Ref.','Tipo de material','QTD','Des. Material','Comp. (mm)','1.ª Oper.','2.ª Oper.','Equipa','Pav.','Máquina']};
 (async()=>{
  const browser=await chromium.launch({executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE,headless:true,args:['--no-sandbox']});
@@ -46,7 +46,9 @@ const FIELDS={
   await page.locator('#catalog-fields').waitFor({state:'visible'});
   assert.equal(await page.locator('#area').inputValue(),'perfis');
   assert.deepEqual(await labels(),FIELDS.perfis);
-  assert.equal(await page.locator('#piece-fields p.help').count(),0);
+  assert.equal(await page.locator('#piece-fields p.help:not(.field-note)').count(),0);
+  // Só o essencial (07/10/2026): «Mais opções» fica só com as Observações.
+  assert.deepEqual(await page.locator('#extra-fields > .field label').allTextContents(),['Observações']);
   assert.deepEqual(await page.locator('#preparation details.section').evaluateAll(n=>n.map(d=>d.open)),[false,false,false,false]);
   assert.equal(await page.locator('#preparation button[type=submit]:visible').count(),1);
   await page.locator('#field-component_ref').fill('ENSAIO-NOVA');
@@ -57,7 +59,7 @@ const FIELDS={
   await page.locator('#field-team').fill('Equipa 5');
   assert.equal(await page.locator('#field-team').evaluate(n=>n.classList.contains('suggested')),false);
   await page.locator('#field-quantity_required').fill('2,5');
-  await page.locator('#error-quantity_required').filter({hasText:'inteiro'}).waitFor();
+  await page.locator('#note-quantity_required').filter({hasText:'inteiro'}).waitFor();
   await page.locator('#field-quantity_required').fill('25');
 
   // PERFIS, linha do Excel clicada: nada do Excel é sobreposto; a Máquina vazia é sugerida.
@@ -75,6 +77,7 @@ const FIELDS={
   const saved=writes.find(w=>w.url.includes('/necessidades/registar'));
   assert.ok(saved,'pedido de gravação');assert.equal(saved.body.record_status,'ready');
   assert.ok(saved.body.values.machine&&saved.body.values.team&&saved.body.values.pavilion);
+  assert.ok(Array.isArray(saved.body.changed_fields),'campos mudados para gravar por cima da versão atual');
 
   // CANTONEIRAS, OF existente.
   await page.evaluate(()=>{window.onbeforeunload=null});
@@ -83,6 +86,7 @@ const FIELDS={
   await fresh.locator('#catalog-fields').waitFor({state:'visible'});
   assert.equal(await fresh.locator('#area').inputValue(),'cantoneiras');
   assert.deepEqual(await fresh.locator('#piece-fields > .field:not([hidden]) label').allTextContents(),FIELDS.cantoneiras);
+  assert.deepEqual(await fresh.locator('#extra-fields > .field label').allTextContents(),['Observações']);
   await fresh.locator('#references button').first().click();
   await fresh.waitForFunction(()=>document.querySelector('#field-component_ref')?.value&&document.querySelector('#field-machine')?.value);
   for(const id of ['team','pavilion','machine','cut_date','profile','length_mm','operation','quantity_required'])assert.ok(await fresh.locator('#field-'+id).inputValue(),'cantoneiras sem '+id);

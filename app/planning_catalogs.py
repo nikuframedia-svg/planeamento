@@ -6,8 +6,6 @@ import zipfile
 from pathlib import Path
 from functools import lru_cache
 from xml.etree import ElementTree as ET
-from datetime import date
-from decimal import Decimal, InvalidOperation
 from . import planning
 
 
@@ -22,25 +20,22 @@ def key(value):
     return clean(value).casefold().replace('rectangular','retangular')
 
 
-def family(material):
-    value=key(material)
-    return value
-
-
 # Retained in storage and the legacy API, absent from the current editor.
 RETIRED_FIELDS=frozenset(('chanfro','ponteira',
     'finish_week','finish_year','weekly_capacity_hours','material_available_date','material_lot',
     'material_request_date'))
+# Registo manual só com o essencial (07/10/2026): campos sem uso saem do ecrã; os valores já gravados ficam.
+UNUSED_FIELDS=frozenset(('expected_date','planned_week','planned_year','material_requested','stock_length_mm',
+    'quantity_to_plan','identity_discriminator','other_operations','custom_profile','geometry','picking_year'))
 
 
 def abocardar_mark(value):
-    if value is True or str(value).strip().upper()=='X':return 'X'
-    if value is False or value in (None,'','-'):return '-'
-    return str(value).strip()
+    """Só dois estados (07/10/2026): 'X' quando é sim; tudo o resto, incluindo o desconhecido, é '-'."""
+    from .planning_calculations import abocardar
+    return 'X' if abocardar(value) is True else '-'
 
 
 def fields():
-    from .raw.registration import enabled as free_entry
     specs=[
         ('component_ref','Referência','text',None,'piece'),('identity_discriminator','Variante','text',None,'piece'),
         ('material_type','Tipo de material','select',None,'piece'),('profile','Perfil normalizado','select',None,'piece'),
@@ -53,6 +48,7 @@ def fields():
         ('operation','Operação principal','select',None,'operation'),('operation_detail','Operação adicional / indicação','select',None,'operation'),
         ('machine','Máquina','select',None,'operation'),('team','Equipa','select',None,'operation'),
         ('quantity_to_plan','Quantidade a planear','number','un.','operation'),
+        ('remaining_declared','Qtd em falta','number','un.','operation'),
         ('abocardar','Abocardar','checkbox',None,'operation'),('chanfro','Chanfro — indicação original','text',None,'operation'),
         ('ponteira','Ponteira — indicação original','text',None,'operation'),('other_operations','Outras operações','text',None,'operation'),
         ('pavilion','Pavilhão','text',None,'operation'),('cut_date','Data Corte','date',None,'operation'),
@@ -80,11 +76,10 @@ def fields():
     result=[]
     for index,(i,l,t,u,s) in enumerate(specs):
         result.append(dict(id=i,label=names.get(i,l),type=t,unit=u,scope=s,help=help_text.get(i,''),
-            group='cut' if i in ('angle_deg','grade','length_mm') else 'piece' if i in main_piece or i=='identity_discriminator' else 'work' if i in ('operation','machine','operation_detail') else 'extra',
+            group='cut' if i in ('angle_deg','grade','length_mm') else 'piece' if i in main_piece or i=='identity_discriminator' else 'work' if i in ('operation','machine','operation_detail','remaining_declared') else 'extra',
             order={'angle_deg':0,'grade':1,'length_mm':2,'abocardar':0}.get(i,index+10),
-            editor_visible=i not in RETIRED_FIELDS and (i!='quantity_to_plan' or free_entry()),
+            editor_visible=i not in RETIRED_FIELDS and i not in UNUSED_FIELDS,
             representation={'checked':'X','unchecked':'-'} if i=='abocardar' else None,
-            required_on_ready=i in ('component_ref','material_type','profile','operation','quantity_required','quantity_to_plan'),
             visibility={'special_profile':'custom_profile','geometry':'unresolved_geometry',
                         'outer_diameter_mm':'geometry','width_mm':'geometry','height_mm':'geometry','thickness_mm':'geometry'}.get(i,'always')))
     return result
@@ -93,32 +88,35 @@ def fields():
 # Registo manual (pedido do Luís, 06/10/2026, noite): a primeira secção tem SEMPRE todas as colunas do
 # Excel de cada setor, pela mesma ordem (Met2_Plan_Perfis a azul; folha das cantoneiras com o X), sem
 # esconder nada pelo tipo de material. A Máquina entra porque sem ela a Carteira não deixa planear.
-# Perfil especial e geometria são auxiliares e vão para «Mais opções». OF e OV ficam na secção da ordem.
+# O Picking ano sai (07/10/2026): é deduzido sozinho. OF e OV ficam na secção da ordem.
 FIRST_SECTION={
     'perfis':['cut_date','component_ref','material_type','profile','quantity_required','outer_diameter_mm',
               'width_mm','height_mm','thickness_mm','length_mm','angle_deg','grade','abocardar',
-              'picking_week','picking_year','team','pavilion','machine'],
+              'picking_week','team','pavilion','machine'],
     'cantoneiras':['cut_date','component_ref','material_type','quantity_required','profile','length_mm',
                    'operation','operation_detail','team','pavilion','machine']}
-WORK_SECTION={'perfis':['operation'],'cantoneiras':[]}
-HIDDEN_BY_AREA={'perfis':{'operation_detail'},'cantoneiras':{'abocardar','picking_week','picking_year'}}
+# «Qtd em falta» (07/10/2026) é opcional e alimenta o saldo; substitui a conferência «Confirmar quantidade em falta».
+WORK_SECTION={'perfis':['operation','remaining_declared'],'cantoneiras':['remaining_declared']}
+# «Mais opções» fica só com as Observações (decisão do Luís, 07/10/2026).
+MORE_OPTIONS=('notes',)
 LABELS_BY_AREA={
     'perfis':{'cut_date':'Data Corte','component_ref':'Referência','material_type':'Tipo de Material',
               'profile':'Designação Perfil','quantity_required':'QTD','outer_diameter_mm':'Ø Externo',
               'width_mm':'Largura','height_mm':'Altura','thickness_mm':'Espessura','length_mm':'Comp.',
               'angle_deg':'Ang.','grade':'Qual.','abocardar':'Abocardar','picking_week':'Picking semana',
-              'picking_year':'Picking ano','team':'Equipa','pavilion':'Pav.','machine':'Máquina'},
+              'team':'Equipa','pavilion':'Pav.','machine':'Máquina','notes':'Observações'},
     'cantoneiras':{'cut_date':'Data Corte','component_ref':'Ref.','material_type':'Tipo de material',
                    'quantity_required':'QTD','profile':'Des. Material','length_mm':'Comp.',
                    'operation':'1.ª Oper.','operation_detail':'2.ª Oper.','team':'Equipa','pavilion':'Pav.',
-                   'machine':'Máquina'}}
+                   'machine':'Máquina','notes':'Observações'}}
 
 
 def arrange(fields_list, area):
     """Groups, order, labels and visibility of the editor fields for one sector.
 
     Os campos da primeira secção ficam sempre visíveis (visibility='always'): as dimensões deixam de
-    depender do tipo de material, como no Excel.
+    depender do tipo de material, como no Excel. Fora da primeira secção e do trabalho só aparecem as
+    Observações; os outros campos continuam no contrato para conservar o que já está gravado.
     """
     first,work=FIRST_SECTION.get(area),WORK_SECTION.get(area,[])
     if not first:return fields_list
@@ -126,8 +124,9 @@ def arrange(fields_list, area):
         i=f['id']
         if i in first:f.update(group='piece',order=first.index(i),visibility='always')
         elif i in work:f.update(group='work',order=100+work.index(i))
-        else:f.update(group='extra',order=200+f['order'])
-        if i in HIDDEN_BY_AREA.get(area,()):f['editor_visible']=False
+        else:
+            f.update(group='extra',order=200+f['order'])
+            if i not in MORE_OPTIONS:f['editor_visible']=False
         f['label']=LABELS_BY_AREA.get(area,{}).get(i,f['label'])
     return fields_list
 
@@ -145,7 +144,8 @@ def workbook_ranges(path,mtime,size,expected_hash):
     source=Path(path)
     with source.open('rb') as stream:
         actual=hashlib.file_digest(stream,'sha256').hexdigest()
-    if actual!=expected_hash:raise planning.PlanningError('O ficheiro do catálogo mudou desde a importação.',409)
+    # Ficheiro mudado no disco depois da importação (07/10/2026): valem as linhas importadas, sem erro.
+    if actual!=expected_hash:return {'ranges':{},'names':{},'validations':[]}
     with zipfile.ZipFile(source) as z:
         root=ET.fromstring(z.read('xl/workbook.xml'))
         rels=ET.fromstring(z.read('xl/_rels/workbook.xml.rels'))
@@ -252,72 +252,3 @@ def catalog(area, conn=None):
         if f['id'] in opts:f['options']=opts[f['id']]
     return result
 
-
-def validate(raw, cat, ready=False, previous=None):
-    errors={}; data={}; previous=previous or {}
-    for f in fields():
-        name=f['id']; value=raw.get(name,previous.get(name))
-        if name in RETIRED_FIELDS and name not in raw:
-            data[name]=previous.get(name);continue
-        if f['type']=='tristate':
-            if value is not None and type(value) is not bool: errors[name]='Escolhe Sim, Não ou Por confirmar.'
-            data[name]=value;continue
-        if name=='abocardar':
-            data[name]=abocardar_mark(value)
-            if data[name] not in ('X','-') and ready:
-                errors[name]='Confirma se a peça precisa de abocardar; a indicação antiga é desconhecida.'
-            continue
-        if f['type']=='boolean': data[name]=value is True;continue
-        if f['type']=='number':
-            if value in (None,''):data[name]=None;continue
-            try:
-                d=Decimal(str(value).replace(',','.'))
-                if (name=='stock_length_mm' and d<=0) or not d.is_finite() or abs(d)>1_000_000_000 or (d<0 and name!='angle_deg'):raise ValueError()
-                if name in ('quantity_required','quantity_to_plan','picking_week','picking_year','finish_week','finish_year','planned_week','planned_year') and d!=d.to_integral_value():raise ValueError()
-                data[name]=float(d)
-            except (InvalidOperation,ValueError):errors[name]='Indica um número válido.';data[name]=None
-        else:
-            data[name]=clean(value)
-            if len(data[name])>(4000 if name=='notes' else 500):errors[name]='Texto demasiado longo.'
-            if f['type']=='date' and data[name]:
-                try: date.fromisoformat(data[name])
-                except ValueError:errors[name]='Indica uma data válida.'
-    options={'material_type':cat['material_types'],'machine':cat['machines'],'team':cat['teams'],
-             'operation':[x['value'] for x in cat['operations']+cat['additional_operations']
-                          if x['countable'] or (not ready and x['value']=='por_definir')],
-             'operation_detail':[x['value'] for x in cat['additional_operations']], 'geometry':list(GEOMETRIES)}
-    for name,opts in options.items():
-        if data[name] and data[name] not in opts and (ready or data[name]!=previous.get(name)): errors[name]='Seleciona uma opção válida do catálogo desta área.'
-    if data['custom_profile']:
-        data['profile']=data['special_profile']
-    elif data['profile'] and cat['profiles'].get(key(data['material_type'])) and data['profile'] not in cat['profiles'][key(data['material_type'])] and (ready or data['profile']!=previous.get('profile')):
-        errors['profile']='Seleciona um perfil desta família ou Perfil especial.'
-    if ready:
-        for name in ('component_ref','material_type','profile','operation','quantity_required'):
-            if not data[name]: errors[name]='Campo obrigatório para concluir.'
-        if data['operation']=='corte' or cat['area']=='cantoneiras':
-            if not data['length_mm']:errors['length_mm']='Indica o comprimento de corte.'
-        geom=data['geometry'] or family(data['material_type'])
-        if (data['custom_profile'] or key(data['material_type'])=='varão') and geom not in GEOMETRIES:errors['geometry']='Seleciona a geometria do perfil especial.'
-        # A catalogue designation alone is not a safe parser for missing dimensions.
-        if data['custom_profile'] or geom.startswith(('tubo','varão')):
-            for name in GEOMETRIES.get(geom,[]):
-                if not data[name]:errors[name]='Dimensão obrigatória para esta geometria.'
-    for name in ('outer_diameter_mm','width_mm','height_mm','thickness_mm','length_mm'):
-        if data[name] is not None and data[name]<=0:errors[name]='A dimensão deve ser superior a zero.'
-    if data['quantity_required'] is not None and data['quantity_required']<0:errors['quantity_required']='A necessidade não pode ser negativa.'
-    if 'quantity_to_plan' in raw and data['quantity_to_plan'] is not None and data['quantity_required'] is not None and data['quantity_to_plan']>data['quantity_required']:errors['quantity_to_plan']='Ultrapassa a necessidade indicada.'
-    for prefix in ('picking','finish','planned'):
-        if prefix+'_week' not in raw and prefix+'_year' not in raw:continue
-        week,year=data[prefix+'_week'],data[prefix+'_year']
-        if week is not None:
-            try:
-                if not 1<=week<=53:raise ValueError()
-                if year is not None: date.fromisocalendar(int(year),int(week),1)
-            except (ValueError,OverflowError):errors[prefix+'_week']='Semana inválida para o ano indicado.'
-        if year is not None and not 2000<=year<=2100:errors[prefix+'_year']='Indica um ano entre 2000 e 2100.'
-    if 'weekly_capacity_hours' in raw and data['weekly_capacity_hours'] is not None and data['weekly_capacity_hours']>168:errors['weekly_capacity_hours']='Máximo: 168 horas.'
-    if data['angle_deg'] is not None and abs(data['angle_deg'])>360:errors['angle_deg']='Confirma a convenção do ângulo.'
-    if errors:
-        exc=planning.PlanningError('Corrige os campos assinalados.');exc.fields=errors;raise exc
-    return data

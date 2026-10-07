@@ -15,6 +15,8 @@ def canonical(registry):
     with psycopg.connect(registry,autocommit=True) as conn:
         conn.execute((ROOT/'sql/020_planning_needs.sql').read_text())
         conn.execute((ROOT/'sql/022_planning_order_registration.sql').read_text())
+        # Gravar é sempre livre desde 07/10/2026: o valor escrito fica em input_values.
+        conn.execute((ROOT/'sql/042_free_registration.sql').read_text())
         conn.execute('TRUNCATE planning_mtg.order_registration')
         conn.execute('TRUNCATE planning_mtg.needs,planning_mtg.need_operations,planning_mtg.need_sources,planning_mtg.need_commands,planning_mtg.need_events,planning_mtg.field_state,planning_mtg.association_decisions,planning_mtg.need_conferences,planning_mtg.audit_outbox CASCADE')
         if conn.execute("SELECT to_regclass('planning_mtg.original_association_decisions')").fetchone()[0]:
@@ -87,9 +89,12 @@ def test_catalog_columns_and_operation_blocks(canonical):
     none=next(x for x in cat['additional_operations'] if x['value']=='0')
     assert none['countable'] is False and none['source']['kind']=='planning_rule'
     assert cat['additional_operations'][-1]['countable'] is False
-    bad=vals();bad['operation']='corte';bad['material_type']='Cantoneira';bad['profile']='';bad['machine']='Ficep'
-    with pytest.raises(planning.PlanningError) as exc:catalogs.validate(bad,cat)
-    assert 'operation' in exc.value.fields
+    # Fora do catálogo já não é aviso nem erro (07/10/2026); só fica dito que a operação não dá horas.
+    from app.raw import registration as free
+    odd=vals();odd['operation']='corte';odd['material_type']='Cantoneira';odd['profile']='';odd['machine']='Ficep'
+    values,warnings=free.normalize(odd,cat)
+    assert values['operation']=='corte'
+    assert [w['field'] for w in warnings]==['operation']
 
 
 def test_zero_additional_operation_is_persisted_without_creating_an_operation(canonical):
@@ -110,20 +115,15 @@ def test_zero_additional_operation_is_persisted_without_creating_an_operation(ca
     result=needs.detail(saved['need_id'])
     assert [op['code'] for op in result['operations']]==['112']
     assert result['records'][0]['values_json']['operation_detail']=='0'
-    with pytest.raises(planning.PlanningError) as exc:
-        catalogs.validate({**values,'operation':'0'},cat)
-    assert 'operation' in exc.value.fields
 
 
-def test_invalid_profile_geometry_and_week(canonical):
-    cat=catalogs.catalog('perfis'); v=vals();v['profile']='UPN50x38'
-    with pytest.raises(planning.PlanningError):catalogs.validate(v,cat)
-    v=vals();v['picking_week']=53;v['picking_year']=2025
-    with pytest.raises(planning.PlanningError):catalogs.validate(v,cat)
-    v=vals();v['outer_diameter_mm']='88,9'
-    assert catalogs.validate(v,cat,ready=True)['outer_diameter_mm']==88.9
-    v['thickness_mm']=None
-    with pytest.raises(planning.PlanningError):catalogs.validate(v,cat,ready=True)
+def test_profile_outside_catalogue_and_missing_dimension_are_kept_without_blocking(canonical):
+    # 07/10/2026: perfil fora do catálogo, geometria incompleta e ângulo estranho já não são avisos.
+    from app.raw import registration as free
+    cat=catalogs.catalog('perfis'); v={**vals(),'profile':'UPN50x38','angle_deg':999,'outer_diameter_mm':'88,9','thickness_mm':None}
+    values,warnings=free.normalize(v,cat)
+    assert values['profile']=='UPN50x38' and values['outer_diameter_mm']==88.9 and values['angle_deg']==999
+    assert warnings==[]
 
 
 def test_pdf_and_manual_share_need_without_quantity_addition(canonical,monkeypatch):
@@ -135,11 +135,12 @@ def test_pdf_and_manual_share_need_without_quantity_addition(canonical,monkeypat
     assert pdf['need_id']==manual['need_id']
     saved=save(pdf);document['revision']=2;document['pieces'][0]['revision']=2;document['pieces'][0]['values']['length_mm']=900
     refreshed=needs.detail(pdf['need_id'])
-    assert refreshed['need']['specification']['length_mm']==1000
+    # O campo que ninguém mudou segue a origem nova (07/10/2026), sem caixa «A origem mudou».
+    assert refreshed['need']['specification']['length_mm']==900
     state=next(f for f in refreshed['fields'] if f['field']=='length_mm')
-    assert state['suggestion']==900 and state['value']==1000 and state['human_decision'] is None
-    # Explicit confirmation of an unchanged suggested value must count as a human choice.
+    assert state['suggestion']==900 and state['value']==900 and state['human_decision'] is None and not state['requires_review']
     assert refreshed['need']['revision']>saved['revision']
+    assert refreshed['need']['quantity_required']==100
 
 
 def test_human_association_conserves_quantity(canonical):
@@ -169,15 +170,19 @@ def test_concurrent_creation_and_request_conflict(canonical):
     assert exc.value.status==409
 
 
-def test_accept_unchanged_suggestion_preserves_human_choice(canonical,monkeypatch):
+def test_accepted_suggestion_follows_the_source_and_a_written_value_stays(canonical,monkeypatch):
     from app.dossiers import store
     document={'id':'doc','revision':1,'production_order':'OF4200','status':'ready','pieces':[{'id':'piece','revision':1,'state':'ready','values':vals()}]}
     monkeypatch.setattr(store,'get_document',lambda ident:copy.deepcopy(document))
     n=needs.resolve(request(area='perfis',source={'kind':'pdf','id':'doc/piece'}))
-    n=save(n,decisions={'length_mm':'accept'})
-    document['pieces'][0]['revision']=2;document['pieces'][0]['values']['length_mm']=900
-    state=next(f for f in needs.detail(n['need_id'])['fields'] if f['field']=='length_mm')
-    assert state['value']==1000 and state['suggestion']==900 and state['human_decision']=='accept' and state['requires_review']
+    n=save(n,{**vals(),'thickness_mm':4},decisions={'length_mm':'accept','thickness_mm':'write'})
+    document['pieces'][0]['revision']=2;document['pieces'][0]['values'].update(length_mm=900,thickness_mm=5)
+    detail=needs.detail(n['need_id']);fields={f['field']:f for f in detail['fields'] if f['scope']=='piece'}
+    # Aceitar a sugestão não é escrever por cima: segue a origem. O valor escrito fica, com o da origem em nota.
+    assert fields['length_mm']['value']==900 and not fields['length_mm']['requires_review']
+    assert fields['thickness_mm']['value']==4 and fields['thickness_mm']['suggestion']==5 and fields['thickness_mm']['requires_review']
+    assert detail['need']['specification']['length_mm']==900 and detail['need']['specification']['thickness_mm']==4
+    assert detail['need']['input_values']['length_mm']==900
 
 
 def test_migration_preserves_legacy_record_and_revision(canonical):
@@ -215,8 +220,8 @@ def test_common_output_deduplicates_pdf_and_record(canonical,tmp_path,monkeypatc
     # Adding supporting evidence changes the dependencies of a previous balance decision.
     proof=assoc.get_evidence(n['need_id'],n['operation_id'])
     assoc.confer(request(need_id=n['need_id'],operation_id=n['operation_id'],expected_revision=proof['need_revision'],evidence_hash=proof['evidence']['evidence_hash'],accepted_required=100,accepted_remaining=100,reason='PDF conferido'))
-    prepared=vals();prepared['quantity_to_plan']=80
-    n=save(linked,prepared,record_status='ready')
+    # 07/10/2026: «Guardar» já não recalcula a quantidade a partir da conferência; grava a que a ficha tem.
+    n=save(linked,vals(),record_status='ready')
     p=planning_output.create_proposal(request(record_ids=[n['record_id']],pdf_refs=[{'id':'output-doc/output-piece','version':'1:1'}]))
     assert p['added']==1
     assert any(c['field']=='quantity_required' and c['after']==100 for c in p['cells'])

@@ -47,8 +47,11 @@ def test_source_projection_and_atomic_edit(database):
     with pytest.raises(planning.PlanningError):raw.update(row['key'],{**p,'request_id':str(uuid.uuid4()),'values':{'cut':999}})
 
 
-def test_rollback_does_not_create_need(database):
+def test_rollback_does_not_create_need(database,monkeypatch):
     ds=raw.dataset(force=True);row=ds['rows'][0]
+    # Gravar já não recusa valores fora do catálogo (07/10/2026); uma falha a meio continua a desfazer a peça.
+    def fail(*args,**kwargs):raise planning.PlanningError('Falha simulada ao gravar.')
+    monkeypatch.setattr(needs,'save',fail)
     with pytest.raises(planning.PlanningError):raw.update(row['key'],{'request_id':str(uuid.uuid4()),'version':ds['version'],'expected_revision':0,'values':{'machine':'inexistente'}})
     with planning.connect(readonly=True) as c:assert c.execute('SELECT count(*) n FROM planning_mtg.needs').fetchone()['n']==0
 
@@ -107,12 +110,15 @@ def test_saved_analysis_frozen_and_idempotent(database,monkeypatch):
     assert analysis.get(report['id'])['result']==frozen
 
 
-def test_server_rejects_new_local_options(database):
+def test_invalid_local_options_stay_out_of_calculations_without_blocking(database):
+    # 07/10/2026: o registo grava sempre; um valor inválido fica fora do cálculo em vez de recusar.
     from app import planning_catalogs as c
+    from app.raw import registration as free
     cat=c.catalog('perfis')
-    for changes in ({'material_requested':'Sim'},{'stock_length_mm':0},{'stock_length_mm':'nan'},{'picking_week':53,'picking_year':2025}):
-        with pytest.raises(planning.PlanningError):c.validate({**vals(),**changes},cat)
-    value=c.validate({**vals(),'picking_week':53,'picking_year':2026,'material_requested':None},cat)
+    for changes,field in (({'material_requested':'Sim'},'material_requested'),({'stock_length_mm':0},'stock_length_mm'),
+                          ({'stock_length_mm':'nan'},'stock_length_mm'),({'picking_week':54},'picking_week')):
+        assert free.normalize({**vals(),**changes},cat)[0][field] is None
+    value=free.normalize({**vals(),'picking_week':53,'picking_year':2026,'material_requested':None},cat)[0]
     assert value['picking_week']==53 and value['material_requested'] is None
 
 

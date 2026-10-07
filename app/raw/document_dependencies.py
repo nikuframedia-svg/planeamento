@@ -37,7 +37,7 @@ def observations(links):
 
 
 def refresh():
-    """Commit suggestions/diagnostics once per source revision, before RAW work."""
+    """Commit source revisions (untouched fields follow) and diagnostics once, before RAW work."""
     with planning.connect() as conn:
         links=conn.execute("SELECT * FROM planning_mtg.need_sources WHERE kind IN ('pdf','plan_line') ORDER BY source_id").fetchall()
         if not links:return {'changed':[]}
@@ -68,17 +68,15 @@ def refresh():
                 payload.update(version=version,of=current['of'],values=current['values'],pages=current['pages'],raw_evidence=current['values'].get('evidence',{}))
             conn.execute("UPDATE planning_mtg.need_sources SET version=%s,payload=%s,updated_at=now() WHERE kind='pdf' AND source_id=%s",(version,Jsonb(payload),link['source_id']))
             if same:continue
-            need=needs.load(conn,link['need_id'])
+            need=needs.load(conn,link['need_id']);followed={}
             if current['state']=='available':
-                for field in needs.PIECE_FIELDS:
-                    value=Jsonb(current['values'].get(field))
-                    conn.execute("UPDATE planning_mtg.field_state SET requires_review=requires_review OR (suggestion IS DISTINCT FROM %s::jsonb),suggestion=%s,source=%s WHERE need_id=%s AND scope='piece' AND field=%s",
-                        (value,value,Jsonb({'kind':'pdf','id':link['source_id'],'version':version}),need['id'],field))
+                # Os campos que ninguém escreveu seguem a revisão nova do PDF, como em needs.refresh (07/10/2026).
+                followed=needs.follow(conn,need,{'kind':'pdf','id':link['source_id'],'version':version},current['values'])
             else:
                 conn.execute("UPDATE planning_mtg.field_state SET requires_review=true WHERE need_id=%s AND source->>'kind'='pdf' AND source->>'id'=%s",(need['id'],link['source_id']))
             conn.execute('UPDATE planning_mtg.needs SET revision=revision+1,updated_at=now() WHERE id=%s',(need['id'],))
             need=needs.load(conn,need['id'])
-            needs.event(conn,need,'source_updated' if current['state']=='available' else 'source_unavailable','Sistema',{'previous':old,'current':payload})
+            needs.event(conn,need,'source_updated' if current['state']=='available' else 'source_unavailable','Sistema',{'previous':old,'current':payload,'followed':followed})
             changed.append(str(need['id']))
         if changed:
             from . import projection

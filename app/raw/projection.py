@@ -151,6 +151,11 @@ def build_rows(conn,area,*,orders=None,facts=None):
         if need:
             for source in links.get(key,[]):
                 if source['payload'].get('source_state')=='unavailable':warn.append(source['payload'].get('source_error') or 'Origem documental por confirmar.')
+            # Previsão de execução e Semana/Ano de planeamento saíram do registo (07/10/2026): numa peça registada
+            # valem as da linha do Excel (ou nenhuma), para a Carga e o Gantt usarem o prazo da Carteira.
+            from .registration import HIDDEN_DATES
+            excel_dates={k:v.get(k) for k in HIDDEN_DATES}
+            records[key]=[{**r,'values_json':{**r['values_json'],**excel_dates}} for r in records[key]]
             v.update(need['specification'])
             primary=v.get('operation') if area=='cantoneiras' else 'corte'
             if area=='cantoneiras' and not primary:
@@ -162,6 +167,8 @@ def build_rows(conn,area,*,orders=None,facts=None):
             if len(main)==1:
                 record=main[0];v.update(record['values_json']);v.update(need['specification']);operation=record['operation_id'];status=record['record_status']
             elif len(main)>1:warn.append('Várias preparações de operação: consultar o detalhe antes de alterar.')
+            # Abocardar só tem dois estados nas peças registadas (07/10/2026): o desconhecido é «-», nunca «por confirmar».
+            if area=='perfis':v['abocardar']=catalogs.abocardar_mark(v.get('abocardar'))
         if area=='perfis':
             # Blank saved form fields must not erase an OF-level imported Picking.
             v.update(planning_dates.picking_values(of,raw.get('Picking'),picking_weeks,
@@ -169,10 +176,10 @@ def build_rows(conn,area,*,orders=None,facts=None):
         compatible=not need or not origins or bool(line and needs.signature(original)==needs.signature(need['specification']))
         v['remaining']=old.number(line['canonical_remaining']) if line and line['remaining_valid'] and compatible else None
         if need and operation:
-            from .. import planning_associations as assoc
+            # A conferência «Confirmar quantidade em falta» saiu (07/10/2026): a «Qtd em falta» do registo
+            # entra no cálculo (raw.calculations.recalculate), onde o saldo é decidido.
             op={'id':operation,'area':area,'code':v.get('operation')}
-            proof=proof_for(need,op);conf=assoc.current_conference(conn,need,op,proof)
-            if conf:v['remaining']=conf['accepted_remaining']
+            proof=proof_for(need,op)
             quantity_state=(record.get('provenance_json') or {}).get(str(operation)+':quantity_to_plan',{}) if record else {}
             basis=quantity_state.get('source') or {}
             if basis.get('kind')=='system' and basis.get('evidence_hash')!=proof['evidence_hash']:
@@ -235,10 +242,6 @@ def build_rows(conn,area,*,orders=None,facts=None):
     section_table=calculations.sections(conn,snap['snapshot_id'])
     for row in output:
         calculations.recalculate(row,section_table,weight_table)
-        if row.get('identity_pending'):
-            row['values']['remaining']=None
-            row['values']['planning_remaining']=None
-            row['values']['quantity_to_plan']=None
     from . import sku_families
     sku_families.annotate(conn,area,output)
     return output,events,source_metadata(conn,area)
