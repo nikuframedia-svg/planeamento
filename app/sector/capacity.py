@@ -29,7 +29,7 @@ from zoneinfo import ZoneInfo
 from psycopg.types.json import Jsonb
 
 from .. import planning, planning_needs as needs
-from . import tree
+from . import decisions, tree
 
 LISBON = ZoneInfo("Europe/Lisbon")
 MACHINE_TYPES = {"maquina", "equipamento", "posto"}
@@ -607,9 +607,8 @@ def save_quota(payload: dict, conn=None) -> dict:
         raise planning.PlanningError("Quota, datas ou pedido inválidos.") from None
     if not 0 <= share <= 1 or (valid_until and valid_until < valid_from):
         raise planning.PlanningError("A quota fica entre 0 e 1 e a vigência não pode terminar antes de começar.")
-    reason = str(payload.get("reason") or payload.get("motivo") or "").strip()
-    if not reason:
-        raise planning.PlanningError("Indica o motivo da quota.")
+    written = str(payload.get("reason") or payload.get("motivo") or "").strip()
+    reason = decisions.reason_or_default(written)  # opcional (07/10/2026); a coluna exige texto
     actor = registration.human_actor(payload)
     with (planning.connect() if conn is None else nullcontext(conn)) as c:
         c.execute("SELECT pg_advisory_xact_lock(hashtext('sector-capacity-quotas'))")
@@ -633,5 +632,5 @@ def save_quota(payload: dict, conn=None) -> dict:
         c.execute("""INSERT INTO planning_mtg.sector_config_events(kind,area,subject,action,before,after,reason,actor,request_id)
             VALUES ('capacity_quota',%s,%s,'saved',%s,%s,%s,%s,%s)""",
                   (area, f"{rid}|{valid_from.isoformat()}", Jsonb(needs.serial(prior)) if prior else None,
-                   Jsonb({"share": share, "valid_until": valid_until.isoformat() if valid_until else None}), reason, actor, request_id))
+                   Jsonb({"share": share, "valid_until": valid_until.isoformat() if valid_until else None}), written or None, actor, request_id))
         return {"repeated": False, "quotas": quotas(c)}

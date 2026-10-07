@@ -50,11 +50,16 @@ const assert=require('node:assert/strict');
   assert.match(await page.locator('#source-state').innerText(),/desatualizada/);
   assert.equal(await page.locator('#accept').isDisabled(),true);
   await page.unroute('**/gantt/jobs/*');
-  // Outra versão do motor: recalcular daria outra proposta desatualizada; só avisa.
+  // Outra versão do motor (depois de cada atualização da app): ao abrir recalcula sozinha uma vez; se a nova também vier
+  // de outra versão, a app e o worker estão em versões diferentes e fica só o aviso. Espera-se pelo aviso final e não
+  // pela frase do recálculo: largar a rota a meio de um pedido rebenta o teste («Route is already handled»).
   await staleAs('motor');solves=0;
+  await page.evaluate(()=>{window.notices=[];new MutationObserver(records=>{for(const record of records)
+    for(const node of record.addedNodes)window.notices.push(node.textContent)}).observe(document.querySelector('#notice'),{childList:true})});
   await page.locator('#refresh').click();
-  await page.waitForFunction(()=>document.querySelector('#notice').textContent.includes('outra versão do motor'));
-  assert.equal(solves,0);
+  await page.waitForFunction(()=>document.querySelector('#notice').textContent.includes('calculada com outra versão do motor'),undefined,{timeout:120000});
+  assert.equal(solves,1,'uma recalculação automática e depois para');
+  assert.ok((await page.evaluate(()=>window.notices)).includes('A proposta era de outra versão do motor: a recalcular sozinha.'));
   assert.equal(await page.locator('#accept').isDisabled(),true);
   await page.unroute('**/gantt/jobs/*');
   await page.locator('#refresh').click();

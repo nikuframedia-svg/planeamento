@@ -233,6 +233,19 @@ def test_reasons_are_optional_and_author_and_time_stay_recorded(world, db):
     assert preference["mode"] == "future_preference"
 
 
+def test_capacity_quota_saves_without_a_reason(db):
+    # Motivo opcional também nas quotas (07/10/2026): a coluna recebe «Sem motivo indicado», o evento fica sem motivo.
+    from app.sector.decisions import NO_REASON
+    saved = capacity.save_quota({"resource_id": RAPID20, "area": "cantoneiras", "share": 0.6, "valid_from": "2026-10-12",
+                                 "request_id": str(uuid.uuid4())})
+    assert not saved["repeated"]
+    with psycopg.connect(db, row_factory=dict_row) as c:
+        quota = c.execute("SELECT reason, actor FROM planning_mtg.sector_capacity_quotas WHERE resource_id=%s", (RAPID20,)).fetchone()
+        event = c.execute("SELECT reason, actor, at FROM planning_mtg.sector_config_events WHERE kind='capacity_quota'").fetchone()
+    assert quota["reason"] == NO_REASON and quota["actor"]
+    assert event["reason"] is None and event["actor"] and event["at"]
+
+
 def test_reference_sets_keep_literal_members_and_unknowns(world, db):
     saved = sets.save({"setor": "cantoneiras", "request_id": str(uuid.uuid4()), "name": "Piloto M2", "mode": "frozen",
                        "members": "M200\nM201; M201,  M999 \n m200"})

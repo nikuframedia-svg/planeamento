@@ -117,14 +117,18 @@
     }else{setAcceptance(false);data.jobId=null;$("compare").value=data.accepted?"accepted":"source"}
     renderTimeline();renderSummary();
     renderOperations();
-    if(data.proposalStale&&latest?.status==="done"&&canRecalculate(latest))await recalculate("A proposta usava fontes anteriores: a recalcular sozinha.",scenario);
+    if(data.proposalStale&&latest?.status==="done"&&canRecalculate(latest,true))await recalculate(latest.stale_reason==="motor"?
+      "A proposta era de outra versão do motor: a recalcular sozinha.":"A proposta usava fontes anteriores: a recalcular sozinha.",scenario);
     else if(data.proposalStale)notice(staleNotice(latest?.stale_reason),true);
     else if(data.stale)notice("O plano aceite usa fontes anteriores. Gera uma nova proposta.",true);
   }
-  // Recalcula sozinho (07/10/2026) só quando as fontes mudaram e já estão publicadas, no máximo duas vezes por ação:
-  // com cálculos ainda a publicar ou com outra versão do motor, recalcular daria outra proposta desatualizada.
-  // Sem `stale_reason` (servidor antigo) não recalcula.
-  const canRecalculate = run => run?.stale_reason==="fontes"&&!data.sourceStatus?.calculations_pending&&(data.autoRecalculations||0)<2;
+  // Recalcula sozinho (07/10/2026), no máximo duas vezes por ação, quando as fontes mudaram e já estão publicadas.
+  // Outra versão do motor (depois de cada atualização da app): só ao abrir a proposta, uma vez. Uma proposta acabada
+  // de calcular que ainda venha de outra versão quer dizer que a app e o worker estão em versões diferentes:
+  // recalcular daria o mesmo, fica só o aviso. Com cálculos ainda a publicar ou sem `stale_reason` (servidor antigo)
+  // não recalcula.
+  const canRecalculate = (run, opening=false) => !data.sourceStatus?.calculations_pending&&(data.autoRecalculations||0)<2&&
+    (run?.stale_reason==="fontes"||opening&&run?.stale_reason==="motor");
   const staleNotice = reason => reason==="motor"?"A proposta foi calculada com outra versão do motor. Gera uma nova proposta.":
     reason==="fontes_em_atualizacao"?"Os cálculos estão a ser publicados. Gera uma nova proposta quando terminarem.":
     "A proposta usa fontes anteriores. Gera uma nova proposta.";
