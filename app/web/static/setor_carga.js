@@ -18,7 +18,24 @@
     calendarioExcel: 'Turnos × horas por turno da folha PlanDisponibilidadeSemanal do Excel (só MTG2).',
   };
   let data = null, open = null, ticket = 0, loads = 0;
-  const view = () => new URLSearchParams(location.search).get('vista') === 'maquinas' ? 'maquinas' : 'semanas';
+  // Barra de vistas (P10, 08/10): Máquinas (Por semana = vista=semanas, por defeito; Totais = vista=maquinas, o
+  // código do redirecionamento das Capacidades) · Setores · Perfis · Famílias de produto · Famílias SKU.
+  const GROUPS = {setores: 'setor', perfis: 'perfil', familias: 'familia', familias_sku: 'familia_sku'};
+  const UNIT_LABEL = {h: 'h', m: 'm', pecas: 'peças', kg: 'kg'};
+  const UNKNOWN = {h: 'sem horas', m: 'sem metros', pecas: 'sem peças', kg: 'sem peso'};
+  const view = () => {
+    const v = new URLSearchParams(location.search).get('vista');
+    return v === 'maquinas' || GROUPS[v] ? v : 'semanas';
+  };
+  const unitParam = () => new URLSearchParams(location.search).get('unidade') || 'h';
+  let group = null, groupLoads = 0, groupTicket = 0;
+  // Cabeçalho fixo (P2): tabela_fixa.js (window.stickyHead) uma vez por tabela; sem o ficheiro, nada muda.
+  const stuck = new WeakSet();
+  function sticky(box, table) {
+    if (!box || !table || stuck.has(table) || typeof window.stickyHead !== 'function') return;
+    stuck.add(table);
+    try { window.stickyHead(box, table); } catch (e) { console.warn('Cabeçalho fixo indisponível', e); }
+  }
 
   function el(tag, attrs = {}, ...children) {
     const node = document.createElement(tag);
@@ -111,6 +128,19 @@
       el('p', {class: 'muted'}, 'Sem calendário nas Definições do setor, por isso não têm capacidade nem turnos aqui.')));
   }
 
+  // 2.ª operação das cantoneiras fora do plano (P3, 08/10): uma linha discreta por baixo da grelha, no lugar dos
+  // «Postos sem calendário» dessas máquinas. Só com a Python nova (campo second_operation) e quando há operações.
+  function secondOperation() {
+    const box = $('second-op');
+    const so = data.second_operation;
+    const machines = so && typeof so === 'object' ? so.machines || [] : [];
+    const text = !so ? '' : typeof so === 'string' ? so : so.operations === 0 ? '' : so.label || so.text ||
+      (so.operations ? `${h.format(so.operations)} operações de 2.ª operação fora do plano${machines.length
+        ? ` (${machines.map((m) => `${short(m.name)} ${h.format(m.operations)}`).join(' · ')})` : ''}. Continuam na Tabela.` : '');
+    if (box) { box.hidden = !text; box.textContent = text; }
+    return new Set(text ? machines.map((m) => short(m.name)) : []);
+  }
+
   function applyButton(id, list, label) {
     const b = $(id);
     if (!b) return;
@@ -138,8 +168,10 @@
         hoursCell(m.no_date.hours, {title: `${h.format(m.no_date.operations)} operações sem prazo${m.no_date.unknown ? ` · ${m.no_date.unknown} sem horas` : ''}`}),
         hoursCell(after));
     }));
-    noCalendarList(data.machines.filter((m) => !hasCalendar(m)));
+    const apart = secondOperation();
+    noCalendarList(data.machines.filter((m) => !hasCalendar(m) && !apart.has(short(m.name))));
     elsewhereNote();
+    sticky(document.querySelector('#weeks-view .grid-wrap'), $('head').closest('table'));
     // «Aplicar todas» só junta recomendações do mesmo sentido.
     const advice = machines.flatMap((m) => m.weeks.filter((w) => w.advice && w.advice.delta).map((w) => ({maquina: m.id, ano: w.year, semana: w.week, turnos: w.shifts + w.advice.delta, delta: w.advice.delta})));
     const strip = (list) => list.map(({delta, ...x}) => x);
@@ -160,9 +192,9 @@
     const head = ['Máquina', perfis ? 'Por fazer (mm²)' : 'Por fazer (m)', 'Horas previstas', 'Atrasado (h)', 'Sem prazo (h)', 'Semanas de trabalho'];
     const titles = {'Horas previstas': EXPLAIN.previstas, 'Atrasado (h)': 'Horas com prazo antes desta semana',
       'Semanas de trabalho': 'Horas previstas ÷ capacidade de uma semana normal (turnos padrão da máquina)'};
-    $('machines-table').replaceChildren(
-      el('thead', {}, el('tr', {}, ...head.map((x, i) => el('th', {scope: 'col', class: i ? 'num' : null, title: titles[x] || null}, x)))),
-      el('tbody', {}, (data.totals || []).map((t) => {
+    // thead e tbody fixos (o cabeçalho fixo segue o thead): só o conteúdo muda.
+    $('machines-head').replaceChildren(el('tr', {}, ...head.map((x, i) => el('th', {scope: 'col', class: i ? 'num' : null, title: titles[x] || null}, x))));
+    $('machines-body').replaceChildren(...(data.totals || []).map((t) => {
         const recent = (t.actual_recent || []).filter((x) => x.hours !== null && x.hours !== undefined);
         const cap = normal(t);
         const title = [`Peças por fazer: ${h.format(t.pieces)}${t.pieces_unknown ? ` (${t.pieces_unknown} com saldo por confirmar, não contam)` : ''}`,
@@ -177,17 +209,31 @@
           el('td', {class: 'num'}, h1.format(t.late_before !== undefined ? t.late_before : t.late)),
           el('td', {class: 'num'}, h1.format(t.no_date)),
           el('td', {class: 'num'}, cap && t.id ? h1.format(t.load / cap) : '—'));
-      })));
+      }));
     $('machines-note').textContent = '';
+    if (view() === 'maquinas') sticky($('machines-table').closest('.grid-wrap'), $('machines-table'));
+  }
+
+  function renderBar() {
+    const v = view(), grouped = Boolean(GROUPS[v]);
+    for (const b of $('views').querySelectorAll('button')) b.setAttribute('aria-pressed', String(b.dataset.vista === 'maquinas' ? !grouped : b.dataset.vista === v));
+    $('machines-mode').hidden = grouped;
+    $('tab-semanas').setAttribute('aria-pressed', String(v === 'semanas'));
+    $('tab-maquinas').setAttribute('aria-pressed', String(v === 'maquinas'));
+    $('group-view').hidden = !grouped;
+    if (grouped) { $('weeks-view').hidden = true; $('machines-view').hidden = true; }
+    $('unit-mode').hidden = !grouped || !group || !(group.units || []).length;
   }
 
   function render() {
+    renderBar();
+    if (!data) return;
     const v = view();
-    $('tab-semanas').setAttribute('aria-selected', String(v === 'semanas'));
-    $('tab-maquinas').setAttribute('aria-selected', String(v === 'maquinas'));
     $('tab-maquinas').hidden = !data.totals;
-    $('weeks-view').hidden = v !== 'semanas' && Boolean(data.totals);
-    $('machines-view').hidden = v !== 'maquinas' || !data.totals;
+    if (!GROUPS[v]) {
+      $('weeks-view').hidden = v !== 'semanas' && Boolean(data.totals);
+      $('machines-view').hidden = v !== 'maquinas' || !data.totals;
+    }
     renderWeeks();
     if (data.totals) renderMachines();
   }
@@ -280,7 +326,7 @@
               o.weight_kg === undefined ? '' : known(o.weight_kg, o.weight_unknown, h, 'sem peso')),
             el('td', {}, o.priority_day ? dm(o.priority_day) : '—'), el('td', {class: 'num'}, o.late_days ? `${o.late_days} d` : ''),
             el('td', {}, o.kinds.map((k) => KIND[k]).join(', ')),
-            el('td', {}, el('a', {href: `/planeamento/carteira?setor=${encodeURIComponent($('setor').value)}&vista=of_perfil&q=${encodeURIComponent(o.of)}`}, 'Carteira')));
+            el('td', {}, el('a', {href: carteiraLink(o.of, current && (d.week_hours === undefined || o.late_before_operations) ? null : week)}, 'Carteira')));
           const go = () => showOperations(m, w, o.of).catch(error);
           tr.addEventListener('click', (e) => { if (!e.target.closest('a')) go(); });
           tr.addEventListener('keydown', (e) => { if (e.key === 'Enter') go(); });
@@ -292,6 +338,14 @@
       $('detail-orders').replaceChildren(el('p', {class: 'muted'}, `${d.orders.length} OF · ${total}${d.unknown ? ` · ${d.unknown} operações sem horas` : ''}. Clica numa OF para ver as operações e o cálculo.`), table);
     } catch (e) { error(e); }
     box.scrollIntoView({behavior: 'smooth', block: 'nearest'});
+  }
+
+  // Ligação para a Carteira (P4, 08/10): a OF e a semana do prazo (AAAA-Wss), a mesma semana da Carteira. Na semana
+  // atual, uma OF com atrasado tem linhas de semanas anteriores: vai sem semana, para não as esconder.
+  function carteiraLink(of, week) {
+    const p = new URLSearchParams({setor: $('setor').value, vista: 'of_perfil', q: of});
+    if (week) p.set('semanas', week);
+    return `/planeamento/carteira?${p}`;
   }
 
   // Origem das horas previstas desta linha (auditoria 06/10, C3-F5). As estimadas usam a velocidade do Excel
@@ -436,20 +490,173 @@
     if (data.stale) again();
   }
 
+  // --- Vistas por setor, perfil e família (P10, 08/10): a mesma população e semana da grelha das Máquinas.
+  const groupHead = {setor: 'Setor', perfil: 'Perfil', familia: 'Família de produto', familia_sku: 'Família SKU'};
+  const weekCode = (y, w) => `${y}-W${String(w).padStart(2, '0')}`;
+  function dimensionText(d) {
+    if (!d) return '';
+    const n = (v) => h1.format(v);
+    if (d.aba !== undefined) return `${d.aba === d.aba2 ? `aba ${n(d.aba)}` : `abas ${n(d.aba)}×${n(d.aba2)}`} · esp. ${n(d.esp)}`;
+    return [d.tipo, d.area_mm2 !== null && d.area_mm2 !== undefined ? `${h.format(d.area_mm2)} mm²` : null].filter(Boolean).join(' · ');
+  }
+  function groupCell(c, unit, opts = {}) {
+    const title = c.operations ? `${h.format(c.operations)} operações${c.unknown ? ` · ${h.format(c.unknown)} ${UNKNOWN[unit]} (não contam)` : ''}` : null;
+    let text = '';
+    if (c.capacity !== undefined && c.capacity !== null) text = `${h.format(c.value)} / ${h.format(c.capacity)} h${c.pct !== null && c.pct !== undefined ? ` · ${h.format(c.pct)} %` : ''}`;
+    else if (c.operations) text = `${h.format(c.value)}${c.capacity === null ? ' h' : ''}`;
+    if (text && c.unknown) text += '*';
+    const td = el('td', {class: `g${opts.click && c.operations ? ' clickable' : ''}`, title, tabindex: opts.click && c.operations ? 0 : null}, text);
+    if (opts.click && c.operations) {
+      td.addEventListener('click', opts.click);
+      td.addEventListener('keydown', (e) => { if (e.key === 'Enter') opts.click(); });
+    }
+    return td;
+  }
+
+  function renderUnits() {
+    const box = $('unit-mode');
+    const units = (group && group.units) || [];
+    box.replaceChildren(...units.map((u) => {
+      const b = el('button', {type: 'button', 'aria-pressed': String(u === group.unit), dataset: {unit: u}}, UNIT_LABEL[u] || u);
+      b.addEventListener('click', () => { if (u !== group.unit) setUnit(u); });
+      return b;
+    }));
+    box.hidden = units.length < 2 || !GROUPS[view()];
+  }
+
+  function renderGroup() {
+    const d = group;
+    renderBar();
+    renderUnits();
+    const u = UNIT_LABEL[d.unit] || d.unit;
+    $('group-text').textContent = `${d.text}${d.note ? ` ${d.note}` : ''}${d.empty ? '' : ` * = operações ${UNKNOWN[d.unit]}, que não contam.`}`;
+    $('group-empty').hidden = !d.empty;
+    $('group-empty').textContent = d.empty || '';
+    $('group-wrap').hidden = Boolean(d.empty);
+    const outside = $('group-outside');
+    outside.hidden = !d.outside;
+    outside.textContent = d.outside ? `${h.format(d.outside)} operações sem máquina ou em máquinas de outro setor não entram (como nas Máquinas).` : '';
+    if (d.empty) { $('group-head').replaceChildren(); $('group-body').replaceChildren(); return; }
+    const profile = d.por === 'perfil';
+    $('group-head').replaceChildren(el('tr', {}, el('th', {scope: 'col'}, groupHead[d.por]), profile ? el('th', {scope: 'col'}, 'Dimensão') : null,
+      el('th', {scope: 'col', class: 'num', title: 'Prazo antes desta semana'}, `Atrasado (${u})`),
+      ...d.weeks.map((w, i) => el('th', {scope: 'col', class: i === 0 ? 'now' : null, title: i === 0 ? 'Semana atual' : null}, `S${w.week}`, el('small', {}, ` ${dm(w.monday)}`))),
+      el('th', {scope: 'col', class: 'num'}, `Sem prazo (${u})`), el('th', {scope: 'col', class: 'num', title: 'Prazo depois destas 13 semanas'}, `Mais tarde (${u})`)));
+    const line = (r, total) => {
+      const click = (slot, c) => (total ? null : () => groupDetail(r, slot, c));
+      return el('tr', {class: total ? 'total' : null},
+        el('th', {scope: 'row', title: `Total: ${h.format(r.total.value)} ${u}${r.total.unknown ? ` · ${h.format(r.total.unknown)} ${UNKNOWN[d.unit]}` : ''}`}, r.label),
+        profile ? el('td', {class: 'dim'}, total ? '' : dimensionText(r.dimension)) : null,
+        groupCell(r.late_before, d.unit, {click: click('atrasado')}),
+        ...r.weeks.map((c, i) => groupCell(c, d.unit, {click: click(i)})),
+        groupCell(r.no_date, d.unit, {click: click('sem_prazo')}), groupCell(r.after, d.unit, {click: click('mais_tarde')}));
+    };
+    $('group-body').replaceChildren(...d.rows.map((r) => line(r, false)), ...(d.total ? [line(d.total, true)] : []));
+    sticky($('group-wrap'), $('group-table'));
+  }
+
+  async function groupDetail(row, slot) {
+    const d = group;
+    const t = ++groupTicket;
+    const box = $('group-detail');
+    const w = typeof slot === 'number' ? d.weeks[slot] : null;
+    const label = w ? `S${w.week} (${dm(w.monday)})` : {atrasado: 'Atrasado', sem_prazo: 'Sem prazo', mais_tarde: 'Mais tarde'}[slot];
+    box.hidden = false;
+    box.replaceChildren(el('h2', {}, `${row.label} · ${label}`), el('p', {class: 'muted'}, 'A carregar…'));
+    try {
+      const params = {setor: $('setor').value, por: d.por, chave: row.key, semana: w ? w.week : slot};
+      if (w) params.ano = w.year;
+      const c = await getJson(`/planeamento/api/setor/carga/vista/celula?${new URLSearchParams(params)}`);
+      if (t !== groupTicket) return;
+      const sector = c.sector;
+      const summary = [`${hrs(c.hours)}${c.hours_unknown ? ` · ${h.format(c.hours_unknown)} operações sem horas` : ''}`,
+        `${known(c.pieces, c.pieces_unknown, h, 'por confirmar')} peças`, `${known(c.metres, c.metres_unknown, h, 'por saber')} m`,
+        `${known(c.kg, c.kg_unknown, h, 'sem peso')} kg`].join(' · ');
+      const table = (head, rows) => el('div', {class: 'scroll'}, el('table', {class: 'orders'},
+        el('thead', {}, el('tr', {}, ...head.map((x, i) => el('th', {scope: 'col', class: i && /\(|Horas|Peças|Metros/.test(x) ? 'num' : null}, x)))), el('tbody', {}, rows)));
+      const link = (of) => {
+        const p = new URLSearchParams({setor: sector, vista: 'of_perfil', q: of});
+        if (w) p.set('semanas', weekCode(w.year, w.week));
+        return `/planeamento/carteira?${p}`;
+      };
+      box.replaceChildren(el('h2', {}, `${row.label} · ${label}`), el('p', {}, summary),
+        el('h3', {}, 'Por máquina'),
+        table(['Máquina', 'Horas', 'Sem horas'], c.machines.map((m) => el('tr', {}, el('td', {}, short(m.name)),
+          el('td', {class: 'num'}, h1.format(m.hours)), el('td', {class: 'num'}, m.hours_unknown || '')))),
+        el('h3', {}, `OF (${h.format(c.orders.length)})`),
+        table(['OF', 'Cliente', 'Horas', 'Peças', 'Metros', 'Prazo', 'Tipo', ''], c.orders.map((o) => el('tr', {},
+          el('td', {}, o.of), el('td', {}, o.customer || ''),
+          el('td', {class: 'num', title: o.hours_unknown ? `${o.hours_unknown} operações sem horas` : null}, `${h1.format(o.hours)}${o.hours_unknown ? '*' : ''}`),
+          el('td', {class: 'num'}, known(o.pieces, o.pieces_unknown, h, 'por confirmar')),
+          el('td', {class: 'num'}, known(o.metres, o.metres_unknown, h, 'por saber')),
+          el('td', {class: o.late_days ? 'late' : null}, o.priority_day ? dm(o.priority_day) : '—'),
+          el('td', {}, o.kinds.map((k) => KIND[k]).join(', ')),
+          el('td', {}, el('a', {href: link(o.of)}, 'Carteira'))))));
+      box.scrollIntoView({behavior: 'smooth', block: 'nearest'});
+    } catch (e) { if (t === groupTicket) box.replaceChildren(el('p', {class: 'error'}, e.message)); }
+  }
+
+  async function loadGroup(quiet = false) {
+    const por = GROUPS[view()];
+    if (!por) return;
+    const mine = ++groupLoads;
+    if (!quiet) {
+      $('group-detail').hidden = true;
+      if (!group || group.por !== por) {
+        group = null;
+        renderBar();
+        $('group-text').textContent = 'A carregar…';
+        $('group-empty').hidden = true; $('group-outside').hidden = true;
+        $('group-head').replaceChildren(); $('group-body').replaceChildren();
+      }
+    }
+    let fresh;
+    try {
+      fresh = await getJson(`/planeamento/api/setor/carga/vista?${new URLSearchParams({setor: $('setor').value, por, unidade: unitParam()})}`);
+    } catch (e) {
+      if (mine === groupLoads) { $('group-text').textContent = ''; error(e); }
+      return;
+    }
+    if (mine !== groupLoads) return;  // já foi pedida outra vista, unidade ou setor
+    const again = () => setTimeout(() => { if (mine === groupLoads) loadGroup(true); }, 8000);
+    if (quiet && fresh.stale) return again();
+    group = fresh;
+    $('error').hidden = true;
+    renderGroup();
+    if (fresh.stale) again();
+  }
+
+  function setUnit(u) {
+    const url = new URL(location.href);
+    if (u === 'h') url.searchParams.delete('unidade'); else url.searchParams.set('unidade', u);
+    history.replaceState(null, '', url);
+    loadGroup().catch(error);
+  }
+
   function setView(v) {
     const url = new URL(location.href);
-    if (v === 'maquinas') url.searchParams.set('vista', 'maquinas'); else url.searchParams.delete('vista');
+    if (v === 'semanas') url.searchParams.delete('vista'); else url.searchParams.set('vista', v);
+    if (!GROUPS[v]) url.searchParams.delete('unidade');
     url.searchParams.set('setor', $('setor').value);
     history.replaceState(null, '', url);
-    if (data) render();
+    render();
+    if (GROUPS[v]) loadGroup().catch(error);
   }
 
   document.addEventListener('DOMContentLoaded', () => {
     const initial = new URLSearchParams(location.search).get('setor');
     if (initial) $('setor').value = initial;
-    $('setor').addEventListener('change', () => { open = null; $('detail').hidden = true; setView(view()); load().catch(error); });
+    $('setor').addEventListener('change', () => { open = null; group = null; $('detail').hidden = true; setView(view()); load().catch(error); });
     $('tab-semanas').addEventListener('click', () => setView('semanas'));
     $('tab-maquinas').addEventListener('click', () => setView('maquinas'));
+    for (const b of $('views').querySelectorAll('button')) {
+      b.addEventListener('click', () => {
+        const v = b.dataset.vista;
+        if (v === 'maquinas') { if (GROUPS[view()]) setView('semanas'); } else if (v !== view()) setView(v);
+      });
+    }
+    renderBar();
     load().catch(error);
+    loadGroup().catch(error);
   });
 })();

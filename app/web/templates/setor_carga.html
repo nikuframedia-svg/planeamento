@@ -8,8 +8,9 @@
   <link rel="stylesheet" href="/static/planning_hub.css">
   <link rel="stylesheet" href="/static/planning_typography.css">
   <link rel="stylesheet" href="/static/setor_carga.css?v={{ version }}">
+  <script src="/static/tabela_fixa.js?v={{ version }}" defer></script>
   <script src="/static/setor_carga.js?v={{ version }}" defer></script>
-  <link rel="stylesheet" href="/static/planeamento_ui.css?v=20261002">
+  <link rel="stylesheet" href="/static/planeamento_ui.css?v=20261008">
 </head>
 <body>
   {% set active = 'carga' %}{% include "_app_nav.html" %}
@@ -23,24 +24,41 @@
       <button type="button" id="apply-less" class="apply" hidden>Aplicar todas: menos turnos</button>
       <a href="/planeamento/setor/definicoes">Definições →</a>
     </header>
-    <div class="tabs" role="tablist" aria-label="Vista">
-      <button type="button" role="tab" id="tab-semanas" aria-selected="true">Semanas</button>
-      <button type="button" role="tab" id="tab-maquinas" aria-selected="false" hidden>Máquinas</button>
+    <nav class="views" id="views" aria-label="Vista">
+      <button type="button" data-vista="maquinas" aria-pressed="true">Máquinas</button>
+      <button type="button" data-vista="setores" aria-pressed="false">Setores</button>
+      <button type="button" data-vista="perfis" aria-pressed="false">Perfis</button>
+      <button type="button" data-vista="familias" aria-pressed="false">Famílias de produto</button>
+      <button type="button" data-vista="familias_sku" aria-pressed="false">Famílias SKU</button>
+    </nav>
+    <div class="view-line">
+      <span class="seg" id="machines-mode" role="group" aria-label="Máquinas">
+        <button type="button" id="tab-semanas" aria-pressed="true">Por semana</button><button type="button" id="tab-maquinas" aria-pressed="false" hidden>Totais</button>
+      </span>
+      <span class="seg" id="unit-mode" role="group" aria-label="Unidade" hidden></span>
     </div>
     <p id="source-notice" class="source-notice" role="status" hidden></p>
     <p id="notice" class="notice" role="status" hidden></p>
     <p id="error" class="error" role="alert" hidden></p>
     <div id="weeks-view">
-      <p class="legend muted">Cada célula: <b>carga / capacidade</b> da semana. <span class="sw folga"></span> folga · <span class="sw apertado"></span> apertado · <span class="sw falta"></span> falta. Clica numa célula para ver as OF e mudar os turnos.</p>
+      <p class="legend muted">Horas do trabalho aberto na semana do prazo (como na Carteira). Cada célula: <b>carga / capacidade</b> da semana. <span class="sw folga"></span> folga · <span class="sw apertado"></span> apertado · <span class="sw falta"></span> falta. Clica numa célula para ver as OF e mudar os turnos.</p>
       <div class="grid-wrap"><table class="loadgrid"><thead id="head"></thead><tbody id="body"></tbody></table></div>
+      <p id="second-op" class="muted second-op" hidden></p>
       <div id="no-calendar" class="no-calendar" hidden></div>
       <p id="elsewhere-note" class="muted elsewhere-note" hidden></p>
       <section id="detail" class="detail" hidden></section>
     </div>
     <div id="machines-view" hidden>
       <p class="legend muted">Todo o trabalho aberto de cada máquina. Passa o cursor numa linha para ver o resto.</p>
-      <div class="grid-wrap"><table class="orders machines" id="machines-table"></table></div>
+      <div class="grid-wrap"><table class="orders machines" id="machines-table"><thead id="machines-head"></thead><tbody id="machines-body"></tbody></table></div>
       <p class="muted" id="machines-note"></p>
+    </div>
+    <div id="group-view" hidden>
+      <p id="group-text" class="legend muted"></p>
+      <p id="group-empty" hidden></p>
+      <div class="grid-wrap" id="group-wrap"><table class="loadgrid groups" id="group-table"><thead id="group-head"></thead><tbody id="group-body"></tbody></table></div>
+      <p id="group-outside" class="muted elsewhere-note" hidden></p>
+      <section id="group-detail" class="detail" hidden></section>
     </div>
   </main>
 </body>
