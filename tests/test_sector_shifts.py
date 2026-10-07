@@ -238,14 +238,16 @@ def test_confirmed_machines_accept_both_operation_code_formats():
     assert operation_code("LOCAL:ABOCARDAR") == "abocardar"
 
 
-def test_history_needs_a_minimum_sample_and_a_plausible_rate():
+def test_history_is_only_shown_and_never_replaces_the_excel_speed():
+    # Decisão do Luís (08/10): horas pela velocidade do Excel; o histórico (plausível ou não) só se mostra.
     from app.raw import productivity
     excel = {"value": 120.0, "method": "metres_hour", "unit": "m/h"}
     base = dict(values={}, area="cantoneiras", operation="119", resource_id="r", manual=[], excel=excel, when="2026-10-06")
     good = productivity.select_rate(historical_rate={"value": 100.0, "method": "metres_hour"}, **base)
-    assert good["source"] == "Histórico"
+    assert good["source"] == "Excel provisório" and good["rate"]["value"] == 120.0
+    assert good["rate_alternatives"]["historical"]["value"] == 100.0
     absurd = productivity.select_rate(historical_rate={"value": 3.675, "method": "metres_hour"}, **base)
-    assert absurd["source"] == "Excel provisório"
+    assert absurd["source"] == "Excel provisório" and absurd["rate"]["value"] == 120.0
 
 
 def test_pages_of_the_same_shift_count_the_shift_hours_once():

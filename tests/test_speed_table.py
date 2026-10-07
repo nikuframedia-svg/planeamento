@@ -95,39 +95,57 @@ def test_rate_fields_are_validated():
         capacity.validate_rate_fields({**base, 'source': 'Outra'})
 
 
-def test_hours_add_piece_time_fixed_time_and_margin_except_history():
+def test_hours_add_piece_time_fixed_time_and_machine_efficiency_except_measured():
+    # 08/10: a eficiência da máquina é o único fator sobre as horas (horas × 100 / eficiência); a margem do setor saiu.
     values = {'quantity_to_plan': 10, 'length_mm': 2000}
     plain = {'method': 'metres_hour', 'value': 100}
     assert capacity.estimate(values, plain, '112') == (0.2, None)
-    with_piece = p.timed({**plain, 'piece_seconds': 36}, 'Manual', {'margin_pct': 0, 'piece_minutes': 0})
+    with_piece = p.timed({**plain, 'piece_seconds': 36}, 'Manual', {'piece_minutes': 0, 'efficiency': {}}, 'r1')
     assert capacity.estimate(values, with_piece, '112')[0] == pytest.approx(0.2 + 10 * 36 / 3600)
-    full = p.timed({**plain, 'piece_seconds': 36}, 'Manual', {'margin_pct': 10, 'piece_minutes': 1.5})
-    assert full['piece_seconds'] == 36 + 90
-    assert capacity.estimate(values, full, '112')[0] == pytest.approx((0.2 + 10 * 126 / 3600) * 1.1)
-    # Aplicar duas vezes não soma outra vez o tempo fixo.
-    assert p.timed(full, 'Manual', {'margin_pct': 10, 'piece_minutes': 1.5})['piece_seconds'] == 126
-    # Excel também leva margem e tempo fixo; o Histórico não (mede horas reais).
-    assert capacity.estimate(values, p.timed(plain, 'Excel provisório', {'margin_pct': 50, 'piece_minutes': 0}), '112')[0] == pytest.approx(0.3)
-    assert p.timed(plain, 'Histórico', {'margin_pct': 50, 'piece_minutes': 2}) is plain
+    timing = {'piece_minutes': 1.5, 'efficiency': {'r1': 80}}
+    full = p.timed({**plain, 'piece_seconds': 36}, 'Manual', timing, 'r1')
+    assert full['piece_seconds'] == 36 + 90 and full['efficiency_pct'] == 80 and full['margin_pct'] == pytest.approx(25)
+    assert capacity.estimate(values, full, '112')[0] == pytest.approx((0.2 + 10 * 126 / 3600) * 100 / 80)
+    # Aplicar duas vezes não soma outra vez o tempo fixo nem o fator.
+    again = p.timed(full, 'Manual', timing, 'r1')
+    assert again['piece_seconds'] == 126 and capacity.estimate(values, again, '112')[0] == pytest.approx(capacity.estimate(values, full, '112')[0])
+    # A eficiência é da máquina: outra máquina fica a 100 %.
+    assert capacity.estimate(values, p.timed(plain, 'Manual', timing, 'r2'), '112')[0] == pytest.approx(0.2 + 10 * 90 / 3600)
+    # Excel também leva eficiência e tempo fixo; o Histórico e uma taxa confirmada «medida» não (medem horas reais).
+    half = {'piece_minutes': 2, 'efficiency': {'r1': 50}}
+    assert capacity.estimate(values, p.timed(plain, 'Excel provisório', {**half, 'piece_minutes': 0}, 'r1'), '112')[0] == pytest.approx(0.4)
+    assert p.timed(plain, 'Histórico', half, 'r1') is plain
+    measured = {**plain, 'measured': True}
+    assert p.timed(measured, 'Manual', half, 'r1') is measured
+    # A margem antiga só chega como eficiência equivalente de todas as máquinas ('*', sector_timing).
+    assert capacity.estimate(values, p.timed(plain, 'Manual', {'efficiency': {'*': 100 / 1.1}}, 'r9'), '112')[0] == pytest.approx(0.22)
     assert capacity.estimate({**values, 'quantity_to_plan': 0}, full, '112') == (0, None)
     rule = capacity.estimate_rule(values, {'rate': full, 'source': 'Manual', 'hours': 1})
-    assert 'margem' in rule['formula'] and rule['inputs']['piece_seconds'] == 126 and rule['inputs']['margin_pct'] == 10
+    assert 'eficiência' in rule['formula'] and rule['inputs']['piece_seconds'] == 126 and rule['inputs']['efficiency_pct'] == 80
     # Sem nada disto, as contas e a fórmula ficam iguais às de antes.
-    assert p.timed(plain, 'Manual', {'margin_pct': 0, 'piece_minutes': 0}) is plain
-    assert 'margem' not in capacity.estimate_rule(values, {'rate': plain, 'source': 'Manual', 'hours': 0.2})['formula']
+    assert p.timed(plain, 'Manual', {'piece_minutes': 0, 'efficiency': {}}, 'r1') is plain
+    assert p.timed(plain, 'Manual', {'piece_minutes': 0, 'efficiency': {'r1': 100}}, 'r1') is plain
+    assert 'eficiência' not in capacity.estimate_rule(values, {'rate': plain, 'source': 'Manual', 'hours': 0.2})['formula']
 
 
-def test_select_rate_order_confirmed_history_excel_table_excel():
+def test_select_rate_order_confirmed_excel_table_excel_and_history_only_shown():
+    # Decisão do Luís (08/10): Confirmada > Excel; o histórico já não ganha, fica como «medido».
     values = {'profile': 'L50X50X5'}
     args = dict(area='cantoneiras', operation='112', resource_id='r1', excel={'method': 'metres_hour', 'value': 80}, when='2026-08-01')
     history = {'value': 110, 'method': 'metres_hour'}
     seeded = [rate('s', source='Excel', value=120)]
     confirmed = [rate('c', value=150)]
     assert p.select_rate(values, manual=confirmed + seeded, historical_rate=history, **args)['source'] == 'Manual'
-    assert p.select_rate(values, manual=seeded, historical_rate=history, **args)['source'] == 'Histórico'
-    chosen = p.select_rate(values, manual=seeded, historical_rate={'value': None}, **args)
+    chosen = p.select_rate(values, manual=seeded, historical_rate=history, **args)
     assert chosen['source'] == 'Excel provisório' and chosen['rate']['value'] == 120 and chosen['configuration']['id'] == 's'
+    assert chosen['rate_alternatives']['historical']['value'] == 110
+    assert p.select_rate(values, manual=seeded, historical_rate={'value': None}, **args)['rate']['value'] == 120
+    plain = p.select_rate(values, manual=[], historical_rate=history, **args)
+    assert plain['source'] == 'Excel provisório' and plain['rate']['value'] == 80
     assert p.select_rate(values, manual=[], historical_rate={'value': None}, **args)['rate']['value'] == 80
+    # Sem Excel nem confirmada não há taxa, mesmo com histórico.
+    none = p.select_rate(values, manual=[], historical_rate=history, **{**args, 'excel': None})
+    assert none['source'] is None and none['rate'] is None and none['rate_alternatives']['historical']['value'] == 110
     # A vigência é a de rate_day (o motor passa hoje), não a data prevista (when) de uma linha atrasada.
     new = [rate('n', value=150, valid_from='2026-09-01')]
     assert p.select_rate(values, manual=new, historical_rate={'value': None}, rate_day='2026-10-06', **args)['source'] == 'Manual'
@@ -158,7 +176,7 @@ def test_recent_excel_speed_wins_over_the_whole_history():
 
 
 def test_the_same_confirmed_rate_gives_the_same_hours_in_carteira_engine_and_gantt():
-    timing = {'margin_pct': 10, 'piece_minutes': 0.5}
+    timing = {'piece_minutes': 0.5, 'efficiency': {'rid': 100 / 1.1}}  # eficiência da máquina (08/10): × 1,1 nas horas
     table = [rate('c', resource_id='rid', operation='CPIS:112', value=90, thickness_min=6, thickness_max=10, piece_seconds=12)]
     # Carteira e Carga (estimates).
     fact = {'remaining': 10, 'phase': 'principal', 'area': 'cantoneiras', 'length_mm': 1000, 'profile': 'L80X80X8',
@@ -169,7 +187,7 @@ def test_the_same_confirmed_rate_gives_the_same_hours_in_carteira_engine_and_gan
     # Motor de capacidade (select_rate + Context.estimate).
     chosen = p.select_rate({'profile': 'L80X80X8'}, area='cantoneiras', operation='112', resource_id='rid', manual=table,
                            historical_rate={'value': None}, excel={'method': 'metres_hour', 'value': 120}, when='2026-08-01', rate_day=TODAY)
-    engine, _ = capacity.estimate({'quantity_to_plan': 10, 'length_mm': 1000}, p.timed(chosen['rate'], chosen['source'], timing), '112')
+    engine, _ = capacity.estimate({'quantity_to_plan': 10, 'length_mm': 1000}, p.timed(chosen['rate'], chosen['source'], timing, 'rid'), '112')
     # Gantt (_duration), sem a sua antiga filtragem própria.
     configs = [{'kind': 'rate', **table[0]}]
     r = {'setor': 'MTG3', 'ordem_codigo': 'OF1', 'referencia_original': 'P', 'item_id': 'i', 'operacao_id': 'o', 'linha_origem': 'l',
@@ -254,20 +272,40 @@ def test_settings_save_speed_rows_seed_and_timing_on_a_disposable_database(works
     assert edited['definition']['source'] == 'Confirmada' and edited['definition']['value'] == 125
     save(tipo='taxa', id=str(seeded[0]['id']), arquivar=True)
     assert next(r for r in rates() if r['id'] == seeded[0]['id'])['archived']
-    # Margem e tempo fixo: guardados nas Definições, sem perder o modelo dos turnos e sem regenerar calendários.
+    # Tempo fixo: guardado nas Definições, sem perder o modelo dos turnos e sem regenerar calendários. A margem do
+    # setor já não se edita (08/10): enviar o valor atual não muda nada, outro valor é recusado.
     save(tipo='setor', expected_revision=0, turnos=[['06:00', '14:00']], dias=[1, 2, 3, 4, 5], feriados=[])
     with pytest.raises(planning.PlanningError):
-        save(tipo='tempos', expected_revision=1, margin_pct=-5)
-    save(tipo='tempos', expected_revision=1, margin_pct='12,5', piece_minutes=1)
+        save(tipo='tempos', expected_revision=1, piece_minutes=-5)
+    with pytest.raises(planning.PlanningError, match='eficiência'):
+        save(tipo='tempos', expected_revision=1, margin_pct='12,5', piece_minutes=1)
+    save(tipo='tempos', expected_revision=1, margin_pct=0, piece_minutes=1)
+    # Eficiência por máquina (08/10): só as diferentes de 100 ficam; fora de 10–200 % é recusada.
+    with pytest.raises(planning.PlanningError):
+        save(tipo='eficiencia', expected_revision=2, eficiencias={resource['id']: 5})
+    with pytest.raises(planning.PlanningError):
+        save(tipo='eficiencia', expected_revision=2, eficiencias={'outra': 80})
+    save(tipo='eficiencia', expected_revision=2, eficiencias={resource['id']: '80'})
     with planning.connect(readonly=True) as c:
         stored = sector_settings.read(c, 'cantoneiras')
-        assert stored['template'] == [['06:00', '14:00']] and stored['margin_pct'] == 12.5 and stored['piece_minutes'] == 1
-        assert p.sector_timing(c)['cantoneiras'] == {'margin_pct': 12.5, 'piece_minutes': 1.0}
-        assert p.sector_timing(c)['perfis'] == {'margin_pct': 0.0, 'piece_minutes': 0.0}
-    save(tipo='setor', expected_revision=2, turnos=[['06:00', '14:00'], ['14:00', '22:00']], dias=[1, 2, 3, 4, 5], feriados=[])
+        assert stored['template'] == [['06:00', '14:00']] and stored['piece_minutes'] == 1
+        assert stored['efficiency'] == {resource['id']: 80}
+        assert p.sector_timing(c)['cantoneiras'] == {'piece_minutes': 1.0, 'efficiency': {resource['id']: 80.0}}
+        assert p.sector_timing(c)['perfis'] == {'piece_minutes': 0.0, 'efficiency': {}}
+    # S01: gravar o horário ou os tempos não apaga a eficiência nem outras chaves que o ecrã não envia.
+    with psycopg.connect(workspace) as c:
+        c.execute("UPDATE planning_mtg.sector_settings SET definition = definition || '{\"folga_dias\": 2}'::jsonb WHERE area='cantoneiras'")
+    save(tipo='setor', expected_revision=3, turnos=[['06:00', '14:00'], ['14:00', '22:00']], dias=[1, 2, 3, 4, 5], feriados=[])
+    save(tipo='tempos', expected_revision=4, piece_minutes=0.5)
     with planning.connect(readonly=True) as c:
         stored = sector_settings.read(c, 'cantoneiras')
-        assert stored['margin_pct'] == 12.5 and len(stored['template']) == 2
+        assert len(stored['template']) == 2 and stored['piece_minutes'] == 0.5
+        assert stored['efficiency'] == {resource['id']: 80} and stored['folga_dias'] == 2
+    # 100 % (ou vazio) volta ao defeito: a máquina sai da lista.
+    save(tipo='maquina', id=resource['id'], eficiencia=100)
+    with planning.connect(readonly=True) as c:
+        assert sector_settings.read(c, 'cantoneiras')['efficiency'] == {}
+        assert p.sector_timing(c)['cantoneiras']['efficiency'] == {}
 
 
 def test_operation_tabs_and_excel_seed_use_the_most_recent_speed():
@@ -305,14 +343,15 @@ def test_corte_is_a_rate_name_only_in_perfis():
                          excel={'method': 'metres_hour', 'value': 120}, when=TODAY)['rate']['value'] == 120
 
 
-def test_conflicting_excel_rows_do_not_block_a_valid_history():
+def test_conflicting_excel_rows_block_even_with_a_history():
+    # 08/10: o histórico já não entra nas horas, por isso também já não desfaz um conflito da tabela.
     values = {'profile': 'L50X50X5'}
     args = dict(area='cantoneiras', operation='112', resource_id='r1', excel={'method': 'metres_hour', 'value': 80}, when=TODAY)
     twins = [rate('s1', source='Excel', value=120), rate('s2', source='Excel', value=110)]
-    assert p.select_rate(values, manual=twins, historical_rate={'value': 100, 'method': 'metres_hour'}, **args)['source'] == 'Histórico'
+    assert p.select_rate(values, manual=twins, historical_rate={'value': 100, 'method': 'metres_hour'}, **args)['source'] is None
     blocked = p.select_rate(values, manual=twins, historical_rate={'value': None}, **args)
     assert blocked['source'] is None and blocked['candidates'] == ['s1', 's2']
-    # Gantt: sem histórico, o conflito bloqueia; com uma taxa confirmada, a confirmada ganha.
+    # Gantt: o conflito bloqueia; com uma taxa confirmada, a confirmada ganha.
     r = {'setor': 'MTG3', 'ordem_codigo': 'OF1', 'referencia_original': 'P', 'item_id': 'i', 'operacao_id': 'o', 'linha_origem': 'l',
          'ocorrencia': 1, 'operacao_codigo': 'CPIS:112', 'fase': 'principal', 'perfil': 'L80X80X8', 'qualidade': None,
          'quantidade_base': 10, 'saldo_confirmado': None, 'saldo_documental': 10, 'estado_quantidade': 'coerente',
@@ -376,9 +415,9 @@ def test_without_a_table_carteira_engine_and_gantt_use_the_most_recent_excel_spe
                                 {'id': 'r4', 'confirmed': False}, [], templates, f'{TODAY}T08:00:00+00:00', _engine({})) is None
 
 
-def test_carga_calculation_tells_the_rate_origin_and_adds_piece_time_and_margin():
+def test_carga_calculation_tells_the_rate_origin_and_adds_piece_time_and_efficiency():
     from app.sector import load
-    timing = {'margin_pct': 10, 'piece_minutes': 0.5}
+    timing = {'piece_minutes': 0.5, 'efficiency': {'rid': 80}}  # 80 % → horas × 1,25, escrito como margem de 25 %
     table = [rate('c', resource_id='rid', value=90, piece_seconds=12)]
     fact = {'remaining': 10, 'phase': 'principal', 'area': 'cantoneiras', 'length_mm': 1000, 'profile': 'L80X80X8',
             'operation': 'CPIS:112', 'material_type': 'Sem tipo'}
@@ -386,8 +425,8 @@ def test_carga_calculation_tells_the_rate_origin_and_adds_piece_time_and_margin(
     hours, why = estimates.estimate(fact, {'id': 'rid', 'name': 'XP'}, {'XP'}, {'recent_speeds': {}}, {}, table=table, timing=timing, detail=detail)
     shown = load.estimate_calculation({**fact, 'load_hours': hours, 'load_basis': 'estimada', 'load_origin': why, 'load_estimate': detail})
     assert shown['rate'] == 90 and 'taxa confirmada' in shown['formula'] and 'margem' in shown['formula']
-    assert shown['piece_seconds'] == 42 and shown['margin_pct'] == 10
-    assert (shown['volume_hours'] + shown['pieces_hours']) * 1.1 == pytest.approx(shown['hours'], abs=1e-3)
+    assert shown['piece_seconds'] == 42 and shown['margin_pct'] == pytest.approx(25) and detail['efficiency_pct'] == 80
+    assert (shown['volume_hours'] + shown['pieces_hours']) * 1.25 == pytest.approx(shown['hours'], abs=1e-3)
     # Sem tabela, sem margem: a velocidade mais recente do Excel, e a conta simples de sempre.
     detail = {}
     hours, why = estimates.estimate(fact, {'id': 'rid', 'name': 'XP'}, {'XP'}, {'recent_speeds': {'XP': {'value': 120, 'lines': 4}}}, {}, detail=detail)

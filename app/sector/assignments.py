@@ -182,7 +182,8 @@ def _evidence(c, data):
     extra = data.get("_estimate_inputs") or {}
     hours = {"by_id": by_id, "names": throughput.aliases_to_names(by_id), "study": throughput.load(c),
              "rates": estimates.area_rates(package["metadata"]),
-             "table": extra.get("table", [cfg for cfg in configs if cfg["kind"] == "rate"]), "timing": extra["timing"] if "timing" in extra else _timing(c, data)}
+             "table": extra.get("table", [cfg for cfg in configs if cfg["kind"] == "rate"]), "timing": extra["timing"] if "timing" in extra else _timing(c, data),
+             "published": extra.get("published")}  # velocidade do Excel do motor por máquina (F01, 08/10)
     return {"codes": codes, "by_id": by_id, "configs": configs, "index": index, "templates": templates, "hours": hours}
 
 

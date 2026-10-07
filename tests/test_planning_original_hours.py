@@ -30,12 +30,15 @@ def history(area,values):
 
 
 @pytest.mark.parametrize('area',['perfis','cantoneiras'])
-def test_original_hours_feed_history_once_and_revisions_refresh_rate(decision_source,area):
+def test_original_hours_feed_history_once_and_revisions_refresh_rate(decision_source,area,monkeypatch):
+    # A amostra mínima (06/10) tem teste próprio; aqui só a mecânica das horas das folhas originais.
+    monkeypatch.setattr(productivity,'MIN_SHIFTS',1);monkeypatch.setattr(productivity,'MIN_DAYS',1);monkeypatch.setattr(productivity,'MIN_HOURS',0.0)
     _,values=setup_source(decision_source,area)
     result=history(area,values)
     volume=4*math.pi*(88.9**2-82.9**2)/4 if area=='perfis' else 4
-    assert result['source']=='Histórico'
-    assert result['rate']['value']==pytest.approx(volume/2)
+    # 08/10: o histórico já não é a taxa das horas (sem Excel nem confirmada não há taxa); fica como «medido».
+    assert result['source'] is None and result['rate_alternatives']['historical']['value']==pytest.approx(volume/2)
+    assert result['history']['value']==pytest.approx(volume/2)
     assert result['history']['hours']==2 and result['history']['sheet_count']==1
     with sqlite3.connect(decision_source[1]) as c:
         c.execute('UPDATE production_rows SET sheet_hours=4 WHERE sheet_id=1')
@@ -43,7 +46,7 @@ def test_original_hours_feed_history_once_and_revisions_refresh_rate(decision_so
     publish(decision_source)
     for a in planning.AREAS:projection.rebuild(a)
     result=history(area,values)
-    assert result['rate']['value']==pytest.approx(volume/4)
+    assert result['history']['value']==pytest.approx(volume/4)
     assert result['history']['hours']==4
     assert assoc.pending('4200',area,source='original')['records']==[]
     with sqlite3.connect(decision_source[1]) as c:c.execute("UPDATE sheets SET status='draft',revision=3 WHERE id=1")
@@ -52,7 +55,7 @@ def test_original_hours_feed_history_once_and_revisions_refresh_rate(decision_so
     with sqlite3.connect(decision_source[1]) as c:c.execute("UPDATE sheets SET status='validated',revision=1 WHERE id=2")
     publish(decision_source)
     for a in planning.AREAS:projection.rebuild(a)
-    assert history(area,values)['source'] is None
+    assert history(area,values)['history']['value'] is None
 
 
 def test_original_shared_area_view_does_not_duplicate_physical_time(decision_source):

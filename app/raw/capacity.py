@@ -6,7 +6,7 @@ from .. import planning,planning_needs as needs,planning_raw as old
 from . import objects,projection,query
 
 METHODS={'area_hour':'mm²/h','metres_hour':'m/h','units_hour':'un./h','minutes_unit':'min/un.','fixed_minutes':'min'}
-ESTIMATE_CONTRACT='planning-operation-hours-20260924-v4'  # v4 (07/10): máquinas do setor contam sem «confirmada» (taxas, histórico, horas reais), lista de operações só nas confirmadas à mão, ano da semana W deduzido; v3 (07/10): tabela de velocidades (intervalos, arranque por peça), margem e tempo fixo do setor, vigência por hoje; v2 (06/10): janela histórica até hoje, amostra mínima e plausibilidade
+ESTIMATE_CONTRACT='planning-operation-hours-20260924-v5'  # v5 (08/10): Confirmada > Excel (o histórico deixa de entrar nas horas e fica como «medido»), MTG2 pela coluna E/F, eficiência por máquina como único fator sobre as horas (sem margem do setor), taxa confirmada «medida» sem eficiência; v4 (07/10): máquinas do setor contam sem «confirmada» (taxas, histórico, horas reais), lista de operações só nas confirmadas à mão, ano da semana W deduzido; v3 (07/10): tabela de velocidades (intervalos, arranque por peça), margem e tempo fixo do setor, vigência por hoje; v2 (06/10): janela histórica até hoje, amostra mínima e plausibilidade
 RATE_SOURCES=('Excel','Confirmada')
 
 
@@ -112,7 +112,9 @@ def validate_rate_fields(d):
            'value':positive(d.get('value')),'setup_minutes':positive(d.get('setup_minutes',0),True),'confirmed':bool(d.get('confirmed')),
            'piece_seconds':_optional(d,'piece_seconds','Arranque por peça') or 0.0,
            'notes':str(d.get('notes') or '').strip()[:500],
-           'source':str(d.get('source') or 'Confirmada')}
+           'source':str(d.get('source') or 'Confirmada'),
+           # Taxa medida na produção (08/10): já inclui perdas, por isso a eficiência da máquina não se aplica.
+           'measured':bool(d.get('measured'))}
     if clean['source'] not in RATE_SOURCES:raise planning.PlanningError('Origem da taxa desconhecida.')
     for other in set(f for pair in productivity.RANGE_FIELDS.values() for f in pair)-{lo_name,hi_name}:
         if d.get(other) not in (None,''):raise planning.PlanningError('Intervalo não aplicável a este setor.')
@@ -145,9 +147,11 @@ def estimate_inputs(values,rate):
             'volume_unit':{'area_hour':'mm²','metres_hour':'m','units_hour':'un.','minutes_unit':'un.'}.get(method),
             'setup_minutes':0 if q==0 else rate.get('setup_minutes',0) if rate else None}
     if rate and (rate.get('piece_seconds') or rate.get('margin_pct')):
-        # Arranque por peça (s) da linha + tempo fixo por peça do setor, e margem sobre o total (07/10/2026).
+        # Arranque por peça (s) da linha + tempo fixo por peça do setor, e o fator da eficiência da máquina sobre o
+        # total (08/10; antes margem do setor), escrito como margem = (100/eficiência − 1) × 100.
         inputs.update(piece_seconds=old.number(rate.get('piece_seconds')) or 0.0,rate_piece_seconds=rate.get('rate_piece_seconds'),
                       fixed_piece_seconds=rate.get('fixed_piece_seconds'),margin_pct=old.number(rate.get('margin_pct')) or 0.0)
+        if rate.get('efficiency_pct'):inputs['efficiency_pct']=old.number(rate['efficiency_pct'])
     if method=='area_hour':inputs['section_unit']=old.number(values.get('section_unit'))
     if method=='metres_hour':inputs['length_mm']=old.number(values.get('length_mm'))
     if q is not None and q>=0 and q.is_integer():
@@ -182,7 +186,8 @@ def estimate_rule(values,applied):
     formula='Saldo nulo: 0 h, sem preparação' if inputs['quantity']==0 and applied.get('hours')==0 else formulas.get(method,'Taxa e método por confirmar')
     if method in formulas and inputs['quantity']!=0:
         if inputs.get('piece_seconds'):formula+=' + saldo × tempo por peça (s) / 3600'
-        if inputs.get('margin_pct'):formula='('+formula+') × (1 + margem % / 100)'
+        if inputs.get('efficiency_pct'):formula='('+formula+') × 100 / eficiência da máquina (%)'
+        elif inputs.get('margin_pct'):formula='('+formula+') × (1 + margem % / 100)'
     if applied.get('source')=='Excel provisório':
         inputs['excel_factor']=applied.get('factor',1)
         rate=old.number((applied.get('rate') or {}).get('value'))
@@ -194,7 +199,8 @@ def estimate_rule(values,applied):
 def estimate(values,rate,operation):
     """Horas = volume ÷ velocidade + preparação + peças × (arranque s + tempo fixo do setor) / 3600, × (1 + margem %).
 
-    `piece_seconds` e `margin_pct` vêm na taxa (productivity.timed); sem eles as contas são as de antes.
+    `piece_seconds` e `margin_pct` vêm na taxa (productivity.timed); sem eles as contas são as de antes. Desde
+    08/10 a margem é só a da eficiência da máquina: × (1 + margem %) = × 100 / eficiência.
     """
     hours,reason=_base_estimate(values,rate)
     q=old.number(values.get('quantity_to_plan'))
@@ -230,7 +236,7 @@ def sources():
         for area in planning.AREAS:
             snap=planning.snapshot(c,area)
             rows=c.execute("SELECT sheet_name,excel_row,row_data FROM raw_mtg.other_sheet_rows WHERE snapshot_id=%s AND sheet_name IN ('PlanDisponibilidadeSemanal','CapacidadeMáquinas','Dados') ORDER BY sheet_name,excel_row",(snap['snapshot_id'],)).fetchall()
-            result[area]={'snapshot':snap['snapshot_id'],'rows':rows,'warning':'Dados históricos: confirmar unidades, vigência e calendário. O fator Thomas ×3 não está ativo.'}
+            result[area]={'snapshot':snap['snapshot_id'],'rows':rows,'warning':'Dados históricos: confirmar unidades, vigência e calendário. O fator ×3 da Thomas aplica-se como no Excel (QTD > 50).'}
     return needs.serial(result)
 
 

@@ -146,11 +146,14 @@ def section_unit(row):
     return total / q if total and total > 0 and q and q > 0 else None
 
 
-def _documentary(row, candidate, templates):
-    """Taxa documental (Excel) para esta máquina: a da própria linha publicada pela aplicação, senão a da folha.
+def _documentary(row, candidate, templates, context=None, resource=None):
+    """Taxa documental (Excel) base para esta máquina, sem o ×3 da Thomas: a da própria linha publicada pela
+    aplicação, senão a da folha.
 
-    Auditoria 06/10 (GT-05): na máquina da estimativa publicada (a mesma que a Carga mostra) usa-se essa
-    taxa do Excel, sem o fator ×3 da Thomas (decisão de 01/10: o Gantt não o aplica).
+    Auditoria 06/10 (GT-05): na máquina da estimativa publicada (a mesma que a Carga mostra) usa-se essa taxa do
+    Excel. Desde 08/10 o ×3 da Thomas aplica-se no Gantt como no Excel, uma só vez, em `_duration`
+    (productivity.thomas_factor): por isso aqui a taxa vem sempre sem ele. Nos perfis, noutra máquina, a taxa mm²/h
+    das colunas E/F do Excel em uso (`context.excel_area`), a mesma da Carteira e da Carga.
     """
     own_estimate = row.get('documentary_rate') or {}
     machine = row.get('documentary_rate_resource', row.get('recurso_atual'))
@@ -159,6 +162,15 @@ def _documentary(row, candidate, templates):
         if own_estimate.get('factor', 1) > 1:
             own_rate['value'] /= own_estimate['factor']
         return [own_rate], None
+    area_rates = getattr(context, 'excel_area', None) or {}
+    if row.get('setor') == 'MTG2' and row.get('fase') == 'principal' and area_rates:
+        from ..sector.estimates import machine_names
+        names = machine_names(resource, [candidate.get('resource_code')])
+        found = sorted({(e['value'], e.get('cell')) for n, e in area_rates.items() if n in names and e.get('value')})
+        if len(found) == 1:
+            value, cell = found[0]
+            return [{'method': 'area_hour', 'value': value, 'setup_minutes': 0, 'unit': 'mm²/h',
+                     'source': 'Excel · CapacidadeMáquinas!' + str(cell or '')}], None
     rates = [r for r in templates.get((candidate['resource_code'], candidate['proposed_code']), [])
              if not r.get('profile') or str(r['profile']).strip() == str(row.get('perfil') or '').strip()]
     if len({r['value'] for r in rates}) > 1:
@@ -169,14 +181,6 @@ def _documentary(row, candidate, templates):
         if not own:
             return rates, 'Velocidades divergentes no Excel para esta máquina e perfil: ' + rates[0]['divergent_values'] + '; usada a mediana.'
     return rates, None
-
-
-def _history_note(history):
-    """Porque é que uma taxa histórica existente não foi usada (amostra pequena ou longe do Excel)."""
-    found = (history or {}).get('history') or {}
-    if found.get('value') is not None:
-        return [f"Taxa histórica {found['value']:.6g} {found.get('unit') or ''} fora do intervalo plausível face ao Excel; usada a taxa do Excel."]
-    return [found['reason']] if str(found.get('reason') or '').startswith('Amostra') else []
 
 
 def _duration(row, candidate, resource, configs, templates, started_at, context=None, *, rate_day=None, timing=None):
@@ -200,8 +204,7 @@ def _duration(row, candidate, resource, configs, templates, started_at, context=
         candidate['duration_reason'] = 'Taxas confirmadas sobrepostas.'; return None
     rates = [found['rate']] if found else []
     source = 'Manual'
-    history = None
-    documentary, note = _documentary(row, candidate, templates)
+    documentary, note = _documentary(row, candidate, templates, context, resource)
     if area == 'cantoneiras' and context is not None and (documentary or row['fase'] == 'principal'):
         # Velocidade do Excel em vigor = a mais recente da máquina (a mesma da Carteira, da Carga e do motor),
         # não a Mt\h de cada linha nem a mediana de velocidades antigas; na operação principal vale também numa
@@ -214,26 +217,12 @@ def _duration(row, candidate, resource, configs, templates, started_at, context=
             base = documentary[0] if documentary else {'method': 'metres_hour', 'value': None, 'unit': 'm/h', 'setup_minutes': 0}
             documentary, note = [current_excel(base, recent, machine)], None
     excel_table = None if rates else match_rate(table, resource['id'], area, names, {**values, 'grade': row.get('qualidade')}, day, tier='Excel')
-    table_conflict = bool(excel_table and excel_table.get('conflict'))
-    if table_conflict:
-        excel_table = None  # só bloqueia se o histórico não valer (o histórico ganha às linhas com origem Excel)
-    if excel_table:
-        # Linha da tabela com origem Excel (semente): vale como a velocidade do Excel, abaixo do histórico.
-        documentary, note = [{**excel_table['rate'], 'source': 'Excel'}], None
-    if not rates and context and resource['confirmed']:
-        alias = next((a['name'] for a in resource.get('aliases',[]) if a['area']==area and (area,a['name']) in context.aliases),None)
-        historical_op = ('corte' if row['fase']=='principal' else 'abocardar') if area=='perfis' and op.startswith('LOCAL:') else candidate['proposed_code'].removeprefix('CPIS:')
-        if alias:
-            # Mesma regra H10 da Carga (auditoria 06/10, GT-04): janela até hoje, amostra mínima e taxa
-            # plausível face ao Excel desta máquina; fora disso fica a taxa do Excel.
-            from zoneinfo import ZoneInfo
-            today = utc(started_at).astimezone(ZoneInfo(planning.settings.display_timezone)).date()
-            history = context.rate({**values,'machine':alias},area,historical_op,day,excel=documentary[0] if documentary else None,
-                                   as_of=min(date.fromisoformat(day),today))
-            if history.get('source')=='Histórico':
-                rates = [history['rate']]; source = 'Histórico'
-    if not rates and table_conflict:
+    if excel_table and excel_table.get('conflict'):
         candidate['duration_reason'] = 'Taxas da tabela sobrepostas.'; return None
+    if excel_table:
+        # Linha da tabela com origem Excel (semente): vale como a velocidade do Excel.
+        documentary, note = [{**excel_table['rate'], 'source': 'Excel'}], None
+    # Decisão do Luís (08/10): Confirmada > Excel em todas as páginas; o histórico medido já não entra nas horas.
     if not rates:
         rates = documentary
         if note:
@@ -242,11 +231,21 @@ def _duration(row, candidate, resource, configs, templates, started_at, context=
     if not rates:
         candidate['duration_reason'] = 'Taxa da máquina/operação por confirmar.'; return None
     rate = rates[0]
+    factor = 1
+    if source != 'Manual':
+        # ×3 da Thomas como no Excel e na Carteira (QTD > 50), uma só vez: a taxa documental vem sempre sem ele.
+        from ..raw.productivity import thomas_factor
+        from ..sector.estimates import machine_names
+        machines = machine_names(resource, [candidate.get('resource_code')] +
+                                 ([row.get('maquina_original')] if candidate.get('resource_code') == row.get('recurso_atual') else []))
+        factor = thomas_factor(area, 'corte' if row['fase'] == 'principal' and area == 'perfis' else op, machines, row.get('quantidade_base'))
+        if factor > 1:
+            rate = {**rate, 'value': rate['value'] * factor}
     if row['fase'] == 'principal' and row['setor'] == 'MTG2' and op != 'LOCAL:PRINCIPAL' and rate['method'] == 'area_hour':
         candidate['duration_reason'] = 'Taxa de corte não abrange toda a rota.'; return None
     if timing is None:
         timing = (getattr(context, 'timing', None) or {}).get(area) if context else None
-    hours, reason = estimate(values, timed(rate, source, timing), op)
+    hours, reason = estimate(values, timed(rate, source, timing, resource['id']), op)
     if reason:
         candidate['duration_reason'] = reason; return None
     result = _option(resource['id'], {'hours': hours, 'quantity': q, 'source': source, 'rate': rate}, source, started_at)
@@ -254,11 +253,10 @@ def _duration(row, candidate, resource, configs, templates, started_at, context=
         result['option_id'] = needs.digest([result['option_id'],candidate['proposed_code']])
         result.update(eligibility=candidate['eligibility'], resource_code=candidate['resource_code'],
                       proposed_code=candidate['proposed_code'], shared_demands=resource.get('shared_demands', {}))
-        if source == 'Histórico':
-            result.update(history_hash=history['history_hash'], history=history['history'], excluded_cohorts=history['excluded_cohorts'])
-        elif source != 'Manual':
+        if source != 'Manual':
             result['assumptions'] = ['Taxa documental; preparação e movimentação por confirmar.'] + \
-                ([candidate['duration_note']] if candidate.get('duration_note') else []) + _history_note(history)
+                ([candidate['duration_note']] if candidate.get('duration_note') else []) + \
+                ([f'Taxa do Excel × {factor} da Thomas (QTD > 50), como no Excel.'] if factor > 1 else [])
     return result
 
 

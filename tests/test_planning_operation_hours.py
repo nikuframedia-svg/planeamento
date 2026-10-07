@@ -37,10 +37,11 @@ def test_hours_match_independent_examples(method,q,length,section,rate,setup,wan
         assert reason is None
 
 
+# 08/10/2026: o histórico já não ganha ao Excel (decisão do Luís); sem taxa manual vale o Excel, com o ×3 da Thomas.
 @pytest.mark.parametrize('case,wanted_source,wanted_rate,wanted_factor',[
- ('manual','Manual',20,1),('expired','Histórico',10,1),
- ('future','Histórico',10,1),('wrong_profile','Histórico',10,1),
- ('conflict',None,None,1),('history','Histórico',10,1),
+ ('manual','Manual',20,1),('expired','Excel provisório',15,3),
+ ('future','Excel provisório',15,3),('wrong_profile','Excel provisório',15,3),
+ ('conflict',None,None,1),('history','Excel provisório',15,3),
  ('excel_51','Excel provisório',15,3),('excel_50','Excel provisório',5,1),
  ('absent',None,None,1),
 ])
