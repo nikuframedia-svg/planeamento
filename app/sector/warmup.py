@@ -81,6 +81,18 @@ def _loop(stop: threading.Event, check_seconds: float) -> None:
             return
 
 
+def _visible_logs() -> None:
+    """O uvicorn só configura os seus registos: sem isto, as durações (INFO) do aquecimento e dos recálculos em
+    segundo plano nunca chegavam ao journal. Nada muda se alguém já configurou o logging."""
+    sector = logging.getLogger("app.sector")
+    if logging.getLogger().handlers or sector.handlers:
+        return
+    handler = logging.StreamHandler()
+    handler.setFormatter(logging.Formatter("%(levelname)s:     %(name)s: %(message)s"))
+    sector.addHandler(handler)
+    sector.setLevel(logging.INFO)
+
+
 def start(*, check_seconds: float = CHECK_SECONDS) -> threading.Event | None:
     """Arranca o aquecimento uma só vez por processo e volta logo (nunca atrasa o arranque).
 
@@ -92,6 +104,7 @@ def start(*, check_seconds: float = CHECK_SECONDS) -> threading.Event | None:
             return None
         _stop = threading.Event()
         stop = _stop
+    _visible_logs()
     threading.Thread(target=_loop, args=(stop, check_seconds), name="aquecimento-setor", daemon=True).start()
     log.info("Aquecimento das caches do setor iniciado em segundo plano")
     return stop

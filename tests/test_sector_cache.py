@@ -402,6 +402,18 @@ def test_warm_up_builds_every_cache_of_both_sectors_and_logs_durations(warmup_mo
     assert "cantoneiras" in text and " s" in text and "falhou" in text
 
 
+def test_warm_up_durations_reach_the_service_log_when_logging_is_not_configured(warmup_module, monkeypatch):
+    import logging
+    sector = logging.getLogger("app.sector")
+    monkeypatch.setattr(logging.getLogger(), "handlers", [])  # como no uvicorn: só os registos dele têm saída
+    monkeypatch.setattr(sector, "handlers", [])
+    monkeypatch.setattr(sector, "level", logging.NOTSET)
+    warmup_module._visible_logs()
+    assert len(sector.handlers) == 1 and sector.level == logging.INFO
+    warmup_module._visible_logs()
+    assert len(sector.handlers) == 1  # uma só vez
+
+
 def test_warm_up_is_off_in_test_servers_and_when_disabled(warmup_module, monkeypatch):
     assert warmup_module.enabled()
     monkeypatch.setenv("MES_DOSSIER_WORKER_DISABLED", "1")
