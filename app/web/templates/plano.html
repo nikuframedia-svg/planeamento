@@ -7,8 +7,8 @@
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="/static/planning_typography.css">
   <link rel="stylesheet" href="/static/planeamento_ui.css?v=20261002">
-  <link rel="stylesheet" href="/static/plano.css?v=20261006a">
-  <script src="/static/plano.js?v=20261007b" defer></script>
+  <link rel="stylesheet" href="/static/plano.css?v=20261008a">
+  <script src="/static/plano.js?v=20261008a" defer></script>
 </head>
 <body>
   {% set active = 'gantt' %}{% include "_app_nav.html" %}
@@ -23,6 +23,7 @@
         <button type="button" data-sector="perfis" aria-pressed="false">MTG2 Perfis</button>
       </div>
     </div>
+    <p id="source-notice" class="pq-source-notice" role="status" hidden></p>
     <div id="notice" class="pq-notice" role="status" aria-live="polite" hidden></div>
 
     <section class="pq-alert" id="alert" aria-labelledby="alert-title" hidden>

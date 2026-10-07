@@ -67,6 +67,7 @@ def unplanned(sector: str, *, data: dict | None = None, decisions: dict | None =
             continue
         days = [x["priority_day"] for x in missing if x.get("priority_day")]
         due = min(days) if days else None
+        known = [x["pieces"] for x in missing if x.get("pieces") is not None]  # saldo por confirmar nunca vira 0 (08/10)
         priorities = [x["signals"]["prioridade"] for x in lines if x["signals"]["prioridade"] is not None]
         first = lines[0]
         orders.append({
@@ -76,7 +77,8 @@ def unplanned(sector: str, *, data: dict | None = None, decisions: dict | None =
             "waiting_days": (today - first["registered"]).days if first["registered"] else None,
             "due": due, "late_days": (today - due).days if due and due < today else 0,
             "metres": round(sum(x["metres"] for x in missing), 1),
-            "pieces": round(sum(x["pieces"] or 0 for x in missing)),
+            "metres_unknown": sum(bool(x.get("metres_unknown", x.get("balance_unknown"))) for x in missing),
+            "pieces": round(sum(known)) if known else None, "pieces_unknown": len(missing) - len(known),
             "lines": len(missing), "lines_total": len(lines), "partial": len(missing) < len(lines),
             "priority": min(priorities) if priorities else None,
             "marked": all(portfolio.decision_of(x, decisions) == "selected" for x in missing),
@@ -89,7 +91,10 @@ def unplanned(sector: str, *, data: dict | None = None, decisions: dict | None =
                          if any(x["signals"].get(name) for x in lines)],
         })
     orders.sort(key=lambda o: (o["priority"] is None, o["priority"] or 0, o["due"] is None, o["due"] or date.max, -o["metres"], o["of"]))
-    return {"orders": orders, "planned_orders": planned, "today": today, "imported_at": data["imported_at"]}
+    # «orders_with_machine» (08/10): OF com máquina em todas as linhas, não «planeadas» (Planear não conta aqui).
+    # «planned_orders» é o nome antigo, com o mesmo valor; fica só até à próxima versão, para quem ainda o lê.
+    return {"orders": orders, "orders_with_machine": planned, "planned_orders": planned, "today": today,
+            "imported_at": data["imported_at"]}
 
 
 def not_in_plans(*, today: date | None = None, conn=None) -> list[dict]:
@@ -98,7 +103,8 @@ def not_in_plans(*, today: date | None = None, conn=None) -> list[dict]:
     Depende só das importações do Excel (com a cópia do CPIS), não das gerações RAW, que mudam a cada
     validação MES: assim o cálculo corre uma vez por importação e não dezenas de vezes por dia.
     """
-    today = today or date.today()
+    from .week import lisbon_today
+    today = today or lisbon_today()  # dia de Lisboa (08/10)
     with (planning.connect(readonly=True) if conn is None else nullcontext(conn)) as c:
         heads = c.execute("SELECT DISTINCT ON (dataset) dataset, id, metadata->'snapshot'->>'snapshot_id' AS snapshot "
                           "FROM planning_mtg.raw_generations WHERE dataset IN ('planning:cantoneiras', 'planning:perfis') "
@@ -163,7 +169,10 @@ def _merge(items: list[dict], today: date | None = None) -> list[dict]:
         days = dict(item.get("days") or {})
         if last and last["resource_id"] == item["resource_id"] and last["of"] == item["of"] and item["start"] <= last["end"]:
             last["end"] = max(last["end"], item["end"])
-            last["pieces"] += item["pieces"]
+            if item["pieces"] is None:
+                last["pieces_unknown"] += 1
+            else:
+                last["pieces"] += item["pieces"]
             last["lines"] += 1
             last["approximate"] = last["approximate"] or item["approximate"]
             last["forecast"] = last.get("forecast", False) or item.get("forecast", False)
@@ -176,12 +185,14 @@ def _merge(items: list[dict], today: date | None = None) -> list[dict]:
             if item["due"] and (last["due"] is None or item["due"] < last["due"]):
                 last["due"] = item["due"]
         else:
-            boxes.append({**item, "lines": 1, "days": days, "hours": item.get("hours") or 0, "hours_unknown": int(item.get("hours") is None),
+            boxes.append({**item, "pieces": item["pieces"] or 0, "pieces_unknown": int(item["pieces"] is None),
+                          "lines": 1, "days": days, "hours": item.get("hours") or 0, "hours_unknown": int(item.get("hours") is None),
                           "hours_estimated": int(bool(item.get("estimated"))), "timed": list(item.get("timed") or [])})
             boxes[-1].pop("estimated", None)
     for box in boxes:
         box["late"] = bool(box["due"] and (box["due"] < box["end"] - timedelta(days=1) or (today and box["due"] < today)))
-        box["pieces"] = round(box["pieces"])
+        # Peças desconhecidas não viram 0 (08/10): só desconhecidas → None; algumas → soma das conhecidas + contagem.
+        box["pieces"] = None if box["pieces_unknown"] == box["lines"] else round(box["pieces"])
         box["hours"] = round(box["hours"], 2)
         box["days"] = [{"date": d, "hours": round(h, 2)} for d, h in sorted(box["days"].items())]
     return boxes
@@ -218,7 +229,7 @@ def boxes_from_source_plan(plan: dict, operations: list[dict], *, skip: set | No
             hours = estimates[entry["key"]]
         items.append({"resource_id": entry["resource_id"], "of": op["of"],
                       "start": start, "end": date.fromisoformat(entry["end_date_exclusive"]),
-                      "pieces": op.get("planning_remaining") or 0, "due": _due(op),
+                      "pieces": op.get("planning_remaining"), "due": _due(op),
                       "approximate": entry.get("precision") == "week", "forecast": True, "hours": hours, "estimated": estimated,
                       "days": {start.isoformat(): hours} if hours and entry.get("precision") != "week" else {}})
     return _merge(items, today)
@@ -265,7 +276,7 @@ def boxes_from_proposal(snapshot: dict, proposal: dict, *, area: str | None = No
         timed = [{"start": start + timedelta(minutes=a), "end": start + timedelta(minutes=b), "key": key,
                   "reference": op.get("reference"), "operation": op.get("operation")} for a, b in segments if b > a]
         items.append({"resource_id": bar["resource_id"], "of": op["of"], "start": first, "end": last + timedelta(days=1),
-                      "pieces": op.get("planning_remaining") or 0, "due": _due(op), "approximate": False,
+                      "pieces": op.get("planning_remaining"), "due": _due(op), "approximate": False,
                       "hours": sum(days.values()), "days": days, "timed": timed})
     return _merge(items, today)
 
@@ -454,7 +465,10 @@ def board(sector: str, *, allow_stale: bool = False) -> dict:
     data = portfolio.current(sector, allow_stale=allow_stale)
     decisions = selection.current(sector)
     result, _ = _built(sector, data, allow_stale=allow_stale)
+    from . import drive_notice
     return {**result, "unplanned": unplanned(sector, data=data, decisions=decisions),
+            # Excel do setor no Drive mais recente do que o importado (F16, 08/10): uma linha de aviso.
+            "source_notice": drive_notice.text(sector),
             "stale": bool(result.get("stale") or data.get("stale"))}
 
 

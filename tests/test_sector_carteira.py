@@ -8,7 +8,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.sector import decisions as resolution, portfolio, portfolio_kpis
-from tests.test_sector_portfolio import data, raw
+from tests.test_sector_portfolio import TODAY, data, raw
 
 RAPID, PEDDI = "rid-rapid", "rid-peddi"
 RESOURCES = {RAPID: {"id": RAPID, "code": "RAPID25", "name": "Ficep Rapid 25T", "type": "maquina"},
@@ -344,3 +344,115 @@ def test_preview_alternatives_use_the_same_hours_as_the_portfolio_and_load(monke
     options = {o["name"]: o for o in assignments.alternatives(None, {"_rows": {"v2:a": {"perfil": "HEA200"}}}, fact, evidence)}
     assert options["Disco"]["hours"] == fact["load_hours"] == 10.0  # 10 peças × 100 mm² ÷ 100 mm²/h
     assert options["Vanguard"]["hours"] is None  # excluída pela ficha
+
+
+# --- Avisos e desconhecidos (08/10): F06, F07, F09, F16, F26
+
+
+def _quiet_notice(monkeypatch, text=None):
+    from app.sector import drive_notice
+    monkeypatch.setattr(drive_notice, "text", lambda sector: text)
+
+
+def test_repeated_lines_are_marked_and_counted_once_in_the_subtotal_but_never_removed(monkeypatch):
+    """F06: linhas iguais em OF, referência, perfil, comprimento, QTD, material e qualidade contam a dobrar."""
+    _quiet_notice(monkeypatch)
+    rows = [raw("OF1", "A", 10, 1000, key="k1"), raw("OF1", "A", 10, 1000, key="k2"), raw("OF1", "A", 10, 1500, key="k3")]
+    for r in rows:
+        r["v"].update(material_type="Chapa", grade="S355J2")
+    d = data(*rows)
+    portfolio.mark_repeated(d["lines"], [portfolio.repeated_identity(x, r["v"]) for x, r in zip(d["lines"], rows)])
+    by = {x["key"]: x for x in d["lines"]}
+    assert by["k1"]["repeated"] == by["k2"]["repeated"] == 2 and "repeated" not in by["k3"]
+    assert not by["k1"].get("repeat_extra") and by["k2"]["repeat_extra"]  # a cópia a mais é a 2.ª pela chave
+    totals = portfolio.groups("cantoneiras", "of", data=d)["list_totals"]
+    assert totals["repeated"] == {"lines": 1, "metres": 10.0} and totals["lines"] == 3 and totals["metres"] == 35.0
+    m = portfolio.members("cantoneiras", "of", ["OV1", "OF1"], data=d)
+    assert {i["key"]: i["repeated"] for i in m["items"]} == {"k1": 2, "k2": 2, "k3": None}
+    # Outra qualidade já não é a mesma linha.
+    other = [raw("OF1", "A", 10, 1000, key="k1"), raw("OF1", "A", 10, 1000, key="k2")]
+    other[1]["v"]["grade"] = "S275"
+    o = data(*other)
+    portfolio.mark_repeated(o["lines"], [portfolio.repeated_identity(x, r["v"]) for x, r in zip(o["lines"], other)])
+    assert not any(x.get("repeated") for x in o["lines"])
+    assert portfolio.groups("cantoneiras", "of", data=o)["list_totals"]["repeated"] == {"lines": 0, "metres": 0.0}
+
+
+def test_production_above_quantity_is_a_warning_also_for_lines_that_left_the_carteira(monkeypatch):
+    """F07: produção acima da QTD (OCR k × QTD) — a linha sai com saldo 0, mas o aviso conta-a; nada é corrigido."""
+    _quiet_notice(monkeypatch)
+    gone = raw("OF2", "B", 12, 1000, made=24, key="gone")
+    gone["v"].update(planning_remaining=0, production_excess=12)
+    assert portfolio.line_from_row(gone, TODAY) is None
+    closed = portfolio.line_from_row(gone, TODAY, keep_done=True)
+    assert closed["production_excess"] == 12 and closed["pieces"] == 0
+    still = raw("OF2", "C", 5, 1000, made=7, key="still")
+    still["v"].update(planning_remaining=0, production_excess=2)
+    still["detail"] = {"calculation": {"integrated_operations": [{"operation": "LOCAL:ABOCARDAR", "occurrence": 2, "remaining": 5}]}}
+    d = {**data(still, raw("OF3", "D", 5, 1000, key="ok")), "excess_done": [closed]}
+    totals = portfolio.groups("cantoneiras", "of", data=d)["list_totals"]
+    assert totals["production_excess"] == {"lines": 2, "pieces": 14, "closed": 1}
+    assert portfolio.groups("cantoneiras", "of", filters={"q": "OF3"}, data=d)["list_totals"]["production_excess"]["lines"] == 0
+    [item] = portfolio.members("cantoneiras", "of", ["OV1", "OF2"], data=d)["items"]
+    assert item["production_excess"] == 2
+
+
+def test_only_the_following_operation_left_shows_its_balance_not_zero_pieces():
+    """F09: só falta o abocardar ou a 2.ª operação → «Abocardar: 5» / «2.ª op.: N», e 0 kg por cortar."""
+    r = raw("OF1", "A", 5, 1000, made=5, key="k")
+    r["v"]["planning_remaining"] = 0
+    r["detail"] = {"calculation": {"integrated_operations": [
+        {"operation": "LOCAL:ABOCARDAR", "occurrence": 2, "remaining": 5}, {"operation": "CPIS:111", "occurrence": 3, "remaining": None}]}}
+    line = portfolio.line_from_row(r, TODAY)
+    assert line["following"] == [{"label": "Abocardar", "remaining": 5}, {"label": "2.ª op.", "remaining": None}]
+    assert line["kg"] == 0.0 and line["metres"] == 0.0 and not line["metres_unknown"]
+    view = portfolio.member_view(line, {})
+    assert view["following"] == line["following"] and view["pieces"] == 0
+    # Linha com corte por fazer: sem «following».
+    assert "following" not in portfolio.line_from_row(raw("OF1", "B", 5, 1000), TODAY)
+
+
+def test_unknown_metres_are_none_on_screen_and_counted_apart(monkeypatch):
+    """F09: sem comprimento ou sem saldo, os metros são «—» na lupa e contam à parte no Subtotal."""
+    _quiet_notice(monkeypatch)
+    d = data(raw("OF1", "A", 10, None, key="nolen"), raw("OF1", "B", 24, 1500, made=4, mes=10, key="nobal"), raw("OF1", "C", 2, 1000, key="ok"))
+    by = {x["key"]: x for x in d["lines"]}
+    assert by["nolen"]["metres_unknown"] and by["nobal"]["metres_unknown"] and not by["ok"]["metres_unknown"]
+    assert portfolio.member_view(by["nolen"], {})["metres"] is None and portfolio.member_view(by["ok"], {})["metres"] == 2.0
+    totals = portfolio.groups("cantoneiras", "of", data=d)["list_totals"]
+    assert totals["metres"] == 2.0 and totals["metres_unknown"] == 2
+    summary = {s["code"]: s for s in portfolio_kpis.overview("cantoneiras", data=d, decisions={},
+                                                              occurrences_data={"facts": [], "resources": RESOURCES}, resources_catalog=CATALOG)["summary"]}
+    assert summary["sem_maquina"]["metres"] == 2.0 and summary["sem_maquina"]["metres_unknown"] == 2
+
+
+def test_no_family_has_one_label_in_the_carteira_and_the_occurrences():
+    """F26: «Sem família (OF fora do CPIS)» nos dois (antes «Sem família CPIS» nos factos)."""
+    from app.sector import occurrences
+    line = portfolio.line_from_row(raw("OF1", "A", 1, 1000, family=None), TODAY)
+    assert line["family"] == occurrences.NO_CPIS_FAMILY == "Sem família (OF fora do CPIS)"
+
+
+def test_newer_excel_on_drive_is_one_line_on_top_of_the_carteira(monkeypatch):
+    """F16: a Carteira, a Carga e o Gantt simples dizem quando há um Excel mais recente no Drive por importar."""
+    from app.sector import drive_notice
+    status = {"sources": [
+        {"area": "cantoneiras", "newer_available": True, "newer_folder": "SAIDA",
+         "drive": {"remote_modified_at": "2026-10-07T12:20:31.123456789Z"}, "imported": {"loaded_at": "2026-10-02T07:15:00+00:00"}},
+        {"area": "perfis", "newer_available": False, "newer_folder": None, "drive": {}, "imported": {}}]}
+    calls = []
+    monkeypatch.setattr(drive_notice, "_status", lambda: calls.append(1) or status)
+    drive_notice.clear()
+    text = "O Excel de MTG3 Cantoneiras no Drive é mais recente (07/10 13:20, pasta SAIDA) do que o importado (02/10 08:15)."
+    assert drive_notice.text("cantoneiras") == text and drive_notice.text("perfis") is None and len(calls) == 1  # 60 s em memória
+    d = data(raw("OF1", "A", 1, 1000))
+    assert portfolio.groups("cantoneiras", "of", data=d)["source_notice"] == text
+    assert portfolio.groups("cantoneiras", "of", ["OV1"], data=d)["source_notice"] is None  # só no nível de cima
+    # Sem pasta (a raiz é a mais recente) e sem data importada.
+    assert drive_notice.notice_of({"area": "perfis", "newer_available": True, "drive": {}, "imported": {}}) == \
+        "O Excel de MTG2 Perfis no Drive é mais recente do que o importado."
+    # Uma base indisponível dá None, sem rebentar a página.
+    monkeypatch.setattr(drive_notice, "_status", lambda: (_ for _ in ()).throw(RuntimeError("sem base")))
+    drive_notice.clear()
+    assert drive_notice.text("cantoneiras") is None
+    drive_notice.clear()

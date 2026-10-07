@@ -146,6 +146,27 @@ def physical(resources: dict, relations: list[dict]) -> dict:
     return {"roles": roles, "members": members}
 
 
+def _hours_of(cell):
+    return cell.get("hours") if isinstance(cell, dict) else cell
+
+
+def counted(resources: dict, capacity_by_id: dict, relations: list[dict] | None = None, *, shape: dict | None = None) -> set[str]:
+    """Recursos cuja capacidade se soma, sem contar a dobrar (08/10): máquinas e postos compostos.
+
+    Um posto com capacidade própria (calendário ou orçamento, mesmo fechado) substitui as máquinas que o compõem;
+    sem capacidade própria contam as máquinas e o posto não. Ex.: o Fita pav.1 (60 h) contém o Doall e a Thomas,
+    por isso o total do setor soma o posto e não o Doall (30 h). Função pura: `capacity_by_id` dá, por recurso,
+    as horas (ou uma célula {"hours": …}); None = capacidade desconhecida. `shape` = physical(resources, relations).
+    """
+    shape = shape or physical(resources, relations or [])
+    chosen = {rid for rid in resources if shape["roles"].get(rid) == "maquina"}
+    for post, members in shape["members"].items():
+        if _hours_of(capacity_by_id.get(post)) is not None:
+            chosen -= set(members)
+            chosen.add(post)
+    return chosen
+
+
 def quotas(c) -> list[dict]:
     if not c.execute("SELECT to_regclass('planning_mtg.sector_capacity_quotas') t").fetchone()["t"]:
         return []
@@ -283,16 +304,6 @@ def build(datasets: dict, resources: dict, relations: list[dict], budgets: list[
                 if high > low:
                     allocated[(bar["resource_id"], slot["key"], area, family, key in (highlighted or ()))] += (high - low).total_seconds() / 3600
 
-    def counted(cells):
-        """Machines and composed posts without double counting: a post with its own capacity
-        replaces its members; otherwise its members count and the post does not."""
-        chosen = {rid for rid in resources if shape["roles"].get(rid) == "maquina"}
-        for post, members in shape["members"].items():
-            if cells[post]["hours"] is not None:
-                chosen -= set(members)
-                chosen.add(post)
-        return chosen
-
     member_of = {m: post for post, members in shape["members"].items() for m in members}
 
     def unit_capacity(area, slot, cells=None):
@@ -304,7 +315,7 @@ def build(datasets: dict, resources: dict, relations: list[dict], budgets: list[
         cells = cells if cells is not None else {rid: capacity[rid][slot["key"]] for rid in resources}
         total, machines_known, machines, partial, statuses = 0.0, 0, 0, False, set()
         known_ids, unknown_names = set(), []
-        for rid in counted(cells):
+        for rid in counted(resources, cells, shape=shape):
             share, kind = owner(rid, (area, slot))
             if kind == "outro_setor":
                 continue
@@ -556,7 +567,8 @@ def view(areas: list[str], *, horizon_weeks: int = 12, granularity: str = "auto"
          scenario: str = "mediana") -> dict:
     from . import occurrences, sets as reference_sets
     from ..gantt import research
-    today = today or date.today()
+    from .week import lisbon_today
+    today = today or lisbon_today()  # dia de Lisboa (08/10)
     filters = tree.clean_filters(filters)
     if mode not in ("needs", "proposal", "accepted"):
         raise planning.PlanningError("Escolhe Necessidades, Cenário ou Aceite.")
@@ -594,13 +606,14 @@ def view(areas: list[str], *, horizon_weeks: int = 12, granularity: str = "auto"
 def save_quota(payload: dict, conn=None) -> dict:
     """Share of a shared physical resource for one sector; the shares in force never exceed 1."""
     from .. import planning_registration as registration
+    from .week import lisbon_today
     rid = str(payload.get("resource_id") or "").strip()
     area = str(payload.get("area") or payload.get("setor") or "")
     if area not in ("perfis", "cantoneiras", "reserva") or not rid:
         raise planning.PlanningError("Indica o recurso e o setor (ou reserva).")
     try:
         request_id = uuid.UUID(str(payload.get("request_id")))
-        valid_from = date.fromisoformat(str(payload.get("valid_from") or date.today().isoformat()))
+        valid_from = date.fromisoformat(str(payload.get("valid_from") or lisbon_today().isoformat()))  # dia de Lisboa (08/10)
         valid_until = date.fromisoformat(str(payload["valid_until"])) if payload.get("valid_until") else None
         share = float(payload.get("share"))
     except (ValueError, TypeError, KeyError):

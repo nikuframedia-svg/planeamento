@@ -15,6 +15,12 @@ from .. import planning_calendars
 LISBON = ZoneInfo("Europe/Lisbon")
 
 
+def lisbon_today(now: datetime | None = None) -> date:
+    """O dia de hoje em Lisboa (08/10): o servidor está em Europe/Berlin e, entre as 23:00 e a meia-noite de
+    Lisboa, date.today() já dava o dia seguinte. Todas as chaves por dia do setor usam este."""
+    return (now or datetime.now(timezone.utc)).astimezone(LISBON).date()
+
+
 def split_interval(start: datetime, end: datetime) -> dict[str, float]:
     """{data ISO: horas} de um intervalo [start, end) partido às meias-noites de Lisboa."""
     out = defaultdict(float)

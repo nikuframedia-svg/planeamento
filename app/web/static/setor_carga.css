@@ -48,6 +48,11 @@ table.orders .num { text-align: right; font-variant-numeric: tabular-nums; }
 .tabs button[aria-selected="true"] { background: #10384b; color: #fff; border-color: #10384b; }
 .elsewhere { padding: .35rem .6rem; background: #fff8e6; border: 1px solid #e6c98a; border-radius: 8px; }
 .named { border-bottom: 1px dotted #7b8f96; cursor: help; }
+/* Avisos de 08/10: uma linha discreta (Excel por importar, outro setor) e a nota do posto na linha da máquina. */
+.source-notice { margin: .1rem 0 .4rem; color: #8a5a00; }
+.elsewhere-note { margin: .5rem 0 0; }
+table.orders td.late { color: #9d2a26; font-weight: 700; }
+table.loadgrid tbody th small.shared { display: block; font-weight: normal; white-space: normal; max-width: 15rem; font-size: inherit; }
 table.summary { border-collapse: collapse; margin: .3rem 0 .5rem; }
 table.summary th, table.summary td { padding: .15rem .6rem .15rem 0; text-align: left; text-transform: none; letter-spacing: normal; color: inherit; background: transparent; font-weight: normal; }
 table.summary th { color: #5d737a; white-space: nowrap; }

@@ -19,7 +19,9 @@ from datetime import date, datetime, timedelta
 
 from .. import planning, planning_needs as needs, planning_population as population
 from . import cache, decisions as resolution, planning_status
+from .occurrences import NO_CPIS_FAMILY
 from .references import UNRESOLVED, master_reference
+from .week import lisbon_today
 
 SECTORS = {"cantoneiras": "MTG3 Cantoneiras", "perfis": "MTG2 Perfis"}
 OPEN_STATES = set(planning.OPEN_STATES)
@@ -182,8 +184,9 @@ def signals_of(designation: str, notes: str, observations: str, galvanising_note
     }
 
 
-def line_from_row(row: dict, today: date, *, policy: dict | None = None, overrides: dict | None = None) -> dict | None:
-    """One open plan line, or None when nothing is left to cut."""
+def line_from_row(row: dict, today: date, *, policy: dict | None = None, overrides: dict | None = None,
+                  keep_done: bool = False) -> dict | None:
+    """One open plan line, or None when nothing is left to cut (`keep_done`: the line anyway, for the warnings)."""
     from . import priority
     v = row["v"]
     quantity = _number(v.get("quantity_required"))
@@ -201,9 +204,15 @@ def line_from_row(row: dict, today: date, *, policy: dict | None = None, overrid
     done = quantity - pieces if pieces is not None else None
     following=(detail.get('calculation') or {}).get('integrated_operations',[])
     pending_operations=[s for s in following if s.get('remaining') is None or s['remaining']>0]
-    if pieces is not None and pieces <= 0 and not pending_operations:
+    if pieces is not None and pieces <= 0 and not pending_operations and not keep_done:
         return None
     length = _number(v.get("length_mm"))
+    weight_unit = _number(v.get("weight_unit"))
+    # Desconhecido nunca vira 0 (08/10): sem saldo ou sem comprimento, os metros ficam por saber. O campo «metres»
+    # continua a somar só o conhecido (0.0 aqui), porque o Planear e os conjuntos somam-no; o ecrã e os
+    # subtotais usam «metres_unknown» («—» na lupa, contados à parte).
+    metres_unknown = pieces is None or (pieces > 0 and not length)
+    excess = _number(v.get("production_excess"))
     reference = (v.get("component_ref") or "").strip()
     cut_date = _day(v.get("cut_date"))
     status = v.get("status")
@@ -234,7 +243,7 @@ def line_from_row(row: dict, today: date, *, policy: dict | None = None, overrid
         "designation": designation,
         "work": v.get("ov") or v.get("of") or "",
         "family_code": family_code,
-        "family": f"{family_code} {family_name}".strip() if family_code else "Sem família (OF fora do CPIS)",
+        "family": f"{family_code} {family_name}".strip() if family_code else NO_CPIS_FAMILY,
         "sku_family": v.get("sku_family") or "Sem família SKU",
         "sku_family_status": v.get("sku_family_status") or ("Sem catálogo" if area == "perfis" else "Sem família identificada"),
         "registered": _day(row.get("record_date")),
@@ -249,10 +258,18 @@ def line_from_row(row: dict, today: date, *, policy: dict | None = None, overrid
         "done": done,
         "pieces": pieces,
         "metres": pieces * length / 1000 if pieces is not None and length else 0.0,
+        "metres_unknown": metres_unknown,
         # Toneladas = saldo de peças × peso unitário (coluna «Peso un. Kg» ou tabela de pesos); sem peso → desconhecido.
-        "kg": pieces * _number(v.get("weight_unit")) if pieces is not None and _number(v.get("weight_unit")) is not None else None,
+        # Sem saldo na operação principal (só falta a seguinte) são 0 kg por cortar, com ou sem peso: assim o «sem peso»
+        # da Carteira conta a mesma população da Carga, que só tem ocorrências principais com saldo (08/10).
+        "kg": 0.0 if pieces is not None and pieces <= 0 else pieces * weight_unit if pieces is not None and weight_unit is not None else None,
+        "weight_unit": weight_unit,
         "balance_unknown": pieces is None,
         "pending_following_operations":len(pending_operations),
+        # Só falta a operação seguinte: o saldo dela, para a lupa dizer «Abocardar: N» em vez de 0 peças (08/10).
+        **({"following": following_balances(pending_operations)} if pieces is not None and pieces <= 0 and pending_operations else {}),
+        # Produção acima da QTD (F07, 08/10): aviso na lupa; nada é corrigido.
+        **({"production_excess": excess} if excess and excess > 0 else {}),
         "balance_origin": v.get('planning_balance_origin') or b['balance_origin'],
         "machine": machine,  # máquina efetiva depois de current(); aqui só a da Tabela
         "tabela_machine": tabela_machine,
@@ -270,6 +287,38 @@ def line_from_row(row: dict, today: date, *, policy: dict | None = None, overrid
         "signals": signals,
         "proposal": proposal_of(signals, window),
     }
+
+
+def following_balances(operations: list[dict]) -> list[dict]:
+    """[{label, remaining}] das operações seguintes por fazer: «Abocardar» ou «2.ª op.», saldo somado por rótulo;
+    None quando algum saldo é desconhecido."""
+    out: dict[str, float | None] = {}
+    for op in operations:
+        label = "Abocardar" if str(op.get("operation")) == "LOCAL:ABOCARDAR" else "2.ª op."
+        value = _number(op.get("remaining"))
+        out[label] = None if value is None or (label in out and out[label] is None) else (out.get(label) or 0) + value
+    return [{"label": k, "remaining": v} for k, v in out.items()]
+
+
+def repeated_identity(line: dict, values: dict) -> tuple:
+    """Linhas iguais em OF, referência, perfil, comprimento, QTD, material e qualidade: possivelmente repetidas."""
+    return (line["of"], line["reference"], line["profile"], line["length_mm"], line["quantity"],
+            (values.get("material_type") or "").strip(), (values.get("grade") or "").strip())
+
+
+def mark_repeated(lines: list[dict], identities: list[tuple]) -> None:
+    """Marca as linhas repetidas (08/10, F06): `repeated` = n em cada uma; a partir da 2.ª (pela chave),
+    `repeat_extra` diz que é a cópia que conta a mais. Nada é removido nem somado de outra forma."""
+    groups = defaultdict(list)
+    for line, identity in zip(lines, identities):
+        groups[identity].append(line)
+    for same in groups.values():
+        if len(same) < 2:
+            continue
+        for i, line in enumerate(sorted(same, key=lambda x: x["key"])):
+            line["repeated"] = len(same)
+            if i:
+                line["repeat_extra"] = True
 
 
 def proposal_of(signals: dict, window: str) -> str | None:
@@ -342,9 +391,20 @@ def _build(c, sector: str, head: dict, today: date) -> dict:
         r.setdefault("detail", {})
         if isinstance(r["detail"], dict):
             r["detail"].setdefault("area", sector)
-    lines = [line for line in (line_from_row(r, today, policy=policies[sector], overrides=overrides) for r in rows) if line]
+    lines, identities, excess_done = [], [], []
+    for r in rows:
+        line = line_from_row(r, today, policy=policies[sector], overrides=overrides)
+        if line:
+            lines.append(line)
+            identities.append(repeated_identity(line, r["v"]))
+        elif (_number(r["v"].get("production_excess")) or 0) > 0:
+            # Produção acima da QTD (F07, 08/10): a linha sai da Carteira com saldo 0, mas o aviso conta-a.
+            done = line_from_row(r, today, policy=policies[sector], overrides=overrides, keep_done=True)
+            if done:
+                excess_done.append(done)
+    mark_repeated(lines, identities)
     return {"sector": sector, "generation": head["id"], "snapshot": head["snapshot"],
-            "imported_at": head["created_at"], "today": today, "lines": lines, "stale": False}
+            "imported_at": head["created_at"], "today": today, "lines": lines, "excess_done": excess_done, "stale": False}
 
 
 def load(sector: str, *, today: date | None = None, conn=None, allow_stale: bool = False) -> dict:
@@ -354,7 +414,7 @@ def load(sector: str, *, today: date | None = None, conn=None, allow_stale: bool
     `stale: True`, e calcula a nova uma vez em segundo plano. As gravações nunca o passam.
     """
     check_sector(sector)
-    today = today or date.today()
+    today = today or lisbon_today()  # dia de Lisboa, como a Carga (08/10)
     with (planning.connect(readonly=True) if conn is None else nullcontext(conn)) as c:
         if conn is None:  # a chave e as linhas do mesmo retrato da base
             c.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")
@@ -482,6 +542,11 @@ def _summary(lines: list[dict], decisions: dict | None = None) -> dict:
         "pieces": round(sum(x["pieces"] or 0 for x in lines)),
         "unknown_balances": sum(x.get('balance_unknown', False) for x in lines),
         "metres": round(metres, 1),
+        # Linhas cujos metros não se sabem (sem saldo ou sem comprimento): não somam e contam-se aqui (08/10).
+        "metres_unknown": sum(bool(x.get("metres_unknown", x.get("balance_unknown"))) for x in lines),
+        # Linhas possivelmente repetidas (F06, 08/10): as cópias a mais e os metros que somam a mais.
+        "repeated": {"lines": sum(1 for x in lines if x.get("repeat_extra")),
+                     "metres": round(sum(x["metres"] for x in lines if x.get("repeat_extra")), 1)},
         "metres_without_machine": round(sum(x["metres"] for x in lines if not x["machine"]), 1),
         "pieces_without_machine": round(sum(x["pieces"] or 0 for x in lines if not x["machine"])),
         "tonnes": round(sum(x["kg"] for x in lines if x.get("kg") is not None) / 1000, 2),
@@ -556,7 +621,15 @@ def groups(sector: str, view: str = "referencia", path: list[str] | None = None,
     result = [{"key": k, **_summary(v, decisions), "member_total": totals[k]} for k, v in buckets.items()]
     result.sort(key=_urgency if sort == "urgencia" else (lambda g: (-g["metres"], g["key"])))
     subtotal = _summary(selected, decisions)
+    # Produção acima da QTD (F07, 08/10): as linhas da lista e as que já saíram da Carteira por isso, com os filtros.
+    done = [x for x in group_lines({"lines": data.get("excess_done") or []}, view, path) if matches(x, filters, decisions)]
+    excess = [x for x in selected if x.get("production_excess")] + done
+    subtotal["production_excess"] = {"lines": len(excess), "pieces": round(sum(x["production_excess"] for x in excess)),
+                                     "closed": len(done)}
+    from . import drive_notice
     return {
+        # Excel do setor no Drive mais recente do que o importado (F16, 08/10): uma linha de aviso, só no nível de cima.
+        "source_notice": None if path else drive_notice.text(sector),
         "sector": sector, "sector_label": SECTORS[sector], "view": view, "levels": [{"id": l, "label": LEVELS[l]} for l in levels],
         "level": {"id": level, "label": LEVELS[level]}, "path": path, "has_children": len(path) + 1 < len(levels),
         "generation": data["generation"], "snapshot": data["snapshot"], "imported_at": data["imported_at"], "today": data["today"], "stale": bool(data.get("stale")),
@@ -584,7 +657,10 @@ def member_view(line: dict, decisions: dict | None) -> dict:
     return {
         "key": line["key"], "of": line["of"], "reference": line["reference"], "profile": line["profile"],
         "length_mm": line["length_mm"], "quantity": line["quantity"], "pieces": line["pieces"],
-        "metres": round(line["metres"], 2), "balance_unknown": line["balance_unknown"], "machine": line["machine"],
+        # Metros desconhecidos vão como None (08/10): a lupa mostra «—», nunca «0 m».
+        "metres": None if line.get("metres_unknown") else round(line["metres"], 2),
+        "metres_unknown": bool(line.get("metres_unknown", line["balance_unknown"])),
+        "balance_unknown": line["balance_unknown"], "machine": line["machine"],
         "machine_source": line.get("machine_source"), "tabela_machine": line.get("tabela_machine"),
         "sku_family": line.get("sku_family"),
         "kg": round(line["kg"], 1) if line.get("kg") is not None else None,
@@ -593,6 +669,9 @@ def member_view(line: dict, decisions: dict | None) -> dict:
         "decision": found["decision"], "decision_source": found["source"],
         "revision": found["revision"], "token": member_token(line, found["revision"]),
         "pending_following_operations": line.get("pending_following_operations", 0),
+        # Avisos da lupa (08/10): «repetida n×», «produção acima da QTD», «Abocardar: N» quando só falta essa operação.
+        "repeated": line.get("repeated"), "production_excess": line.get("production_excess"),
+        "following": line.get("following"),
     }
 
 

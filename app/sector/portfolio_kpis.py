@@ -40,7 +40,7 @@ def _add(target, fact, line):
     """Horas por ocorrência; metros da linha (os mesmos da lista) só na ocorrência principal."""
     target["lines"].add(line["key"])
     if fact.get("phase", "principal") == "principal":
-        if line["balance_unknown"]:
+        if _metres_unknown(line):
             target["metres_unknown"] += 1
         else:
             target["metres"] += line["metres"]
@@ -51,6 +51,11 @@ def _add(target, fact, line):
         target["hours_unknown"] += 1
     else:
         target["hours"] += hours
+
+
+def _metres_unknown(line) -> bool:
+    """Sem saldo ou sem comprimento (08/10): os metros não se sabem e contam à parte, nunca como 0."""
+    return bool(line.get("metres_unknown", line["balance_unknown"]))
 
 
 def _out(value):
@@ -232,7 +237,7 @@ def preview(payload: dict, **kw) -> dict:
             continue
         if not line["machine"]:
             no_machine["lines"] += 1
-            if line["balance_unknown"]:
+            if _metres_unknown(line):
                 no_machine["metres_unknown"] += 1
             else:
                 no_machine["metres"] += line["metres"]

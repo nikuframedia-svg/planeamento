@@ -100,6 +100,10 @@ table.members tr.is-nesting td { background: #dff2e6; }
 .chip-planeado { background: #e3f0f2; color: #15525c; border-color: #a9cdd3; }
 .chip-nesting { background: #dff2e6; color: #1e6b3d; border-color: #9fd3b3; }
 .chip-sem_maquina { background: #fff4e5; color: #8a4f12; border-color: #f0cf9f; }
+/* Avisos de 08/10: linha discreta por baixo do Subtotal, avisos da lupa e Excel por importar. */
+table.tree tr.subtotal-note > td { background: #f7f9fa; font-weight: normal; padding-top: 0; border-bottom: 2px solid #dce6e8; }
+.warn { display: inline-block; margin-left: .35rem; color: #8a5a00; white-space: nowrap; cursor: help; }
+.source-notice { margin: 0 0 .4rem; color: #8a5a00; }
 
 @media (max-width: 760px) {
   /* planning_hub.css transforma as tabelas em blocos no telemóvel; a Carteira mantém a tabela com scroll. */

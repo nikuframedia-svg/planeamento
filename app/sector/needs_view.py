@@ -32,7 +32,7 @@ def _load(c, areas, today):
 
 
 def view(params: dict, today: date | None = None) -> dict:
-    today = today or date.today()
+    today = today or occurrences.lisbon_today()  # o dia de Lisboa das chaves das ocorrências (08/10)
     areas = _areas(params.get("areas"))
     dims = tree.dims_for(params.get("preset") or ("familias" if not params.get("dims") else None), params.get("dims"))
     filters = tree.clean_filters(params.get("filters"))
@@ -54,7 +54,7 @@ def view(params: dict, today: date | None = None) -> dict:
 
 
 def facet_view(params: dict, today: date | None = None) -> dict:
-    today = today or date.today()
+    today = today or occurrences.lisbon_today()  # o dia de Lisboa das chaves das ocorrências (08/10)
     areas = _areas(params.get("areas"))
     with planning.connect(readonly=True) as c:
         c.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")

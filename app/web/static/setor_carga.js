@@ -32,6 +32,12 @@
   const short = (n) => String(n || '').replace(/^Ficep\s+/i, '');
   const dm = (iso) => { const [, m, d] = String(iso).slice(0, 10).split('-'); return `${d}/${m}`; };
   const hrs = (v) => v === null || v === undefined ? '—' : `${h1.format(v)} h`;
+  // Desconhecido nunca aparece como 0 (08/10): «—» quando nada se sabe; senão o conhecido com «(N sem …)».
+  const known = (v, unknown, fmt, what) => v === null || v === undefined || (!v && unknown) ? '—'
+    : `${fmt.format(v)}${unknown ? ` (+${unknown} ${what})` : ''}`;
+  // Atrasado por tipo (08/10); com a Python antiga (sem os campos) fica só o total.
+  const lateKinds = (lb) => lb && lb.plan !== undefined
+    ? `no plano ${h1.format(lb.plan)} h · a vencer ${h1.format(lb.due)} h · sugerida ${h1.format(lb.suggested)} h` : '';
   const named = (label, key) => el('span', {title: EXPLAIN[key], class: 'named'}, label);
   const error = (e) => { $('error').textContent = e.message; $('error').hidden = false; };
   const notice = (t) => { $('notice').textContent = t; $('notice').hidden = false; $('error').hidden = true; };
@@ -74,6 +80,16 @@
     return td;
   }
 
+  // Máquinas de um posto (08/10): o Fita pav.1 contém o Doall e a Thomas, que partilham uma só capacidade.
+  function sharedNote(m) {
+    const s = m.shared;
+    if (!s) return null;
+    const others = (s.with || []).map(short).join(' e ');
+    const total = s.hours !== null && s.hours !== undefined ? `: juntas têm ${h1.format(s.hours)} h` : '';
+    const text = s.is_post ? `posto com ${others}${total}` : `partilha o posto ${short(s.post)}${others ? ` com ${others}` : ''}${total}`;
+    return el('small', {class: 'shared muted', title: 'Capacidade conjunta do posto nesta semana (as linhas continuam por máquina; não se somam).'}, text);
+  }
+
   function hoursCell(v, extra = {}) {
     return el('td', {class: `num ${extra.class || ''}`.trim(), title: extra.title || null}, v ? h.format(v) : '0');
   }
@@ -107,21 +123,23 @@
     const late = modern();
     const machines = data.machines.filter(hasCalendar);
     $('head').replaceChildren(el('tr', {}, el('th', {scope: 'col'}, 'Máquina'),
-      late ? el('th', {scope: 'col', class: 'num', title: 'Horas com prazo antes desta semana'}, 'Atrasado (h)') : null,
+      late ? el('th', {scope: 'col', class: 'num', title: 'Horas com prazo antes desta semana. No cursor de cada máquina: no plano · a vencer · sugerida.'}, 'Atrasado (h)') : null,
       ...data.weeks.map((w, i) => el('th', {scope: 'col', class: i === 0 ? 'now' : null, title: i === 0 ? 'Semana atual' : null}, `S${w.week}`, el('small', {}, ` ${dm(w.monday)}`))),
       el('th', {scope: 'col', class: 'num'}, 'Sem prazo (h)'), el('th', {scope: 'col', class: 'num', title: 'Horas com prazo depois destas 13 semanas'}, 'Mais tarde (h)')));
     $('body').replaceChildren(...machines.map((m) => {
+      const kinds = lateKinds(m.late_before);
       const lateCell = late ? hoursCell(m.late_before.hours, {class: m.late_before.hours > 0 ? 'late clickable' : '',
-        title: `${h.format(m.late_before.operations)} operações com prazo antes desta semana${m.late_before.unknown ? ` · ${m.late_before.unknown} sem horas` : ''}${m.late_before.hours > 0 ? '. Clica para ver as OF.' : ''}`}) : null;
+        title: `${h.format(m.late_before.operations)} operações com prazo antes desta semana${kinds ? `: ${kinds}` : ''}${m.late_before.unknown ? ` · ${m.late_before.unknown} sem horas` : ''}${m.late_before.hours > 0 ? '. Clica para ver as OF.' : ''}`}) : null;
       if (lateCell && m.late_before.hours > 0) lateCell.addEventListener('click', () => showDetail(m, m.weeks[0]));
       const t = totalOf(m);
       const after = m.after !== undefined ? m.after : t ? t.after : 0;
       return el('tr', {},
-        el('th', {scope: 'row'}, short(m.name)), lateCell, ...m.weeks.map((w) => cell(m, w)),
+        el('th', {scope: 'row'}, short(m.name), sharedNote(m)), lateCell, ...m.weeks.map((w) => cell(m, w)),
         hoursCell(m.no_date.hours, {title: `${h.format(m.no_date.operations)} operações sem prazo${m.no_date.unknown ? ` · ${m.no_date.unknown} sem horas` : ''}`}),
         hoursCell(after));
     }));
     noCalendarList(data.machines.filter((m) => !hasCalendar(m)));
+    elsewhereNote();
     // «Aplicar todas» só junta recomendações do mesmo sentido.
     const advice = machines.flatMap((m) => m.weeks.filter((w) => w.advice && w.advice.delta).map((w) => ({maquina: m.id, ano: w.year, semana: w.week, turnos: w.shifts + w.advice.delta, delta: w.advice.delta})));
     const strip = (list) => list.map(({delta, ...x}) => x);
@@ -180,17 +198,32 @@
       [named('Capacidade', 'capacidade'), `${hrs(cap)} (${w.shifts} turno${w.shifts === 1 ? '' : 's'})${current && w.full_capacity !== undefined ? ` · faltam ${h1.format(w.capacity)} h desta semana` : ''}`],
       [named('Carga', 'previstas'), `${hrs(w.load)} (no plano ${h1.format(w.plan)} + a vencer ${h1.format(w.due)} + sugerida ${h1.format(w.suggested)})${w.unknown ? ` · ${w.unknown} operações sem horas` : ''}`],
     ];
-    if (current && m.late_before) rows.push(['Atrasado', `${hrs(m.late_before.hours)} (prazo antes desta semana)${m.late_before.unknown ? ` · ${m.late_before.unknown} operações sem horas` : ''}`]);
+    if (current && m.late_before) rows.push(['Atrasado', `${hrs(m.late_before.hours)} (prazo antes desta semana${lateKinds(m.late_before) ? `: ${lateKinds(m.late_before)}` : ''})${m.late_before.unknown ? ` · ${m.late_before.unknown} operações sem horas` : ''}`]);
     else if (w.late) rows.push(['Atrasado', hrs(w.late)]);
     rows.push([named('Horas segundo o Excel', 'excel'), d && d.excel_hours !== undefined ? `${hrs(d.excel_hours)}${d.excel_unknown ? ` · ${d.excel_unknown} operações principais sem horas do Excel` : ''}` : '…']);
     return el('table', {class: 'summary', id: 'detail-summary'}, el('tbody', {}, rows.map(([k, v]) => el('tr', {}, el('th', {scope: 'row'}, k), el('td', {}, v)))));
   }
 
+  // Trabalho do setor em máquinas de outro setor (08/10): a nota aparece sempre que houver operações, mesmo sem
+  // horas (antes só com horas, e ficava escondida), uma vez por baixo da grelha.
   function elsewhereNote() {
+    const box = $('elsewhere-note');
+    if (!box) return;
     const e = data.elsewhere;
-    if (!e || !e.hours) return null;  // a nota só aparece quando essas operações têm horas
-    return el('p', {class: 'muted elsewhere'}, `${h.format(e.operations)} operações deste setor estão em máquinas de outro setor e não contam aqui: ` +
-      e.machines.filter((x) => x.hours).map((x) => `${short(x.name)} ${h1.format(x.hours)} h`).join(' · '));
+    box.hidden = !(e && e.operations);
+    if (box.hidden) return;
+    const unknown = e.unknown !== undefined ? e.unknown : e.machines.reduce((a, x) => a + (x.unknown || 0), 0);
+    const where = e.machines.map((x) => (x.hours ? `${short(x.name)} ${h1.format(x.hours)} h` : short(x.name))).join(' · ');
+    box.textContent = `${h.format(e.operations)} operações deste setor estão em máquinas de outro setor e não contam aqui: ${where}` +
+      (unknown >= e.operations ? ' (não têm horas).' : unknown ? ` · ${h.format(unknown)} sem horas.` : '.');
+  }
+
+  // Excel do setor no Drive mais recente do que o importado (08/10): uma linha, só quando a API a manda.
+  function sourceNotice() {
+    const box = $('source-notice');
+    if (!box) return;
+    box.hidden = !data.source_notice;
+    box.textContent = data.source_notice || '';
   }
 
   async function showDetail(m, w) {
@@ -217,7 +250,6 @@
     box.replaceChildren(...[el('h2', {}, `${short(m.name)} · S${w.week} (${dm(w.monday)})`),
       advice ? el('p', {}, el('b', {}, advice)) : null,
       summaryTable(m, w, null),
-      elsewhereNote(),
       el('h3', {}, 'Turnos da semana'), weekShifts,
       el('h3', {}, 'Turnos por dia'), days,
       el('h3', {}, current && m.late_before ? 'OF desta semana e atrasadas' : 'OF nesta semana'), el('div', {id: 'detail-orders'}, el('p', {class: 'muted'}, 'A carregar…')),
@@ -230,13 +262,21 @@
       const d = await getJson(`/planeamento/api/setor/carga/celula?${new URLSearchParams({setor: $('setor').value, maquina: m.id, ano: w.year, semana: w.week})}`);
       if (t !== ticket) return;
       $('detail-summary').replaceWith(summaryTable(m, w, d));
+      // Semana atual (08/10): as horas desta semana (as da grelha) e as atrasadas em colunas separadas.
+      const split = d.week_hours !== undefined && d.late_before && d.late_before.operations > 0;
+      const head = ['OF', 'Cliente', split ? 'Horas desta semana' : 'Horas previstas', ...(split ? ['Atrasado (h)'] : []), 'Horas segundo o Excel', 'Sem horas', 'Peças', 'Metros', 'Peso (kg)', 'Prazo', 'Atraso', 'Tipo', ''];
       const table = el('div', {class: 'scroll'}, el('table', {class: 'orders'},
-        el('thead', {}, el('tr', {}, ...['OF', 'Cliente', 'Horas previstas', 'Horas segundo o Excel', 'Sem horas', 'Peças', 'Metros', 'Peso (kg)', 'Prazo', 'Atraso', 'Tipo', ''].map((x) => el('th', {scope: 'col', title: x === 'Horas segundo o Excel' ? EXPLAIN.excel : x === 'Horas previstas' ? EXPLAIN.previstas : null}, x)))),
+        el('thead', {}, el('tr', {}, ...head.map((x) => el('th', {scope: 'col', title: x === 'Horas segundo o Excel' ? EXPLAIN.excel : x === 'Horas previstas' || x === 'Horas desta semana' ? EXPLAIN.previstas : x === 'Atrasado (h)' ? 'Horas com prazo antes desta semana' : null}, x)))),
         el('tbody', {}, d.orders.map((o) => {
-          const tr = el('tr', {class: 'clickable', tabindex: 0, title: 'Ver as operações e o cálculo'}, el('td', {}, o.of), el('td', {}, o.customer || ''), el('td', {class: 'num'}, h1.format(o.hours)),
+          const tr = el('tr', {class: 'clickable', tabindex: 0, title: 'Ver as operações e o cálculo'}, el('td', {}, o.of), el('td', {}, o.customer || ''),
+            el('td', {class: 'num'}, h1.format(split ? o.week_hours : o.hours)),
+            split ? el('td', {class: `num${o.late_before_hours ? ' late' : ''}`}, o.late_before_hours ? h1.format(o.late_before_hours) : '') : null,
             el('td', {class: 'num'}, o.excel_hours !== undefined ? h1.format(o.excel_hours) + (o.excel_unknown ? ` · ${o.excel_unknown}?` : '') : ''),
-            el('td', {class: 'num'}, o.unknown || ''), el('td', {class: 'num'}, h.format(o.pieces)), el('td', {class: 'num'}, h.format(o.metres)),
-            el('td', {class: 'num'}, o.weight_kg !== undefined ? h.format(o.weight_kg) : ''),
+            el('td', {class: 'num'}, o.unknown || ''),
+            el('td', {class: 'num', title: o.pieces_unknown ? `${o.pieces_unknown} linha(s) com saldo por confirmar (não contam)` : null}, known(o.pieces, o.pieces_unknown, h, 'por confirmar')),
+            el('td', {class: 'num', title: o.metres_unknown ? `${o.metres_unknown} linha(s) com metros por saber (não contam)` : null}, known(o.metres, o.metres_unknown, h, 'por saber')),
+            el('td', {class: 'num', title: o.weight_unknown ? `${o.weight_unknown} operação(ões) sem peso unitário (não contam)` : null},
+              o.weight_kg === undefined ? '' : known(o.weight_kg, o.weight_unknown, h, 'sem peso')),
             el('td', {}, o.priority_day ? dm(o.priority_day) : '—'), el('td', {class: 'num'}, o.late_days ? `${o.late_days} d` : ''),
             el('td', {}, o.kinds.map((k) => KIND[k]).join(', ')),
             el('td', {}, el('a', {href: `/planeamento/carteira?setor=${encodeURIComponent($('setor').value)}&vista=of_perfil&q=${encodeURIComponent(o.of)}`}, 'Carteira')));
@@ -245,7 +285,10 @@
           tr.addEventListener('keydown', (e) => { if (e.key === 'Enter') go(); });
           return tr;
         }))));
-      $('detail-orders').replaceChildren(el('p', {class: 'muted'}, `${d.orders.length} OF · ${h1.format(d.hours)} h${d.unknown ? ` · ${d.unknown} operações sem horas` : ''}. Clica numa OF para ver as operações e o cálculo.`), table);
+      const total = split
+        ? `${h1.format(d.week_hours)} h desta semana + ${h1.format(d.late_before.hours)} h atrasadas${lateKinds(d.late_before) ? ` (${lateKinds(d.late_before)})` : ''}`
+        : `${h1.format(d.hours)} h`;
+      $('detail-orders').replaceChildren(el('p', {class: 'muted'}, `${d.orders.length} OF · ${total}${d.unknown ? ` · ${d.unknown} operações sem horas` : ''}. Clica numa OF para ver as operações e o cálculo.`), table);
     } catch (e) { error(e); }
     box.scrollIntoView({behavior: 'smooth', block: 'nearest'});
   }
@@ -334,7 +377,7 @@
           el('td', {class: 'num'}, o.length_mm ? h.format(o.length_mm) : ''), el('td', {class: 'num'}, o.remaining !== null ? h.format(o.remaining) : '?'),
           el('td', {class: 'num', title: o.load_hours === null ? (o.hours_reason || '') : ''}, o.load_hours !== null ? h1.format(o.load_hours) : 'sem horas'),
           el('td', {class: 'num'}, o.excel_hours !== null && o.excel_hours !== undefined ? h1.format(o.excel_hours) : '—'),
-          el('td', {class: 'num'}, o.weight_kg !== null && o.weight_kg !== undefined ? h.format(o.weight_kg) : ''),
+          el('td', {class: 'num'}, o.weight_kg !== null && o.weight_kg !== undefined ? h.format(o.weight_kg) : o.phase === 'principal' ? '—' : ''),
           el('td', {title: o.priority_source || ''}, o.priority_day ? dm(o.priority_day) : '—'), el('td', {}, o.kind + (o.late ? ' · atrasada' : '')));
         const details = el('details', {}, el('summary', {}, 'Ver cálculo'), originNote(o), ...calculation(o));
         tr.append(el('td', {}, details));
@@ -383,6 +426,7 @@
     if (quiet && fresh.stale) return again();
     data = fresh;
     render();
+    sourceNotice();
     if (open) {
       const m = data.machines.find((x) => x.id === open.m);
       const w = m && m.weeks.find((x) => x.week === open.w && x.year === open.y);

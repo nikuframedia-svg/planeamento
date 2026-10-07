@@ -13,6 +13,9 @@
   const short = value => value ? value.slice(8, 10) + "/" + value.slice(5, 7) : "—";
   const number = value => Math.round(value || 0).toLocaleString("pt-PT");
   const plural = (n, one, many) => `${number(n)} ${n === 1 ? one : many}`;
+  // Peças por confirmar nunca aparecem como 0 (08/10): null = nenhuma conhecida; «unknown» linhas sem saldo à parte.
+  const pieces = (n, unknown) => n === null || n === undefined ? "peças por confirmar"
+    : `${plural(n, "peça", "peças")}${unknown ? ` (+${plural(unknown, "linha", "linhas")} por confirmar)` : ""}`;
   const todayIso = () => state.data?.today || iso(new Date());
   const monday = value => {const d = day(value); return addDays(d, -((d.getUTCDay() + 6) % 7))};
   const hours = value => (Math.round((value || 0) * 10) / 10).toLocaleString("pt-PT");
@@ -39,7 +42,7 @@
       const again = () => setTimeout(() => { if (serial === state.loading) load(true); }, 8000);
       if (quiet && result.stale && result.imported_at === state.data?.imported_at) return again();
       state.data = result; notice("");
-      render();
+      render(); sourceNotice();
       if (state.day) openDay(state.day, state.dayMachine, false);
       if (result.stale) again();
     } catch (error) {
@@ -58,6 +61,13 @@
         ? `${d.sector_label} · proposta automática (não aceite; o Excel é o plano oficial) · ${number(d.source.placed)} de ${number(d.source.operations)} operações com hora · as restantes no dia da Tabela · dados de ${imported}`
         : `${d.sector_label} · máquina e dia tirados do planeamento (Excel) · dados de ${imported}`;
     renderAlert(); renderBoard();
+  }
+
+  // Excel do setor no Drive mais recente do que o importado (08/10): uma linha, só quando a API a manda.
+  function sourceNotice() {
+    const box = $("source-notice");
+    if (!box) return;
+    box.hidden = !state.data?.source_notice; box.textContent = state.data?.source_notice || "";
   }
 
   // --- Lista vermelha
@@ -96,7 +106,7 @@
     for (const warning of order.warnings) tags.append(el("span", warning, "pq-tag"));
     if (tags.childElementCount) who.append(tags);
     const size = el("div", null, "pq-of-size");
-    size.append(el("strong", `${number(order.metres)} m`), el("span", plural(order.pieces, "peça", "peças")));
+    size.append(el("strong", `${number(order.metres)} m`), el("span", pieces(order.pieces, order.pieces_unknown)));
     const today = day(todayIso());
     const when = el("div", null, "pq-of-when");
     if (order.late_days > 0) when.append(el("strong", `Atrasada ${plural(order.late_days, "dia", "dias")}`), el("span", `prazo ${short(order.due)}`));
@@ -245,7 +255,7 @@
       button.type = "button";
       button.style.gridColumn = `${from + 2} / ${to + 2}`; button.style.gridRow = String(lane + 1);
       button.append(el("b", box.of), el("span", box.customer || box.designation || ""),
-        el("span", box.hours ? `${hours(box.hours)} h · ${plural(box.pieces, "peça", "peças")}` : plural(box.pieces, "peça", "peças")));
+        el("span", box.hours ? `${hours(box.hours)} h · ${pieces(box.pieces, box.pieces_unknown)}` : pieces(box.pieces, box.pieces_unknown)));
       if (box.forecast) button.classList.add("approximate");
       button.setAttribute("aria-label", `${box.of}, ${box.customer || ""}, ${machine.name}, de ${short(box.start)} a ${short(lastDay(box))}${late ? ", atrasada" : ""}`);
       button.addEventListener("click", () => openBox(box, machine));
@@ -288,7 +298,7 @@
     const rows = [["Cliente", box.customer || "—"], ["Descrição da obra", box.designation || "—"], ["Máquina", machine.name], ["Quando", whenText, passed ? "late" : ""],
       ["Horas", box.hours ? `${hours(box.hours)} h${box.hours_estimated ? " (estimativa)" : ""}${perDay ? ` · ${perDay}` : ""}${box.hours_unknown ? ` · ${box.hours_unknown} sem horas` : ""}` : "Por calcular"],
       ...(box.shifts?.length ? [["Turnos", shiftText(box.shifts)]] : []),
-      ["Faltam fazer", `${plural(box.pieces, "peça", "peças")}${box.lines > 1 ? ` (${box.lines} linhas)` : ""}`],
+      ["Faltam fazer", `${pieces(box.pieces, box.pieces_unknown)}${box.lines > 1 ? ` (${box.lines} linhas)` : ""}`],
       ["Prazo", box.due ? `${short(box.due)}${box.late ? " · vai ficar atrasada" : ""}` : "Sem prazo", box.late ? "late" : ""]];
     for (const [label, value, cls] of rows) body.append(el("dt", label), el("dd", value, cls));
     const actions = $("dialog-actions"); actions.replaceChildren();
@@ -438,7 +448,7 @@
     const body = $("dialog-body"); body.replaceChildren();
     const rows = [["Cliente", g.customer || "—"], ["Máquina", m.name], ["Turno", g.shift ? shiftName(g, d.day) : "Fora do horário dos turnos"],
       ["Hora", `${clock(g.start)}–${clock(g.end)}${g.cut_start ? " (começou antes)" : ""}${g.cut_end ? " (continua depois)" : ""}`],
-      ["Horas", `${hours(g.hours)} h`], ["Referências", g.references.join(", ") || "—"], ["Faltam fazer", plural(g.pieces, "peça", "peças")]];
+      ["Horas", `${hours(g.hours)} h`], ["Referências", g.references.join(", ") || "—"], ["Faltam fazer", pieces(g.pieces)]];
     for (const [label, value] of rows) body.append(el("dt", label), el("dd", value));
     const actions = $("dialog-actions"); actions.replaceChildren();
     const open = el("a", "Ver na Carteira"); open.href = `/planeamento/carteira?setor=${encodeURIComponent(state.sector)}&vista=of&q=${encodeURIComponent(g.of)}`;
