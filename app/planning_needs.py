@@ -17,8 +17,12 @@ from . import planning_registration as registration
 
 PIECE_FIELDS=tuple(f['id'] for f in catalogs.fields() if f['scope']=='piece')
 TECH_FIELDS=tuple(k for k in PIECE_FIELDS if k not in ('quantity_required',))
-# Campos da preparação que seguem a origem quando ninguém os escreveu (07/10/2026), como os da peça.
-OPERATION_FOLLOW=('cut_date','machine','team','pavilion','notes','abocardar','operation_detail')
+# Campos da preparação que nunca seguem a origem: a operação liga a ficha, a quantidade a planear é calculada,
+# a «Qtd em falta» só existe escrita e o Picking é da OF (decide-o planning_dates.picking_values).
+OPERATION_OWN=('operation','quantity_to_plan','remaining_declared','picking_week','picking_year')
+# Todos os outros campos da preparação seguem a origem quando ninguém os escreveu (08/10, F20), como os da peça:
+# antes eram só 7, e uma edição na Tabela, que grava a linha inteira, congelava os restantes (Chanfro, Requisição…).
+OPERATION_FOLLOW=tuple(f['id'] for f in catalogs.fields() if f['scope']!='piece' and f['id'] not in OPERATION_OWN)
 
 
 def serial(value):
@@ -153,14 +157,15 @@ def follow(conn,need,origin,values,previous=None):
 
     «Escrito» é uma decisão explícita (write/select/clear); a sugestão aceite e o valor recebido seguem a
     origem. O valor escrito à mão fica e o ecrã mostra o da origem como nota (requires_review) enquanto
-    forem diferentes. Vale para os campos da peça e para os da preparação em OPERATION_FOLLOW (Data Corte,
-    Máquina, Equipa, Pav., Observações…); um campo que a origem não traz fica como está. Só se segue quando o
-    valor da origem mudou desde a revisão anterior (`previous`; sem ela, a sugestão guardada): uma importação
-    nova com o mesmo conteúdo não apaga a sugestão que ficou onde o Excel não tem nada. Devolve os campos que
-    seguiram; a revisão da peça fica a cargo de quem chama.
+    forem diferentes. Vale para os campos da peça e para todos os da preparação em OPERATION_FOLLOW (Data
+    Corte, Máquina, Equipa, Pav., Observações, Chanfro, Requisição…), também os que não têm estado (a Tabela
+    grava as células vazias sem estado; 08/10); um campo que a origem não traz fica como está. Só se segue
+    quando o valor da origem mudou desde a revisão anterior (`previous`; sem ela, a sugestão guardada): uma
+    importação nova com o mesmo conteúdo não apaga a sugestão que ficou onde o Excel não tem nada. Devolve os
+    campos que seguiram; a revisão da peça fica a cargo de quem chama.
     """
-    def moved(state,name,new):
-        if previous is None:return not equal_value(state['suggestion'],new)
+    def moved(suggestion,name,new):
+        if previous is None:return not equal_value(suggestion,new)
         if name not in previous:return True
         old=catalogs.abocardar_mark(previous[name]) if name=='abocardar' else previous[name]
         return not equal_value(old,new)
@@ -168,7 +173,7 @@ def follow(conn,need,origin,values,previous=None):
     for state in conn.execute("SELECT * FROM planning_mtg.field_state WHERE need_id=%s AND scope='piece' AND field=ANY(%s)",(need['id'],[k for k in PIECE_FIELDS if k in values])).fetchall():
         name=state['field'];new=values.get(name)
         untouched=state['human_decision'] in (None,'accept')
-        take=untouched and moved(state,name,new) and not equal_value(state['value'],new)
+        take=untouched and moved(state['suggestion'],name,new) and not equal_value(state['value'],new)
         if take:taken[name]=new
         conn.execute("UPDATE planning_mtg.field_state SET value=%s,suggestion=%s,source=%s,requires_review=%s WHERE need_id=%s AND scope='piece' AND field=%s",
                      (Jsonb(new if take else state['value']),Jsonb(new),Jsonb(origin),not untouched and not equal_value(state['value'],new),need['id'],name))
@@ -181,12 +186,23 @@ def follow(conn,need,origin,values,previous=None):
              catalogs.clean(spec.get('identity_discriminator')),Jsonb(serial(taken)),technical,need['id']))
         revision=need['revision'];need.update(load(conn,need['id']));need['revision']=revision
     followed=[k for k in OPERATION_FOLLOW if k in values]
-    for record in conn.execute('SELECT id,operation_id FROM planning_mtg.records WHERE need_id=%s AND operation_id IS NOT NULL',(need['id'],)).fetchall():
+    for record in conn.execute('SELECT id,operation_id,values_json FROM planning_mtg.records WHERE need_id=%s AND operation_id IS NOT NULL',(need['id'],)).fetchall():
         scope=str(record['operation_id']);patch={}
-        for state in conn.execute('SELECT * FROM planning_mtg.field_state WHERE need_id=%s AND scope=%s AND field=ANY(%s)',(need['id'],scope,followed)).fetchall():
-            name=state['field'];new=catalogs.abocardar_mark(values[name]) if name=='abocardar' else values[name]
+        states={s['field']:s for s in conn.execute('SELECT * FROM planning_mtg.field_state WHERE need_id=%s AND scope=%s AND field=ANY(%s)',(need['id'],scope,followed)).fetchall()}
+        for name in followed:
+            new=catalogs.abocardar_mark(values[name]) if name=='abocardar' else values[name]
+            state=states.get(name)
+            if state is None:
+                # Sem estado ninguém o escreveu: segue a origem e passa a ter estado, com ela como fonte (08/10).
+                current=(record['values_json'] or {}).get(name)
+                if moved(current,name,new) and not equal_value(current,new):
+                    patch[name]=new
+                    conn.execute('''INSERT INTO planning_mtg.field_state(need_id,scope,field,value,suggestion,source,revision)
+                        VALUES (%s,%s,%s,%s,%s,%s,%s) ON CONFLICT(need_id,scope,field) DO NOTHING''',
+                        (need['id'],scope,name,Jsonb(new),Jsonb(new),Jsonb(origin),need['revision']))
+                continue
             untouched=state['human_decision'] in (None,'accept')
-            take=untouched and moved(state,name,new) and not equal_value(state['value'],new)
+            take=untouched and moved(state['suggestion'],name,new) and not equal_value(state['value'],new)
             if take:patch[name]=new
             conn.execute('UPDATE planning_mtg.field_state SET value=%s,suggestion=%s,source=%s,requires_review=%s WHERE need_id=%s AND scope=%s AND field=%s',
                          (Jsonb(new if take else state['value']),Jsonb(new),Jsonb(origin),not untouched and not equal_value(state['value'],new),need['id'],scope,name))

@@ -19,11 +19,13 @@ import psycopg
 from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
 
-from .. import planning, planning_needs as needs
+from .. import planning, planning_needs as needs, planning_population as population
 from ..planning_calculations import DECLARED_ORIGIN
 
 PROVIDER = 'research-v2'
-BALANCE_CONTRACT = 'research-balance-v3'  # v3 (06/10): contador Excel mais recente ganha; derivados refeitos
+# v4 (08/10): a v2 deixa de dar o saldo da operação principal (fica o da app) e não toca nas linhas fechadas;
+# v3 (06/10): contador Excel mais recente ganha; derivados refeitos
+BALANCE_CONTRACT = 'research-balance-v4'
 AREAS = {'MTG2': 'perfis', 'MTG3': 'cantoneiras'}
 _cache = {}
 _lock = Lock()
@@ -237,103 +239,86 @@ EXCEL_COUNTERS = {'perfis': ('Ser.', 'Qtd em Falta'), 'cantoneiras': ('Maq.', 'Q
 def excel_counters_changed(area, research_raw, current_raw):
     """O Excel atual registou produção depois do retrato da pesquisa (auditoria 06/10).
 
-    Compara o contador e a coluna de falta da operação principal. Só decide quando
-    as duas linhas trazem a coluna de falta; sem ela fica a regra anterior.
+    Compara o contador e a coluna de falta da operação principal: True mudou, False igual e None
+    desconhecido. Sem uma das colunas nalguma das linhas (a vista raw_capacity_contents de sql/038 não
+    guarda «Maq.» nem «Qtd falta») não se sabe; antes dava False e a pesquisa trocava o saldo (08/10, F04).
+    Desde 08/10 (F05) já não decide saldos (a principal é sempre a da app); fica para comparar o retrato
+    v2 com o Excel atual (auditoria do fluxo).
     """
     from ..planning_calculations import quantity
-    counter, remaining = EXCEL_COUNTERS[area]
     old, new = research_raw or {}, current_raw or {}
-    if remaining not in old or remaining not in new:
-        return False
-    return any(quantity(old.get(k)) != quantity(new.get(k)) for k in (counter, remaining))
+    columns = EXCEL_COUNTERS[area]
+    if any(k not in old or k not in new for k in columns):
+        return None
+    return any(quantity(old.get(k)) != quantity(new.get(k)) for k in columns)
 
 
-def _rederive(row, origin):
-    """Campos que dependem do saldo, refeitos depois de a pesquisa o substituir.
-
-    Mesmas fórmulas de planning_calculations.calculate; sem isto ficavam calculados
-    com o saldo anterior (muitas vezes desconhecido).
-    """
-    import math
-    from ..planning_calculations import positive, CONTRACT
-    v = row['values']; rules = row.setdefault('calculation', {}).setdefault('rules', {})
-    rem = v.get('remaining'); length = positive(v.get('length_mm'))
-    unit = positive(v.get('section_unit')); stock = positive(v.get('stock_length_mm'))
-    weight_unit = positive(v.get('weight_unit'))
-    pieces = math.floor(stock/length) if stock and length else 0
-    derived = {
-        'remaining_m': (0 if rem == 0 else rem*length/1000 if rem is not None and length else None, 'saldo × L / 1000', 'm'),
-        'section_pending': (0 if rem == 0 else unit*rem if unit is not None and rem is not None else None, 'A × saldo', 'mm²'),
-        'bars': (0 if rem == 0 else math.ceil(rem/pieces) if rem is not None and pieces else None, 'ceil(saldo / floor(S / L))', 'un.'),
-        'weight': (weight_unit*rem if weight_unit is not None and rem is not None else None, 'peso unitário × saldo principal', 'kg')}
-    if 'quantity_to_plan' not in (row.get('input_values') or {}):
-        derived['quantity_to_plan'] = (rem, 'Saldo da operação planeada', 'un.')
-    for field, (value, formula, unit_name) in derived.items():
-        v[field] = value
-        rules[field] = {**(rules.get(field) or {}), 'formula': formula, 'unit': unit_name, 'source': origin,
-                        'inputs': {'saldo': rem, 'L': length, 'A': unit, 'S': stock, 'weight_unit': weight_unit},
-                        'contract': CONTRACT, 'reason': None if value is not None else 'Saldo ou dados da peça desconhecidos.'}
+def _active(row):
+    """Linha da população ativa: a marca gravada pela projeção ou, sem ela, a regra de fecho (08/10)."""
+    flag = (row.get('values') or {}).get('planning_active')
+    return flag if isinstance(flag, bool) else population.includes(row)
 
 
 def overlay_rows(c, area, rows):
-    """One balance policy for projections, their tables and portfolio views.
+    """Junta às linhas ativas o saldo das operações seguintes da camada v2 (integrated_operations).
 
-    Explicitly reconciled application production takes precedence. Documentary
-    v2 balances never increment a counter or reconcile an unassociated event.
+    Desde 08/10 (F04/F05) a v2, parada a 29/09, já não dá nem substitui o saldo da operação principal:
+    fica o da app (OCR validado > contador do Excel > «Qtd em falta»), o mesmo na Tabela, na Carteira, na
+    Carga e no Gantt. As linhas fechadas não se tocam: antes, sem as colunas de falta, trocavam de saldo a
+    cada recálculo completo.
     """
     if not enabled() or not rows:
+        return
+    active = [row for row in rows if _active(row)]
+    if not active:
         return
     package = load(c)
     from ..sector import scope
     matched,_ = scope.research_rows(package['rows'],[
-        {'area':area,'row_key':r['key'],'values_json':r['values'],'detail':r} for r in rows])
-    index = {}; following=defaultdict(list)
+        {'area':area,'row_key':r['key'],'values_json':r['values'],'detail':r} for r in active])
+    principal = set(); following = defaultdict(list)
     for r in matched:
-        key=r['matched_application_key']
-        if r['fase']=='principal':
-            index[key]=r
+        key = r['matched_application_key']
+        if r['fase'] == 'principal':
+            principal.add(key)
         else:
             following[key].append(r)
     from .integrated import balance
-    for row in rows:
-        key = row['key']
-        r = index.get(key)
-        if r is None:
+    for row in active:
+        if row['key'] not in principal:
             continue
-        v = row['values']; calc = row.setdefault('calculation', {})
-        calc['integrated_operations']=[{'operation':x['operacao_codigo'],'occurrence':x['ocorrencia'],
-            'remaining':balance(x)['planning_remaining'],'origin':balance(x)['balance_origin']}
-            for x in following.get(key,[])]
-        sources = calc.setdefault('production_sources', [])
-        operation = 'corte' if area == 'perfis' else str(v.get('operation') or r['codigo_original'] or '')
-        source = next((s for s in sources if str(s.get('operation')) == operation), None)
-        # A «Qtd em falta» escrita pelo planeador (07/10/2026) vale como produção conciliada: a fotografia v2 não a substitui.
-        if source and (source.get('records') or source.get('origin') == DECLARED_ORIGIN) and source.get('origin') not in ('Excel provisório', 'Excel documental'):
-            v.update(planning_remaining=source.get('remaining'),remaining=source.get('remaining'),
-                planning_balance_origin=source.get('origin'),planning_balance_provisional=False)
-            continue
-        if excel_counters_changed(area, r.get('raw'), row.get('raw')):
-            # Produção registada no Excel depois do retrato da pesquisa: o saldo RAW ganha.
-            continue
-        b = balance(r)
-        from ..sector.scope import matches_current
-        if calc.get('compatible') is False or not matches_current(r,v):
-            b.update(planning_remaining=None, reasons=['Identidade/quantidade difere da fotografia v2.'])
-        replacement = {'operation': operation, 'remaining': b['planning_remaining'],
-                       'origin': b['balance_origin'],
-                       'records': [], 'coverage_reasons': b['reasons'],
-                       'v2_evidence': {'version': package['head']['version_id'], 'operation_id': r['operacao_id'], 'snapshot': r['snapshot_id']}}
-        sources[:] = [s for s in sources if str(s.get('operation')) != operation] + [replacement]
-        changed = v.get('remaining') != b['planning_remaining']
-        v.update(planning_remaining=b['planning_remaining'], remaining=b['planning_remaining'], planning_balance_origin=replacement['origin'],
-                 planning_balance_provisional=b['balance_provisional'])
-        if changed:
-            _rederive(row, replacement['origin'])
+        balances = [(x, balance(x)) for x in following.get(row['key'], [])]
+        row.setdefault('calculation', {})['integrated_operations'] = [
+            {'operation': x['operacao_codigo'], 'occurrence': x['ocorrencia'],
+             'remaining': b['planning_remaining'], 'origin': b['balance_origin']} for x, b in balances]
+
+
+def _principal_balance(values, detail, operation):
+    """Saldo da operação principal tal como a Carteira o mostra (values.planning_remaining), ou None
+    quando a app ainda não o calculou (linha sem cálculo publicado: fica a da v2)."""
+    from ..planning_calculations import quantity
+    source = next((s for s in (detail.get('calculation') or {}).get('production_sources') or []
+                   if str(s.get('operation')) == operation), None)
+    if 'planning_remaining' not in values and source is None:
+        return None
+    remaining = values['planning_remaining'] if 'planning_remaining' in values else source.get('remaining')
+    source = source or {}
+    reconciled = (source.get('records') or source.get('origin') == DECLARED_ORIGIN) and \
+        source.get('origin') not in ('Excel provisório', 'Excel documental')
+    evidence = {**{k: source[k] for k in ('operation', 'value', 'records', 'coverage_reasons') if k in source},
+                'remaining': remaining, 'origin': values.get('planning_balance_origin') or source.get('origin')}
+    return {'saldo_confirmado': remaining if reconciled else None, 'saldo_documental': remaining,
+            # A quantidade é a da app (a associação exige QTD igual): a coerência da v2 já não anula o saldo.
+            'estado_quantidade': 'fonte_unica' if quantity(values.get('quantity_required')) is not None else 'por_confirmar',
+            'application_balance_evidence': evidence,
+            'execution_started': bool(source.get('records') or source.get('value'))}
 
 
 def application_balances(c, source_rows, *, records=None):
     """Reuse proven per-operation reconciliation from the application's ledger.
 
+    A operação principal leva sempre o saldo da app quando a app o calculou (08/10, F05): o mesmo da
+    Carteira. As operações seguintes ficam com o da v2, salvo produção conciliada na app.
     An operation code repeated in a route cannot inherit an aggregate counter.
     Its occurrence needs explicit evidence, otherwise the original balance stays.
     """
@@ -364,16 +349,16 @@ def application_balances(c, source_rows, *, records=None):
                 operation = 'corte' if area=='perfis' and r['fase']=='principal' else 'abocardar' if r['operacao_codigo']=='LOCAL:ABOCARDAR' else r['operacao_codigo'].removeprefix('CPIS:')
                 if sum(x['operacao_codigo']==r['operacao_codigo'] for x in candidates.values()) != 1:
                     continue
+                if r['fase']=='principal':
+                    own = _principal_balance(v, detail, operation)
+                    if own is not None:
+                        result[r['operacao_id']] = own
+                    continue
                 source = next((s for s in detail.get('calculation',{}).get('production_sources',[]) if str(s.get('operation'))==operation),None)
                 if source and (source.get('records') or source.get('origin')==DECLARED_ORIGIN) and source.get('origin') not in ('Excel provisório','Excel documental'):
                     result[r['operacao_id']] = {'saldo_confirmado':source.get('remaining'),
                         'saldo_documental':None if source.get('remaining') is None else r.get('saldo_documental'),
                         'application_balance_evidence':source, 'execution_started':bool(source.get('made') or source.get('records'))}
-                elif (r['fase']=='principal' and source and not source.get('v2_evidence') and source.get('remaining') is not None
-                      and excel_counters_changed(area, r.get('raw'), detail.get('raw'))):
-                    # O Excel atual tem produção posterior ao retrato da pesquisa: o mesmo saldo RAW da Carteira.
-                    result[r['operacao_id']] = {'saldo_confirmado':None,'saldo_documental':source.get('remaining'),
-                        'application_balance_evidence':source,'execution_started':bool(source.get('value'))}
     return result
 
 

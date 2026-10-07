@@ -9,6 +9,8 @@ from datetime import date
 from . import planning, planning_needs as needs, planning_catalogs as catalogs, planning_hub as hub
 from .dossiers.models import order_number
 from . import planning_population as population, planning_order_population
+# O leitor de números é o de toda a app, com milhares por espaço («1 200»; 08/10, F19).
+from .planning_calculations import number
 
 # The attachment's A:AP order is a public presentation contract.
 SPECS=[
@@ -29,13 +31,6 @@ def columns():
     units.update({k:'%' for k in ('cut_pct','boc_pct','final_pct','hours_pct')})
     units.update(section_total='mm²',weight='kg',total_length='mm')
     return {'columns':[dict(id=k,label=l,group=g,type=t or 'readonly',editable=bool(t),unit=units.get(k)) for k,l,g,t in SPECS], 'catalog':cat}
-
-
-def number(value):
-    try:
-        v=float(str(value).replace(',','.'))
-        return v if math.isfinite(v) else None
-    except (TypeError,ValueError):return None
 
 
 def calculated(v,raw,compatible=True):
