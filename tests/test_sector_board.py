@@ -170,3 +170,18 @@ def test_orders_with_machine_keeps_the_old_name_for_one_version():
     """F15 (08/10): «planned_orders» contava OF com máquina, não planeadas; o nome novo é «orders_with_machine»."""
     result = board.unplanned("cantoneiras", data=data(line("OF1"), line("OF2", machine="Peddi 8")), decisions={})
     assert result["orders_with_machine"] == result["planned_orders"] == 1
+
+
+def test_second_operation_of_the_cantoneiras_leaves_the_missing_list_and_is_only_counted():
+    """P3-A (08/10): as operações seguintes da MTG3 (2.ª operação) saem de «não aparecem no quadro» e contam-se em
+    `second_operation`; a operação principal sem hora continua na lista, com o motivo. Na MTG2 nada muda."""
+    ops = [{**op("p", "OF1", 5), "occurrence": 1, "reference": "R1", "operation": "CPIS:112"},
+           {**op("s1", "OF1", 5), "occurrence": 2, "operation": "CPIS:111"},
+           {**op("s2", "OF2", 3), "occurrence": 3, "operation": "CPIS:1034", "blocking_reasons": ["Sequência operacional por validar."]}]
+    plan = {"pending": [{"key": "p", "reasons": ["Sem máquina."]}, {"key": "s1", "reasons": ["Previsão da operação por indicar."]}],
+            "entries": [{"key": "s2", "resource_id": "prensa", "start_date": "2026-10-05", "end_date_exclusive": "2026-10-06", "precision": "day"}]}
+    missing, second = board.missing_operations("cantoneiras", plan, ops, placed=set())
+    assert missing == [{"of": "OF1", "reference": "R1", "operation": "CPIS:112", "reasons": ["Sem máquina."]}] and second == 2
+    missing, second = board.missing_operations("perfis", plan, ops, placed=set())
+    assert [m["of"] for m in missing] == ["OF1", "OF1", "OF2"] and second == 0
+    assert board.missing_operations("cantoneiras", plan, ops, placed={"p", "s1"}) == ([], 1)

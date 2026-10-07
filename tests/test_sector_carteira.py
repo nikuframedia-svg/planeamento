@@ -98,8 +98,9 @@ def test_base_counts_planned_work_with_a_machine_once_per_line_and_hours_per_occ
     assert [p["label"] for p in k["panels"]] == ["Punção", "Broca"] and k["other_machines"] == []
     rapid, peddi = panels["broca"]["Ficep Rapid 25T"], panels["puncao"]["Peddi 8"]
     assert rapid["base"]["metres"] == 10.0 and rapid["base"]["hours"] == 2.0
-    # A operação seguinte da k1 dá horas à Peddi 8 sem duplicar metros; a k2 tem horas desconhecidas.
-    assert peddi["base"]["metres"] == 20.0 and peddi["base"]["hours"] == 1.5 and peddi["base"]["hours_unknown"] == 1
+    # A operação seguinte da k1 é 2.ª operação das cantoneiras (08/10): fora do plano, não soma horas nem
+    # desconhecidas e não duplica metros; a k2 tem horas desconhecidas.
+    assert peddi["base"]["metres"] == 20.0 and peddi["base"]["hours"] == 0.0 and peddi["base"]["hours_unknown"] == 1
     summary = {s["code"]: s for s in k["summary"]}
     assert [s["code"] for s in k["summary"]] == ["planeado", "nesting", "sem_maquina"]
     assert summary["planeado"]["metres"] == 30.0 and summary["planeado"]["ofs"] == 1
@@ -150,11 +151,38 @@ def client(monkeypatch):
     return TestClient(app)
 
 
-def test_kpis_ignore_list_filters_and_the_page_has_the_new_controls(client):
-    plain = client.get("/planeamento/api/carteira/kpis", params={"setor": "cantoneiras"}).json()
-    filtered = client.get("/planeamento/api/carteira/kpis", params={"setor": "cantoneiras", "q": "nada", "estado": "nesting",
-                                                                    "maquina": "sem", "semanas": "2026-W40"}).json()
-    assert plain == filtered and plain["panels"][0]["label"] == "Punção"
+def test_kpis_follow_only_the_week_filter(client, monkeypatch):
+    """P4 (08/10): o Prazo (semanas) é o único filtro que muda os KPIs; os outros continuam ignorados (GD01)."""
+    calls = []
+
+    def week_slice(sector, codes, today):
+        calls.append(codes)
+        return {"today": TODAY, "current": False, "stale": False,
+                "machines": {PEDDI: {"id": PEDDI, "name": "Peddi 8", "load": 3.0, "capacity": 60.0, "plan": 0.0, "due": 3.0,
+                                     "suggested": 0.0, "unknown": 1, "operations": 2, "metres": 20.0, "metres_unknown": 0,
+                                     "status": "folga", "late_before": None}},
+                "kinds": {"plan": {"hours": 0.0, "unknown": 0}, "due": {"hours": 3.0, "unknown": 1}, "suggested": {"hours": 0.7, "unknown": 0}},
+                "totals": {"capacity": 60.0, "load": 3.0, "late_before": None, "no_date": 0.0}}
+    monkeypatch.setattr(portfolio_kpis, "_week_slice", week_slice)
+    url, others = "/planeamento/api/carteira/kpis", [("q", "nada"), ("estado", "nesting"), ("maquina", "sem"), ("familia", "9")]
+    plain = client.get(url, params={"setor": "cantoneiras"}).json()
+    filtered = client.get(url, params=[("setor", "cantoneiras"), *others]).json()
+    assert plain == filtered and plain["panels"][0]["label"] == "Punção" and calls == []
+    assert plain["scope"] == {"weeks": [], "label": "todas as semanas", "sector_label": "MTG3 Cantoneiras", "current": False}
+    assert "week_totals" not in plain and all("week" not in m for p in plain["panels"] for m in p["machines"])
+    week = client.get(url, params=[("setor", "cantoneiras"), ("semanas", "2026-W38")]).json()
+    assert week == client.get(url, params=[("setor", "cantoneiras"), ("semanas", "2026-W38"), *others]).json()
+    assert calls == [["2026-W38"], ["2026-W38"]]
+    assert week["scope"] == {"weeks": ["2026-W38"], "label": "Semana 38 (14/09–20/09)", "sector_label": "MTG3 Cantoneiras", "current": False}
+    machines = {m["name"]: m for p in week["panels"] for m in p["machines"]}
+    assert machines["Peddi 8"]["week"]["load"] == 3.0 and machines["Peddi 8"]["week"]["capacity"] == 60.0
+    assert machines["Ficep Rapid 25T"]["week"] is None and machines["Peddi 8"]["base"] == plain["panels"][0]["machines"][0]["base"]
+    summary = {s["code"]: s["week"] for s in week["summary"]}  # metros das linhas da semana; horas por tipo da célula
+    assert (summary["nesting"]["metres"], summary["nesting"]["hours"], summary["nesting"]["hours_unknown"]) == (30.0, 3.0, 1)
+    assert (summary["sem_maquina"]["metres"], summary["sem_maquina"]["hours"], summary["sem_maquina"]["hours_kind"]) == (5.0, 0.7, "suggested")
+    assert week["week_totals"]["capacity"] == 60.0
+    bad = client.get(url, params={"setor": "cantoneiras", "semanas": "ontem"})
+    assert bad.status_code == 422 and bad.json()["error"] == "Prazo inválido."
     empty = client.get("/planeamento/api/carteira", params={"setor": "cantoneiras", "q": "não existe"}).json()
     assert empty["list_totals"]["lines"] == 0  # a lista fica vazia; os KPIs acima não mudam
     page = client.get("/planeamento/carteira").text

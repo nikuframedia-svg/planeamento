@@ -3,6 +3,7 @@
 Um conjunto é um grupo de famílias SKU criado pelo planeador (ex.: «Treliça pesada» = M + M2 + G4) com
 uma máquina. As linhas dessas famílias que não têm máquina escolhida na Carteira nem escrita na Tabela
 passam a ter essa máquina (ver machine_choice.py). Cada família está num só conjunto ativo por setor.
+As máquinas da 2.ª operação das cantoneiras não se oferecem (second_operation.py, 08/10).
 Gravações com request_id idempotente, revisão esperada e um evento por alteração.
 """
 from __future__ import annotations
@@ -18,10 +19,15 @@ from . import machine_choice, portfolio
 
 
 def machines(sector: str, conn=None) -> list[dict]:
-    """Máquinas físicas que se podem escolher neste setor (catálogo), com o ID físico."""
+    """Máquinas físicas que se podem escolher neste setor (catálogo), com o ID físico.
+
+    Sem as da 2.ª operação das cantoneiras (second_operation.machine, 08/10): «Atribuir máquina» e os Conjuntos
+    deixam de as oferecer e a validação de «Atribuir máquina» (member_machine.apply) passa por aqui.
+    """
     from .occurrences import resources_context
     from .portfolio_kpis import catalog
     from .members import rule
+    from . import second_operation
     with (planning.connect(readonly=True) if conn is None else nullcontext(conn)) as c:
         codes, by_id, _, _, _ = resources_context(c)
         info = catalog(c, sector) if by_id else {}
@@ -30,6 +36,8 @@ def machines(sector: str, conn=None) -> list[dict]:
     out = []
     for rid, r in by_id.items():
         meta = info.get(r.get("code")) or {}
+        if second_operation.machine(sector, meta.get("process")):
+            continue
         if rid in own or r.get("name") in used:  # também o que os planeadores escreveram na Tabela
             out.append({"id": rid, "name": r.get("name") or rid, "code": r.get("code"), "process": meta.get("process")})
     return sorted(out, key=lambda m: (m.get("process") or "~", m["name"]))

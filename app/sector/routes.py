@@ -120,11 +120,13 @@ async def counts(request: Request):
 
 
 @router.get("/planeamento/api/carteira/kpis")
-def kpis(setor: str = "cantoneiras"):
-    """Carga por máquina e resumo por estado do setor. Não aceita filtros da lista."""
+def kpis(setor: str = "cantoneiras", semanas: list[str] = Query(default=[])):
+    """Carga por máquina e resumo por estado do setor. Só aceita o filtro Prazo (`semanas`, P4 08/10): os outros
+    filtros da lista continuam sem mexer nos KPIs (GD01)."""
     _guard()
     from . import portfolio_kpis
-    return _call(lambda: needs.serial(portfolio_kpis.overview(portfolio.check_sector(setor), allow_stale=True)))
+    weeks = {"weeks": [w for w in semanas if w]} if any(semanas) else {}
+    return _call(lambda: needs.serial(portfolio_kpis.overview(portfolio.check_sector(setor), **weeks, allow_stale=True)))
 
 
 @router.post("/planeamento/api/carteira/previsao")

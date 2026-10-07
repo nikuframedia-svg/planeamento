@@ -21,6 +21,8 @@
     open: [],
     preview: null,
     tickets: {list: 0, kpis: 0, preview: 0, counts: 0, suggest: 0},
+    kpisWeek: false,  // KPIs da semana (filtro Prazo, 08/10): números das células da Carga, sem os acréscimos (+…)
+    kpisBase: null,   // a última resposta sem semanas, para «Limpar filtros» voltar logo a ela
   };
 
   function el(tag, attrs = {}, ...children) {
@@ -575,6 +577,7 @@
   // --- Painéis: máquinas e Resumo
 
   function machineRow(m) {
+    if (state.kpisWeek) return weekRow(m);
     return el('li', {dataset: {machine: m.id}},
       el('span', {class: 'm-name', title: m.name}, shortName(m.name)),
       el('span', {class: 'm-metres'}, metres(m.base.metres), el('span', {class: 'delta delta-m'})),
@@ -582,15 +585,55 @@
         hours(m.base.hours), el('span', {class: 'delta delta-h'})));
   }
 
+  // Semana escolhida no Prazo (08/10): «metros · carga / capacidade h» com a cor da Carga e turnos; na semana atual,
+  // por baixo, o atrasado de semanas anteriores (a coluna Atrasado da Carga), só quando há.
+  function weekRow(m) {
+    const w = m.week;
+    if (!w) return el('li', {dataset: {machine: m.id}}, el('span', {class: 'm-name', title: m.name}, shortName(m.name)),
+      el('span', {class: 'm-metres'}, '—'), el('span', {class: 'm-hours'}, '—'));
+    const parts = [`no plano ${hours(w.plan)}`, `a vencer ${hours(w.due)}`, `sugerida ${hours(w.suggested)}`,
+                   ...(w.unknown ? [`${number.format(w.unknown)} sem horas`] : [])];
+    const capacity = w.capacity === null || w.capacity === undefined ? '—' : hoursFmt.format(w.capacity);
+    return el('li', {dataset: {machine: m.id}},
+      el('span', {class: 'm-name', title: m.name}, shortName(m.name)),
+      el('span', {class: 'm-metres'}, metresKnown(w.metres, w.metres_unknown)),
+      el('span', {class: `m-hours m-load${w.status ? ` st-${w.status}` : ''}`, title: parts.join(' · ')},
+        `${hoursFmt.format(w.load || 0)} / ${capacity} h`),
+      w.late_before > 0 ? el('span', {class: 'm-late muted', title: 'Horas com prazo antes desta semana (coluna Atrasado da Carga e turnos)'},
+        `atrasado ${hours(w.late_before)}`) : null);
+  }
+
+  // Linha de âmbito por cima dos painéis: o que os números querem dizer. Com a Python antiga (sem `scope`) e um
+  // Prazo escolhido, os números continuam a ser os de todas as semanas: diz-se numa linha.
+  function scopeLine(data) {
+    const scope = data.scope;
+    if (!scope) return weeks().length ? el('p', {class: 'kpis-scope muted'}, 'O Prazo ainda não muda estes números: falta reiniciar o serviço do planeamento.') : null;
+    const week = (scope.weeks || []).length > 0;
+    return el('p', {class: 'kpis-scope muted'},
+      `${scope.sector_label} · ${scope.label} · ${week ? 'carga e capacidade como na Carga e turnos' : 'carga do que está Planeado'}`);
+  }
+
+  function summaryRow(s) {
+    const w = state.kpisWeek && s.week ? s.week : null;
+    const shown = w || s;
+    const unknownHours = w ? w.hours_unknown : 0;
+    const hoursCell = w
+      ? el('td', {class: 'num', title: unknownHours ? `${number.format(unknownHours)} operação(ões) sem horas conhecidas (não contam)` : null},
+        hours(w.hours), s.code === 'sem_maquina' ? ' na sugerida' : null, unknownHours ? el('span', {class: 'muted'}, ' *') : null)
+      : el('td', {class: 'num'}, s.code === 'sem_maquina' ? '—' : hours(s.hours));
+    return el('tr', {dataset: {state: s.code}},
+      el('th', {scope: 'row'}, s.label),
+      el('td', {class: 'num'}, metresKnown(shown.metres, shown.metres_unknown)),
+      hoursCell,
+      el('td', {class: 'num', title: shown.weight_unknown ? `${number.format(shown.weight_unknown)} linha(s) sem peso unitário (não contam)` : null},
+        tonnes(shown.tonnes), shown.weight_unknown ? el('span', {class: 'muted'}, ' *') : null));
+  }
+
   function renderKpis(data) {
+    state.kpisWeek = Boolean(data.scope && (data.scope.weeks || []).length);
     const panels = data.panels.map((p) => el('section', {class: 'panel'}, el('h2', {}, p.label),
       el('ul', {class: 'machines'}, p.machines.map(machineRow))));
-    const rows = data.summary.map((s) => el('tr', {dataset: {state: s.code}},
-      el('th', {scope: 'row'}, s.label),
-      el('td', {class: 'num'}, metresKnown(s.metres, s.metres_unknown)),
-      el('td', {class: 'num'}, s.code === 'sem_maquina' ? '—' : hours(s.hours)),
-      el('td', {class: 'num', title: s.weight_unknown ? `${number.format(s.weight_unknown)} linha(s) sem peso unitário (não contam)` : null},
-        tonnes(s.tonnes), s.weight_unknown ? el('span', {class: 'muted'}, ' *') : null)));
+    const rows = data.summary.map(summaryRow);
     const resumo = el('section', {class: 'panel resumo'}, el('h2', {}, 'Resumo'),
       el('table', {}, el('thead', {}, el('tr', {}, el('th', {scope: 'col'}, ''), el('th', {scope: 'col', class: 'num'}, 'Metros'),
         el('th', {scope: 'col', class: 'num'}, 'Horas'), el('th', {scope: 'col', class: 'num'}, 'Toneladas'))), el('tbody', {}, rows)),
@@ -602,7 +645,8 @@
       data.stale ? el('p', {class: 'muted'}, 'A atualizar as horas…') : null);
     const others = (data.other_machines || []).length
       ? el('p', {class: 'others muted'}, `Outras máquinas planeadas: ${data.other_machines.map((m) => `${shortName(m.name)} ${metres(m.base.metres)}`).join(' · ')}`) : null;
-    $('kpis').replaceChildren(...panels, resumo, ...(others ? [others] : []));
+    const scope = scopeLine(data);
+    $('kpis').replaceChildren(...(scope ? [scope] : []), ...panels, resumo, ...(others ? [others] : []));
     $('kpis').dataset.panels = String(panels.length + 1); // MTG3: Punção, Broca, Resumo; MTG2: máquinas e Resumo
     $('unmark').addEventListener('click', () => { state.selected.clear(); selectionChanged(); });
     $('assign').addEventListener('click', assignMachine);
@@ -611,12 +655,16 @@
     refreshSuggestion();
   }
 
+  // O filtro Prazo é o único que muda os KPIs (08/10): vai em `semanas`; os outros filtros não vão.
   async function loadKpis() {
     const ticket = ++state.tickets.kpis;
     const sector = state.sector;
+    const params = new URLSearchParams({setor: sector});
+    weeks().forEach((w) => params.append('semanas', w));
     try {
-      const data = await api('/planeamento/api/carteira/kpis', new URLSearchParams({setor: sector}));
+      const data = await api('/planeamento/api/carteira/kpis', params);
       if (ticket !== state.tickets.kpis || sector !== state.sector) return;
+      if (!data.scope || !(data.scope.weeks || []).length) state.kpisBase = {sector, data};
       renderKpis(data);
       schedule('preview', refreshPreview, 0);
     } catch (error) {
@@ -639,8 +687,9 @@
     let addM = 0, addH = 0;
     for (const [id, d] of Object.entries(p.delta || {})) {
       addM += d.metres; addH += d.hours;
-      const li = document.querySelector(`#kpis li[data-machine="${CSS.escape(id)}"]`);
-      if (!li) continue;
+      // Na semana escolhida Planear não muda a carga (passa de «a vencer» para «no plano»): sem acréscimos (08/10).
+      const li = state.kpisWeek ? null : document.querySelector(`#kpis li[data-machine="${CSS.escape(id)}"]`);
+      if (!li || !li.querySelector('.delta-m')) continue;
       li.querySelector('.delta-m').textContent = ` (+${metres(d.metres)})`;
       li.querySelector('.delta-h').textContent = ` (+${hours(d.hours)})`;
     }
@@ -720,7 +769,7 @@
       reload(0);
     });
     $('q').addEventListener('input', () => reload(300));
-    $('semanas-lista').addEventListener('change', () => { weeksSummary(); reload(200); });
+    $('semanas-lista').addEventListener('change', () => { weeksSummary(); reload(200); schedule('kpis', loadKpis, 200); });
     document.addEventListener('click', (event) => { if ($('semanas').open && !$('semanas').contains(event.target)) $('semanas').open = false; });
     $('semanas').addEventListener('keydown', (event) => { if (event.key === 'Escape') { $('semanas').open = false; $('semanas').querySelector('summary').focus(); } });
     $('setor').addEventListener('change', () => switchSector());
@@ -728,9 +777,15 @@
     $('limpar-filtros').addEventListener('click', () => {
       // Só filtros: setor, vista, ordem e marcações ficam.
       for (const id of SIMPLE) $(id).value = '';
+      const hadWeeks = weeks().length > 0 || state.kpisWeek;
       $('semanas-lista').querySelectorAll('input').forEach((i) => { i.checked = false; });
       weeksSummary();
       load();
+      if (hadWeeks) {  // os KPIs voltam logo à carga de todas as semanas e atualizam-se
+        clearTimeout(timers.kpis);
+        loadKpis();
+        if (state.kpisBase && state.kpisBase.sector === state.sector) renderKpis(state.kpisBase.data);
+      }
     });
     await switchSector(first);
   }
