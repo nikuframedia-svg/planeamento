@@ -291,7 +291,8 @@ def test_settings_save_speed_rows_seed_and_timing_on_a_disposable_database(works
         assert stored['template'] == [['06:00', '14:00']] and stored['piece_minutes'] == 1
         assert stored['efficiency'] == {resource['id']: 80}
         assert p.sector_timing(c)['cantoneiras'] == {'piece_minutes': 1.0, 'efficiency': {resource['id']: 80.0}}
-        assert p.sector_timing(c)['perfis'] == {'piece_minutes': 0.0, 'efficiency': {}}
+        # A eficiência é da máquina física: uma linha MTG2 nessa máquina usa-a também (A-efic-setor, 08/10).
+        assert p.sector_timing(c)['perfis'] == {'piece_minutes': 0.0, 'efficiency': {resource['id']: 80.0}}
     # S01: gravar o horário ou os tempos não apaga a eficiência nem outras chaves que o ecrã não envia.
     with psycopg.connect(workspace) as c:
         c.execute("UPDATE planning_mtg.sector_settings SET definition = definition || '{\"folga_dias\": 2}'::jsonb WHERE area='cantoneiras'")

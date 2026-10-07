@@ -274,7 +274,7 @@ def test_saving_the_schedule_keeps_every_other_settings_key():
 
 def test_old_sector_margin_becomes_the_equivalent_efficiency_once():
     from app.sector import settings
-    machines = {P8: {}, XP4: {}}
+    machines = {P8: {"has_object": True}, XP4: {"has_object": True}}
     # Margem 25 % sem eficiências: todas as máquinas passam a 80 %, depois aplica-se a alteração.
     assert settings._efficiency_store({"margin_pct": 25, "efficiency": {}}, {XP4: 90}, machines) == {P8: 80.0, XP4: 90}
     assert settings._efficiency_store({"margin_pct": 0, "efficiency": {P8: 85}}, {P8: 100, XP4: "95,5"}, machines) == {XP4: 95.5}
@@ -285,3 +285,124 @@ def test_old_sector_margin_becomes_the_equivalent_efficiency_once():
     # A margem antiga sem eficiências conta como a eficiência equivalente de todas (uma só vez).
     timing = {"piece_minutes": 0, "efficiency": {"*": 100 / 1.25}}
     assert p.efficiency_of(timing, XP4) == pytest.approx(80) and p.efficiency_of({"efficiency": {P8: 85}}, XP4) == 100
+
+
+# Correções da revisão de 08/10 (achados A-efic-id, A-efic-setor, A-medido-thomas, C-carga-totais-zero, C-F24, P1–P4).
+
+def _engine(resources=(), timing=None):
+    """Um Context do motor sem base de dados, com os recursos gravados (`resources`) e as Definições (`timing`)."""
+    ctx = p.Context.__new__(p.Context)
+    ctx.configs, ctx.manual, ctx.declarations, ctx.observed = [], [], [], []
+    ctx.resources = {r["id"]: r for r in resources}
+    ctx.aliases = {(a["area"], a["name"]): r for r in resources for a in r["definition"]["aliases"]}
+    ctx.events, ctx.cache, ctx.time_cache, ctx.history_hashes, ctx.scopes = [], {}, {}, {}, {}
+    ctx.timing, ctx.recent_excel = timing or {}, {}
+    return ctx
+
+
+def test_efficiency_only_on_machines_the_engine_knows():
+    """A-efic-id: o motor conhece a máquina pelo recurso gravado; numa máquina só do catálogo ('v2:…') a eficiência
+    valeria na Carteira e no Gantt (7,5 h) mas não na Tabela (6,0 h). Gravá-la aí é recusado."""
+    from app import planning
+    from app.sector import settings
+    stored = {"id": P8, "definition": {"aliases": [{"area": "cantoneiras", "name": "Peddi 8"}], "confirmed": False}}
+    timing = {"cantoneiras": p.shared_efficiency({"cantoneiras": {"piece_minutes": 0, "efficiency": {P8: 80, "v2:NOVA": 80}},
+                                                  "perfis": {"piece_minutes": 0, "efficiency": {}}})["cantoneiras"]}
+    values = {"quantity_to_plan": 60, "length_mm": 10000, "thickness_mm": 10}
+    excel = {"method": "metres_hour", "value": 100, "unit": "m/h"}
+    on_p8 = _engine([stored], timing).estimate({**values, "machine": "Peddi 8"}, "cantoneiras", "112", TODAY, excel=excel, as_of=date.today())
+    assert on_p8["hours"] == pytest.approx(600 / 100 * 100 / 80)  # 7,5 h: a mesma conta da Carteira e do Gantt
+    # Máquina sem recurso gravado: o motor não a encontra pelo ID 'v2:…' e fica nas horas do Excel.
+    alone = _engine([stored], timing).estimate({**values, "machine": "Nova"}, "cantoneiras", "112", TODAY, excel=excel, as_of=date.today())
+    assert alone["hours"] == pytest.approx(6.0)
+    machines = {P8: {"has_object": True}, "v2:NOVA": {"has_object": False}}
+    with pytest.raises(planning.PlanningError, match="recurso"):
+        settings._efficiency_store({}, {"v2:NOVA": 80}, machines)
+    # Tirar uma eficiência que lá ficou é sempre possível; a margem antiga só passa às máquinas com recurso.
+    assert settings._efficiency_store({"efficiency": {"v2:NOVA": 80}}, {"v2:NOVA": None}, machines) == {}
+    assert settings._efficiency_store({"margin_pct": 25}, {P8: 90}, machines) == {P8: 90}
+
+
+def test_machine_efficiency_is_the_same_in_both_sectors():
+    """A-efic-setor: a Peddi 8 a 80 % nas Definições MTG3 também vale numa linha MTG2 na Peddi 8."""
+    timing = p.shared_efficiency({"cantoneiras": {"piece_minutes": 1, "efficiency": {P8: 80, "*": 90}},
+                                  "perfis": {"piece_minutes": 0, "efficiency": {FITA: 120, P8: 70}}})
+    assert p.efficiency_of(timing["perfis"], P8) == 70  # a do próprio setor ganha se houver duas
+    assert p.efficiency_of(timing["cantoneiras"], FITA) == 120 and p.efficiency_of(timing["cantoneiras"], P8) == 80
+    # O tempo fixo e a margem antiga ('*') ficam por setor.
+    assert timing["perfis"]["piece_minutes"] == 0 and "*" not in timing["perfis"]["efficiency"]
+    assert p.efficiency_of(timing["perfis"], XP4) == 100 and p.efficiency_of(timing["cantoneiras"], XP4) == 90
+    only = p.shared_efficiency({"cantoneiras": {"piece_minutes": 0, "efficiency": {P8: 80}}, "perfis": {"piece_minutes": 0, "efficiency": {}}})
+    assert p.timed({"method": "metres_hour", "value": 100}, "Excel provisório", only["perfis"], P8)["efficiency_pct"] == 80
+
+
+def test_thomas_measured_is_not_compared_with_the_base_rate():
+    """A-medido-thomas: com QTD > 50 o Excel conta 3 × a taxa E/F; o «% face ao Excel» da Thomas ficaria ~300 %."""
+    from app.sector import settings
+    measured = {f"{FITA}|corte": {"unit": "mm²/h", "hours": 10, "volume": 565380, "value": 56538, "machine": "Serrote Fita Thomas IS639 Pav.1"},
+                f"{XP4}|corte": {"unit": "mm²/h", "hours": 10, "volume": 180000, "value": 18000}}
+    thomas = {"id": FITA, "name": "Serrote Fita pav.1", "area": "perfis", "aliases": BY_ID[FITA]["aliases"],
+              "excel_rate": {"value": 18846, "unit": "mm²/h"}}
+    view = settings.measured_view(thomas, measured)
+    assert view[0]["value"] == pytest.approx(56538) and view[0]["ratio_pct"] is None and view[0]["plausible"]
+    assert "× 3" in view[0]["note"]
+    other = settings.measured_view({"id": XP4, "name": "Serrote MEBA", "area": "perfis", "excel_rate": {"value": 20000, "unit": "mm²/h"}}, measured)
+    assert other[0]["ratio_pct"] == 90 and "note" not in other[0]
+
+
+def test_carga_totals_count_unknown_pieces_and_metres_apart():
+    """C-carga-totais-zero: saldo ou comprimento desconhecido não soma 0, conta-se à parte (F09), como na Carteira."""
+    from app.sector import load
+    t = load._empty_total()
+    load._add_total(t, {"phase": "principal", "pieces": 10, "metres": 30.0, "load_hours": 1}, None, False, None, 5.0, False)
+    load._add_total(t, {"phase": "principal", "pieces": None, "metres": None, "load_hours": None}, None, False, None, None, False)
+    load._add_total(t, {"phase": "principal", "pieces": 4, "metres": None, "load_hours": 1}, None, False, None, 2.0, False)
+    load._add_total(t, {"phase": "seguinte", "pieces": None, "metres": None, "load_hours": 1}, None, False, None, None, False)
+    assert (t["pieces"], t["pieces_unknown"], t["metres"], t["metres_unknown"]) == (14, 1, 30.0, 2)
+
+
+def test_rates_and_preferences_use_the_lisbon_day(monkeypatch):
+    """C-F24: entre as 23:00 e a meia-noite de Lisboa o servidor (Berlim) já está no dia seguinte; a vigência das
+    taxas na Carteira/Carga e das preferências segue o dia de Lisboa, como o motor e a chave da cache."""
+    from datetime import timedelta
+    from app.sector import assignments, week
+    lisbon, berlin = date(2026, 10, 8), date(2026, 10, 9)
+    monkeypatch.setattr(week, "lisbon_today", lambda now=None: lisbon)
+    monkeypatch.setattr(assignments, "lisbon_today", lambda now=None: lisbon)
+    rate = {"kind": "rate", "id": "t", "definition": {"resource_id": XP4, "area": "cantoneiras", "operation": "119", "method": "metres_hour",
+                                                      "value": 90, "confirmed": True, "source": "Confirmada", "valid_from": berlin.isoformat()}}
+    f = fact(remaining=10, length_mm=1000)
+    assert estimates.table_rate(f, {"id": XP4}, [rate], tier="Confirmada") is None  # amanhã em Lisboa: ainda não vale
+    assert estimates.table_rate(f, {"id": XP4}, [rate], tier="Confirmada", when=berlin)["rate"]["value"] == 90
+    preference = {"archived": False, "valid_from": None, "valid_until": lisbon.isoformat()}
+    assert assignments.Resolver(preferences=[preference]).preferences == [preference]  # vale até ao fim do dia de Lisboa
+    assert assignments.Resolver(preferences=[preference], today=lisbon + timedelta(days=1)).preferences == []
+
+
+def test_sector_timing_form_sends_the_margin_only_when_editable():
+    """P4: a margem saiu (08/10). O ecrã não a mostra quando a API diz margin_editable=false e grava só o tempo
+    fixo, que o Python aceita mesmo com uma margem antiga ≠ 0 gravada."""
+    from pathlib import Path
+    from app.sector import settings
+    assert settings._validate_timing({"piece_minutes": "1,5"}, {"margin_pct": 10, "piece_minutes": 0}) == {"piece_minutes": 1.5}
+    js = (Path(__file__).resolve().parents[1] / "app/web/static/setor_definicoes.js").read_text(encoding="utf-8")
+    form = js[js.index("function timingForm"):js.index("function seedBox")]
+    assert "st.margin_editable !== false" in form and "if (editable) body.margin_pct" in form
+    assert "editable ? el('label', {}, labels.margin_pct" in form
+
+
+def test_activation_of_08_10_waits_for_the_worker_and_keeps_the_hard_links():
+    """P1–P3: o procedimento de 08/10 para o timer do Gantt, traz a Parte D na mesma janela (ou só a raiz), confere
+    os 17 hard links, arranca o worker antes do web e verifica memória, swap e horas agendadas."""
+    import subprocess
+    from pathlib import Path
+    script = Path(__file__).resolve().parents[1] / "scripts/ativar_2026-10-08.sh"
+    subprocess.run(["bash", "-n", str(script)], check=True)
+    text = script.read_text(encoding="utf-8")
+    assert "BASE=26a37b5" in text and "RELEASE=${RELEASE:-planeamento-20261008}" in text and "LINKED=()" in text
+    assert "HARD_LINKS=17" in text and 'diff --quiet HEAD -- "${linked[@]}"' in text
+    assert text.index("stop planning-research-refresh.timer") < text.index('merge --ff-only "$RELEASE"')
+    assert text.index("start kanban-raw-worker") < text.index("systemctl --user start kanban-planning")
+    assert "capacity-20260925-integral-v35" in text and "aggregates_pending" in text
+    assert "MES_RAW_WORKBOOK_FOLDERS=." in text and 'merge --ff-only "$DATA_RELEASE"' in text and "sync_drive.sh" in text
+    assert "MemAvailable" in text and "SwapFree" in text and "start planning-research-refresh.timer" in text

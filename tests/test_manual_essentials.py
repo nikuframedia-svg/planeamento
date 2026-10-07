@@ -514,6 +514,34 @@ def test_a_table_cell_edit_does_not_freeze_the_rest_of_the_line(essential):
     assert row["plan_key"] == "s2:10" and row["values"]["chanfro"] == "X" and row["values"]["notes"] == "Escrito"
 
 
+def test_a_following_operation_without_state_does_not_take_the_cut_machine(essential):
+    # Achado B-F20 (08/10): os valores da linha do Excel descrevem a operação principal. A ficha de uma operação seguinte
+    # gravada sem estado (pela Tabela) não passa a ter a Máquina e a Data Corte do corte numa importação nova.
+    linked = from_excel_line(changed=["quantity_required"])
+    with psycopg.connect(essential) as c:
+        main = c.execute("SELECT id FROM planning_mtg.records WHERE need_id=%s", (linked["need_id"],)).fetchone()[0]
+        columns = [r[0] for r in c.execute("SELECT column_name FROM information_schema.columns WHERE table_schema='planning_mtg' "
+                                           "AND table_name='records' ORDER BY ordinal_position").fetchall()]
+        op, ident = uuid.uuid4(), uuid.uuid4()
+        c.execute("INSERT INTO planning_mtg.need_operations(id,need_id,area,code,sequence) VALUES (%s,%s,'perfis','abocardar',2)",
+                  (op, linked["need_id"]))
+        selected = ["%s" if k in ("id", "operation_id") else """values_json||'{"machine":null,"cut_date":null}'""" if k == "values_json"
+                    else k for k in columns]
+        args = [ident if k == "id" else op for k in columns if k in ("id", "operation_id")]
+        c.execute("INSERT INTO planning_mtg.records(" + ",".join(columns) + ") SELECT " + ",".join(selected)
+                  + " FROM planning_mtg.records WHERE id=%s", (*args, main))
+    new_import_with_the_same_excel(essential)
+    with psycopg.connect(essential) as c:
+        c.execute("""UPDATE raw_mtg.plan_production_rows SET cut_date='2026-12-15',row_data=row_data||'{"Máquina Corte":"Ficep"}'
+                     WHERE source_line_id='s2:10'""")
+    detail = needs.detail(linked["need_id"])
+    records = {str(r["operation_id"]): r["values_json"] for r in detail["records"]}
+    assert records[str(op)]["machine"] is None and records[str(op)]["cut_date"] is None
+    assert not [f for f in detail["fields"] if f["scope"] == str(op)]
+    first = next(v for k, v in records.items() if k != str(op))
+    assert first["cut_date"] == "2026-12-15" and first["machine"] == "Ficep"
+
+
 def test_an_import_with_the_same_excel_keeps_untyped_values(essential):
     # A linha s1:10 não tem Equipa; a peça ficou com a sugerida, sem o utilizador a escrever.
     linked = from_excel_line(changed=["quantity_required"], team="Equipa sugerida")

@@ -228,15 +228,19 @@ def published_rates(records, resolve=None, *, excel_area=None) -> dict:
     return {"rates": rates, "area": area}
 
 
-def table_rate(fact, resource, table, *, tier):
-    """Linha da tabela de velocidades que vale para esta ocorrência nesta máquina (productivity.match_rate)."""
+def table_rate(fact, resource, table, *, tier, when=None):
+    """Linha da tabela de velocidades que vale para esta ocorrência nesta máquina (productivity.match_rate).
+
+    Vigência pelo dia de Lisboa (F24, 08/10), como o motor (as_of) e o Gantt: match_rate sem `when` usaria o dia do
+    servidor (Berlim) e, entre as 23:00 e a meia-noite de Lisboa, uma taxa de amanhã já valeria aqui."""
     if not table or not resource or not resource.get("id"):
         return None
     from ..raw.productivity import match_rate, operation_names
+    from .week import lisbon_today
     values = {"profile": fact.get("profile"), "designation": fact.get("designation"), "section_unit": fact.get("section_unit"),
               "material_type": None if fact.get("material_type") in (None, "Sem tipo") else fact.get("material_type")}
     return match_rate(table, resource["id"], fact["area"], operation_names(fact.get("operation"), fact["phase"] == "principal", fact["area"]), values,
-                      tier=tier)
+                      when=str(when or lisbon_today())[:10], tier=tier)
 
 
 UNITS = {"metres_hour": "m/h", "area_hour": "mm²/h"}

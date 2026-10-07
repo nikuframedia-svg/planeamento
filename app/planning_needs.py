@@ -158,11 +158,11 @@ def follow(conn,need,origin,values,previous=None):
     «Escrito» é uma decisão explícita (write/select/clear); a sugestão aceite e o valor recebido seguem a
     origem. O valor escrito à mão fica e o ecrã mostra o da origem como nota (requires_review) enquanto
     forem diferentes. Vale para os campos da peça e para todos os da preparação em OPERATION_FOLLOW (Data
-    Corte, Máquina, Equipa, Pav., Observações, Chanfro, Requisição…), também os que não têm estado (a Tabela
-    grava as células vazias sem estado; 08/10); um campo que a origem não traz fica como está. Só se segue
-    quando o valor da origem mudou desde a revisão anterior (`previous`; sem ela, a sugestão guardada): uma
-    importação nova com o mesmo conteúdo não apaga a sugestão que ficou onde o Excel não tem nada. Devolve os
-    campos que seguiram; a revisão da peça fica a cargo de quem chama.
+    Corte, Máquina, Equipa, Pav., Observações, Chanfro, Requisição…), também os que não têm estado na ficha da
+    operação principal da linha (a Tabela grava as células vazias sem estado; 08/10); um campo que a origem
+    não traz fica como está. Só se segue quando o valor da origem mudou desde a revisão anterior (`previous`;
+    sem ela, a sugestão guardada): uma importação nova com o mesmo conteúdo não apaga a sugestão que ficou
+    onde o Excel não tem nada. Devolve os campos que seguiram; a revisão da peça fica a cargo de quem chama.
     """
     def moved(suggestion,name,new):
         if previous is None:return not equal_value(suggestion,new)
@@ -186,13 +186,19 @@ def follow(conn,need,origin,values,previous=None):
              catalogs.clean(spec.get('identity_discriminator')),Jsonb(serial(taken)),technical,need['id']))
         revision=need['revision'];need.update(load(conn,need['id']));need['revision']=revision
     followed=[k for k in OPERATION_FOLLOW if k in values]
-    for record in conn.execute('SELECT id,operation_id,values_json FROM planning_mtg.records WHERE need_id=%s AND operation_id IS NOT NULL',(need['id'],)).fetchall():
+    from .raw.registration import DEFAULTS
+    for record in conn.execute('''SELECT r.id,r.operation_id,r.values_json,r.area,o.code FROM planning_mtg.records r
+            LEFT JOIN planning_mtg.need_operations o ON o.id=r.operation_id WHERE r.need_id=%s AND r.operation_id IS NOT NULL''',(need['id'],)).fetchall():
         scope=str(record['operation_id']);patch={}
+        # Os valores da origem descrevem a operação principal da linha (Máquina, Data Corte, semana…). A ficha de uma
+        # operação seguinte (ex.: a 111 depois da 119) só segue os campos que já têm estado, como antes (08/10, F20).
+        main=str(record['code'] or '')==str(values.get('operation') or DEFAULTS.get(record['area'],{}).get('operation') or '')
         states={s['field']:s for s in conn.execute('SELECT * FROM planning_mtg.field_state WHERE need_id=%s AND scope=%s AND field=ANY(%s)',(need['id'],scope,followed)).fetchall()}
         for name in followed:
             new=catalogs.abocardar_mark(values[name]) if name=='abocardar' else values[name]
             state=states.get(name)
             if state is None:
+                if not main:continue
                 # Sem estado ninguém o escreveu: segue a origem e passa a ter estado, com ela como fonte (08/10).
                 current=(record['values_json'] or {}).get(name)
                 if moved(current,name,new) and not equal_value(current,new):

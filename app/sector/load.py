@@ -84,7 +84,8 @@ def _empty_cell():
 
 
 def _empty_total():
-    return {"operations": 0, "unknown": 0, "pieces": 0.0, "metres": 0.0, "area_mm2": 0.0, "weight_kg": 0.0, "weight_unknown": 0,
+    return {"operations": 0, "unknown": 0, "pieces": 0.0, "pieces_unknown": 0, "metres": 0.0, "metres_unknown": 0, "area_mm2": 0.0,
+            "weight_kg": 0.0, "weight_unknown": 0,
             "load": 0.0, "late": 0.0, "late_before": 0.0, "after": 0.0, "no_date": 0.0, "excel_hours": 0.0, "excel_unknown": 0}
 
 
@@ -132,8 +133,12 @@ def recommend(load_hours: float, capacity: float, n: int, settings: dict, *, wor
 def _add_total(t: dict, f: dict, week, late: bool, excel, weight, applies: bool, before: bool = False) -> None:
     t["operations"] += 1
     if f.get("phase", "principal") == "principal":
-        t["pieces"] += f.get("pieces") or 0
-        t["metres"] += f.get("metres") or 0
+        # Desconhecido ≠ 0 (F09): saldo ou comprimento em falta conta-se à parte, como na Carteira (achado C-carga-totais-zero).
+        for name in ("pieces", "metres"):
+            if f.get(name) is None:
+                t[name + "_unknown"] += 1
+            else:
+                t[name] += f[name]
         if f.get("remaining") is not None and f.get("section_unit"):
             t["area_mm2"] += f["remaining"] * f["section_unit"]
         if weight is None:
@@ -360,7 +365,7 @@ def overview(sector: str, *, today: date | None = None, now: datetime | None = N
                          "machines": rows, "totals": machine_totals,
                          "elsewhere": {"operations": sum(o["operations"] for o in other), "hours": round(sum(o["hours"] for o in other), 1),
                                        "unknown": sum(o["unknown"] for o in other), "machines": other,
-                                       **{k: work[k] for k in ("pieces", "metres", "weight_kg", "weight_unknown")}},
+                                       **{k: work[k] for k in ("pieces", "pieces_unknown", "metres", "metres_unknown", "weight_kg", "weight_unknown")}},
                          # Excel do setor no Drive mais recente do que o importado (F16, 08/10): uma linha de aviso.
                          "source_notice": drive_notice.text(sector),
                          "settings": {k: settings[k] for k in ("template", "workdays", "holidays")},
