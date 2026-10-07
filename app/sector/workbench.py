@@ -119,7 +119,8 @@ def rebalance(c, area, data, lanes, *, study, by_id, limit=MAX_PROPOSALS):
                         total = 0.0
                         for f in items:
                             h, _ = estimates.estimate(f, by_id.get(dst), names.get(dst, set()), study, rates,
-                                                      table=extra.get("table"), timing=extra.get("timing")) if study else (None, None)
+                                                      table=extra.get("table"), timing=extra.get("timing"),
+                                                      published=extra.get("published")) if study else (None, None)
                             total += h if h is not None else f["load_hours"]
                         hours_cache[(key, dst)] = total
                     hours_to = hours_cache[(key, dst)]

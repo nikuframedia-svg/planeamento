@@ -120,21 +120,40 @@ def historical(events, cohorts, *, area, operation, method, values, as_of, days=
 
 
 MIN_SHIFTS, MIN_DAYS, MIN_HOURS = 3, 2, 15.0
-PLAUSIBLE = (0.25, 4.0)  # taxa histórica aceite entre ¼ e 4 vezes a velocidade do Excel
+PLAUSIBLE = (0.25, 4.0)  # medido entre ¼ e 4 vezes a velocidade do Excel; fora disso a amostra é suspeita (só se mostra, 08/10)
 
 
 # ---------------------------------------------------------------- tabela de velocidades (07/10/2026)
-# Uma só regra para Carteira, Carga, Gantt e motor de capacidade (plano de 06/10, parte 3):
+# Uma só regra para Carteira, Carga, Gantt, sugestões e motor de capacidade (decisão do Luís, 08/10):
 #   1. taxa confirmada da tabela (origem «Confirmada»);
-#   2. histórico válido (só no motor e no Gantt, com máquina confirmada);
-#   3. linha da tabela com origem «Excel» (semente «velocidades atuais do Excel»), tratada como Excel;
-#   4. velocidade do Excel da própria linha / da máquina.
+#   2. linha da tabela com origem «Excel» (semente «velocidades atuais do Excel»), tratada como Excel;
+#   3. velocidade do Excel da própria linha / da máquina (×3 da Thomas como no Excel, `thomas_factor`).
+# O histórico medido já não entra nas horas (08/10): calcula-se e mostra-se ao lado, como «medido».
 # Dentro da tabela: máquina, área e operação (nos dois formatos, 'CPIS:112' = '112', 'LOCAL:PRINCIPAL' =
 # 'corte'); tipo de material e perfil quando a linha os indica (a linha específica ganha à geral); a
 # espessura (cantoneiras, tirada da designação) ou a área de secção (perfis) dentro do intervalo, senão o
 # intervalo imediatamente superior. Vigência pela data de hoje (as linhas atrasadas usam a taxa de hoje).
 RANGE_FIELDS={'cantoneiras':('thickness_min','thickness_max'),'perfis':('section_min','section_max')}
 TIMING_FIELDS=('margin_pct','piece_minutes')
+# Nomes da Thomas (Excel MTG2 e catálogo): taxa × 3 quando a QTD da linha passa de 50, como no Excel.
+THOMAS_MACHINES=('Serrote Fita Thomas IS639 Pav.1','Thomas IS639')
+THOMAS_FACTOR,THOMAS_MIN_QUANTITY=3,50
+
+
+def _machine_key(name):
+    return ' '.join(str(name or '').casefold().split())
+
+
+def thomas_factor(area, operation, machines, quantity_required):
+    """Fator do Excel sobre a taxa (08/10): 3 no corte da Thomas com QTD > 50, senão 1.
+
+    A regra única do motor, das sugestões, da Carteira e do Gantt. `machines`: um nome ou vários (nome da
+    máquina na linha, nomes e aliases do recurso). Aplica-se só a taxas do Excel, uma vez.
+    """
+    if area!='perfis' or str(operation or '') not in ('corte','LOCAL:PRINCIPAL'):return 1
+    names={_machine_key(machines)} if isinstance(machines,str) or machines is None else {_machine_key(m) for m in machines}
+    if not names&{_machine_key(m) for m in THOMAS_MACHINES}:return 1
+    return THOMAS_FACTOR if (quantity(quantity_required) or 0)>THOMAS_MIN_QUANTITY else 1
 
 
 def _code(operation):
@@ -333,70 +352,122 @@ def current_excel(excel, recent, machine):
             'row_value':excel.get('value'),'excel_window':{'from':found.get('from'),'to':found.get('to'),'lines':found.get('lines')}}
 
 
+def current_excel_area(conn):
+    """{máquina: taxa mm²/h} da folha CapacidadeMáquinas do Excel dos perfis em uso (colunas E/F, 08/10).
+
+    A mesma regra de `capacity_revision.sheet_rate` (a que o próprio Excel usa na tabela «Carga serrotes total»),
+    lida das 12 linhas guardadas da folha: sem abrir o ficheiro. Base sem o Excel (MES, testes): {}.
+    """
+    found=conn.execute("SELECT to_regclass('raw_mtg.other_sheet_rows') r, to_regclass('audit_mtg.snapshots') s").fetchone()
+    if not found['r'] or not found['s']:return {}
+    try:snap=planning.snapshot(conn,'perfis')
+    except planning.PlanningError:return {}
+    from openpyxl.utils.cell import get_column_letter
+    from .capacity_revision import sheet_rate
+    out={}
+    for r in conn.execute("SELECT excel_row,row_data FROM raw_mtg.other_sheet_rows WHERE snapshot_id=%s AND sheet_name='CapacidadeMáquinas' "
+                          "AND excel_row BETWEEN 2 AND 12",(snap['snapshot_id'],)).fetchall():
+        cells={get_column_letter(i):{'value':v} for i,v in enumerate((r['row_data'] or {}).get('values',[]),1) if v is not None}
+        machine=(cells.get('B') or {}).get('value')
+        rate=sheet_rate(cells,r['excel_row'])
+        if machine and rate['value']:out[str(machine)]={**rate,'snapshot':snap['snapshot_id']}
+    return out
+
+
+EFFICIENCY_RANGE=(10.0,200.0)  # % da velocidade do Excel; 100 = as horas do Excel
+
+
 def sector_timing(conn):
-    """{área: {'margin_pct', 'piece_minutes'}} gravados nas Definições do setor (por defeito 0 = nada muda)."""
-    result={area:{'margin_pct':0.0,'piece_minutes':0.0} for area in planning.AREAS}
+    """{área: {'piece_minutes', 'efficiency'}} gravados nas Definições do setor (por defeito nada muda).
+
+    Eficiência por máquina (08/10): {resource_id: %} só com as diferentes de 100. A antiga margem do setor deixa de
+    ser editável; se ainda houver uma margem ≠ 0 sem eficiências gravadas, vale como a eficiência equivalente em
+    todas as máquinas (chave '*' = 100 / (1 + margem/100)). Assim o fator sobre as horas é sempre um só.
+    """
+    result={area:{'piece_minutes':0.0,'efficiency':{}} for area in planning.AREAS}
     if not conn.execute("SELECT to_regclass('planning_mtg.sector_settings') t").fetchone()['t']:return result  # base sem Definições
-    rows=conn.execute("SELECT area,definition->'margin_pct' m,definition->'piece_minutes' p FROM planning_mtg.sector_settings").fetchall()
+    rows=conn.execute("SELECT area,definition->'margin_pct' m,definition->'piece_minutes' p,definition->'efficiency' e FROM planning_mtg.sector_settings").fetchall()
     for r in rows:
-        if r['area'] in result:
-            result[r['area']]={'margin_pct':max(number(r['m']) or 0.0,0.0),'piece_minutes':max(number(r['p']) or 0.0,0.0)}
+        if r['area'] not in result:continue
+        efficiency={}
+        for rid,pct in (r['e'] if isinstance(r['e'],dict) else {}).items():
+            value=number(pct)
+            if value is not None and value>0 and value!=100:efficiency[str(rid)]=value
+        margin=max(number(r['m']) or 0.0,0.0)
+        if margin and not efficiency:efficiency={'*':100/(1+margin/100)}
+        result[r['area']]={'piece_minutes':max(number(r['p']) or 0.0,0.0),'efficiency':efficiency}
     return result
 
 
-def timed(rate, source, timing):
-    """A taxa com o arranque por peça (da linha) mais o tempo fixo do setor e a margem, prontos para as contas.
+def efficiency_of(timing, resource_id=None):
+    """Eficiência (%) de uma máquina nas Definições do setor; 100 quando não há (as horas ficam as do Excel)."""
+    found=(timing or {}).get('efficiency') or {}
+    value=number(found.get(str(resource_id))) if resource_id is not None else None
+    if value is None:value=number(found.get('*'))
+    return value if value is not None and value>0 else 100.0
 
-    O Histórico mede horas reais (já com arranques, manuseamento e perdas): nem margem nem tempo fixo.
+
+def timed(rate, source, timing, resource_id=None):
+    """A taxa com o arranque por peça (da linha) mais o tempo fixo do setor e a eficiência, prontos para as contas.
+
+    Um só fator sobre as horas (08/10): horas × 100 / eficiência da máquina (`resource_id`), escrito como
+    `margin_pct` = (100/eficiência − 1) × 100 para a conta de capacity.estimate. Uma taxa medida (Histórico ou
+    Confirmada marcada «medida») já tem arranques, manuseamento e perdas: nem eficiência nem tempo fixo. A
+    capacidade nunca leva este fator.
     """
     if not rate:return rate
     own=number(rate.get('rate_piece_seconds',rate.get('piece_seconds'))) or 0.0
     timing=timing or {}
-    historical=source=='Histórico'
-    fixed=0.0 if historical else (number(timing.get('piece_minutes')) or 0.0)*60
-    margin=0.0 if historical else number(timing.get('margin_pct')) or 0.0
+    measured=source=='Histórico' or bool(rate.get('measured'))
+    fixed=0.0 if measured else (number(timing.get('piece_minutes')) or 0.0)*60
+    efficiency=100.0 if measured else efficiency_of(timing,resource_id)
+    margin=(100/efficiency-1)*100 if efficiency!=100 else 0.0
     if not own and not fixed and not margin:return rate
-    return {**rate,'rate_piece_seconds':own,'fixed_piece_seconds':fixed,'piece_seconds':own+fixed,'margin_pct':margin}
+    result={**rate,'rate_piece_seconds':own,'fixed_piece_seconds':fixed,'piece_seconds':own+fixed,'margin_pct':margin}
+    if margin:result['efficiency_pct']=efficiency
+    return result
 
 
 def select_rate(values, *, area, operation, resource_id, manual, historical_rate, excel, when, rate_day=None):
-    """H10 selection, before calculating hours. A conflict cannot fall through.
+    """Taxa das horas (08/10): Confirmada > Excel (linha da tabela com origem Excel > velocidade do Excel). Um
+    conflito não passa à frente.
 
+    O histórico (`historical_rate`) já não entra na escolha: fica em `rate_alternatives.historical` para ser
+    mostrado como «medido». O ×3 da Thomas aplica-se uma vez às taxas do Excel (`thomas_factor`).
     `rate_day` é o dia da vigência das taxas da tabela (o motor passa hoje); sem ele usa-se `when`.
     """
     day=str(rate_day or when)[:10]
+    measured=None
+    if positive((historical_rate or {}).get('value')):
+        measured={'historical':{k:historical_rate[k] for k in ('method','value','unit','window','hours','sheet_count') if k in historical_rate}}
     found=match_rate(manual,resource_id,area,operation,values,day,tier='Confirmada')
     if found and found.get('conflict'):return {'source':None,'rate':None,'reason':'Taxas manuais aplicáveis em conflito.','candidates':found['conflict'],'factor':1}
     if found:
-        return {'source':'Manual','rate':found['rate'],'configuration':found['configuration'],'reason':None,'factor':1,'basis':found['basis']}
+        return {'source':'Manual','rate':found['rate'],'configuration':found['configuration'],'reason':None,'factor':1,'basis':found['basis'],
+                **({'rate_alternatives':measured} if measured else {})}
     table=match_rate(manual,resource_id,area,operation,values,day,tier='Excel')
-    # Duas linhas com origem Excel em conflito só bloqueiam quando o histórico não vale (o histórico ganha-lhes).
-    conflict=table if table and table.get('conflict') else None
-    if conflict:table=None
+    if table and table.get('conflict'):
+        return {'source':None,'rate':None,'reason':'Taxas da tabela aplicáveis em conflito.','candidates':table['conflict'],'factor':1}
     if table:excel={**table['rate'],'source':'Excel','basis':table['basis']}
-    historical_value=positive(historical_rate.get('value'))
-    plausible=True
-    if historical_value and excel and positive(excel.get('value')) and excel.get('method')==historical_rate.get('method'):
-        ratio=historical_value/excel['value']
-        plausible=PLAUSIBLE[0]<=ratio<=PLAUSIBLE[1]  # longe demais da velocidade do Excel: amostra suspeita, fica o Excel
-    if historical_value and plausible:
-        return {'source':'Histórico','rate':{k:historical_rate[k] for k in ('method','value','unit','window') if k in historical_rate},'reason':None,'factor':1}
-    if conflict:return {'source':None,'rate':None,'reason':'Taxas da tabela aplicáveis em conflito.','candidates':conflict['conflict'],'factor':1}
     if excel and positive(excel.get('value')):
-        factor=3 if area=='perfis' and operation=='corte' and values.get('machine')=='Serrote Fita Thomas IS639 Pav.1' and (quantity(values.get('quantity_required')) or 0)>50 else 1
+        factor=thomas_factor(area,operation,values.get('machine'),values.get('quantity_required'))
         result={'source':'Excel provisório','rate':{**excel,'value':excel['value']*factor},'reason':None,'factor':factor}
         if table:result['configuration']=table['configuration']
+        if measured:result['rate_alternatives']=measured
         return result
-    return {'source':None,'rate':None,'reason':historical_rate.get('reason') or 'Sem taxa manual, histórica ou Excel válida.','factor':1}
+    return {'source':None,'rate':None,'reason':'Sem taxa confirmada nem velocidade do Excel.','factor':1,
+            **({'rate_alternatives':measured} if measured else {})}
 
 
 class Context:
     """One database snapshot and memoized rates for a whole planning calculation."""
-    def __init__(self, conn, configs, *, rows_override=None, events_override=None, timing=None, recent_excel=None):
+    def __init__(self, conn, configs, *, rows_override=None, events_override=None, timing=None, recent_excel=None, excel_area=None):
         self.configs=needs.serial(configs);self.manual=[r for r in self.configs if r['kind']=='rate']
         # Velocidade mais recente do Excel por máquina (cantoneiras): substitui o Mt\\h de cada linha.
         self.recent_excel=recent_excel if recent_excel is not None else current_excel_speeds(conn)
-        # Margem e tempo fixo por peça das Definições de cada setor (0 = as horas não mudam).
+        # Taxa mm²/h de cada serrote no Excel dos perfis em uso (colunas E/F, 08/10): a do Gantt noutra máquina.
+        self.excel_area=excel_area if excel_area is not None else current_excel_area(conn)
+        # Tempo fixo por peça e eficiência por máquina das Definições de cada setor (por defeito nada muda).
         self.timing=timing if timing is not None else sector_timing(conn)
         # Máquinas físicas (capacity.physical_ids): as do setor no catálogo e as confirmadas à mão (07/10/2026).
         from .capacity import physical_ids
@@ -500,7 +571,7 @@ class Context:
         if not allowed or resource and resource['definition'].get('confirmed') and not supports(resource,operation):
             result={**applied,'source':None,'rate':None,'hours':None,'reason':'Operação por confirmar para este recurso.'}
             return {**result,'calculation':estimate_rule(values,result)}
-        effective=timed(applied['rate'],applied['source'],getattr(self,'timing',{}).get(area))
+        effective=timed(applied['rate'],applied['source'],getattr(self,'timing',{}).get(area),resource['id'] if resource else None)
         h,reason=estimate(values,effective,operation) if applied['rate'] else (None,applied['reason'])
         if quantity(values.get('quantity_to_plan'))==0:h,reason=0,None
         result={**applied,'hours':h,'reason':reason}

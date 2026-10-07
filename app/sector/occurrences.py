@@ -77,28 +77,52 @@ def _estimate_name(code: str, area: str, principal: bool) -> str:
     return str(code).removeprefix("CPIS:")
 
 
-def _hours(row, values, detail, area, remaining):
-    """Documentary hours only when they describe this operation's current balance."""
+def _documentary(row, values, detail, area, remaining):
+    """(horas, origem, motivo, máquina) documentais do motor de capacidade, quando descrevem o saldo atual.
+
+    A máquina é aquela para que o motor as calculou: a da Tabela na operação principal (values.machine), a da
+    estimativa da operação nas seguintes. Só valem nessa máquina (F01, `_hours`).
+    """
     principal = row["fase"] == "principal"
     if remaining is None:
-        return None, None, "Saldo da operação por confirmar."
+        return None, None, "Saldo da operação por confirmar.", None
     if remaining == 0:
-        return 0.0, "Concluída", None
+        return 0.0, "Concluída", None, None
     if principal:
         hours, basis = _number(values.get("theoretical_hours")), _number(values.get("remaining"))
         if hours is not None and hours >= 0 and basis is not None and basis == remaining:
-            return hours, values.get("rate_source") or "Excel provisório", None
+            return hours, values.get("rate_source") or "Excel provisório", None, values.get("machine")
         if hours is not None and basis is not None and basis != remaining:
-            return None, None, "Estimativa calculada para outro saldo; recalcular."
+            return None, None, "Estimativa calculada para outro saldo; recalcular.", values.get("machine")
     name = _estimate_name(row["operacao_codigo"], area, principal)
     for estimate in (detail.get("calculation") or {}).get("operation_estimates") or []:
         if str(estimate.get("operation")) != name:
             continue
         hours = _number(estimate.get("hours"))
         if hours is not None and hours >= 0 and _number(estimate.get("quantity")) == remaining:
-            return hours, estimate.get("source") or "Estimativa", None
-        return None, None, estimate.get("reason") or "Taxa da máquina/operação por confirmar."
-    return None, None, "Taxa da máquina/operação por confirmar."
+            return hours, estimate.get("source") or "Estimativa", None, estimate.get("machine")
+        return None, None, estimate.get("reason") or "Taxa da máquina/operação por confirmar.", estimate.get("machine")
+    return None, None, "Taxa da máquina/operação por confirmar.", None
+
+
+def _hours(row, values, detail, area, remaining, *, effective_id=None, effective_machine=None, resolve=None):
+    """Horas documentais só para a máquina efetiva da ocorrência (F01, 08/10).
+
+    O motor de capacidade calcula as horas para a máquina da Tabela; quando a máquina efetiva é outra (escolhida
+    na Carteira, conjunto de famílias, decisão do setor) essas horas não valem: ficam None e a estimativa da
+    máquina efetiva entra depois (estimates.hours_on). Compara-se o recurso físico (`effective_id`, `resolve(nome)`)
+    e, quando nenhum dos dois é do catálogo, o nome. Devolve (horas, origem, motivo, máquina documental, ID do
+    recurso documental).
+    """
+    hours, origin, reason, machine = _documentary(row, values, detail, area, remaining)
+    from . import machine_choice
+    machine = machine_choice.normalize(machine) or None
+    documentary_id = resolve(machine) if machine and resolve else None
+    effective = machine_choice.normalize(effective_machine).casefold()
+    same = documentary_id == effective_id if documentary_id or effective_id else (machine or "").casefold() == effective
+    if hours is not None and remaining and not same:
+        return None, None, f"Horas da Tabela calculadas para {machine or 'sem máquina'}; estimadas na máquina da linha.", machine, documentary_id
+    return hours, origin, reason, machine, documentary_id
 
 
 RAW_FIELDS = ("Descrição", "Observações", "Observações Galvanização", "Designação", "Data Galvanização",
@@ -155,11 +179,12 @@ def stamp(c, area, today):
     # Os calendários entram no equilíbrio das sugestões dos perfis (PROP-7): uma mudança refaz as ocorrências.
     calendars = tuple(c.execute("SELECT count(*) n, max(updated_at) m FROM planning_mtg.raw_objects WHERE kind='calendar' AND NOT archived"
                                 ).fetchone().values()) if area == "perfis" else None
-    # Tabela de velocidades (taxas, também as arquivadas) e margem/tempo fixo do setor mudam as horas estimadas.
+    # Tabela de velocidades (taxas, também as arquivadas), tempo fixo do setor e eficiência das máquinas (08/10) mudam
+    # as horas estimadas; a eficiência é um dicionário, por isso entra pelo digest (a chave da cache tem de ser hashable).
     from ..raw.productivity import sector_timing
     rates = tuple(c.execute("SELECT count(*) FILTER (WHERE NOT archived) n, count(*) t, max(updated_at) m "
                             "FROM planning_mtg.raw_objects WHERE kind='rate'").fetchone().values())
-    timing = tuple(sorted(sector_timing(c)[area].items()))
+    timing = needs.digest(sector_timing(c)[area])
     return (area, g["id"], research.head(c)["version_id"] if research.enabled() else None,
             sku_families.token(c, area), priority.digest(c), assignments.digest(c),
             scope.area_digest(scope.read(c), area), machine_choice.context(area, conn=c)["digest"], calendars, rates, timing, today)
@@ -228,7 +253,6 @@ def build(c, area: str, today: date | None = None) -> dict:
         principal = row["fase"] == "principal"
         if remaining == 0:
             continue  # nothing left of this operation; following operations keep their own rows
-        hours, hours_origin, hours_reason = _hours(row, values, detail, area, remaining)
         started = bool((row.get("contador_excel") or 0) > 0 or row.get("execution_started"))
         of, reference = row["ordem_codigo"], row["referencia_original"]
         designation = values.get("designation") or raw.get("Designação") or ""
@@ -263,6 +287,11 @@ def build(c, area: str, today: date | None = None) -> dict:
         machine = machine_choice.normalize(row.get("maquina_original"))
         decision = decisions.lookup(area, row, signature, None)
         applied = decision if decision and decision["mode"] in ("assign", "prefer") else None
+        assigned = (applied or {}).get("resource_id") or (resource["id"] if resource else None)
+        # F01 (08/10): as horas só depois de decidida a máquina efetiva; as da Tabela só valem nessa máquina.
+        hours, hours_origin, hours_reason, hours_machine, documentary_id = _hours(
+            row, values, detail, area, remaining, effective_id=assigned, effective_machine=machine,
+            resolve=lambda name: (codes.get(aliases.get((area, name))) or {}).get("id"))
         material = row.get("material_type") or values.get("material_type") or "Sem tipo"
         profile = (row.get("perfil") or values.get("profile") or "").strip() or "Sem perfil"
         group_name = assignments.profile_group(material, profile)
@@ -291,9 +320,11 @@ def build(c, area: str, today: date | None = None) -> dict:
             "metres": remaining * length / 1000 if principal and remaining is not None and length else None,
             "machine": machine or NO_MACHINE, "resource_code": resource_code,
             "resource_id": resource["id"] if resource else None,
-            "assigned_resource_id": (applied or {}).get("resource_id") or (resource["id"] if resource else None),
+            "assigned_resource_id": assigned,
             "decision": decision,
             "hours": hours, "hours_origin": hours_origin, "hours_reason": hours_reason,
+            # Máquina para que o motor de capacidade calculou as horas da Tabela (F01): aviso «iniciada na X».
+            "hours_machine": hours_machine, "documentary_resource_id": documentary_id,
             "priority": due, "priority_day": due["priority_day"], "late": bool(late_days), "late_days": late_days,
             "window": priority.window(due, today), "started": started,
             "selection": scope.decision(selection, area, of, reference,
@@ -311,16 +342,22 @@ def build(c, area: str, today: date | None = None) -> dict:
     learned = machine_learning.model(area, conn=c) if package else None
     # MTG2 sem débito observado: o equilíbrio usa as horas dos calendários do setor (auditoria 06/10, PROP-7).
     calendar = estimates.calendar_capacity(c, list(by_id), today) if package and area == "perfis" else None
-    from ..raw.productivity import sector_timing
+    from ..raw.productivity import sector_timing, current_excel_area
     table = [cfg for cfg in configs if cfg["kind"] == "rate"]  # tabela de velocidades: antes do Excel, também nas sugeridas
     timing = sector_timing(c)[area]
+    # Velocidade do Excel que o motor publicou por máquina e operação (F01, 08/10): a das horas noutra máquina.
+    published = estimates.published_rates(records, lambda a, name: (codes.get(aliases.get((a, name))) or {}).get("id"),
+                                          excel_area=current_excel_area(c) if area == "perfis" else None)
+    # F25 (08/10): as linhas excluídas na Carteira não pesam nas sugestões (a Carga também as tira, load._context).
+    excluded = {f["key"] for f in facts if f["selection"] == "excluded"}
     balance_info = estimates.apply(facts, rows_by_key, codes=codes, by_id=by_id, package=package, study=study, learned=learned,
-                                   calendar=calendar, table=table, timing=timing)
+                                   calendar=calendar, table=table, timing=timing, published=published, excluded=excluded)
     return {"area": area, "unit": UNITS[area], "generation": g["id"], "snapshot": snapshot,
             "imported_at": g["created_at"], "research_version": package["head"]["version_id"] if package else None,
             "today": today, "facts": facts, "resources": {rid: {k: r.get(k) for k in ("id", "code", "name", "type", "capacity")}
                                                           for rid, r in by_id.items()},
-            "_rows": rows_by_key, "machine_balance": balance_info, "_estimate_inputs": {"table": table, "timing": timing}}
+            "_rows": rows_by_key, "machine_balance": balance_info,
+            "_estimate_inputs": {"table": table, "timing": timing, "published": published}}
 
 
 def load(area: str, *, today: date | None = None, conn=None, allow_stale: bool = False) -> dict:

@@ -113,8 +113,10 @@ def test_priority_expiry_conflict_and_thomas_factor_only_excel():
               historical_rate={'value':10,'method':'area_hour'},excel={'value':5,'method':'area_hour'})
     result=p.select_rate(v,when='2026-09-22',**args)
     assert result['source']=='Manual' and result['rate']['value']==20 and result['factor']==1
+    # 08/10: o histórico já não ganha ao Excel (só se mostra); o ×3 da Thomas aplica-se ao Excel.
     result=p.select_rate(v,when='2026-09-23',**args)
-    assert result['source']=='Histórico' and result['rate']['value']==10 and result['factor']==1
+    assert result['source']=='Excel provisório' and result['rate']['value']==15 and result['factor']==3
+    assert result['rate_alternatives']['historical']['value']==10
     result=p.select_rate(v,when='2026-09-23',**{**args,'historical_rate':{'value':None}})
     assert result['source']=='Excel provisório' and result['rate']['value']==15 and result['factor']==3
     assert p.select_rate({**v,'quantity_required':50},when='2026-09-23',**{**args,'historical_rate':{'value':None}})['rate']['value']==5
@@ -135,16 +137,19 @@ def publish_planning_fixture(conn,area,revision,rows):
 
 
 @pytest.mark.parametrize('area,op,method,unit_volume',[('perfis','corte','area_hour',20),('cantoneiras','112','metres_hour',1)])
-def test_closed_history_supplies_active_draft_then_manual_overrides_and_expires(workspace,area,op,method,unit_volume):
+def test_closed_history_is_measured_and_shown_while_excel_then_manual_give_the_hours(workspace,area,op,method,unit_volume):
+    """Decisão do Luís (08/10): as horas vêm do Excel (ou da taxa confirmada); o histórico das linhas fechadas continua
+    a ser calculado com a mesma mecânica das coortes, mas só se mostra («medido»)."""
     import psycopg
     from psycopg.types.json import Jsonb
     from app.raw import worked_hours
-    # Independent Excel fallback: 20 mm²/h in Perfis; Cantoneiras has 5 m/h
-    # on each source row below. These are reference inputs, not engine output.
+    # Independent Excel fallback: 20 mm²/h in Perfis (coluna E da CapacidadeMáquinas, 29/11/2024; a C antiga, 99,
+    # já não conta); Cantoneiras has 5 m/h on each source row below. These are reference inputs, not engine output.
     if area=='perfis':
         with psycopg.connect(workspace) as c:
             c.execute("INSERT INTO raw_mtg.other_sheet_rows VALUES ('s1','CapacidadeMáquinas',2,%s)",
-                (Jsonb({'values':[None,'MEBA',20]}),))
+                (Jsonb({'values':[None,'MEBA',99,None,20]}),))
+    excel_hours,excel_rate=(100,20) if area=='perfis' else (20,5)  # 100 peças × 20 mm² ÷ 20 · 100 × 1 m ÷ 5
     machine='MEBA' if area=='perfis' else 'Ficep'
     resource=objects.save(command(name='Historic machine',area=area,definition={'aliases':[{'area':area,'name':machine}],
         'operations':[op],'history_window_days':90,'confirmed':True}), 'resource')
@@ -167,17 +172,19 @@ def test_closed_history_supplies_active_draft_then_manual_overrides_and_expires(
     with planning.connect() as c:
         configs=c.execute('SELECT * FROM planning_mtg.raw_objects WHERE NOT archived').fetchall()
         p.apply_rows(c,area,rows,configs)
-        assert rows[-1]['values']['theoretical_hours']==10
-        assert rows[-1]['values']['rate_source']=='Histórico'
-        if area=='cantoneiras':assert rows[-1]['values']['speed_m_h']==10
+        assert rows[-1]['values']['theoretical_hours']==pytest.approx(excel_hours)
+        assert rows[-1]['values']['rate_source']=='Excel provisório'
+        if area=='cantoneiras':assert rows[-1]['values']['speed_m_h']==5
         publish_planning_fixture(c,area,'historical-calculated',rows)
     capacity.rebuild()
     result=query.listing({'area':area,'dataset':'capacity_items'})['rows']
     assert len(result)==1 and result[0]['planning_key']=='new'
     row=result[0]
-    assert row['values']['planned_hours']==10
-    assert row['values']['rate_source']=='Histórico'
-    assert row['values']['applied_rate_value']==10*unit_volume
+    assert row['values']['planned_hours']==pytest.approx(excel_hours)
+    assert row['values']['rate_source']=='Excel provisório'
+    assert row['values']['applied_rate_value']==excel_rate
+    # O medido continua a ser calculado e guardado como evidência: 100 unidades em 10 h.
+    assert row['applied_rate']['history']['value']==10*unit_volume
     evidence=p.evidence(row['applied_rate']['history_hash'])
     assert evidence['hours']==10 and evidence['event_count']==2
     frozen=query.listing({'area':area,'population':'all'})['version']
@@ -194,43 +201,49 @@ def test_closed_history_supplies_active_draft_then_manual_overrides_and_expires(
     objects.save(command(id=manual['id'],expected_revision=1,name='Expired',area=area,
         definition={**manual['definition'],'valid_until':'2026-09-22'}),'rate')
     capacity.rebuild()
-    assert query.listing({'area':area,'dataset':'capacity_items'})['rows'][0]['values']['rate_source']=='Histórico'
-    assert all(r['values']['theoretical_hours']==10 and r['values']['rate_source']=='Histórico'
+    assert query.listing({'area':area,'dataset':'capacity_items'})['rows'][0]['values']['rate_source']=='Excel provisório'
+    assert all(r['values']['theoretical_hours']==pytest.approx(excel_hours) and r['values']['rate_source']=='Excel provisório'
         for r in query.listing({'area':area,'population':'history'})['rows'])
-    def check(source,hours,rate,actual_hours):
+    def check(measured,actual_hours):
+        # As horas ficam as do Excel; só o medido (histórico das linhas fechadas) muda com as horas declaradas.
         current=query.listing({'area':area,'population':'all'})['rows']
         assert len(current)==3
         for r in current:
-            assert r['values']['rate_source']==source
-            assert r['values']['theoretical_hours']==pytest.approx(hours)
-            assert r['values']['applied_rate_value']==pytest.approx(rate)
+            assert r['values']['rate_source']=='Excel provisório'
+            assert r['values']['theoretical_hours']==pytest.approx(excel_hours)
+            assert r['values']['applied_rate_value']==pytest.approx(excel_rate)
             if not r['population']['active']:
                 assert r['values']['hours_pct'] is None
                 assert 'fechada' in r['calculation']['rules']['hours_pct']['reason']
         items=query.listing({'area':area,'dataset':'capacity_items'})['rows']
         assert len(items)==1 and items[0]['planning_key']=='new'
+        assert items[0]['applied_rate']['history']['value']==(pytest.approx(measured) if measured is not None else None)
         weekly=next(r for r in query.listing({'area':area,'dataset':'capacity'})['rows'] if r['key']==resource['id']+'|2026|39')
-        assert weekly['values']['planned_hours']==pytest.approx(hours)
+        assert weekly['values']['planned_hours']==pytest.approx(excel_hours)
         assert weekly['values']['actual_hours']==actual_hours
         assert weekly['values']['available_hours']==14
     definition={'resource_id':resource['id'],'mode':'sheet','sheet_key':area+':a','hours':12,
         'operation':op,'source':'Reviewed manual test declaration','confirmed':True,'replace_ocr':True}
     reviewed=worked_hours.preview({'definition':definition})
     hours=objects.save(command(name='Actual hours',area=area,definition={**definition,'basis_hash':reviewed['basis_hash']}),'worked_hours')
-    capacity.rebuild();check('Histórico',20,5*unit_volume,20)  # 100 units / (12+8 hours)
+    capacity.rebuild();check(5*unit_volume,20)  # 100 units / (12+8 hours)
     hours=objects.save(command(id=hours['id'],expected_revision=hours['revision'],name='Revised actual hours',area=area,
         definition={**hours['definition'],'hours':2}),'worked_hours')
-    capacity.rebuild();check('Histórico',10,10*unit_volume,10)
+    capacity.rebuild();check(10*unit_volume,10)
     resource=objects.save(command(id=resource['id'],expected_revision=resource['revision'],name='One day window',area=area,
         definition={**resource['definition'],'history_window_days':1}),'resource')
-    capacity.rebuild();check('Excel provisório',100 if area=='perfis' else 20,20 if area=='perfis' else 5,10)
+    capacity.rebuild();check(None,10)
     resource=objects.save(command(id=resource['id'],expected_revision=resource['revision'],name='Restored window',area=area,
         definition={**resource['definition'],'history_window_days':90}),'resource')
-    capacity.rebuild();check('Histórico',10,10*unit_volume,10)
+    capacity.rebuild();check(10*unit_volume,10)
     revised=copy.deepcopy(events[0]);revised['values']['quantity']=20
     with planning.connect() as c:projection.publish_delta(c,'production:'+area,'revised-closed-production',[revised],{})
-    capacity.rebuild();check('Histórico',100/11,11*unit_volume,10)
-    assert all(r['values']['theoretical_hours']==10 for r in query.listing({'area':area,'population':'all','version':frozen})['rows'])
+    capacity.rebuild();check(11*unit_volume,10)
+    # O medido segue para as Definições na revisão de capacidade (08/10), por máquina e operação.
+    with planning.connect(readonly=True) as c:
+        measured=query.generation(c,area,dataset='capacity')['metadata']['measured_rates'][resource['id']+'|'+op]
+    assert measured['value']==pytest.approx(11*unit_volume) and measured['hours']==10
+    assert all(r['values']['theoretical_hours']==pytest.approx(excel_hours) for r in query.listing({'area':area,'population':'all','version':frozen})['rows'])
     def contents():
         result={}
         for dataset in ('planning','capacity','capacity_items','capacity_machines'):

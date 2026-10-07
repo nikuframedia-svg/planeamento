@@ -1,7 +1,7 @@
 """Independent G06/H10 rate precedence over every published operation.
 
-Historical accepted rate is an input whose cohort correctness is audited under
-H09, not inferred from passing this selection audit.
+Since 08/10/2026 the precedence is manual (confirmed) > Excel; the historical
+rate is still computed (audited under H09) but only shown, never selected.
 """
 from __future__ import annotations
 import argparse,gzip,hashlib,json,os,re
@@ -45,8 +45,7 @@ def choose(values,area,operation,resource_id,manual,history,excel,when):
   candidates.append(record)
  if len(candidates)>1:return {'source':None,'rate':None,'candidates':sorted(str(r['id']) for r in candidates),'factor':1}
  if candidates:return {'source':'Manual','rate':candidates[0]['definition'],'configuration_id':str(candidates[0]['id']),'factor':1}
- h=number(history.get('value'))
- if h is not None and h>0:return {'source':'Histórico','rate':{k:history[k] for k in ('method','value','unit','window') if k in history},'factor':1}
+ # Decisão de 08/10/2026: o histórico (history) já não entra na escolha; Confirmada > Excel.
  x=number((excel or {}).get('value'))
  if x is not None and x>0:
   factor=3 if (area,operation,values.get('machine'))==('perfis','corte','Serrote Fita Thomas IS639 Pav.1') and (quantity(values.get('quantity_required')) or 0)>50 else 1

@@ -61,7 +61,11 @@ def test_estimates_use_profile_speed_then_machine_and_never_invent_following_ope
     assert estimates.estimate({**fact, "remaining": None}, None, {"Ficep Rapid 25T"}, STUDY, {})[0] is None
     mtg2 = {"remaining": 10, "phase": "principal", "area": "perfis", "section_unit": 500}
     hours, why = estimates.estimate(mtg2, {"code": "MEBA", "name": "MEBA"}, {"MEBA"}, STUDY, {"MEBA": 5000})
-    assert hours == 1 and "sem fator ×3" in why
+    assert hours == 1 and "MEBA" in why and "Thomas" not in why
+    # 08/10: o ×3 da Thomas (QTD > 50) aplica-se também às sugestões, como no Excel.
+    thomas = {"code": "POSTO_FITA", "name": "Serrote Fita pav.1", "aliases": [{"area": "perfis", "name": "Serrote Fita Thomas IS639 Pav.1"}]}
+    hours, why = estimates.estimate({**mtg2, "quantity_required": 51}, thomas, set(), STUDY, {"POSTO_FITA": 5000})
+    assert round(hours, 6) == round(1 / 3, 6) and "Thomas" in why
 
 
 class Index:

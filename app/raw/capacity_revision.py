@@ -9,7 +9,7 @@ from pydantic_core import from_json, to_json
 from .. import planning, planning_needs as needs, planning_raw as raw, planning_catalogs as catalogs, planning_dates, planning_calendars
 from . import query, projection, objects, workbooks
 
-CONTRACT = 'capacity-20260925-integral-v34'  # v34 (07/10): máquinas do setor contam sem a caixa «confirmada»; ano da semana W deduzido; v33 (07/10): tabela de velocidades (intervalos, arranque por peça, origem Excel), margem e tempo fixo do setor, vigência das taxas por hoje, velocidade mais recente do Excel por máquina nas cantoneiras; v32 (06/10): janela histórica até hoje (C3-F6); v31 (06/10): MTG3 calendarizada pela Data Corte; v30: códigos CPIS:/LOCAL: aceites; um turno = uma declaração; amostra mínima e plausibilidade do histórico
+CONTRACT = 'capacity-20260925-integral-v35'  # v35 (08/10): horas pela velocidade do Excel (Confirmada > Excel; o histórico só se mostra), ×3 da Thomas também nas sugestões e no Gantt, MTG2 pela coluna E/F da CapacidadeMáquinas, eficiência por máquina no lugar da margem do setor; v34 (07/10): máquinas do setor contam sem a caixa «confirmada»; ano da semana W deduzido; v33 (07/10): tabela de velocidades (intervalos, arranque por peça, origem Excel), margem e tempo fixo do setor, vigência das taxas por hoje, velocidade mais recente do Excel por máquina nas cantoneiras; v32 (06/10): janela histórica até hoje (C3-F6); v31 (06/10): MTG3 calendarizada pela Data Corte; v30: códigos CPIS:/LOCAL: aceites; um turno = uma declaração; amostra mínima e plausibilidade do histórico
 NON_PHYSICAL = {'', 'sem máquina', 'mtg3', 'subcontrato', 'abocardar', 'serrote mtg2', 'serrote mtg3'}
 
 
@@ -49,6 +49,21 @@ def period(v, area, snapshot=None, periods=None, primary=True, *, today=None):
     return y,w,origin
 
 
+def sheet_rate(cells, row):
+    """Taxa mm²/h de uma linha da CapacidadeMáquinas (08/10): coluna F se tiver valor, senão E (29/11/2024).
+
+    É a que o próprio Excel usa na tabela «Carga serrotes total» (P16:S22): Disco 15409 (E2), MEBA 40323 (E3),
+    Thomas e Doall 18846 (F4 = E4/2, F10 = F4), Vanguard 13636 (E6). A coluna C (11/11/2024), que a aplicação
+    usava até 07/10, fica nas alternativas.
+    """
+    def value(col):
+        v=number((cells.get(col) or {}).get('value'))
+        return v if v is not None and v>0 else None
+    col='F' if value('F') else 'E' if value('E') else None
+    return {'value':value(col) if col else None,'column':col,'cell':(col or 'E')+str(row),
+            'alternatives':{k:cells.get(k) for k in ('C','E','F') if k!=col and cells.get(k)}}
+
+
 def workbook_index(sources):
     calendars=defaultdict(list); rates={}; summaries=defaultdict(dict)
     for area,src in sources.items():
@@ -66,8 +81,8 @@ def workbook_index(sources):
             if row['row']>12 or row['row']<2:continue
             machine=cell(row,'B')
             if not machine:continue
-            rate=number(cell(row,'C'))
-            rates[(area,machine)]={'value':rate if rate is not None and rate>0 else None,'unit':'mm²/h','source':{'snapshot':snapshot,'file':src.get('source_filename'),'sheet':'CapacidadeMáquinas','cell':'C'+str(row['row'])},'alternatives':{k:row['cells'].get(k) for k in ('E','F')},'cells':row['cells']}
+            found=sheet_rate(row['cells'],row['row'])  # colunas E/F, como a tabela de carga do próprio Excel (08/10)
+            rates[(area,machine)]={'value':found['value'],'unit':'mm²/h','source':{'snapshot':snapshot,'file':src.get('source_filename'),'sheet':'CapacidadeMáquinas','cell':found['cell']},'alternatives':found['alternatives'],'cells':row['cells']}
             summaries[(area,machine)]={k:row['cells'].get(col) for k,col in [('area','J'),('hours','K'),('shifts','L'),('weight_t','M')]}
             formula=(row['cells'].get('L') or {}).get('formula') or ''
             divisor=re.search(r'/\s*(\d+(?:\.\d+)?)',formula)
@@ -84,7 +99,8 @@ def reference_estimate(v, area, q, rate):
         return q*length/1000/speed,None,1
     unit=number(v.get('section_unit'));speed=(rate or {}).get('value')
     if unit is None or unit<=0 or not speed:return None,'Área unitária ou taxa importada por confirmar',1
-    factor=3 if v.get('machine')=='Serrote Fita Thomas IS639 Pav.1' and (number(v.get('quantity_required')) or 0)>50 else 1
+    from .productivity import thomas_factor
+    factor=thomas_factor(area,'corte',v.get('machine'),v.get('quantity_required'))
     return q*unit/(speed*factor),None,factor
 
 
@@ -331,6 +347,21 @@ def calculate(c,configs,sources,gens,*,today,scope=None,rows_override=None,persi
     return {'items':all_items,'weekly':weekly,'machines':machine_rows,'historical_updates':historical_updates}
 
 
+def measured_rates(rate_context, previous=None):
+    """Velocidade medida (histórico das folhas OCR com horas) por máquina e operação, compacta (08/10).
+
+    Já não entra nas horas: vai na revisão para as Definições a mostrarem como «medido» ao lado do Excel. Num
+    cálculo só de algumas máquinas, as outras ficam com a medida anterior (`previous`).
+    """
+    out=dict(previous or {})
+    for key,history in rate_context.cache.items():
+        scope=getattr(rate_context,'scopes',{}).get(key) or {}
+        if not scope.get('resource_id') or history.get('method') not in ('metres_hour','area_hour'):continue
+        out[f"{scope['resource_id']}|{scope['operation']}"]={**{k:history.get(k) for k in ('method','unit','value','hours','volume','sheet_count','event_count','reason','window')},
+                                                              'machine':scope.get('machine')}
+    return out
+
+
 def rebuild(*,force=False):
     with planning.connect() as c:
         # Decode the large historical population with the JSON runtime already
@@ -364,8 +395,9 @@ def rebuild(*,force=False):
         today=datetime.now(ZoneInfo(planning.settings.display_timezone)).date()
         reference_inputs={a:needs.digest(src['sheets']) for a,src in sources.items()}
         from . import productivity
-        # Margem e tempo fixo por peça das Definições mudam as horas de todas as peças: entram no contrato
-        # (uma mudança obriga a um cálculo completo). Com tudo a 0 o contrato fica igual ao de sempre.
+        # Tempo fixo por peça e eficiência de cada máquina (08/10) das Definições mudam as horas de todas as peças:
+        # entram no contrato (uma mudança obriga a um cálculo completo). Sem nada disto (eficiências a 100 %) o contrato
+        # fica igual ao de sempre.
         timing=productivity.sector_timing(c)
         # Velocidade mais recente do Excel por máquina (cantoneiras): muda as horas de todas as linhas dessa máquina,
         # mesmo das que não mudaram no ficheiro; por isso entra no contrato e uma mudança obriga a um cálculo completo.
@@ -396,7 +428,9 @@ def rebuild(*,force=False):
         all_items,weekly,machine_rows=result['items'],result['weekly'],result['machines']
         published=publish_planning_results(c,gens,all_items,weekly,publication_fp,restored=scope['restored'] if scope else None,
             historical_updates=result['historical_updates'])
+        measured=measured_rates(rate_context,(prev['metadata'].get('measured_rates') if prev and scope is not None else None))
         meta={'calculation_fingerprint':fp,'applied_planning_versions':published,'configurations':needs.serial(configs),'day':str(today),
+            'measured_rates':measured,
             'calculation_scope':'full' if scope is None else 'resources','affected_resources':None if scope is None else sorted(scope['machines']),
             'historical_estimates_updated':{a:len(rows) for a,rows in result['historical_updates'].items()},
             'configuration_digest':needs.digest(needs.serial(configs)),'snapshots':{a:s['snapshot_id'] for a,s in sources.items()},

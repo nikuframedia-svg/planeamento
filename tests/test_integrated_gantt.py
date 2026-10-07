@@ -669,7 +669,7 @@ def test_application_inputs_bring_the_published_section_and_estimate_of_the_line
 
 
 def test_gantt_uses_the_published_excel_rate_only_on_the_machine_of_that_estimate():
-    # Auditoria 06/10 (GT-05): a mesma taxa do Excel da Carga, sem o ×3 da Thomas e nunca noutra máquina.
+    # Auditoria 06/10 (GT-05): a mesma taxa do Excel da Carga e nunca noutra máquina.
     estimate={'operation':'112','machine':'Peddi 6','source':'Excel provisório','factor':1,'rate':{'method':'metres_hour','value':120,'setup_minutes':0}}
     r=row(recurso_atual='PEDDI6',documentary_rate=estimate,documentary_rate_resource='PEDDI6',perfil='L250X250X24')
     templates={('XPT6','CPIS:112'):[{'method':'metres_hour','value':70,'setup_minutes':0,'profile':None}]}
@@ -679,9 +679,24 @@ def test_gantt_uses_the_published_excel_rate_only_on_the_machine_of_that_estimat
     other=integrated._duration(r,{'resource_code':'XPT6','proposed_code':'CPIS:112','eligibility':'admissible'},
         {'id':'xp','confirmed':False},[],templates,MONDAY.isoformat())
     assert other['duration_hours']==pytest.approx(10*1/70,abs=0.01)
-    # Fator ×3 da Thomas fica fora do Gantt (decisão de 01/10).
+    # A taxa documental vem sem o ×3 da Thomas; o _duration aplica-o uma só vez (08/10, como no Excel).
     thomas={**estimate,'factor':3,'rate':{'method':'metres_hour','value':360,'setup_minutes':0}}
     assert integrated._documentary({**r,'documentary_rate':thomas},{'resource_code':'PEDDI6','proposed_code':'CPIS:112'},{})[0][0]['value']==120
+
+
+def test_gantt_applies_the_thomas_factor_once_like_the_excel():
+    # Decisão do Luís (08/10): ×3 da Thomas (QTD > 50) também no Gantt técnico, uma só vez.
+    estimate={'operation':'corte','machine':'Serrote Fita Thomas IS639 Pav.1','source':'Excel provisório','factor':3,
+              'rate':{'method':'area_hour','value':3000,'setup_minutes':0}}
+    mtg2=row(setor='MTG2',operacao_codigo='LOCAL:PRINCIPAL',section_unit=100,quantidade_base=60,recurso_atual='POSTO_FITA',
+             maquina_original='Serrote Fita Thomas IS639 Pav.1',documentary_rate=estimate,documentary_rate_resource='POSTO_FITA')
+    option={'resource_code':'POSTO_FITA','proposed_code':'LOCAL:PRINCIPAL','eligibility':'admissible'}
+    posto={'id':'fita','confirmed':True,'aliases':[{'area':'perfis','name':'Serrote Fita Thomas IS639 Pav.1'}]}
+    found=integrated._duration(mtg2,dict(option),posto,[],{},MONDAY.isoformat())
+    assert found['duration_hours']==pytest.approx(10*100/3000,abs=0.01)  # 1000 ÷ (1000 × 3), não ÷ 1000
+    assert any('Thomas' in a for a in found['assumptions'])
+    # QTD 50: sem fator.
+    assert integrated._duration({**mtg2,'quantidade_base':50},dict(option),posto,[],{},MONDAY.isoformat())['duration_hours']==pytest.approx(1,abs=0.01)
 
 
 class _History:
@@ -691,26 +706,21 @@ class _History:
         self.value=value; self.calls=[]
 
     def rate(self, values, area, operation, when, *, excel=None, as_of=None):
-        from app.raw.productivity import select_rate
         self.calls.append({'excel':excel,'as_of':as_of})
-        history={'source':'Histórico','method':'metres_hour','unit':'m/h','value':self.value,'window':{}}
-        chosen=select_rate(values,area=area,operation=operation,resource_id='p8',manual=[],historical_rate=history,excel=excel,when=when)
-        return {**chosen,'history_hash':'h','history':history,'excluded_cohorts':0}
+        raise AssertionError('O Gantt já não pede o histórico (08/10).')
 
 
-def test_gantt_history_follows_the_same_plausibility_and_window_as_the_load():
-    # Auditoria 06/10 (GT-04, C3-F6): o Gantt passa a taxa do Excel à regra H10 e a janela acaba hoje.
+def test_gantt_never_uses_the_history_for_the_hours():
+    # Decisão do Luís (08/10): horas pela velocidade do Excel em todas as páginas; o histórico só se mostra.
     estimate={'operation':'112','machine':'Peddi 8','source':'Excel provisório','factor':1,'rate':{'method':'metres_hour','value':120,'setup_minutes':0}}
     r=row(recurso_atual='PEDDI8',documentary_rate=estimate,documentary_rate_resource='PEDDI8')
     option={'resource_code':'PEDDI8','proposed_code':'CPIS:112','eligibility':'admissible'}
     resource={'id':'p8','confirmed':True,'aliases':[{'area':'cantoneiras','name':'Peddi 8'}]}
-    far=_History(20)  # 1/6 do Excel: implausível, fica o Excel
-    found=integrated._duration(r,dict(option),resource,[],{},MONDAY.isoformat(),far,rate_day='2026-10-20')
-    assert far.calls[0]['excel']['value']==120 and str(far.calls[0]['as_of'])==MONDAY.isoformat()[:10]
-    assert found['duration_origin']!='Histórico' and found['duration_hours']==pytest.approx(10/120,abs=0.01)
-    assert any('fora do intervalo plausível' in a for a in found['assumptions'])
-    near=_History(100)
-    assert integrated._duration(r,dict(option),resource,[],{},MONDAY.isoformat(),near)['duration_hours']==pytest.approx(10/100,abs=0.01)
+    for value in (20, 100):
+        context=_History(value)
+        found=integrated._duration(r,dict(option),resource,[],{},MONDAY.isoformat(),context,rate_day='2026-10-20')
+        assert not context.calls and found['duration_origin']=='Excel provisório'
+        assert found['duration_hours']==pytest.approx(10/120,abs=0.01)
 
 
 def test_insights_keep_the_machine_and_operation_of_each_historical_evidence():
