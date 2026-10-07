@@ -71,7 +71,7 @@ def refresh():
             need=needs.load(conn,link['need_id']);followed={}
             if current['state']=='available':
                 # Os campos que ninguém escreveu seguem a revisão nova do PDF, como em needs.refresh (07/10/2026).
-                followed=needs.follow(conn,need,{'kind':'pdf','id':link['source_id'],'version':version},current['values'])
+                followed=needs.follow(conn,need,{'kind':'pdf','id':link['source_id'],'version':version},current['values'],old.get('values'))
             else:
                 conn.execute("UPDATE planning_mtg.field_state SET requires_review=true WHERE need_id=%s AND source->>'kind'='pdf' AND source->>'id'=%s",(need['id'],link['source_id']))
             conn.execute('UPDATE planning_mtg.needs SET revision=revision+1,updated_at=now() WHERE id=%s',(need['id'],))

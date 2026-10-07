@@ -196,6 +196,10 @@ def calculate(values, *, area='perfis', raw=None, operations=(), local_initial=F
             measured = result['value']
             same = EVIDENCE.get(result['origin']) is not None and EVIDENCE.get(result['origin']) == EVIDENCE.get(declared_origin)
             since = max(0, measured - typed_at) if same and measured is not None and typed_at is not None else 0
+            # Outra fonte (ex.: escrita com o contador do Excel, agora conta o OCR validado): não se desconta, mas
+            # fica dito ao lado do campo para o valor escrito não ficar esquecido.
+            result['declared_source_changed'] = bool(typed_at is not None and EVIDENCE.get(declared_origin)
+                                                     and EVIDENCE.get(result['origin']) and not same)
             result.update(value=q - max(min(declared, q) - since, 0), origin=DECLARED_ORIGIN, reason=None)
         made = result['value']
         result.update(operation=code, remaining=max(q-made,0) if q is not None and made is not None else None,

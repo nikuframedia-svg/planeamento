@@ -126,9 +126,10 @@ async function updatePreview(serial,of){
   const result=await api('necessidades/prever',{area:state.area,production_order_no:of,
    ...(state.need?{need_id:state.need,expected_revision:state.detail?.need.revision}:{}),
    ...(state.source?{source:state.source}:{}),catalog_version:state.cat.version,values:submittedValues(),decisions:state.decisions,
+   ...(state.touched.has('remaining_declared')?{changed_fields:['remaining_declared']}:{}),
    ...(state.localMode?{local_order:{values:{delivery_date:$('local-delivery_date').value}}}:{})});
   if(serial!==previewSerial)return;
-  showCalculated(result.row?.values);showWarnings(result.registration_warnings);showBalance(result.row?.values?.remaining);
+  showCalculated(result.row?.values);showWarnings(result.registration_warnings);showBalance(result.row);
   if(state.area==='perfis'){
    const v=result.row.values,host=$('picking-summary');host.hidden=false;host.replaceChildren();
    if(!state.decisions.picking_week&&$('field-picking_week'))$('field-picking_week').value=v.picking_week??'';
@@ -225,10 +226,12 @@ async function finishSaved(saved,raw,status){state.need=saved.need_id;state.op=s
 // Campos que o utilizador mudou: se a peça mudou entretanto (importação do Excel), o servidor grava só estes
 // por cima da versão atual em vez de recusar. Um valor ainda sugerido ou reposto como estava não conta.
 function changedFields(raw){return Object.keys(raw).filter(k=>(!state.suggested[k]&&String(raw[k]??'')!==String(state.base[k]??''))
-  // Limpar (ex.: Picking semana preenchida pela pré-visualização) e voltar a escrever a mesma «Qtd em falta» também contam.
-  ||state.decisions[k]==='clear'||(k==='remaining_declared'&&state.touched.has(k)))}
+  // Limpar um campo que tinha valor (ou a Picking semana, que a pré-visualização preenche) e voltar a escrever a
+  // mesma «Qtd em falta» também contam.
+  ||(state.decisions[k]==='clear'&&(k==='picking_week'||String(state.base[k]??'')!==''))||(k==='remaining_declared'&&state.touched.has(k)))}
 // Saldo que o cálculo usa, ao lado da «Qtd em falta», só quando difere do que foi escrito (produção registada depois).
-function showBalance(remaining){const host=$('balance-remaining_declared'),typed=String(val('remaining_declared')??'').trim().replace(',','.');if(!host)return;host.textContent=typed!==''&&remaining!=null&&Number(typed)!==remaining?'saldo atual: '+remaining:''}
+function showBalance(row){const host=$('balance-remaining_declared'),typed=String(val('remaining_declared')??'').trim().replace(',','.');if(!host)return;const remaining=row?.values?.remaining,primary=(row?.calculation?.production_sources||[]).find(s=>s.declared_source_changed);
+ host.textContent=typed===''||remaining==null?'':primary?'saldo atual: '+remaining+' (fonte mudou)':Number(typed)!==remaining?'saldo atual: '+remaining:''}
 async function atomicSave(raw,status){const changed=changedFields(raw),payload={...(state.localMode?{local_order:{expected_revision:state.detail?.local_order?.revision||0,values:Object.fromEntries(ORDER_FIELDS.map(k=>[k,$('local-'+k).value]))},local_order_changed_fields:[...state.orderChanged]}:{}),area:state.area,production_order_no:state.of,source:state.source,need_id:state.need||undefined,expected_revision:state.detail?.need.revision,catalog_version:state.cat.version,record_status:status,values:raw,decisions:Object.fromEntries(Object.entries(state.decisions).filter(([k])=>changed.includes(k))),changed_fields:changed};return finishSaved(await api('necessidades/registar',request(payload)),raw,status)}
 async function save(status='ready'){if(state.saving)return false;clearErrors();if(!state.area)throw fieldError('area','Escolhe o setor.');if(state.localMode&&!state.need)state.of=$('local-of').value.trim();if(!state.of)throw new Error('Indica o número da OF antes de guardar.');const raw=submittedValues();state.notesAll=true;showWarnings(state.warnings);state.saving=true;try{return await atomicSave(raw,status)}finally{state.saving=false}}
 async function mayLeave(){if(!state.dirty)return true;return new Promise(resolve=>{const d=$('leave-dialog');$('leave-error').textContent='';d.showModal();function done(value){d.close();resolve(value)}$('leave-cancel').onclick=()=>done(false);$('leave-discard').onclick=()=>{state.dirty=false;done(true)};$('leave-save').onclick=async()=>{try{if(await save())done(true);else done(false)}catch(e){$('leave-error').textContent=e.message}};d.oncancel=e=>{e.preventDefault();done(false)}})}

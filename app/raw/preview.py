@@ -8,7 +8,7 @@ from . import projection, calculations, productivity, contracts, capacity_previe
 
 
 def preview(payload):
-    allowed={'area','production_order_no','need_id','expected_revision','source','values','catalog_version','local_order','decisions'}
+    allowed={'area','production_order_no','need_id','expected_revision','source','values','catalog_version','local_order','decisions','changed_fields'}
     if set(payload)-allowed:raise planning.PlanningError('A pré-visualização aceita apenas os dados de preparação e a identidade da origem.')
     area=planning.check_area(payload.get('area'))
     raw=dict(payload.get('values') or {})
@@ -81,8 +81,9 @@ def preview(payload):
         if primary and op!=primary and base['preparations']:
             row['values'].update({k:vals.get(k) for k in needs.PIECE_FIELDS})
         else:row['values'].update(vals)
-        # Uma «Qtd em falta» escrita agora ainda não tem produção registada depois dela.
-        if vals.get('remaining_declared')!=((previous_preparation or {}).get('values_json') or {}).get('remaining_declared'):
+        # Uma «Qtd em falta» escrita agora (ou escrita de novo, changed_fields) ainda não tem produção registada depois dela.
+        if 'remaining_declared' in (payload.get('changed_fields') or []) or \
+                vals.get('remaining_declared')!=((previous_preparation or {}).get('values_json') or {}).get('remaining_declared'):
             row['values'].pop('remaining_declared_produced',None);row['values'].pop('remaining_declared_origin',None)
         if area=='perfis':
             override=None

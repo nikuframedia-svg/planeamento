@@ -148,22 +148,30 @@ def linked_sources(conn,need_id):
     return conn.execute('SELECT * FROM planning_mtg.need_sources WHERE need_id=%s ORDER BY kind,source_id',(need_id,)).fetchall()
 
 
-def follow(conn,need,origin,values):
+def follow(conn,need,origin,values,previous=None):
     """A origem mudou (07/10/2026): o campo que ninguém escreveu passa sozinho para o valor novo.
 
     «Escrito» é uma decisão explícita (write/select/clear); a sugestão aceite e o valor recebido seguem a
     origem. O valor escrito à mão fica e o ecrã mostra o da origem como nota (requires_review) enquanto
     forem diferentes. Vale para os campos da peça e para os da preparação em OPERATION_FOLLOW (Data Corte,
-    Máquina, Equipa, Pav., Observações…); um campo que a origem não traz fica como está. Devolve os campos
-    que seguiram; a revisão da peça fica a cargo de quem chama.
+    Máquina, Equipa, Pav., Observações…); um campo que a origem não traz fica como está. Só se segue quando o
+    valor da origem mudou desde a revisão anterior (`previous`; sem ela, a sugestão guardada): uma importação
+    nova com o mesmo conteúdo não apaga a sugestão que ficou onde o Excel não tem nada. Devolve os campos que
+    seguiram; a revisão da peça fica a cargo de quem chama.
     """
+    def moved(state,name,new):
+        if previous is None:return not equal_value(state['suggestion'],new)
+        if name not in previous:return True
+        old=catalogs.abocardar_mark(previous[name]) if name=='abocardar' else previous[name]
+        return not equal_value(old,new)
     taken={}
     for state in conn.execute("SELECT * FROM planning_mtg.field_state WHERE need_id=%s AND scope='piece' AND field=ANY(%s)",(need['id'],[k for k in PIECE_FIELDS if k in values])).fetchall():
         name=state['field'];new=values.get(name)
         untouched=state['human_decision'] in (None,'accept')
-        if untouched and not equal_value(state['value'],new):taken[name]=new
+        take=untouched and moved(state,name,new) and not equal_value(state['value'],new)
+        if take:taken[name]=new
         conn.execute("UPDATE planning_mtg.field_state SET value=%s,suggestion=%s,source=%s,requires_review=%s WHERE need_id=%s AND scope='piece' AND field=%s",
-                     (Jsonb(new if untouched else state['value']),Jsonb(new),Jsonb(origin),not untouched and not equal_value(state['value'],new),need['id'],name))
+                     (Jsonb(new if take else state['value']),Jsonb(new),Jsonb(origin),not untouched and not equal_value(state['value'],new),need['id'],name))
     if taken:
         spec={**need['specification'],**taken};qty=planning._number(spec.get('quantity_required'))
         # Um campo técnico que segue a origem é uma revisão técnica: as associações de produção ficam por rever.
@@ -178,9 +186,10 @@ def follow(conn,need,origin,values):
         for state in conn.execute('SELECT * FROM planning_mtg.field_state WHERE need_id=%s AND scope=%s AND field=ANY(%s)',(need['id'],scope,followed)).fetchall():
             name=state['field'];new=catalogs.abocardar_mark(values[name]) if name=='abocardar' else values[name]
             untouched=state['human_decision'] in (None,'accept')
-            if untouched and not equal_value(state['value'],new):patch[name]=new
+            take=untouched and moved(state,name,new) and not equal_value(state['value'],new)
+            if take:patch[name]=new
             conn.execute('UPDATE planning_mtg.field_state SET value=%s,suggestion=%s,source=%s,requires_review=%s WHERE need_id=%s AND scope=%s AND field=%s',
-                         (Jsonb(new if untouched else state['value']),Jsonb(new),Jsonb(origin),not untouched and not equal_value(state['value'],new),need['id'],scope,name))
+                         (Jsonb(new if take else state['value']),Jsonb(new),Jsonb(origin),not untouched and not equal_value(state['value'],new),need['id'],scope,name))
         if patch:
             conn.execute('UPDATE planning_mtg.records SET values_json=values_json||%s,input_values=input_values||%s,updated_at=now() WHERE id=%s',
                          (Jsonb(serial(patch)),Jsonb(serial(patch)),record['id']))
@@ -199,7 +208,7 @@ def refresh(conn,need,actor='sistema',*,kinds=None):
         if current['version']==link['version']:continue
         conn.execute('UPDATE planning_mtg.need_sources SET version=%s,payload=%s,updated_at=now() WHERE kind=%s AND source_id=%s',
                      (current['version'],Jsonb(current),link['kind'],link['source_id']))
-        taken=follow(conn,need,{'kind':link['kind'],'id':link['source_id'],'version':current['version']},current['values'])
+        taken=follow(conn,need,{'kind':link['kind'],'id':link['source_id'],'version':current['version']},current['values'],original.get('values'))
         need['revision']+=1
         conn.execute('UPDATE planning_mtg.needs SET revision=%s,updated_at=now() WHERE id=%s',(need['revision'],need['id']))
         event(conn,need,'source_updated',actor,{'previous':original,'current':current,'followed':taken})
@@ -338,6 +347,7 @@ def save(payload, conn=None, source_defaults=None):
         # Só é decisão humana o que o utilizador mudou (changed_fields); sem essa lista, o que o pedido trouxe.
         listed=payload.get('changed_fields')
         typed=set(decisions)|(set(listed) if isinstance(listed,list) else set(payload.get('values') or {}))
+        typed-={k for k,a in decisions.items() if a=='clear' and k in free.DEFAULTS[area]}
         unknown=set(decisions)-{f['id'] for f in cat['fields']}
         if unknown:raise planning.PlanningError('O pedido inclui campos desconhecidos.')
         before=dict(need['specification']); spec={k:vals.get(k) for k in PIECE_FIELDS}
@@ -365,6 +375,8 @@ def save(payload, conn=None, source_defaults=None):
             action=decisions.get(name)
             if action not in (None,'accept','write','select','clear'):raise planning.PlanningError('Decisão de campo desconhecida.')
             if status=='ready' and state and not action and not state['human_decision'] and equal_value(vals[name],state['suggestion']):action='accept'
+            # Limpar um campo com valor por defeito (1.ª/2.ª Oper., Operação) é voltar ao valor por defeito, sem decisão.
+            if action=='clear' and name in free.DEFAULTS[area]:action=None
             if action=='clear' and vals[name] not in ('',None,False):raise planning.PlanningError('Limpar exige um valor vazio.')
             # A RAW cell edit is not acceptance of every other imported cell.
             # Defaults are supplied by the server, never by HTTP provenance claims.

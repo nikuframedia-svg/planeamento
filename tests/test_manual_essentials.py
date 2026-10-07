@@ -133,9 +133,10 @@ def test_declared_remaining_discounts_only_within_the_same_evidence_source():
     # Escrita com o OCR a 20; agora conta o contador do Excel (60): outra fonte, não se desconta nada.
     excel = calculations.calculate(piece, raw={"Ser.": 60}, declared_remaining=30, declared_produced=20, declared_origin="OCR validado")
     assert excel["values"]["remaining"] == 30 and excel["operations"][0]["measured_origin"] == "Excel provisório"
+    assert excel["operations"][0]["declared_source_changed"]
     # A mesma fonte (Excel 50 → 60) desconta os 10.
-    assert calculations.calculate(piece, raw={"Ser.": 60}, declared_remaining=30, declared_produced=50,
-                                  declared_origin="Excel provisório")["values"]["remaining"] == 20
+    same = calculations.calculate(piece, raw={"Ser.": 60}, declared_remaining=30, declared_produced=50, declared_origin="Excel provisório")
+    assert same["values"]["remaining"] == 20 and not same["operations"][0]["declared_source_changed"]
 
 
 def test_mtg3_w_week_without_year_gets_the_capacity_year():
@@ -375,6 +376,12 @@ def test_declared_remaining_keeps_the_production_known_when_typed(essential):
         c.execute("UPDATE raw_mtg.plan_production_rows SET row_data=row_data||'{\"Ser.\":70}' WHERE source_line_id='s1:10'")
     projection.rebuild("perfis", force=True)  # a importação mudada no próprio sítio só se vê com force
     assert next(r for r in rows_of("REF-A") if r["need_id"] == str(typed["need_id"]))["values"]["remaining"] == 4
+    # A pré-visualização de um valor escrito de novo já não desconta; sem isso continua a mostrar o saldo atual.
+    from app.raw import preview
+    form = {"area": "perfis", "need_id": typed["need_id"], "values": {"component_ref": "REF-A", "quantity_required": 100, "length_mm": 3003,
+            "profile": "88.9x3", "material_type": "Tubo redondo", "operation": "corte", "remaining_declared": "10"}}
+    assert preview.preview(form)["row"]["values"]["remaining"] == 4
+    assert preview.preview({**form, "changed_fields": ["remaining_declared"]})["row"]["values"]["remaining"] == 10
     # Voltar a escrever o mesmo valor recomeça a contagem a partir da produção de agora.
     from_excel_line(changed=["remaining_declared"], remaining_declared="10")
     assert next(r for r in rows_of("REF-A") if r["need_id"] == str(typed["need_id"]))["values"]["remaining"] == 10
@@ -469,6 +476,37 @@ def test_untouched_operation_fields_follow_a_new_excel_import(essential):
     projection.rebuild("perfis")
     row = next(r for r in rows_of("REF-A") if r["need_id"] == str(linked["need_id"]))
     assert row["plan_key"] == "s2:10" and row["values"]["cut_date"] == "2026-12-15" and row["values"]["machine"] == "Peddi"
+
+
+def new_import_with_the_same_excel(essential):
+    with psycopg.connect(essential) as c:
+        c.execute("INSERT INTO audit_mtg.snapshots SELECT 's2',dataset_id,source_filename,source_path,source_sha256,now()+interval '1 second' FROM audit_mtg.snapshots WHERE snapshot_id='s1'")
+        for table in ("raw_mtg.plan_production_rows", "analytics_mtg.kanban_plan_lines", "core_mtg.production_orders", "raw_mtg.cpis_rows",
+                      "raw_mtg.other_sheet_rows", "raw_mtg.machine_rows"):
+            columns = [r[0] for r in c.execute("SELECT column_name FROM information_schema.columns WHERE table_schema=%s AND table_name=%s ORDER BY ordinal_position", tuple(table.split("."))).fetchall()]
+            selected = ["'s2'" if k == "snapshot_id" else "replace(" + k + ",'s1:','s2:')" if k in ("source_line_id", "plan_key") else k for k in columns]
+            c.execute("INSERT INTO " + table + " SELECT " + ",".join(selected) + " FROM " + table + " WHERE snapshot_id='s1'")
+
+
+def test_an_import_with_the_same_excel_keeps_untyped_values(essential):
+    # A linha s1:10 não tem Equipa; a peça ficou com a sugerida, sem o utilizador a escrever.
+    linked = from_excel_line(changed=["quantity_required"], team="Equipa sugerida")
+    new_import_with_the_same_excel(essential)
+    detail = needs.detail(linked["need_id"])
+    assert detail["sources"][0]["version"] == "s2"
+    assert detail["records"][0]["values_json"]["team"] == "Equipa sugerida"
+
+
+def test_clearing_a_field_with_a_default_saves_the_default(essential):
+    projection.rebuild("cantoneiras")
+    saved = prepare({"request_id": str(uuid.uuid4()), "actor": "Teste", "area": "cantoneiras", "production_order_no": "OF4200",
+                     "source": {"kind": "plan_line", "id": "c1:10", "version": "c1"}, "record_status": "ready",
+                     "decisions": {"operation_detail": "clear"}, "changed_fields": ["operation_detail"],
+                     "values": {"component_ref": "REF-A", "quantity_required": 100, "length_mm": 5291, "operation": "119", "operation_detail": ""}})
+    record = needs.detail(saved["need_id"])["records"][0]
+    assert record["values_json"]["operation_detail"] == "0"
+    state = next(f for f in needs.detail(saved["need_id"])["fields"] if f["field"] == "operation_detail" and f["scope"] != "piece")
+    assert state["human_decision"] is None
 
 
 def test_pdf_fields_it_does_not_carry_do_not_change_the_technical_revision(essential, monkeypatch):
