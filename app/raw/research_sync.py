@@ -156,9 +156,11 @@ def packages(c, known=None):
     else:
         from . import ocr_export
         state = ocr_export.status(c)
-        if state:
+        export_meta = {**meta,'version':state['export']['current_version'],'note':state['note']} if state else None
+        # An export version is immutable: when the destination already holds it, skip rereading ~15 500 rows.
+        if state and known.get('ocr:validated_export')!=export_meta:
             rows = c.execute('SELECT row_key,payload FROM ocr_original.export_rows WHERE version_id=%s',(state['export']['current_version'],)).fetchall()
-            yield 'ocr:validated_export',[(r['row_key'],r['payload']) for r in rows],{**meta,'version':state['export']['current_version'],'note':state['note']}
+            yield 'ocr:validated_export',[(r['row_key'],r['payload']) for r in rows],export_meta
         yield 'ocr:native_sheets',[],meta
 
 

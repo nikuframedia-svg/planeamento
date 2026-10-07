@@ -16,6 +16,9 @@ SOURCE = 'ocr-original-http-validado'
 LIMIT = 32 * 1024 * 1024
 NOTE = 'Exportação validada guardada. Associação às folhas por confirmar; não somada aos saldos de produção.'
 HEADERS = {'OF','Modelo','QTD','Data','Setor / Máquina Desc.','Comprimento (mm)'}
+# Row format of the original:* datasets. v2 (07/10/2026): no export version or
+# line inside each row, so a new export only rewrites the rows that changed.
+PROJECTION_CONTRACT = 'http-export-v2'
 
 
 def parse(content):
@@ -125,17 +128,25 @@ def rebuild(c):
     state = status(c)
     if not state:return None
     version = state['export']['current_version']
+    fingerprints = {area:needs.digest([PROJECTION_CONTRACT,version,area]) for area in planning.AREAS}
+    # The worker calls this every minute: do not reread the export when it is already published.
+    published = [c.execute("SELECT metadata->>'source_fingerprint' f FROM planning_mtg.raw_generations WHERE dataset=%s ORDER BY id DESC LIMIT 1",
+                           ('original:'+area,)).fetchone() for area in planning.AREAS]
+    if all(p and p['f']==fingerprints[area] for area,p in zip(planning.AREAS,published)):
+        return {'rows':state['export']['row_count'],'mode':'validated_export','unchanged':True}
     records = c.execute('SELECT payload FROM ocr_original.export_rows WHERE version_id=%s ORDER BY row_key', (version,)).fetchall()
     output = []
     for record in records:
         r = record['payload']; d = r['data']
+        # Only what the export row itself says. The export version stays in the
+        # generation metadata and the line number in export_rows: both change on
+        # every export (~3 min) and would rewrite every unchanged row.
         output.append({'key':'export:'+r['key'], 'values':{'of':d['of'], 'component_ref':d['modelo'],
             'quantity':d['qtd'],'length_mm':d['comp_mm'],'production_date':d['sheet_iso_date'],
             'machine':r['machine'],'source':'OCR original — exportação validada',
-            'association_status':NOTE,'sheet':None}, 'original':r['raw'],
-            'source_export':{'version':version,'line':r['export_line']},'warnings':r['quality_flags']})
+            'association_status':NOTE,'sheet':None}, 'original':r['raw'],'warnings':r['quality_flags']})
     for area in planning.AREAS:
-        projection.publish(c,'original:'+area,needs.digest(['http-export-v1',version,area]),output,
+        projection.publish(c,'original:'+area,fingerprints[area],output,
             {'source':'OCR original — exportação de todas as áreas','included_in_planning_balances':False,
              'area_unclassified':True,'note':NOTE,'export_version':version})
     return {'rows':len(output),'mode':'validated_export'}
