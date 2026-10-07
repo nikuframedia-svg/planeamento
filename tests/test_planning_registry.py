@@ -207,6 +207,8 @@ def test_cpis_closure_and_stale_source_block_write(registry):
         with psycopg.connect(registry,autocommit=True) as conn:
             conn.execute("UPDATE core_mtg.production_orders SET cpis_status='Fechada'")
             conn.execute("UPDATE raw_mtg.cpis_rows SET status='Fechada'")
+        # A importação foi alterada no lugar (em produção cada Excel é um snapshot novo).
+        planning_hub.clear_cache()
         assert client.post('/planeamento/api/registos',json=request).status_code==409
         assert not client.get('/planeamento/api/ofs?area=perfis&q=cliente').json()['orders']
         with psycopg.connect(registry,autocommit=True) as conn:
@@ -238,6 +240,7 @@ def test_pending_filter_only_excludes_work_with_complete_operation_evidence(regi
     assert planning_hub.list_orders(pending_only=True)['total']==1
     with psycopg.connect(registry,autocommit=True) as conn:
         conn.execute("UPDATE analytics_mtg.kanban_plan_lines SET remaining_quantity=0,closed_x=true")
+    planning_hub.clear_cache()  # importação alterada no lugar; em produção seria um snapshot novo
     assert planning_hub.list_orders(pending_only=True)['total']==0
     assert planning_hub.list_orders(pending_only=False)['total']==1
 
