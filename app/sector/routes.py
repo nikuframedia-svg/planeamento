@@ -261,6 +261,24 @@ def load_cell(setor: str, maquina: str, ano: int, semana: int):
     return _call(lambda: load.cell(portfolio.check_sector(setor), maquina, ano, semana))
 
 
+@router.get("/planeamento/api/setor/carga/vista")
+def load_group_view(setor: str = "cantoneiras", por: str = "perfil", unidade: str = "h"):
+    """Carga por setor, perfil, família de produto ou família SKU (P10, 08/10/2026): a mesma população e semana
+    da grelha das Máquinas; células em horas (ou metros/peças dentro de um setor; kg nos Setores)."""
+    _guard()
+    from . import load_views
+    return _call(lambda: load_views.view(portfolio.check_sector(setor), por, unidade))
+
+
+@router.get("/planeamento/api/setor/carga/vista/celula")
+def load_group_cell(setor: str, por: str, chave: str, semana: str, ano: int | None = None):
+    """O que está atrás de uma célula de uma vista: horas por máquina e as OF. `semana` é o número da semana ISO
+    (com `ano`) ou «atrasado», «sem_prazo», «mais_tarde»."""
+    _guard()
+    from . import load_views
+    return _call(lambda: load_views.cell(portfolio.check_sector(setor), por, chave, ano, semana))
+
+
 @router.get("/planeamento/api/setor/carga/operacoes")
 def load_operations(setor: str, maquina: str, ano: int, semana: int, of: str):
     """Operações de uma OF numa célula da Carga, com o cálculo de cada uma (06/10/2026)."""

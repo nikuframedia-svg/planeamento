@@ -36,6 +36,15 @@ const fs = require('node:fs');
       return route.fulfill({status: 200, contentType: 'application/json', body: fs.readFileSync(`${cargaDir}/carga-${setor}.json`, 'utf8')});
     });
   }
+  // Cabeçalho fixo (P2): tabela_fixa.js vem de outra parte do trabalho; enquanto não existir no disco, serve-se vazio
+  // (a página tem de funcionar sem ele: chama window.stickyHead só se existir).
+  let stickyMissing = false;
+  await page.route(/\/static\/tabela_fixa\.js/, async (route) => {
+    const r = await route.fetch();
+    if (r.status() !== 404) return route.fulfill({response: r});
+    stickyMissing = true;
+    return route.fulfill({status: 200, contentType: 'text/javascript', body: ''});
+  });
   const NUM = '[\\d\\s\\u00a0\\u202f.]+';
   await page.goto(`${base}/planeamento/setor/carga?setor=cantoneiras`);
   await page.waitForSelector('#body tr td.c', {timeout: 120000});
@@ -68,7 +77,28 @@ const fs = require('node:fs');
     }
   }
   assert.equal(await page.locator('#body td.c.sem_calendario').count(), 0, 'sem células cinzentas');
+  // Barra de vistas (P10, 08/10): substitui os separadores; Máquinas ativa, com «Por semana | Totais».
+  assert.deepEqual(await page.locator('#views button').allInnerTexts(), ['Máquinas', 'Setores', 'Perfis', 'Famílias de produto', 'Famílias SKU']);
+  assert.equal(await page.locator('#views button[aria-pressed="true"]').innerText(), 'Máquinas');
+  assert.equal(await page.locator('#tab-semanas').innerText(), 'Por semana');
+  assert.equal(await page.locator('#tab-semanas').getAttribute('aria-pressed'), 'true');
+  assert.match(await page.locator('#weeks-view .legend').innerText(), /^Horas do trabalho aberto na semana do prazo \(como na Carteira\)\./);
   for (const t of await page.locator('#body td.c button.apply').allInnerTexts()) assert.match(t, /^[+−]\d turnos?$/);
+  // 2.ª operação (P3, com a Python nova): uma linha discreta por baixo da grelha, no lugar dos «Postos sem calendário»
+  // dessas máquinas. Com a Python antiga (sem o campo) a linha fica escondida.
+  const carga3 = await page.evaluate(async () => (await fetch('/planeamento/api/setor/carga?setor=cantoneiras')).json());
+  const so = carga3.second_operation;
+  if (so && (typeof so === 'string' || so.operations)) {
+    assert.ok(await page.locator('#second-op').isVisible(), 'linha da 2.ª operação');
+    assert.match(await page.locator('#second-op').innerText(), /operações de 2\.ª operação fora do plano.*Continuam na Tabela\.$/);
+    if (await page.locator('#no-calendar details').count()) {
+      const listed = await page.locator('#no-calendar summary').innerText();
+      for (const m of so.machines || []) assert.ok(!listed.includes(m.name.replace(/^Ficep\s+/i, '')), `${m.name} não repete em «Postos sem calendário»`);
+    }
+    console.log('2.ª operação:', await page.locator('#second-op').innerText());
+  } else {
+    assert.equal(await page.locator('#second-op').isVisible(), false);
+  }
   // Postos sem calendário: lista fechada, sem botões.
   const nocal = page.locator('#no-calendar details');
   if (await nocal.count()) {
@@ -102,6 +132,12 @@ const fs = require('node:fs');
   await page.waitForFunction(() => !/…/.test(document.getElementById('detail-summary')?.innerText || '…'), null, {timeout: 120000});
   const summary = await page.locator('#detail-summary').innerText();
   for (const label of ['Capacidade', 'Carga', 'Horas segundo o Excel']) assert.ok(summary.includes(label), `resumo com ${label}`);
+  // Ligação para a Carteira com a semana do prazo (AAAA-Wss), salvo as OF com atrasado na semana atual.
+  for (const href of await page.locator('#detail-orders a[href*="/planeamento/carteira?"]').evaluateAll((as) => as.map((a) => a.getAttribute('href')))) {
+    assert.match(href, /[?&]q=/);
+    const weeks = new URL(href, base).searchParams.getAll('semanas');
+    assert.ok(weeks.length <= 1 && weeks.every((w) => /^\d{4}-W\d{2}$/.test(w)), href);
+  }
   if (modern) {
     assert.match(summary, /Atrasado/);
     assert.match(summary, /faltam [\d\s  .,]+ h desta semana/);
@@ -193,6 +229,89 @@ const fs = require('node:fs');
     if (shots) await page.screenshot({path: `${shots}/carga-390-${setor}.png`, fullPage: true});
   }
   await page.setViewportSize({width: 1440, height: 1000});
+
+  // Vistas por setor, perfil e família (P10): cada uma carrega; células em horas com «*» para as desconhecidas;
+  // clicar mostra a repartição por máquina e as OF. Com a Python antiga (sem a rota) aparece o aviso de reiniciar.
+  const groupViews = [['setores', 'Setores', 'Setor'], ['perfis', 'Perfis', 'Perfil'], ['familias', 'Famílias de produto', 'Família de produto'],
+                      ['familias_sku', 'Famílias SKU', 'Família SKU']];
+  const withViews = (await page.request.get(`${base}/planeamento/api/setor/carga/vista?setor=cantoneiras&por=perfil`)).ok();
+  if (!withViews) {
+    await page.goto(`${base}/planeamento/setor/carga?setor=cantoneiras&vista=perfis`);
+    await page.waitForFunction(() => /reiniciado/.test(document.getElementById('error').textContent), null, {timeout: 120000});
+    errors.splice(0, errors.length, ...errors.filter((e) => !/\/carga\/vista/.test(e)));
+    console.log('Vistas: a Python em execução ainda não tem a rota (aviso de reiniciar mostrado).');
+  }
+  for (const setor of withViews ? ['cantoneiras', 'perfis'] : []) {
+    await page.goto(`${base}/planeamento/setor/carga?setor=${setor}`);
+    await page.waitForSelector('#body tr td.c', {timeout: 120000});
+    for (const [code, label, head] of groupViews) {
+      await page.locator('#views button', {hasText: new RegExp(`^${label}$`)}).click();
+      assert.match(page.url(), new RegExp(`vista=${code}(&|$)`));
+      await page.waitForFunction(() => !document.getElementById('group-view').hidden && !/A carregar/.test(document.getElementById('group-text').textContent)
+        && (document.querySelector('#group-body tr') || !document.getElementById('group-empty').hidden), null, {timeout: 120000});
+      assert.ok(await page.locator('#weeks-view').isHidden() && await page.locator('#machines-view').isHidden(), `${code}: só a vista escolhida`);
+      assert.equal(await page.locator('#machines-mode').isHidden(), true, 'Por semana | Totais só nas Máquinas');
+      if (code === 'familias_sku' && setor === 'perfis') {
+        assert.equal(await page.locator('#group-empty').innerText(), 'A MTG2 ainda não tem famílias SKU.');
+        assert.ok(await page.locator('#group-wrap').isHidden());
+        continue;
+      }
+      const ths = await page.locator('#group-head th').allInnerTexts();
+      assert.equal(ths[0], head);
+      assert.equal(ths.length, (code === 'perfis' ? 2 : 1) + 16, `${code}: ${ths}`);
+      assert.match(ths[code === 'perfis' ? 2 : 1], /^Atrasado \(/);
+      assert.deepEqual(ths.slice(-2).map((t) => t.replace(/ \(.*\)$/, '')), ['Sem prazo', 'Mais tarde']);
+      assert.match(await page.locator('#group-text').innerText(), /^Horas do trabalho aberto na semana do prazo \(como na Carteira\)\./);
+      if (code.startsWith('familias')) assert.match(await page.locator('#group-text').innerText(), /Família de Produto = tipo de obra do CPIS, por OF\. Família SKU = grupo de referências, por peça; só MTG3\./);
+      assert.equal(await page.locator('#group-body tr.total th').innerText(), 'Total');
+      const api = await page.evaluate(async ([s, por]) => (await fetch(`/planeamento/api/setor/carga/vista?setor=${s}&por=${por}`)).json(),
+        [setor, {setores: 'setor', perfis: 'perfil', familias: 'familia', familias_sku: 'familia_sku'}[code]]);
+      assert.equal(await page.locator('#group-body tr:not(.total)').count(), api.rows.length);
+      const totals = api.rows.map((r) => r.total.value);
+      assert.deepEqual(totals, [...totals].sort((a, b) => b - a), 'linhas ordenadas pelo total');
+      if (code === 'setores') {
+        assert.deepEqual(api.rows.map((r) => r.key).sort(), ['cantoneiras', 'perfis']);
+        for (const t of await page.locator('#group-body tr:not(.total)').evaluateAll((trs) => trs.flatMap((tr) => [...tr.querySelectorAll('td.g')].slice(1, 14).map((td) => td.textContent)))) {
+          assert.match(t, new RegExp(`^(${NUM} / ${NUM} h( · ${NUM} %)?|${NUM} h)?\\*?$`), `célula do setor: ${t}`);
+        }
+        assert.deepEqual(await page.locator('#unit-mode button').allInnerTexts(), ['h', 'kg']);
+      } else {
+        assert.deepEqual(await page.locator('#unit-mode button').allInnerTexts(), ['h', 'm', 'peças']);
+      }
+      // Clicar na primeira célula com trabalho: repartição por máquina e OF.
+      await page.locator('#group-body tr:not(.total) td.g.clickable').first().click();
+      await page.waitForSelector('#group-detail table.orders', {timeout: 120000});
+      assert.equal(await page.locator('#group-detail h3', {hasText: 'Por máquina'}).count(), 1);
+      assert.deepEqual(await page.locator('#group-detail table.orders').nth(1).locator('thead th').allInnerTexts(),
+        ['OF', 'Cliente', 'Horas', 'Peças', 'Metros', 'Prazo', 'Tipo', '']);
+      if (shots) await page.screenshot({path: `${shots}/carga-${code}-${setor}.png`, fullPage: true});
+    }
+    // Unidade metros dentro de um setor (Perfis): o pedido leva unidade=m e o cabeçalho diz (m).
+    await page.locator('#views button', {hasText: /^Perfis$/}).click();
+    await page.waitForSelector('#group-body tr');
+    await page.locator('#unit-mode button', {hasText: /^m$/}).click();
+    await page.waitForFunction(() => /\(m\)/.test(document.querySelector('#group-head th:nth-child(3)')?.textContent || ''), null, {timeout: 120000});
+    assert.match(page.url(), /unidade=m/);
+    assert.match(await page.locator('#group-text').innerText(), /^Metros do trabalho aberto/);
+    // Voltar às Máquinas: a grelha por semana volta; Totais mantém vista=maquinas.
+    await page.locator('#views button', {hasText: /^Máquinas$/}).click();
+    assert.ok(!(await page.locator('#weeks-view').isHidden()) && !/vista=|unidade=/.test(page.url()));
+    await page.click('#tab-maquinas');
+    assert.match(page.url(), /vista=maquinas/);
+    await page.waitForSelector('#machines-table tbody tr');
+  }
+  // 390 px: a barra desliza dentro de si e nenhuma vista cria scroll horizontal na página.
+  if (withViews) {
+    await page.setViewportSize({width: 390, height: 900});
+    for (const code of ['setores', 'perfis', 'familias', 'familias_sku']) {
+      await page.goto(`${base}/planeamento/setor/carga?setor=cantoneiras&vista=${code}`);
+      await page.waitForSelector('#group-body tr', {timeout: 120000});
+      assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), `vista ${code} sem scroll horizontal a 390 px`);
+      if (shots && code === 'perfis') await page.screenshot({path: `${shots}/carga-390-perfis.png`, fullPage: true});
+    }
+    await page.setViewportSize({width: 1440, height: 1000});
+  }
+  console.log('Cabeçalho fixo:', stickyMissing ? 'tabela_fixa.js ainda não existe (servido vazio no teste)' : 'tabela_fixa.js presente');
 
   // Definições do setor: máquinas, turnos, feriados, regras.
   await page.goto(`${base}/planeamento/setor/definicoes?setor=perfis`);

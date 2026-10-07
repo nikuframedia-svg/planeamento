@@ -10,7 +10,8 @@
 table.loadgrid { border-collapse: collapse; width: 100%; }
 table.loadgrid th, table.loadgrid td { border-bottom: 1px solid #eef0f3; border-right: 1px solid #f1f4f5; padding: .25rem .35rem; text-align: left;
   vertical-align: top; text-transform: none; letter-spacing: normal; color: inherit; background: transparent; font-weight: normal; }
-table.loadgrid thead th { background: #f4f6f8; font-weight: 700; white-space: nowrap; position: sticky; top: 0; }
+/* Cabeçalho fixo: cópia presa por baixo do menu (tabela_fixa.js, P2); o sticky top aqui não fazia nada (a caixa só desliza na horizontal). */
+table.loadgrid thead th { background: #f4f6f8; font-weight: 700; white-space: nowrap; }
 table.loadgrid tbody th { font-weight: 700; white-space: nowrap; position: sticky; left: 0; background: #fff; z-index: 1; }
 td.c { min-width: 4.8rem; cursor: pointer; white-space: nowrap; }
 .load-cap { font-variant-numeric: tabular-nums; }
@@ -43,9 +44,6 @@ table.orders thead th { font-weight: 700; background: #f4f6f8; }
 table.orders .num { text-align: right; font-variant-numeric: tabular-nums; }
 .notice { padding: .35rem .6rem; background: #e9f6ef; border: 1px solid #b6e2c6; border-radius: 8px; color: #1e6b3d; }
 .error { color: #9d2a26; }
-.tabs { display: flex; gap: .3rem; margin: .3rem 0 .5rem; }
-.tabs button { padding: .25rem .8rem; border: 1px solid #a9bbc4; background: #fff; border-radius: 8px; width: auto; color: #10384b; }
-.tabs button[aria-selected="true"] { background: #10384b; color: #fff; border-color: #10384b; }
 .elsewhere { padding: .35rem .6rem; background: #fff8e6; border: 1px solid #e6c98a; border-radius: 8px; }
 .named { border-bottom: 1px dotted #7b8f96; cursor: help; }
 /* Avisos de 08/10: uma linha discreta (Excel por importar, outro setor) e a nota do posto na linha da máquina. */
@@ -63,6 +61,22 @@ dl.proof { display: grid; grid-template-columns: max-content 1fr; gap: .1rem .8r
 dl.proof dt { color: #5d737a; } dl.proof dd { margin: 0; }
 button.linklike { border: 0; background: none; color: #1f6f8b; text-decoration: underline; padding: 0; width: auto; min-height: 0; }
 .pager { display: flex; gap: .4rem; margin-top: .3rem; } .pager button { width: auto; }
+/* Barra de vistas (P10, 08/10): desliza na horizontal a 390 px; alternadores pequenos por baixo. */
+.views { display: flex; gap: .3rem; margin: .3rem 0 .35rem; overflow-x: auto; scrollbar-width: none; max-width: 100%; }
+.views::-webkit-scrollbar { display: none; }
+.views button { flex: none; white-space: nowrap; padding: .25rem .8rem; border: 1px solid #a9bbc4; background: #fff; border-radius: 8px; width: auto; color: #10384b; }
+.views button[aria-pressed="true"] { background: #10384b; color: #fff; border-color: #10384b; }
+.view-line { display: flex; gap: .6rem; flex-wrap: wrap; align-items: center; margin: 0 0 .4rem; }
+.seg { display: inline-flex; } .seg[hidden] { display: none; }
+.seg button { padding: .05rem .55rem; min-height: 1.5rem; border: 1px solid #a9bbc4; background: #fff; color: #10384b; width: auto; border-radius: 0; margin-left: -1px; }
+.seg button:first-child { border-radius: 6px 0 0 6px; margin-left: 0; } .seg button:last-child { border-radius: 0 6px 6px 0; }
+.seg button:only-child { border-radius: 6px; }
+.seg button[aria-pressed="true"] { background: #dce9ec; font-weight: 700; }
+table.groups td.g { white-space: nowrap; cursor: pointer; font-variant-numeric: tabular-nums; text-align: right; }
+table.groups td.g:empty { cursor: default; }
+table.groups td.dim { white-space: nowrap; color: #5d737a; }
+table.groups tr.total th, table.groups tr.total td { font-weight: 700; border-top: 2px solid #dce6e8; cursor: default; }
+.second-op { margin: .5rem 0 0; }
 @media (max-width: 760px) { .load { padding: .6rem 16px 2rem; } dl.proof { grid-template-columns: 1fr; } }
 /* planning_hub.css transforma as tabelas em cartões abaixo de 720 px; aqui a tabela fica tabela e desliza dentro da caixa. */
 @media (max-width: 720px) {
