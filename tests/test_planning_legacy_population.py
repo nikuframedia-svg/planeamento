@@ -99,5 +99,6 @@ def test_mixed_order_counts_closed_copy_and_history_are_preserved(registry):
         assert conn.execute('SELECT count(*) FROM raw_mtg.plan_production_rows').fetchone()[0] == 3
         conn.execute("UPDATE raw_mtg.cpis_rows SET status='Em Produção'")
         conn.execute('UPDATE raw_mtg.plan_production_rows SET closed_x=false')
+    planning_hub.clear_cache()  # importação alterada no lugar; em produção seria um snapshot novo
     assert planning_hub.list_orders()['orders'][0]['plan'] == {'perfis': 2, 'cantoneiras': 1}
     assert planning_hub.list_orders(population='history')['total'] == 0

@@ -1,0 +1,5131 @@
+{
+ "detail": {
+  "OF4300": {
+   "actual_finish_date": null,
+   "actual_finish_date_values": [],
+   "actual_start_date": null,
+   "actual_start_date_values": [],
+   "conflicts": [],
+   "cpis_copies": [
+    "cantoneiras",
+    "perfis"
+   ],
+   "cpis_latest_copy": "cantoneiras",
+   "cpis_status": "Fechada",
+   "customer_name": "Cliente B2",
+   "customer_name_values": [
+    "Cliente B2",
+    "Cliente B"
+   ],
+   "delivery_date": "<instante>",
+   "delivery_date_values": [
+    "<instante>"
+   ],
+   "factory_unit": "MTG II",
+   "factory_unit_values": [
+    "MTG II"
+   ],
+   "observations": "Obra OF4300",
+   "observations_values": [
+    "Obra OF4300"
+   ],
+   "of": "OF4300",
+   "ovs": [
+    "OV-OF4300"
+   ],
+   "planned_finish_date": "<instante>",
+   "planned_finish_date_values": [
+    "<instante>"
+   ],
+   "planned_start_date": null,
+   "planned_start_date_values": [],
+   "responsible_dp": null,
+   "responsible_dp_values": [],
+   "sources": [
+    "cantoneiras",
+    "perfis"
+   ],
+   "status_values": [
+    "Fechada"
+   ],
+   "work_type_code": null,
+   "work_type_code_values": [],
+   "work_type_description": null,
+   "work_type_description_values": []
+  },
+  "OF4500": {
+   "actual_finish_date": null,
+   "actual_finish_date_values": [],
+   "actual_start_date": null,
+   "actual_start_date_values": [],
+   "administrative_origin": "Manual local",
+   "conflicts": [],
+   "cpis_copies": [],
+   "cpis_status": null,
+   "customer_name": "Cliente da macro",
+   "customer_name_values": [
+    "Cliente da macro"
+   ],
+   "delivery_date": null,
+   "delivery_date_values": [],
+   "factory_unit": null,
+   "factory_unit_values": [],
+   "local_order": {
+    "actor": "Teste",
+    "production_order_no": "OF4500",
+    "revision": 1,
+    "values_json": {
+     "customer": "Cliente da macro"
+    }
+   },
+   "observations": null,
+   "observations_values": [],
+   "of": "OF4500",
+   "ovs": [],
+   "planned_finish_date": null,
+   "planned_finish_date_values": [],
+   "planned_start_date": null,
+   "planned_start_date_values": [],
+   "responsible_dp": null,
+   "responsible_dp_values": [],
+   "sources": [
+    "cantoneiras",
+    "perfis"
+   ],
+   "status_values": [],
+   "work_type_code": null,
+   "work_type_code_values": [],
+   "work_type_description": null,
+   "work_type_description_values": []
+  },
+  "OF4700": {
+   "actual_finish_date": null,
+   "actual_finish_date_values": [],
+   "actual_start_date": null,
+   "actual_start_date_values": [],
+   "conflicts": [],
+   "cpis_copies": [
+    "perfis"
+   ],
+   "cpis_latest_copy": "perfis",
+   "cpis_status": "Em Aberto",
+   "customer_name": "Cliente sete",
+   "customer_name_values": [
+    "Cliente sete"
+   ],
+   "delivery_date": "<instante>",
+   "delivery_date_values": [
+    "<instante>"
+   ],
+   "factory_unit": "MTG II",
+   "factory_unit_values": [
+    "MTG II"
+   ],
+   "observations": "Obra OF4700",
+   "observations_values": [
+    "Obra OF4700"
+   ],
+   "of": "OF4700",
+   "ovs": [
+    "OV47"
+   ],
+   "planned_finish_date": "<instante>",
+   "planned_finish_date_values": [
+    "<instante>"
+   ],
+   "planned_start_date": null,
+   "planned_start_date_values": [],
+   "responsible_dp": null,
+   "responsible_dp_values": [],
+   "sources": [],
+   "status_values": [
+    "Em Aberto"
+   ],
+   "work_type_code": null,
+   "work_type_code_values": [],
+   "work_type_description": null,
+   "work_type_description_values": []
+  },
+  "OF4950": {
+   "actual_finish_date": null,
+   "actual_finish_date_values": [],
+   "actual_start_date": null,
+   "actual_start_date_values": [],
+   "conflicts": [],
+   "cpis_copies": [
+    "cantoneiras",
+    "perfis"
+   ],
+   "cpis_latest_copy": "perfis",
+   "cpis_status": "Pronta",
+   "customer_name": "Cliente OF4950",
+   "customer_name_values": [
+    "Cliente OF4950"
+   ],
+   "delivery_date": "<instante>",
+   "delivery_date_values": [
+    "<instante>"
+   ],
+   "factory_unit": "MTG II",
+   "factory_unit_values": [
+    "MTG II"
+   ],
+   "observations": "Obra OF4950",
+   "observations_values": [
+    "Obra OF4950"
+   ],
+   "of": "OF4950",
+   "ovs": [
+    "OV-OF4950"
+   ],
+   "planned_finish_date": "<instante>",
+   "planned_finish_date_values": [
+    "<instante>"
+   ],
+   "planned_start_date": null,
+   "planned_start_date_values": [],
+   "responsible_dp": null,
+   "responsible_dp_values": [],
+   "sources": [],
+   "status_values": [
+    "Pronta"
+   ],
+   "work_type_code": null,
+   "work_type_code_values": [],
+   "work_type_description": null,
+   "work_type_description_values": []
+  },
+  "OF4990": {
+   "actual_finish_date": null,
+   "actual_finish_date_values": [],
+   "actual_start_date": null,
+   "actual_start_date_values": [],
+   "administrative_origin": "Manual local",
+   "conflicts": [],
+   "cpis_copies": [],
+   "cpis_status": null,
+   "customer_name": "Cliente REF-J",
+   "customer_name_values": [
+    "Cliente REF-J"
+   ],
+   "delivery_date": null,
+   "delivery_date_values": [],
+   "factory_unit": null,
+   "factory_unit_values": [],
+   "local_order": null,
+   "observations": "Obra REF-J",
+   "observations_values": [
+    "Obra REF-J"
+   ],
+   "of": "OF4990",
+   "ovs": [
+    "OV-REF-J"
+   ],
+   "planned_finish_date": null,
+   "planned_finish_date_values": [],
+   "planned_start_date": null,
+   "planned_start_date_values": [],
+   "responsible_dp": null,
+   "responsible_dp_values": [],
+   "sources": [
+    "perfis"
+   ],
+   "status_values": [],
+   "work_type_code": null,
+   "work_type_code_values": [],
+   "work_type_description": null,
+   "work_type_description_values": []
+  },
+  "OF4995": {
+   "actual_finish_date": null,
+   "actual_finish_date_values": [],
+   "actual_start_date": null,
+   "actual_start_date_values": [],
+   "administrative_origin": "Manual local",
+   "conflicts": [],
+   "cpis_copies": [],
+   "cpis_status": null,
+   "customer_name": null,
+   "customer_name_values": [],
+   "delivery_date": null,
+   "delivery_date_values": [],
+   "factory_unit": null,
+   "factory_unit_values": [],
+   "local_order": null,
+   "observations": null,
+   "observations_values": [],
+   "of": "OF4995",
+   "ovs": [],
+   "planned_finish_date": null,
+   "planned_finish_date_values": [],
+   "planned_start_date": null,
+   "planned_start_date_values": [],
+   "responsible_dp": null,
+   "responsible_dp_values": [],
+   "sources": [],
+   "status_values": [],
+   "work_type_code": null,
+   "work_type_code_values": [],
+   "work_type_description": null,
+   "work_type_description_values": []
+  },
+  "OF5555": {
+   "actual_finish_date": null,
+   "actual_finish_date_values": [],
+   "actual_start_date": null,
+   "actual_start_date_values": [],
+   "administrative_origin": "Manual local",
+   "conflicts": [],
+   "cpis_copies": [],
+   "cpis_status": null,
+   "customer_name": "Cliente local",
+   "customer_name_values": [
+    "Cliente local"
+   ],
+   "delivery_date": null,
+   "delivery_date_values": [],
+   "factory_unit": null,
+   "factory_unit_values": [],
+   "local_order": {
+    "actor": "Teste",
+    "production_order_no": "OF5555",
+    "revision": 1,
+    "values_json": {
+     "customer": "Cliente local",
+     "designation": "Obra local",
+     "ov": "OV-L"
+    }
+   },
+   "observations": "Obra local",
+   "observations_values": [
+    "Obra local"
+   ],
+   "of": "OF5555",
+   "ovs": [
+    "OV-L"
+   ],
+   "planned_finish_date": null,
+   "planned_finish_date_values": [],
+   "planned_start_date": null,
+   "planned_start_date_values": [],
+   "responsible_dp": null,
+   "responsible_dp_values": [],
+   "sources": [],
+   "status_values": [],
+   "work_type_code": null,
+   "work_type_code_values": [],
+   "work_type_description": null,
+   "work_type_description_values": []
+  },
+  "OF998877": {
+   "actual_finish_date": null,
+   "actual_finish_date_values": [],
+   "actual_start_date": null,
+   "actual_start_date_values": [],
+   "administrative_origin": "Manual local",
+   "conflicts": [],
+   "cpis_copies": [],
+   "cpis_status": null,
+   "customer_name": null,
+   "customer_name_values": [],
+   "delivery_date": null,
+   "delivery_date_values": [],
+   "factory_unit": null,
+   "factory_unit_values": [],
+   "local_order": null,
+   "observations": null,
+   "observations_values": [],
+   "of": "OF998877",
+   "ovs": [],
+   "planned_finish_date": null,
+   "planned_finish_date_values": [],
+   "planned_start_date": null,
+   "planned_start_date_values": [],
+   "responsible_dp": null,
+   "responsible_dp_values": [],
+   "sources": [
+    "perfis"
+   ],
+   "status_values": [],
+   "work_type_code": null,
+   "work_type_code_values": [],
+   "work_type_description": null,
+   "work_type_description_values": []
+  }
+ },
+ "lines": {
+  "cantoneiras:OF4300:active": [],
+  "cantoneiras:OF4300:all": [
+   [
+    "c1:21",
+    "macro:c1:21",
+    false
+   ]
+  ],
+  "cantoneiras:OF4300:history": [
+   [
+    "c1:21",
+    "macro:c1:21",
+    false
+   ]
+  ],
+  "perfis:OF4300:active": [],
+  "perfis:OF4300:all": [
+   [
+    "s1:20",
+    "<uuid>",
+    false
+   ],
+   [
+    "s1:21",
+    "<uuid>",
+    false
+   ]
+  ],
+  "perfis:OF4300:history": [
+   [
+    "s1:20",
+    "<uuid>",
+    false
+   ],
+   [
+    "s1:21",
+    "<uuid>",
+    false
+   ]
+  ],
+  "perfis:OF4500:active": [
+   [
+    "s1:23",
+    "macro:s1:23",
+    true
+   ]
+  ],
+  "perfis:OF4500:all": [
+   [
+    "s1:23",
+    "macro:s1:23",
+    true
+   ]
+  ],
+  "perfis:OF4500:history": []
+ },
+ "list": [
+  {
+   "case": {},
+   "result": {
+    "mode": "imported",
+    "orders": [
+     {
+      "actual_finish_date": null,
+      "actual_finish_date_values": [],
+      "actual_start_date": null,
+      "actual_start_date_values": [],
+      "administrative_origin": "Manual local",
+      "area": "perfis",
+      "conferences": 0,
+      "conflicts": [],
+      "cpis_copies": [],
+      "cpis_status": null,
+      "customer_name": null,
+      "customer_name_values": [],
+      "delivery_date": null,
+      "delivery_date_values": [],
+      "documents": 0,
+      "execution_complete": false,
+      "factory_unit": null,
+      "factory_unit_values": [],
+      "local_order": null,
+      "observations": null,
+      "observations_values": [],
+      "of": "OF998877",
+      "ovs": [],
+      "plan": {
+       "perfis": 1
+      },
+      "planned_finish_date": null,
+      "planned_finish_date_values": [],
+      "planned_start_date": null,
+      "planned_start_date_values": [],
+      "population_counts": {
+       "active": 1,
+       "history": 0
+      },
+      "population_unknown_states": [],
+      "preparation": {
+       "areas": [
+        "perfis"
+       ],
+       "production_order_no": "OF998877",
+       "records": 1,
+       "statuses": [
+        "draft"
+       ]
+      },
+      "production_records": 0,
+      "responsible_dp": null,
+      "responsible_dp_values": [],
+      "sources": [
+       "perfis"
+      ],
+      "status_values": [],
+      "work_type_code": null,
+      "work_type_code_values": [],
+      "work_type_description": null,
+      "work_type_description_values": []
+     },
+     {
+      "actual_finish_date": null,
+      "actual_finish_date_values": [],
+      "actual_start_date": null,
+      "actual_start_date_values": [],
+      "administrative_origin": "Manual local",
+      "area": "por_identificar",
+      "conferences": 0,
+      "conflicts": [],
+      "cpis_copies": [],
+      "cpis_status": null,
+      "customer_name": "Cliente local",
+      "customer_name_values": [
+       "Cliente local"
+      ],
+      "delivery_date": null,
+      "delivery_date_values": [],
+      "documents": 0,
+      "execution_complete": false,
+      "factory_unit": null,
+      "factory_unit_values": [],
+      "local_order": {
+       "actor": "Teste",
+       "production_order_no": "OF5555",
+       "revision": 1,
+       "values_json": {
+        "customer": "Cliente local",
+        "designation": "Obra local",
+        "ov": "OV-L"
+       }
+      },
+      "observations": "Obra local",
+      "observations_values": [
+       "Obra local"
+      ],
+      "of": "OF5555",
+      "ovs": [
+       "OV-L"
+      ],
+      "plan": {},
+      "planned_finish_date": null,
+      "planned_finish_date_values": [],
+      "planned_start_date": null,
+      "planned_start_date_values": [],
+      "population_counts": {
+       "active": 0,
+       "history": 0
+      },
+      "population_unknown_states": [],
+      "preparation": null,
+      "production_records": 0,
+      "responsible_dp": null,
+      "responsible_dp_values": [],
+      "sources": [],
+      "status_values": [],
+      "work_type_code": null,
+      "work_type_code_values": [],
+      "work_type_description": null,
+      "work_type_description_values": []
+     },
+     {
+      "actual_finish_date": null,
+      "actual_finish_date_values": [],
+      "actual_start_date": null,
+      "actual_start_date_values": [],
+      "administrative_origin": "Macro — sem contexto CPIS",
+      "area": "perfis",
+      "conferences": 0,
+      "conflicts": [],
+      "cpis_copies": [],
+      "cpis_status": null,
+      "customer_name": null,
+      "customer_name_values": [],
+      "delivery_date": null,
+      "delivery_date_values": [],
+      "documents": 0,
+      "execution_complete": false,
+      "factory_unit": null,
+      "factory_unit_values": [],
+      "local_order": null,
+      "observations": null,
+      "observations_values": [],
+      "of": "OF4995",
+      "ovs": [],
+      "plan": {
+       "perfis": 1
+      },
+      "planned_finish_date": null,
+      "planned_finish_date_values": [],
+      "planned_start_date": null,
+      "planned_start_date_values": [],
+      "population_counts": {
+       "active": 1,
+       "history": 0
+      },
+      "population_unknown_states": [],
+      "preparation": null,
+      "production_records": 0,
+      "responsible_dp": null,
+      "responsible_dp_values": [],
+      "sources": [
+       "perfis"
+      ],
+      "status_values": [],
+      "work_type_code": null,
+      "work_type_code_values": [],
+      "work_type_description": null,
+      "work_type_description_values": []
+     },
+     {
+      "actual_finish_date": null,
+      "actual_finish_date_values": [],
+      "actual_start_date": null,
+      "actual_start_date_values": [],
+      "administrative_origin": "Manual local",
+      "area": "por_identificar",
+      "conferences": 0,
+      "conflicts": [],
+      "cpis_copies": [],
+      "cpis_status": null,
+      "customer_name": "Cliente REF-J",
+      "customer_name_values": [
+       "Cliente REF-J"
+      ],
+      "delivery_date": null,
+      "delivery_date_values": [],
+      "documents": 0,
+      "execution_complete": false,
+      "factory_unit": null,
+      "factory_unit_values": [],
+      "local_order": null,
+      "observations": "Obra REF-J",
+      "observations_values": [
+       "Obra REF-J"
+      ],
+      "of": "OF4990",
+      "ovs": [
+       "OV-REF-J"
+      ],
+      "plan": {},
+      "planned_finish_date": null,
+      "planned_finish_date_values": [],
+      "planned_start_date": null,
+      "planned_start_date_values": [],
+      "population_counts": {
+       "active": 0,
+       "history": 0
+      },
+      "population_unknown_states": [],
+      "preparation": null,
+      "production_records": 0,
+      "responsible_dp": null,
+      "responsible_dp_values": [],
+      "sources": [],
+      "status_values": [],
+      "work_type_code": null,
+      "work_type_code_values": [],
+      "work_type_description": null,
+      "work_type_description_values": []
+     },
+     {
+      "actual_finish_date": null,
+      "actual_finish_date_values": [],
+      "actual_start_date": null,
+      "actual_start_date_values": [],
+      "area": "perfis",
+      "conferences": 0,
+      "conflicts": [],
+      "cpis_copies": [
+       "cantoneiras",
+       "perfis"
+      ],
+      "cpis_latest_copy": "perfis",
+      "cpis_status": "Pronta",
+      "customer_name": "Cliente OF4950",
+      "customer_name_values": [
+       "Cliente OF4950"
+      ],
+      "delivery_date": "<instante>",
+      "delivery_date_values": [
+       "<instante>"
+      ],
+      "documents": 0,
+      "execution_complete": false,
+      "factory_unit": "MTG II",
+      "factory_unit_values": [
+       "MTG II"
+      ],
+      "observations": "Obra OF4950",
+      "observations_values": [
+       "Obra OF4950"
+      ],
+      "of": "OF4950",
+      "ovs": [
+       "OV-OF4950"
+      ],
+      "plan": {
+       "perfis": 1
+      },
+      "planned_finish_date": "<instante>",
+      "planned_finish_date_values": [
+       "<instante>"
+      ],
+      "planned_start_date": null,
+      "planned_start_date_values": [],
+      "population_counts": {
+       "active": 1,
+       "history": 0
+      },
+      "population_unknown_states": [],
+      "preparation": null,
+      "production_records": 0,
+      "responsible_dp": null,
+      "responsible_dp_values": [],
+      "sources": [
+       "perfis"
+      ],
+      "status_values": [
+       "Pronta"
+      ],
+      "work_type_code": null,
+      "work_type_code_values": [],
+      "work_type_description": null,
+      "work_type_description_values": []
+     },
+     {
+      "actual_finish_date": null,
+      "actual_finish_date_values": [],
+      "actual_start_date": null,
+      "actual_start_date_values": [],
+      "area": "por_identificar",
+      "conferences": 0,
+      "conflicts": [],
+      "cpis_copies": [
+       "perfis"
+      ],
+      "cpis_latest_copy": "perfis",
+      "cpis_status": "Em Aberto",
+      "customer_name": "Cliente sete",
+      "customer_name_values": [
+       "Cliente sete"
+      ],
+      "delivery_date": "<instante>",
+      "delivery_date_values": [
+       "<instante>"
+      ],
+      "documents": 0,
+      "execution_complete": false,
+      "factory_unit": "MTG II",
+      "factory_unit_values": [
+       "MTG II"
+      ],
+      "observations": "Obra OF4700",
+      "observations_values": [
+       "Obra OF4700"
+      ],
+      "of": "OF4700",
+      "ovs": [
+       "OV47"
+      ],
+      "plan": {},
+      "planned_finish_date": "<instante>",
+      "planned_finish_date_values": [
+       "<instante>"
+      ],
+      "planned_start_date": null,
+      "planned_start_date_values": [],
+      "population_counts": {
+       "active": 0,
+       "history": 0
+      },
+      "population_unknown_states": [],
+      "preparation": null,
+      "production_records": 0,
+      "responsible_dp": null,
+      "responsible_dp_values": [],
+      "sources": [],
+      "status_values": [
+       "Em Aberto"
+      ],
+      "work_type_code": null,
+      "work_type_code_values": [],
+      "work_type_description": null,
+      "work_type_description_values": []
+     },
+     {
+      "actual_finish_date": null,
+      "actual_finish_date_values": [],
+      "actual_start_date": null,
+      "actual_start_date_values": [],
+      "area": "perfis",
+      "conferences": 0,
+      "conflicts": [],
+      "cpis_copies": [
+       "perfis"
+      ],
+      "cpis_latest_copy": "perfis",
+      "cpis_status": "Estado novo",
+      "customer_name": "Cliente OF4600",
+      "customer_name_values": [
+       "Cliente OF4600"
+      ],
+      "delivery_date": "<instante>",
+      "delivery_date_values": [
+       "<instante>"
+      ],
+      "documents": 0,
+      "execution_complete": false,
+      "factory_unit": "MTG II",
+      "factory_unit_values": [
+       "MTG II"
+      ],
+      "observations": "Obra OF4600",
+      "observations_values": [
+       "Obra OF4600"
+      ],
+      "of": "OF4600",
+      "ovs": [
+       "OV-OF4600"
+      ],
+      "plan": {
+       "perfis": 1
+      },
+      "planned_finish_date": "<instante>",
+      "planned_finish_date_values": [
+       "<instante>"
+      ],
+      "planned_start_date": null,
+      "planned_start_date_values": [],
+      "population_counts": {
+       "active": 1,
+       "history": 0
+      },
+      "population_unknown_states": [
+       {
+        "source": "CPIS",
+        "value": "Estado novo"
+       },
+       {
+        "source": "Macro",
+        "value": "#VALUE!"
+       }
+      ],
+      "preparation": null,
+      "production_records": 0,
+      "responsible_dp": null,
+      "responsible_dp_values": [],
+      "sources": [
+       "perfis"
+      ],
+      "status_values": [
+       "Estado novo"
+      ],
+      "work_type_code": null,
+      "work_type_code_values": [],
+      "work_type_description": null,
+      "work_type_description_values": []
+     },
+     {
+      "actual_finish_date": null,
+      "actual_finish_date_values": [],
+      "actual_start_date": null,
+      "actual_start_date_values": [],
+      "administrative_origin": "Manual local",
+      "area": "ambas",
+      "conferences": 0,
+      "conflicts": [],
+      "cpis_copies": [],
+      "cpis_status": null,
+      "customer_name": "Cliente da macro",
+      "customer_name_values": [
+       "Cliente da macro"
+      ],
+      "delivery_date": null,
+      "delivery_date_values": [],
+      "documents": 0,
+      "execution_complete": false,
+      "factory_unit": null,
+      "factory_unit_values": [],
+      "local_order": {
+       "actor": "Teste",
+       "production_order_no": "OF4500",
+       "revision": 1,
+       "values_json": {
+        "customer": "Cliente da macro"
+       }
+      },
+      "observations": null,
+      "observations_values": [],
+      "of": "OF4500",
+      "ovs": [],
+      "plan": {
+       "cantoneiras": 1,
+       "perfis": 1
+      },
+      "planned_finish_date": null,
+      "planned_finish_date_values": [],
+      "planned_start_date": null,
+      "planned_start_date_values": [],
+      "population_counts": {
+       "active": 2,
+       "history": 0
+      },
+      "population_unknown_states": [],
+      "preparation": null,
+      "production_records": 0,
+      "responsible_dp": null,
+      "responsible_dp_values": [],
+      "sources": [
+       "cantoneiras",
+       "perfis"
+      ],
+      "status_values": [],
+      "work_type_code": null,
+      "work_type_code_values": [],
+      "work_type_description": null,
+      "work_type_description_values": []
+     },
+     {
+      "actual_finish_date": null,
+      "actual_finish_date_values": [],
+      "actual_start_date": null,
+      "actual_start_date_values": [],
+      "area": "ambas",
+      "conferences": 1,
+      "conflicts": [],
+      "cpis_copies": [
+       "cantoneiras",
+       "perfis"
+      ],
+      "cpis_latest_copy": "perfis",
+      "cpis_status": "Em Produção",
+      "customer_name": "Cliente exemplo",
+      "customer_name_values": [
+       "Cliente exemplo"
+      ],
+      "delivery_date": "<instante>",
+      "delivery_date_values": [
+       "<instante>"
+      ],
+      "documents": 0,
+      "execution_complete": false,
+      "factory_unit": "MTG II",
+      "factory_unit_values": [
+       "MTG II"
+      ],
+      "observations": "Obra exemplo",
+      "observations_values": [
+       "Obra exemplo"
+      ],
+      "of": "OF4200",
+      "ovs": [
+       "OV21"
+      ],
+      "plan": {
+       "cantoneiras": 1,
+       "perfis": 2
+      },
+      "planned_finish_date": "<instante>",
+      "planned_finish_date_values": [
+       "<instante>"
+      ],
+      "planned_start_date": null,
+      "planned_start_date_values": [],
+      "population_counts": {
+       "active": 3,
+       "history": 0
+      },
+      "population_unknown_states": [],
+      "preparation": {
+       "areas": [
+        "perfis"
+       ],
+       "production_order_no": "OF4200",
+       "records": 1,
+       "statuses": [
+        "draft"
+       ]
+      },
+      "production_records": 0,
+      "responsible_dp": null,
+      "responsible_dp_values": [],
+      "sources": [
+       "cantoneiras",
+       "perfis"
+      ],
+      "status_values": [
+       "Em Produção"
+      ],
+      "work_type_code": null,
+      "work_type_code_values": [],
+      "work_type_description": null,
+      "work_type_description_values": []
+     },
+     {
+      "actual_finish_date": null,
+      "actual_finish_date_values": [],
+      "actual_start_date": null,
+      "actual_start_date_values": [],
+      "administrative_origin": "Macro — OF por identificar",
+      "area": "cantoneiras",
+      "conferences": 0,
+      "conflicts": [],
+      "cpis_copies": [],
+      "cpis_status": null,
+      "customer_name": "Cliente REF-X",
+      "customer_name_values": [
+       "Cliente REF-X"
+      ],
+      "delivery_date": null,
+      "delivery_date_values": [],
+      "documents": 0,
+      "execution_complete": false,
+      "factory_unit": null,
+      "factory_unit_values": [],
+      "local_order": null,
+      "observations": "Obra REF-X",
+      "observations_values": [
+       "Obra REF-X"
+      ],
+      "of": null,
+      "ovs": [
+       "OV-REF-X"
+      ],
+      "plan": {
+       "cantoneiras": 1
+      },
+      "planned_finish_date": null,
+      "planned_finish_date_values": [],
+      "planned_start_date": null,
+      "planned_start_date_values": [],
+      "population_counts": {
+       "active": 1,
+       "history": 0
+      },
+      "population_unknown_states": [],
+      "preparation": null,
+      "production_records": 0,
+      "raw_links": [
+       {
+        "area": "cantoneiras",
+        "href": "/planeamento/raw?area=cantoneiras&q=REF-X",
+        "key": "macro:c1:20",
+        "reference": "REF-X"
+       }
+      ],
+      "responsible_dp": null,
+      "responsible_dp_values": [],
+      "sources": [
+       "cantoneiras"
+      ],
+      "status_values": [],
+      "unidentified": true,
+      "work_type_code": null,
+      "work_type_code_values": [],
+      "work_type_description": null,
+      "work_type_description_values": []
+     }
+    ],
+    "page": 1,
+    "page_size": 50,
+    "pages": 1,
+    "population": "active",
+    "total": 10,
+    "version": "fallback:s1:c1"
+   }
+  },
+  {
+   "case": {
+    "population": "history"
+   },
+   "result": {
+    "mode": "imported",
+    "orders": [
+     {
+      "actual_finish_date": null,
+      "actual_finish_date_values": [],
+      "actual_start_date": null,
+      "actual_start_date_values": [],
+      "area": "perfis",
+      "conferences": 0,
+      "conflicts": [],
+      "cpis_copies": [
+       "perfis"
+      ],
+      "cpis_latest_copy": "perfis",
+      "cpis_status": "Em Produção",
+      "customer_name": "Cliente OF4910",
+      "customer_name_values": [
+       "Cliente OF4910"
+      ],
+      "delivery_date": "<instante>",
+      "delivery_date_values": [
+       "<instante>"
+      ],
+      "documents": 0,
+      "execution_complete": false,
+      "factory_unit": "MTG II",
+      "factory_unit_values": [
+       "MTG II"
+      ],
+      "observations": "Obra OF4910",
+      "observations_values": [
+       "Obra OF4910"
+      ],
+      "of": "OF4910",
+      "ovs": [
+       "OV-OF4910"
+      ],
+      "plan": {
+       "perfis": 1
+      },
+      "planned_finish_date": "<instante>",
+      "planned_finish_date_values": [
+       "<instante>"
+      ],
+      "planned_start_date": null,
+      "planned_start_date_values": [],
+      "population_counts": {
+       "active": 0,
+       "history": 1
+      },
+      "population_unknown_states": [],
+      "preparation": null,
+      "production_records": 0,
+      "responsible_dp": null,
+      "responsible_dp_values": [],
+      "sources": [
+       "perfis"
+      ],
+      "status_values": [
+       "Em Produção"
+      ],
+      "work_type_code": null,
+      "work_type_code_values": [],
+      "work_type_description": null,
+      "work_type_description_values": []
+     },
+     {
+      "actual_finish_date": null,
+      "actual_finish_date_values": [],
+      "actual_start_date": null,
+      "actual_start_date_values": [],
+      "area": "ambas",
+      "conferences": 0,
+      "conflicts": [],
+      "cpis_copies": [
+       "perfis"
+      ],
+      "cpis_latest_copy": "perfis",
+      "cpis_status": "Em Produção",
+      "customer_name": "Cliente OF4900",
+      "customer_name_values": [
+       "Cliente OF4900"
+      ],
+      "delivery_date": "<instante>",
+      "delivery_date_values": [
+       "<instante>"
+      ],
+      "documents": 0,
+      "execution_complete": true,
+      "factory_unit": "MTG II",
+      "factory_unit_values": [
+       "MTG II"
+      ],
+      "observations": "Obra OF4900",
+      "observations_values": [
+       "Obra OF4900"
+      ],
+      "of": "OF4900",
+      "ovs": [
+       "OV-OF4900"
+      ],
+      "plan": {
+       "cantoneiras": 1,
+       "perfis": 1
+      },
+      "planned_finish_date": "<instante>",
+      "planned_finish_date_values": [
+       "<instante>"
+      ],
+      "planned_start_date": null,
+      "planned_start_date_values": [],
+      "population_counts": {
+       "active": 0,
+       "history": 2
+      },
+      "population_unknown_states": [],
+      "preparation": null,
+      "production_records": 1,
+      "responsible_dp": null,
+      "responsible_dp_values": [],
+      "sources": [
+       "cantoneiras",
+       "perfis"
+      ],
+      "status_values": [
+       "Em Produção"
+      ],
+      "work_type_code": null,
+      "work_type_code_values": [],
+      "work_type_description": null,
+      "work_type_description_values": []
+     },
+     {
+      "actual_finish_date": null,
+      "actual_finish_date_values": [],
+      "actual_start_date": null,
+      "actual_start_date_values": [],
+      "area": "por_identificar",
+      "conferences": 0,
+      "conflicts": [],
+      "cpis_copies": [
+       "cantoneiras"
+      ],
+      "cpis_latest_copy": "cantoneiras",
+      "cpis_status": "Fechada",
+      "customer_name": "Cliente OF4800",
+      "customer_name_values": [
+       "Cliente OF4800"
+      ],
+      "delivery_date": "<instante>",
+      "delivery_date_values": [
+       "<instante>"
+      ],
+      "documents": 0,
+      "execution_complete": false,
+      "factory_unit": "MTG II",
+      "factory_unit_values": [
+       "MTG II"
+      ],
+      "observations": "Obra OF4800",
+      "observations_values": [
+       "Obra OF4800"
+      ],
+      "of": "OF4800",
+      "ovs": [
+       "OV-OF4800"
+      ],
+      "plan": {},
+      "planned_finish_date": "<instante>",
+      "planned_finish_date_values": [
+       "<instante>"
+      ],
+      "planned_start_date": null,
+      "planned_start_date_values": [],
+      "population_counts": {
+       "active": 0,
+       "history": 0
+      },
+      "population_unknown_states": [],
+      "preparation": null,
+      "production_records": 0,
+      "responsible_dp": null,
+      "responsible_dp_values": [],
+      "sources": [],
+      "status_values": [
+       "Fechada"
+      ],
+      "work_type_code": null,
+      "work_type_code_values": [],
+      "work_type_description": null,
+      "work_type_description_values": []
+     },
+     {
+      "actual_finish_date": null,
+      "actual_finish_date_values": [],
+      "actual_start_date": null,
+      "actual_start_date_values": [],
+      "area": "perfis",
+      "conferences": 0,
+      "conflicts": [],
+      "cpis_copies": [
+       "perfis"
+      ],
+      "cpis_latest_copy": "perfis",
+      "cpis_status": "Em Produção",
+      "customer_name": "Cliente OF4400",
+      "customer_name_values": [
+       "Cliente OF4400"
+      ],
+      "delivery_date": "<instante>",
+      "delivery_date_values": [
+       "<instante>"
+      ],
+      "documents": 0,
+      "execution_complete": false,
+      "factory_unit": "MTG II",
+      "factory_unit_values": [
+       "MTG II"
+      ],
+      "observations": "Obra OF4400",
+      "observations_values": [
+       "Obra OF4400"
+      ],
+      "of": "OF4400",
+      "ovs": [
+       "OV-OF4400"
+      ],
+      "plan": {
+       "perfis": 1
+      },
+      "planned_finish_date": "<instante>",
+      "planned_finish_date_values": [
+       "<instante>"
+      ],
+      "planned_start_date": null,
+      "planned_start_date_values": [],
+      "population_counts": {
+       "active": 0,
+       "history": 1
+      },
+      "population_unknown_states": [],
+      "preparation": null,
+      "production_records": 0,
+      "responsible_dp": null,
+      "responsible_dp_values": [],
+      "sources": [
+       "perfis"
+      ],
+      "status_values": [
+       "Em Produção"
+      ],
+      "work_type_code": null,
+      "work_type_code_values": [],
+      "work_type_description": null,
+      "work_type_description_values": []
+     },
+     {
+      "actual_finish_date": null,
+      "actual_finish_date_values": [],
+      "actual_start_date": null,
+      "actual_start_date_values": [],
+      "area": "ambas",
+      "conferences": 0,
+      "conflicts": [],
+      "cpis_copies": [
+       "cantoneiras",
+       "perfis"
+      ],
+      "cpis_latest_copy": "cantoneiras",
+      "cpis_status": "Fechada",
+      "customer_name": "Cliente B2",
+      "customer_name_values": [
+       "Cliente B2",
+       "Cliente B"
+      ],
+      "delivery_date": "<instante>",
+      "delivery_date_values": [
+       "<instante>"
+      ],
+      "documents": 0,
+      "execution_complete": false,
+      "factory_unit": "MTG II",
+      "factory_unit_values": [
+       "MTG II"
+      ],
+      "observations": "Obra OF4300",
+      "observations_values": [
+       "Obra OF4300"
+      ],
+      "of": "OF4300",
+      "ovs": [
+       "OV-OF4300"
+      ],
+      "plan": {
+       "cantoneiras": 1,
+       "perfis": 1
+      },
+      "planned_finish_date": "<instante>",
+      "planned_finish_date_values": [
+       "<instante>"
+      ],
+      "planned_start_date": null,
+      "planned_start_date_values": [],
+      "population_counts": {
+       "active": 0,
+       "history": 2
+      },
+      "population_unknown_states": [],
+      "preparation": null,
+      "production_records": 2,
+      "responsible_dp": null,
+      "responsible_dp_values": [],
+      "sources": [
+       "cantoneiras",
+       "perfis"
+      ],
+      "status_values": [
+       "Fechada"
+      ],
+      "work_type_code": null,
+      "work_type_code_values": [],
+      "work_type_description": null,
+      "work_type_description_values": []
+     }
+    ],
+    "page": 1,
+    "page_size": 50,
+    "pages": 1,
+    "population": "history",
+    "total": 5,
+    "version": "fallback:s1:c1"
+   }
+  },
+  {
+   "case": {
+    "population": "all"
+   },
+   "result": {
+    "mode": "imported",
+    "orders": [
+     {
+      "actual_finish_date": null,
+      "actual_finish_date_values": [],
+      "actual_start_date": null,
+      "actual_start_date_values": [],
+      "administrative_origin": "Manual local",
+      "area": "perfis",
+      "conferences": 0,
+      "conflicts": [],
+      "cpis_copies": [],
+      "cpis_status": null,
+      "customer_name": null,
+      "customer_name_values": [],
+      "delivery_date": null,
+      "delivery_date_values": [],
+      "documents": 0,
+      "execution_complete": false,
+      "factory_unit": null,
+      "factory_unit_values": [],
+      "local_order": null,
+      "observations": null,
+      "observations_values": [],
+      "of": "OF998877",
+      "ovs": [],
+      "plan": {
+       "perfis": 1
+      },
+      "planned_finish_date": null,
+      "planned_finish_date_values": [],
+      "planned_start_date": null,
+      "planned_start_date_values": [],
+      "population_counts": {
+       "active": 1,
+       "history": 0
+      },
+      "population_unknown_states": [],
+      "preparation": {
+       "areas": [
+        "perfis"
+       ],
+       "production_order_no": "OF998877",
+       "records": 1,
+       "statuses": [
+        "draft"
+       ]
+      },
+      "production_records": 0,
+      "responsible_dp": null,
+      "responsible_dp_values": [],
+      "sources": [
+       "perfis"
+      ],
+      "status_values": [],
+      "work_type_code": null,
+      "work_type_code_values": [],
+      "work_type_description": null,
+      "work_type_description_values": []
+     },
+     {
+      "actual_finish_date": null,
+      "actual_finish_date_values": [],
+      "actual_start_date": null,
+      "actual_start_date_values": [],
+      "administrative_origin": "Manual local",
+      "area": "por_identificar",
+      "conferences": 0,
+      "conflicts": [],
+      "cpis_copies": [],
+      "cpis_status": null,
+      "customer_name": "Cliente local",
+      "customer_name_values": [
+       "Cliente local"
+      ],
+      "delivery_date": null,
+      "delivery_date_values": [],
+      "documents": 0,
+      "execution_complete": false,
+      "factory_unit": null,
+      "factory_unit_values": [],
+      "local_order": {
+       "actor": "Teste",
+       "production_order_no": "OF5555",
+       "revision": 1,
+       "values_json": {
+        "customer": "Cliente local",
+        "designation": "Obra local",
+        "ov": "OV-L"
+       }
+      },
+      "observations": "Obra local",
+      "observations_values": [
+       "Obra local"
+      ],
+      "of": "OF5555",
+      "ovs": [
+       "OV-L"
+      ],
+      "plan": {},
+      "planned_finish_date": null,
+      "planned_finish_date_values": [],
+      "planned_start_date": null,
+      "planned_start_date_values": [],
+      "population_counts": {
+       "active": 0,
+       "history": 0
+      },
+      "population_unknown_states": [],
+      "preparation": null,
+      "production_records": 0,
+      "responsible_dp": null,
+      "responsible_dp_values": [],
+      "sources": [],
+      "status_values": [],
+      "work_type_code": null,
+      "work_type_code_values": [],
+      "work_type_description": null,
+      "work_type_description_values": []
+     },
+     {
+      "actual_finish_date": null,
+      "actual_finish_date_values": [],
+      "actual_start_date": null,
+      "actual_start_date_values": [],
+      "administrative_origin": "Macro — sem contexto CPIS",
+      "area": "perfis",
+      "conferences": 0,
+      "conflicts": [],
+      "cpis_copies": [],
+      "cpis_status": null,
+      "customer_name": null,
+      "customer_name_values": [],
+      "delivery_date": null,
+      "delivery_date_values": [],
+      "documents": 0,
+      "execution_complete": false,
+      "factory_unit": null,
+      "factory_unit_values": [],
+      "local_order": null,
+      "observations": null,
+      "observations_values": [],
+      "of": "OF4995",
+      "ovs": [],
+      "plan": {
+       "perfis": 1
+      },
+      "planned_finish_date": null,
+      "planned_finish_date_values": [],
+      "planned_start_date": null,
+      "planned_start_date_values": [],
+      "population_counts": {
+       "active": 1,
+       "history": 0
+      },
+      "population_unknown_states": [],
+      "preparation": null,
+      "production_records": 0,
+      "responsible_dp": null,
+      "responsible_dp_values": [],
+      "sources": [
+       "perfis"
+      ],
+      "status_values": [],
+      "work_type_code": null,
+      "work_type_code_values": [],
+      "work_type_description": null,
+      "work_type_description_values": []
+     },
+     {
+      "actual_finish_date": null,
+      "actual_finish_date_values": [],
+      "actual_start_date": null,
+      "actual_start_date_values": [],
+      "administrative_origin": "Manual local",
+      "area": "por_identificar",
+      "conferences": 0,
+      "conflicts": [],
+      "cpis_copies": [],
+      "cpis_status": null,
+      "customer_name": "Cliente REF-J",
+      "customer_name_values": [
+       "Cliente REF-J"
+      ],
+      "delivery_date": null,
+      "delivery_date_values": [],
+      "documents": 0,
+      "execution_complete": false,
+      "factory_unit": null,
+      "factory_unit_values": [],
+      "local_order": null,
+      "observations": "Obra REF-J",
+      "observations_values": [
+       "Obra REF-J"
+      ],
+      "of": "OF4990",
+      "ovs": [
+       "OV-REF-J"
+      ],
+      "plan": {},
+      "planned_finish_date": null,
+      "planned_finish_date_values": [],
+      "planned_start_date": null,
+      "planned_start_date_values": [],
+      "population_counts": {
+       "active": 0,
+       "history": 0
+      },
+      "population_unknown_states": [],
+      "preparation": null,
+      "production_records": 0,
+      "responsible_dp": null,
+      "responsible_dp_values": [],
+      "sources": [],
+      "status_values": [],
+      "work_type_code": null,
+      "work_type_code_values": [],
+      "work_type_description": null,
+      "work_type_description_values": []
+     },
+     {
+      "actual_finish_date": null,
+      "actual_finish_date_values": [],
+      "actual_start_date": null,
+      "actual_start_date_values": [],
+      "area": "perfis",
+      "conferences": 0,
+      "conflicts": [],
+      "cpis_copies": [
+       "cantoneiras",
+       "perfis"
+      ],
+      "cpis_latest_copy": "perfis",
+      "cpis_status": "Pronta",
+      "customer_name": "Cliente OF4950",
+      "customer_name_values": [
+       "Cliente OF4950"
+      ],
+      "delivery_date": "<instante>",
+      "delivery_date_values": [
+       "<instante>"
+      ],
+      "documents": 0,
+      "execution_complete": false,
+      "factory_unit": "MTG II",
+      "factory_unit_values": [
+       "MTG II"
+      ],
+      "observations": "Obra OF4950",
+      "observations_values": [
+       "Obra OF4950"
+      ],
+      "of": "OF4950",
+      "ovs": [
+       "OV-OF4950"
+      ],
+      "plan": {
+       "perfis": 1
+      },
+      "planned_finish_date": "<instante>",
+      "planned_finish_date_values": [
+       "<instante>"
+      ],
+      "planned_start_date": null,
+      "planned_start_date_values": [],
+      "population_counts": {
+       "active": 1,
+       "history": 0
+      },
+      "population_unknown_states": [],
+      "preparation": null,
+      "production_records": 0,
+      "responsible_dp": null,
+      "responsible_dp_values": [],
+      "sources": [
+       "perfis"
+      ],
+      "status_values": [
+       "Pronta"
+      ],
+      "work_type_code": null,
+      "work_type_code_values": [],
+      "work_type_description": null,
+      "work_type_description_values": []
+     },
+     {
+      "actual_finish_date": null,
+      "actual_finish_date_values": [],
+      "actual_start_date": null,
+      "actual_start_date_values": [],
+      "area": "perfis",
+      "conferences": 0,
+      "conflicts": [],
+      "cpis_copies": [
+       "perfis"
+      ],
+      "cpis_latest_copy": "perfis",
+      "cpis_status": "Em Produção",
+      "customer_name": "Cliente OF4910",
+      "customer_name_values": [
+       "Cliente OF4910"
+      ],
+      "delivery_date": "<instante>",
+      "delivery_date_values": [
+       "<instante>"
+      ],
+      "documents": 0,
+      "execution_complete": false,
+      "factory_unit": "MTG II",
+      "factory_unit_values": [
+       "MTG II"
+      ],
+      "observations": "Obra OF4910",
+      "observations_values": [
+       "Obra OF4910"
+      ],
+      "of": "OF4910",
+      "ovs": [
+       "OV-OF4910"
+      ],
+      "plan": {
+       "perfis": 1
+      },
+      "planned_finish_date": "<instante>",
+      "planned_finish_date_values": [
+       "<instante>"
+      ],
+      "planned_start_date": null,
+      "planned_start_date_values": [],
+      "population_counts": {
+       "active": 0,
+       "history": 1
+      },
+      "population_unknown_states": [],
+      "preparation": null,
+      "production_records": 0,
+      "responsible_dp": null,
+      "responsible_dp_values": [],
+      "sources": [
+       "perfis"
+      ],
+      "status_values": [
+       "Em Produção"
+      ],
+      "work_type_code": null,
+      "work_type_code_values": [],
+      "work_type_description": null,
+      "work_type_description_values": []
+     },
+     {
+      "actual_finish_date": null,
+      "actual_finish_date_values": [],
+      "actual_start_date": null,
+      "actual_start_date_values": [],
+      "area": "ambas",
+      "conferences": 0,
+      "conflicts": [],
+      "cpis_copies": [
+       "perfis"
+      ],
+      "cpis_latest_copy": "perfis",
+      "cpis_status": "Em Produção",
+      "customer_name": "Cliente OF4900",
+      "customer_name_values": [
+       "Cliente OF4900"
+      ],
+      "delivery_date": "<instante>",
+      "delivery_date_values": [
+       "<instante>"
+      ],
+      "documents": 0,
+      "execution_complete": true,
+      "factory_unit": "MTG II",
+      "factory_unit_values": [
+       "MTG II"
+      ],
+      "observations": "Obra OF4900",
+      "observations_values": [
+       "Obra OF4900"
+      ],
+      "of": "OF4900",
+      "ovs": [
+       "OV-OF4900"
+      ],
+      "plan": {
+       "cantoneiras": 1,
+       "perfis": 1
+      },
+      "planned_finish_date": "<instante>",
+      "planned_finish_date_values": [
+       "<instante>"
+      ],
+      "planned_start_date": null,
+      "planned_start_date_values": [],
+      "population_counts": {
+       "active": 0,
+       "history": 2
+      },
+      "population_unknown_states": [],
+      "preparation": null,
+      "production_records": 1,
+      "responsible_dp": null,
+      "responsible_dp_values": [],
+      "sources": [
+       "cantoneiras",
+       "perfis"
+      ],
+      "status_values": [
+       "Em Produção"
+      ],
+      "work_type_code": null,
+      "work_type_code_values": [],
+      "work_type_description": null,
+      "work_type_description_values": []
+     },
+     {
+      "actual_finish_date": null,
+      "actual_finish_date_values": [],
+      "actual_start_date": null,
+      "actual_start_date_values": [],
+      "area": "por_identificar",
+      "conferences": 0,
+      "conflicts": [],
+      "cpis_copies": [
+       "cantoneiras"
+      ],
+      "cpis_latest_copy": "cantoneiras",
+      "cpis_status": "Fechada",
+      "customer_name": "Cliente OF4800",
+      "customer_name_values": [
+       "Cliente OF4800"
+      ],
+      "delivery_date": "<instante>",
+      "delivery_date_values": [
+       "<instante>"
+      ],
+      "documents": 0,
+      "execution_complete": false,
+      "factory_unit": "MTG II",
+      "factory_unit_values": [
+       "MTG II"
+      ],
+      "observations": "Obra OF4800",
+      "observations_values": [
+       "Obra OF4800"
+      ],
+      "of": "OF4800",
+      "ovs": [
+       "OV-OF4800"
+      ],
+      "plan": {},
+      "planned_finish_date": "<instante>",
+      "planned_finish_date_values": [
+       "<instante>"
+      ],
+      "planned_start_date": null,
+      "planned_start_date_values": [],
+      "population_counts": {
+       "active": 0,
+       "history": 0
+      },
+      "population_unknown_states": [],
+      "preparation": null,
+      "production_records": 0,
+      "responsible_dp": null,
+      "responsible_dp_values": [],
+      "sources": [],
+      "status_values": [
+       "Fechada"
+      ],
+      "work_type_code": null,
+      "work_type_code_values": [],
+      "work_type_description": null,
+      "work_type_description_values": []
+     },
+     {
+      "actual_finish_date": null,
+      "actual_finish_date_values": [],
+      "actual_start_date": null,
+      "actual_start_date_values": [],
+      "area": "por_identificar",
+      "conferences": 0,
+      "conflicts": [],
+      "cpis_copies": [
+       "perfis"
+      ],
+      "cpis_latest_copy": "perfis",
+      "cpis_status": "Em Aberto",
+      "customer_name": "Cliente sete",
+      "customer_name_values": [
+       "Cliente sete"
+      ],
+      "delivery_date": "<instante>",
+      "delivery_date_values": [
+       "<instante>"
+      ],
+      "documents": 0,
+      "execution_complete": false,
+      "factory_unit": "MTG II",
+      "factory_unit_values": [
+       "MTG II"
+      ],
+      "observations": "Obra OF4700",
+      "observations_values": [
+       "Obra OF4700"
+      ],
+      "of": "OF4700",
+      "ovs": [
+       "OV47"
+      ],
+      "plan": {},
+      "planned_finish_date": "<instante>",
+      "planned_finish_date_values": [
+       "<instante>"
+      ],
+      "planned_start_date": null,
+      "planned_start_date_values": [],
+      "population_counts": {
+       "active": 0,
+       "history": 0
+      },
+      "population_unknown_states": [],
+      "preparation": null,
+      "production_records": 0,
+      "responsible_dp": null,
+      "responsible_dp_values": [],
+      "sources": [],
+      "status_values": [
+       "Em Aberto"
+      ],
+      "work_type_code": null,
+      "work_type_code_values": [],
+      "work_type_description": null,
+      "work_type_description_values": []
+     },
+     {
+      "actual_finish_date": null,
+      "actual_finish_date_values": [],
+      "actual_start_date": null,
+      "actual_start_date_values": [],
+      "area": "perfis",
+      "conferences": 0,
+      "conflicts": [],
+      "cpis_copies": [
+       "perfis"
+      ],
+      "cpis_latest_copy": "perfis",
+      "cpis_status": "Estado novo",
+      "customer_name": "Cliente OF4600",
+      "customer_name_values": [
+       "Cliente OF4600"
+      ],
+      "delivery_date": "<instante>",
+      "delivery_date_values": [
+       "<instante>"
+      ],
+      "documents": 0,
+      "execution_complete": false,
+      "factory_unit": "MTG II",
+      "factory_unit_values": [
+       "MTG II"
+      ],
+      "observations": "Obra OF4600",
+      "observations_values": [
+       "Obra OF4600"
+      ],
+      "of": "OF4600",
+      "ovs": [
+       "OV-OF4600"
+      ],
+      "plan": {
+       "perfis": 1
+      },
+      "planned_finish_date": "<instante>",
+      "planned_finish_date_values": [
+       "<instante>"
+      ],
+      "planned_start_date": null,
+      "planned_start_date_values": [],
+      "population_counts": {
+       "active": 1,
+       "history": 0
+      },
+      "population_unknown_states": [
+       {
+        "source": "CPIS",
+        "value": "Estado novo"
+       },
+       {
+        "source": "Macro",
+        "value": "#VALUE!"
+       }
+      ],
+      "preparation": null,
+      "production_records": 0,
+      "responsible_dp": null,
+      "responsible_dp_values": [],
+      "sources": [
+       "perfis"
+      ],
+      "status_values": [
+       "Estado novo"
+      ],
+      "work_type_code": null,
+      "work_type_code_values": [],
+      "work_type_description": null,
+      "work_type_description_values": []
+     },
+     {
+      "actual_finish_date": null,
+      "actual_finish_date_values": [],
+      "actual_start_date": null,
+      "actual_start_date_values": [],
+      "administrative_origin": "Manual local",
+      "area": "ambas",
+      "conferences": 0,
+      "conflicts": [],
+      "cpis_copies": [],
+      "cpis_status": null,
+      "customer_name": "Cliente da macro",
+      "customer_name_values": [
+       "Cliente da macro"
+      ],
+      "delivery_date": null,
+      "delivery_date_values": [],
+      "documents": 0,
+      "execution_complete": false,
+      "factory_unit": null,
+      "factory_unit_values": [],
+      "local_order": {
+       "actor": "Teste",
+       "production_order_no": "OF4500",
+       "revision": 1,
+       "values_json": {
+        "customer": "Cliente da macro"
+       }
+      },
+      "observations": null,
+      "observations_values": [],
+      "of": "OF4500",
+      "ovs": [],
+      "plan": {
+       "cantoneiras": 1,
+       "perfis": 1
+      },
+      "planned_finish_date": null,
+      "planned_finish_date_values": [],
+      "planned_start_date": null,
+      "planned_start_date_values": [],
+      "population_counts": {
+       "active": 2,
+       "history": 0
+      },
+      "population_unknown_states": [],
+      "preparation": null,
+      "production_records": 0,
+      "responsible_dp": null,
+      "responsible_dp_values": [],
+      "sources": [
+       "cantoneiras",
+       "perfis"
+      ],
+      "status_values": [],
+      "work_type_code": null,
+      "work_type_code_values": [],
+      "work_type_description": null,
+      "work_type_description_values": []
+     },
+     {
+      "actual_finish_date": null,
+      "actual_finish_date_values": [],
+      "actual_start_date": null,
+      "actual_start_date_values": [],
+      "area": "perfis",
+      "conferences": 0,
+      "conflicts": [],
+      "cpis_copies": [
+       "perfis"
+      ],
+      "cpis_latest_copy": "perfis",
+      "cpis_status": "Em Produção",
+      "customer_name": "Cliente OF4400",
+      "customer_name_values": [
+       "Cliente OF4400"
+      ],
+      "delivery_date": "<instante>",
+      "delivery_date_values": [
+       "<instante>"
+      ],
+      "documents": 0,
+      "execution_complete": false,
+      "factory_unit": "MTG II",
+      "factory_unit_values": [
+       "MTG II"
+      ],
+      "observations": "Obra OF4400",
+      "observations_values": [
+       "Obra OF4400"
+      ],
+      "of": "OF4400",
+      "ovs": [
+       "OV-OF4400"
+      ],
+      "plan": {
+       "perfis": 1
+      },
+      "planned_finish_date": "<instante>",
+      "planned_finish_date_values": [
+       "<instante>"
+      ],
+      "planned_start_date": null,
+      "planned_start_date_values": [],
+      "population_counts": {
+       "active": 0,
+       "history": 1
+      },
+      "population_unknown_states": [],
+      "preparation": null,
+      "production_records": 0,
+      "responsible_dp": null,
+      "responsible_dp_values": [],
+      "sources": [
+       "perfis"
+      ],
+      "status_values": [
+       "Em Produção"
+      ],
+      "work_type_code": null,
+      "work_type_code_values": [],
+      "work_type_description": null,
+      "work_type_description_values": []
+     },
+     {
+      "actual_finish_date": null,
+      "actual_finish_date_values": [],
+      "actual_start_date": null,
+      "actual_start_date_values": [],
+      "area": "ambas",
+      "conferences": 0,
+      "conflicts": [],
+      "cpis_copies": [
+       "cantoneiras",
+       "perfis"
+      ],
+      "cpis_latest_copy": "cantoneiras",
+      "cpis_status": "Fechada",
+      "customer_name": "Cliente B2",
+      "customer_name_values": [
+       "Cliente B2",
+       "Cliente B"
+      ],
+      "delivery_date": "<instante>",
+      "delivery_date_values": [
+       "<instante>"
+      ],
+      "documents": 0,
+      "execution_complete": false,
+      "factory_unit": "MTG II",
+      "factory_unit_values": [
+       "MTG II"
+      ],
+      "observations": "Obra OF4300",
+      "observations_values": [
+       "Obra OF4300"
+      ],
+      "of": "OF4300",
+      "ovs": [
+       "OV-OF4300"
+      ],
+      "plan": {
+       "cantoneiras": 1,
+       "perfis": 1
+      },
+      "planned_finish_date": "<instante>",
+      "planned_finish_date_values": [
+       "<instante>"
+      ],
+      "planned_start_date": null,
+      "planned_start_date_values": [],
+      "population_counts": {
+       "active": 0,
+       "history": 2
+      },
+      "population_unknown_states": [],
+      "preparation": null,
+      "production_records": 2,
+      "responsible_dp": null,
+      "responsible_dp_values": [],
+      "sources": [
+       "cantoneiras",
+       "perfis"
+      ],
+      "status_values": [
+       "Fechada"
+      ],
+      "work_type_code": null,
+      "work_type_code_values": [],
+      "work_type_description": null,
+      "work_type_description_values": []
+     },
+     {
+      "actual_finish_date": null,
+      "actual_finish_date_values": [],
+      "actual_start_date": null,
+      "actual_start_date_values": [],
+      "area": "ambas",
+      "conferences": 1,
+      "conflicts": [],
+      "cpis_copies": [
+       "cantoneiras",
+       "perfis"
+      ],
+      "cpis_latest_copy": "perfis",
+      "cpis_status": "Em Produção",
+      "customer_name": "Cliente exemplo",
+      "customer_name_values": [
+       "Cliente exemplo"
+      ],
+      "delivery_date": "<instante>",
+      "delivery_date_values": [
+       "<instante>"
+      ],
+      "documents": 0,
+      "execution_complete": false,
+      "factory_unit": "MTG II",
+      "factory_unit_values": [
+       "MTG II"
+      ],
+      "observations": "Obra exemplo",
+      "observations_values": [
+       "Obra exemplo"
+      ],
+      "of": "OF4200",
+      "ovs": [
+       "OV21"
+      ],
+      "plan": {
+       "cantoneiras": 1,
+       "perfis": 2
+      },
+      "planned_finish_date": "<instante>",
+      "planned_finish_date_values": [
+       "<instante>"
+      ],
+      "planned_start_date": null,
+      "planned_start_date_values": [],
+      "population_counts": {
+       "active": 3,
+       "history": 0
+      },
+      "population_unknown_states": [],
+      "preparation": {
+       "areas": [
+        "perfis"
+       ],
+       "production_order_no": "OF4200",
+       "records": 1,
+       "statuses": [
+        "draft"
+       ]
+      },
+      "production_records": 0,
+      "responsible_dp": null,
+      "responsible_dp_values": [],
+      "sources": [
+       "cantoneiras",
+       "perfis"
+      ],
+      "status_values": [
+       "Em Produção"
+      ],
+      "work_type_code": null,
+      "work_type_code_values": [],
+      "work_type_description": null,
+      "work_type_description_values": []
+     },
+     {
+      "actual_finish_date": null,
+      "actual_finish_date_values": [],
+      "actual_start_date": null,
+      "actual_start_date_values": [],
+      "administrative_origin": "Macro — OF por identificar",
+      "area": "cantoneiras",
+      "conferences": 0,
+      "conflicts": [],
+      "cpis_copies": [],
+      "cpis_status": null,
+      "customer_name": "Cliente REF-X",
+      "customer_name_values": [
+       "Cliente REF-X"
+      ],
+      "delivery_date": null,
+      "delivery_date_values": [],
+      "documents": 0,
+      "execution_complete": false,
+      "factory_unit": null,
+      "factory_unit_values": [],
+      "local_order": null,
+      "observations": "Obra REF-X",
+      "observations_values": [
+       "Obra REF-X"
+      ],
+      "of": null,
+      "ovs": [
+       "OV-REF-X"
+      ],
+      "plan": {
+       "cantoneiras": 1
+      },
+      "planned_finish_date": null,
+      "planned_finish_date_values": [],
+      "planned_start_date": null,
+      "planned_start_date_values": [],
+      "population_counts": {
+       "active": 1,
+       "history": 0
+      },
+      "population_unknown_states": [],
+      "preparation": null,
+      "production_records": 0,
+      "raw_links": [
+       {
+        "area": "cantoneiras",
+        "href": "/planeamento/raw?area=cantoneiras&q=REF-X",
+        "key": "macro:c1:20",
+        "reference": "REF-X"
+       }
+      ],
+      "responsible_dp": null,
+      "responsible_dp_values": [],
+      "sources": [
+       "cantoneiras"
+      ],
+      "status_values": [],
+      "unidentified": true,
+      "work_type_code": null,
+      "work_type_code_values": [],
+      "work_type_description": null,
+      "work_type_description_values": []
+     }
+    ],
+    "page": 1,
+    "page_size": 50,
+    "pages": 1,
+    "population": "all",
+    "total": 15,
+    "version": "fallback:s1:c1"
+   }
+  },
+  {
+   "case": {
+    "state": "open"
+   },
+   "result": {
+    "mode": "imported",
+    "orders": [
+     {
+      "actual_finish_date": null,
+      "actual_finish_date_values": [],
+      "actual_start_date": null,
+      "actual_start_date_values": [],
+      "area": "por_identificar",
+      "conferences": 0,
+      "conflicts": [],
+      "cpis_copies": [
+       "perfis"
+      ],
+      "cpis_latest_copy": "perfis",
+      "cpis_status": "Em Aberto",
+      "customer_name": "Cliente sete",
+      "customer_name_values": [
+       "Cliente sete"
+      ],
+      "delivery_date": "<instante>",
+      "delivery_date_values": [
+       "<instante>"
+      ],
+      "documents": 0,
+      "execution_complete": false,
+      "factory_unit": "MTG II",
+      "factory_unit_values": [
+       "MTG II"
+      ],
+      "observations": "Obra OF4700",
+      "observations_values": [
+       "Obra OF4700"
+      ],
+      "of": "OF4700",
+      "ovs": [
+       "OV47"
+      ],
+      "plan": {},
+      "planned_finish_date": "<instante>",
+      "planned_finish_date_values": [
+       "<instante>"
+      ],
+      "planned_start_date": null,
+      "planned_start_date_values": [],
+      "population_counts": {
+       "active": 0,
+       "history": 0
+      },
+      "population_unknown_states": [],
+      "preparation": null,
+      "production_records": 0,
+      "responsible_dp": null,
+      "responsible_dp_values": [],
+      "sources": [],
+      "status_values": [
+       "Em Aberto"
+      ],
+      "work_type_code": null,
+      "work_type_code_values": [],
+      "work_type_description": null,
+      "work_type_description_values": []
+     },
+     {
+      "actual_finish_date": null,
+      "actual_finish_date_values": [],
+      "actual_start_date": null,
+      "actual_start_date_values": [],
+      "area": "ambas",
+      "conferences": 1,
+      "conflicts": [],
+      "cpis_copies": [
+       "cantoneiras",
+       "perfis"
+      ],
+      "cpis_latest_copy": "perfis",
+      "cpis_status": "Em Produção",
+      "customer_name": "Cliente exemplo",
+      "customer_name_values": [
+       "Cliente exemplo"
+      ],
+      "delivery_date": "<instante>",
+      "delivery_date_values": [
+       "<instante>"
+      ],
+      "documents": 0,
+      "execution_complete": false,
+      "factory_unit": "MTG II",
+      "factory_unit_values": [
+       "MTG II"
+      ],
+      "observations": "Obra exemplo",
+      "observations_values": [
+       "Obra exemplo"
+      ],
+      "of": "OF4200",
+      "ovs": [
+       "OV21"
+      ],
+      "plan": {
+       "cantoneiras": 1,
+       "perfis": 2
+      },
+      "planned_finish_date": "<instante>",
+      "planned_finish_date_values": [
+       "<instante>"
+      ],
+      "planned_start_date": null,
+      "planned_start_date_values": [],
+      "population_counts": {
+       "active": 3,
+       "history": 0
+      },
+      "population_unknown_states": [],
+      "preparation": {
+       "areas": [
+        "perfis"
+       ],
+       "production_order_no": "OF4200",
+       "records": 1,
+       "statuses": [
+        "draft"
+       ]
+      },
+      "production_records": 0,
+      "responsible_dp": null,
+      "responsible_dp_values": [],
+      "sources": [
+       "cantoneiras",
+       "perfis"
+      ],
+      "status_values": [
+       "Em Produção"
+      ],
+      "work_type_code": null,
+      "work_type_code_values": [],
+      "work_type_description": null,
+      "work_type_description_values": []
+     }
+    ],
+    "page": 1,
+    "page_size": 50,
+    "pages": 1,
+    "population": "active",
+    "total": 2,
+    "version": "fallback:s1:c1"
+   }
+  },
+  {
+   "case": {
+    "population": "all",
+    "state": "Fechada"
+   },
+   "result": {
+    "mode": "imported",
+    "orders": [
+     {
+      "actual_finish_date": null,
+      "actual_finish_date_values": [],
+      "actual_start_date": null,
+      "actual_start_date_values": [],
+      "area": "por_identificar",
+      "conferences": 0,
+      "conflicts": [],
+      "cpis_copies": [
+       "cantoneiras"
+      ],
+      "cpis_latest_copy": "cantoneiras",
+      "cpis_status": "Fechada",
+      "customer_name": "Cliente OF4800",
+      "customer_name_values": [
+       "Cliente OF4800"
+      ],
+      "delivery_date": "<instante>",
+      "delivery_date_values": [
+       "<instante>"
+      ],
+      "documents": 0,
+      "execution_complete": false,
+      "factory_unit": "MTG II",
+      "factory_unit_values": [
+       "MTG II"
+      ],
+      "observations": "Obra OF4800",
+      "observations_values": [
+       "Obra OF4800"
+      ],
+      "of": "OF4800",
+      "ovs": [
+       "OV-OF4800"
+      ],
+      "plan": {},
+      "planned_finish_date": "<instante>",
+      "planned_finish_date_values": [
+       "<instante>"
+      ],
+      "planned_start_date": null,
+      "planned_start_date_values": [],
+      "population_counts": {
+       "active": 0,
+       "history": 0
+      },
+      "population_unknown_states": [],
+      "preparation": null,
+      "production_records": 0,
+      "responsible_dp": null,
+      "responsible_dp_values": [],
+      "sources": [],
+      "status_values": [
+       "Fechada"
+      ],
+      "work_type_code": null,
+      "work_type_code_values": [],
+      "work_type_description": null,
+      "work_type_description_values": []
+     },
+     {
+      "actual_finish_date": null,
+      "actual_finish_date_values": [],
+      "actual_start_date": null,
+      "actual_start_date_values": [],
+      "area": "ambas",
+      "conferences": 0,
+      "conflicts": [],
+      "cpis_copies": [
+       "cantoneiras",
+       "perfis"
+      ],
+      "cpis_latest_copy": "cantoneiras",
+      "cpis_status": "Fechada",
+      "customer_name": "Cliente B2",
+      "customer_name_values": [
+       "Cliente B2",
+       "Cliente B"
+      ],
+      "delivery_date": "<instante>",
+      "delivery_date_values": [
+       "<instante>"
+      ],
+      "documents": 0,
+      "execution_complete": false,
+      "factory_unit": "MTG II",
+      "factory_unit_values": [
+       "MTG II"
+      ],
+      "observations": "Obra OF4300",
+      "observations_values": [
+       "Obra OF4300"
+      ],
+      "of": "OF4300",
+      "ovs": [
+       "OV-OF4300"
+      ],
+      "plan": {
+       "cantoneiras": 1,
+       "perfis": 1
+      },
+      "planned_finish_date": "<instante>",
+      "planned_finish_date_values": [
+       "<instante>"
+      ],
+      "planned_start_date": null,
+      "planned_start_date_values": [],
+      "population_counts": {
+       "active": 0,
+       "history": 2
+      },
+      "population_unknown_states": [],
+      "preparation": null,
+      "production_records": 2,
+      "responsible_dp": null,
+      "responsible_dp_values": [],
+      "sources": [
+       "cantoneiras",
+       "perfis"
+      ],
+      "status_values": [
+       "Fechada"
+      ],
+      "work_type_code": null,
+      "work_type_code_values": [],
+      "work_type_description": null,
+      "work_type_description_values": []
+     }
+    ],
+    "page": 1,
+    "page_size": 50,
+    "pages": 1,
+    "population": "all",
+    "total": 2,
+    "version": "fallback:s1:c1"
+   }
+  },
+  {
+   "case": {
+    "state": "Estado novo"
+   },
+   "result": {
+    "mode": "imported",
+    "orders": [
+     {
+      "actual_finish_date": null,
+      "actual_finish_date_values": [],
+      "actual_start_date": null,
+      "actual_start_date_values": [],
+      "area": "perfis",
+      "conferences": 0,
+      "conflicts": [],
+      "cpis_copies": [
+       "perfis"
+      ],
+      "cpis_latest_copy": "perfis",
+      "cpis_status": "Estado novo",
+      "customer_name": "Cliente OF4600",
+      "customer_name_values": [
+       "Cliente OF4600"
+      ],
+      "delivery_date": "<instante>",
+      "delivery_date_values": [
+       "<instante>"
+      ],
+      "documents": 0,
+      "execution_complete": false,
+      "factory_unit": "MTG II",
+      "factory_unit_values": [
+       "MTG II"
+      ],
+      "observations": "Obra OF4600",
+      "observations_values": [
+       "Obra OF4600"
+      ],
+      "of": "OF4600",
+      "ovs": [
+       "OV-OF4600"
+      ],
+      "plan": {
+       "perfis": 1
+      },
+      "planned_finish_date": "<instante>",
+      "planned_finish_date_values": [
+       "<instante>"
+      ],
+      "planned_start_date": null,
+      "planned_start_date_values": [],
+      "population_counts": {
+       "active": 1,
+       "history": 0
+      },
+      "population_unknown_states": [
+       {
+        "source": "CPIS",
+        "value": "Estado novo"
+       },
+       {
+        "source": "Macro",
+        "value": "#VALUE!"
+       }
+      ],
+      "preparation": null,
+      "production_records": 0,
+      "responsible_dp": null,
+      "responsible_dp_values": [],
+      "sources": [
+       "perfis"
+      ],
+      "status_values": [
+       "Estado novo"
+      ],
+      "work_type_code": null,
+      "work_type_code_values": [],
+      "work_type_description": null,
+      "work_type_description_values": []
+     }
+    ],
+    "page": 1,
+    "page_size": 50,
+    "pages": 1,
+    "population": "active",
+    "total": 1,
+    "version": "fallback:s1:c1"
+   }
+  },
+  {
+   "case": {
+    "pending_only": true
+   },
+   "result": {
+    "mode": "imported",
+    "orders": [
+     {
+      "actual_finish_date": null,
+      "actual_finish_date_values": [],
+      "actual_start_date": null,
+      "actual_start_date_values": [],
+      "administrative_origin": "Manual local",
+      "area": "perfis",
+      "conferences": 0,
+      "conflicts": [],
+      "cpis_copies": [],
+      "cpis_status": null,
+      "customer_name": null,
+      "customer_name_values": [],
+      "delivery_date": null,
+      "delivery_date_values": [],
+      "documents": 0,
+      "execution_complete": false,
+      "factory_unit": null,
+      "factory_unit_values": [],
+      "local_order": null,
+      "observations": null,
+      "observations_values": [],
+      "of": "OF998877",
+      "ovs": [],
+      "plan": {
+       "perfis": 1
+      },
+      "planned_finish_date": null,
+      "planned_finish_date_values": [],
+      "planned_start_date": null,
+      "planned_start_date_values": [],
+      "population_counts": {
+       "active": 1,
+       "history": 0
+      },
+      "population_unknown_states": [],
+      "preparation": {
+       "areas": [
+        "perfis"
+       ],
+       "production_order_no": "OF998877",
+       "records": 1,
+       "statuses": [
+        "draft"
+       ]
+      },
+      "production_records": 0,
+      "responsible_dp": null,
+      "responsible_dp_values": [],
+      "sources": [
+       "perfis"
+      ],
+      "status_values": [],
+      "work_type_code": null,
+      "work_type_code_values": [],
+      "work_type_description": null,
+      "work_type_description_values": []
+     },
+     {
+      "actual_finish_date": null,
+      "actual_finish_date_values": [],
+      "actual_start_date": null,
+      "actual_start_date_values": [],
+      "administrative_origin": "Manual local",
+      "area": "por_identificar",
+      "conferences": 0,
+      "conflicts": [],
+      "cpis_copies": [],
+      "cpis_status": null,
+      "customer_name": "Cliente local",
+      "customer_name_values": [
+       "Cliente local"
+      ],
+      "delivery_date": null,
+      "delivery_date_values": [],
+      "documents": 0,
+      "execution_complete": false,
+      "factory_unit": null,
+      "factory_unit_values": [],
+      "local_order": {
+       "actor": "Teste",
+       "production_order_no": "OF5555",
+       "revision": 1,
+       "values_json": {
+        "customer": "Cliente local",
+        "designation": "Obra local",
+        "ov": "OV-L"
+       }
+      },
+      "observations": "Obra local",
+      "observations_values": [
+       "Obra local"
+      ],
+      "of": "OF5555",
+      "ovs": [
+       "OV-L"
+      ],
+      "plan": {},
+      "planned_finish_date": null,
+      "planned_finish_date_values": [],
+      "planned_start_date": null,
+      "planned_start_date_values": [],
+      "population_counts": {
+       "active": 0,
+       "history": 0
+      },
+      "population_unknown_states": [],
+      "preparation": null,
+      "production_records": 0,
+      "responsible_dp": null,
+      "responsible_dp_values": [],
+      "sources": [],
+      "status_values": [],
+      "work_type_code": null,
+      "work_type_code_values": [],
+      "work_type_description": null,
+      "work_type_description_values": []
+     },
+     {
+      "actual_finish_date": null,
+      "actual_finish_date_values": [],
+      "actual_start_date": null,
+      "actual_start_date_values": [],
+      "administrative_origin": "Macro — sem contexto CPIS",
+      "area": "perfis",
+      "conferences": 0,
+      "conflicts": [],
+      "cpis_copies": [],
+      "cpis_status": null,
+      "customer_name": null,
+      "customer_name_values": [],
+      "delivery_date": null,
+      "delivery_date_values": [],
+      "documents": 0,
+      "execution_complete": false,
+      "factory_unit": null,
+      "factory_unit_values": [],
+      "local_order": null,
+      "observations": null,
+      "observations_values": [],
+      "of": "OF4995",
+      "ovs": [],
+      "plan": {
+       "perfis": 1
+      },
+      "planned_finish_date": null,
+      "planned_finish_date_values": [],
+      "planned_start_date": null,
+      "planned_start_date_values": [],
+      "population_counts": {
+       "active": 1,
+       "history": 0
+      },
+      "population_unknown_states": [],
+      "preparation": null,
+      "production_records": 0,
+      "responsible_dp": null,
+      "responsible_dp_values": [],
+      "sources": [
+       "perfis"
+      ],
+      "status_values": [],
+      "work_type_code": null,
+      "work_type_code_values": [],
+      "work_type_description": null,
+      "work_type_description_values": []
+     },
+     {
+      "actual_finish_date": null,
+      "actual_finish_date_values": [],
+      "actual_start_date": null,
+      "actual_start_date_values": [],
+      "administrative_origin": "Manual local",
+      "area": "por_identificar",
+      "conferences": 0,
+      "conflicts": [],
+      "cpis_copies": [],
+      "cpis_status": null,
+      "customer_name": "Cliente REF-J",
+      "customer_name_values": [
+       "Cliente REF-J"
+      ],
+      "delivery_date": null,
+      "delivery_date_values": [],
+      "documents": 0,
+      "execution_complete": false,
+      "factory_unit": null,
+      "factory_unit_values": [],
+      "local_order": null,
+      "observations": "Obra REF-J",
+      "observations_values": [
+       "Obra REF-J"
+      ],
+      "of": "OF4990",
+      "ovs": [
+       "OV-REF-J"
+      ],
+      "plan": {},
+      "planned_finish_date": null,
+      "planned_finish_date_values": [],
+      "planned_start_date": null,
+      "planned_start_date_values": [],
+      "population_counts": {
+       "active": 0,
+       "history": 0
+      },
+      "population_unknown_states": [],
+      "preparation": null,
+      "production_records": 0,
+      "responsible_dp": null,
+      "responsible_dp_values": [],
+      "sources": [],
+      "status_values": [],
+      "work_type_code": null,
+      "work_type_code_values": [],
+      "work_type_description": null,
+      "work_type_description_values": []
+     },
+     {
+      "actual_finish_date": null,
+      "actual_finish_date_values": [],
+      "actual_start_date": null,
+      "actual_start_date_values": [],
+      "area": "perfis",
+      "conferences": 0,
+      "conflicts": [],
+      "cpis_copies": [
+       "cantoneiras",
+       "perfis"
+      ],
+      "cpis_latest_copy": "perfis",
+      "cpis_status": "Pronta",
+      "customer_name": "Cliente OF4950",
+      "customer_name_values": [
+       "Cliente OF4950"
+      ],
+      "delivery_date": "<instante>",
+      "delivery_date_values": [
+       "<instante>"
+      ],
+      "documents": 0,
+      "execution_complete": false,
+      "factory_unit": "MTG II",
+      "factory_unit_values": [
+       "MTG II"
+      ],
+      "observations": "Obra OF4950",
+      "observations_values": [
+       "Obra OF4950"
+      ],
+      "of": "OF4950",
+      "ovs": [
+       "OV-OF4950"
+      ],
+      "plan": {
+       "perfis": 1
+      },
+      "planned_finish_date": "<instante>",
+      "planned_finish_date_values": [
+       "<instante>"
+      ],
+      "planned_start_date": null,
+      "planned_start_date_values": [],
+      "population_counts": {
+       "active": 1,
+       "history": 0
+      },
+      "population_unknown_states": [],
+      "preparation": null,
+      "production_records": 0,
+      "responsible_dp": null,
+      "responsible_dp_values": [],
+      "sources": [
+       "perfis"
+      ],
+      "status_values": [
+       "Pronta"
+      ],
+      "work_type_code": null,
+      "work_type_code_values": [],
+      "work_type_description": null,
+      "work_type_description_values": []
+     },
+     {
+      "actual_finish_date": null,
+      "actual_finish_date_values": [],
+      "actual_start_date": null,
+      "actual_start_date_values": [],
+      "area": "por_identificar",
+      "conferences": 0,
+      "conflicts": [],
+      "cpis_copies": [
+       "perfis"
+      ],
+      "cpis_latest_copy": "perfis",
+      "cpis_status": "Em Aberto",
+      "customer_name": "Cliente sete",
+      "customer_name_values": [
+       "Cliente sete"
+      ],
+      "delivery_date": "<instante>",
+      "delivery_date_values": [
+       "<instante>"
+      ],
+      "documents": 0,
+      "execution_complete": false,
+      "factory_unit": "MTG II",
+      "factory_unit_values": [
+       "MTG II"
+      ],
+      "observations": "Obra OF4700",
+      "observations_values": [
+       "Obra OF4700"
+      ],
+      "of": "OF4700",
+      "ovs": [
+       "OV47"
+      ],
+      "plan": {},
+      "planned_finish_date": "<instante>",
+      "planned_finish_date_values": [
+       "<instante>"
+      ],
+      "planned_start_date": null,
+      "planned_start_date_values": [],
+      "population_counts": {
+       "active": 0,
+       "history": 0
+      },
+      "population_unknown_states": [],
+      "preparation": null,
+      "production_records": 0,
+      "responsible_dp": null,
+      "responsible_dp_values": [],
+      "sources": [],
+      "status_values": [
+       "Em Aberto"
+      ],
+      "work_type_code": null,
+      "work_type_code_values": [],
+      "work_type_description": null,
+      "work_type_description_values": []
+     },
+     {
+      "actual_finish_date": null,
+      "actual_finish_date_values": [],
+      "actual_start_date": null,
+      "actual_start_date_values": [],
+      "area": "perfis",
+      "conferences": 0,
+      "conflicts": [],
+      "cpis_copies": [
+       "perfis"
+      ],
+      "cpis_latest_copy": "perfis",
+      "cpis_status": "Estado novo",
+      "customer_name": "Cliente OF4600",
+      "customer_name_values": [
+       "Cliente OF4600"
+      ],
+      "delivery_date": "<instante>",
+      "delivery_date_values": [
+       "<instante>"
+      ],
+      "documents": 0,
+      "execution_complete": false,
+      "factory_unit": "MTG II",
+      "factory_unit_values": [
+       "MTG II"
+      ],
+      "observations": "Obra OF4600",
+      "observations_values": [
+       "Obra OF4600"
+      ],
+      "of": "OF4600",
+      "ovs": [
+       "OV-OF4600"
+      ],
+      "plan": {
+       "perfis": 1
+      },
+      "planned_finish_date": "<instante>",
+      "planned_finish_date_values": [
+       "<instante>"
+      ],
+      "planned_start_date": null,
+      "planned_start_date_values": [],
+      "population_counts": {
+       "active": 1,
+       "history": 0
+      },
+      "population_unknown_states": [
+       {
+        "source": "CPIS",
+        "value": "Estado novo"
+       },
+       {
+        "source": "Macro",
+        "value": "#VALUE!"
+       }
+      ],
+      "preparation": null,
+      "production_records": 0,
+      "responsible_dp": null,
+      "responsible_dp_values": [],
+      "sources": [
+       "perfis"
+      ],
+      "status_values": [
+       "Estado novo"
+      ],
+      "work_type_code": null,
+      "work_type_code_values": [],
+      "work_type_description": null,
+      "work_type_description_values": []
+     },
+     {
+      "actual_finish_date": null,
+      "actual_finish_date_values": [],
+      "actual_start_date": null,
+      "actual_start_date_values": [],
+      "administrative_origin": "Manual local",
+      "area": "ambas",
+      "conferences": 0,
+      "conflicts": [],
+      "cpis_copies": [],
+      "cpis_status": null,
+      "customer_name": "Cliente da macro",
+      "customer_name_values": [
+       "Cliente da macro"
+      ],
+      "delivery_date": null,
+      "delivery_date_values": [],
+      "documents": 0,
+      "execution_complete": false,
+      "factory_unit": null,
+      "factory_unit_values": [],
+      "local_order": {
+       "actor": "Teste",
+       "production_order_no": "OF4500",
+       "revision": 1,
+       "values_json": {
+        "customer": "Cliente da macro"
+       }
+      },
+      "observations": null,
+      "observations_values": [],
+      "of": "OF4500",
+      "ovs": [],
+      "plan": {
+       "cantoneiras": 1,
+       "perfis": 1
+      },
+      "planned_finish_date": null,
+      "planned_finish_date_values": [],
+      "planned_start_date": null,
+      "planned_start_date_values": [],
+      "population_counts": {
+       "active": 2,
+       "history": 0
+      },
+      "population_unknown_states": [],
+      "preparation": null,
+      "production_records": 0,
+      "responsible_dp": null,
+      "responsible_dp_values": [],
+      "sources": [
+       "cantoneiras",
+       "perfis"
+      ],
+      "status_values": [],
+      "work_type_code": null,
+      "work_type_code_values": [],
+      "work_type_description": null,
+      "work_type_description_values": []
+     },
+     {
+      "actual_finish_date": null,
+      "actual_finish_date_values": [],
+      "actual_start_date": null,
+      "actual_start_date_values": [],
+      "area": "ambas",
+      "conferences": 1,
+      "conflicts": [],
+      "cpis_copies": [
+       "cantoneiras",
+       "perfis"
+      ],
+      "cpis_latest_copy": "perfis",
+      "cpis_status": "Em Produção",
+      "customer_name": "Cliente exemplo",
+      "customer_name_values": [
+       "Cliente exemplo"
+      ],
+      "delivery_date": "<instante>",
+      "delivery_date_values": [
+       "<instante>"
+      ],
+      "documents": 0,
+      "execution_complete": false,
+      "factory_unit": "MTG II",
+      "factory_unit_values": [
+       "MTG II"
+      ],
+      "observations": "Obra exemplo",
+      "observations_values": [
+       "Obra exemplo"
+      ],
+      "of": "OF4200",
+      "ovs": [
+       "OV21"
+      ],
+      "plan": {
+       "cantoneiras": 1,
+       "perfis": 2
+      },
+      "planned_finish_date": "<instante>",
+      "planned_finish_date_values": [
+       "<instante>"
+      ],
+      "planned_start_date": null,
+      "planned_start_date_values": [],
+      "population_counts": {
+       "active": 3,
+       "history": 0
+      },
+      "population_unknown_states": [],
+      "preparation": {
+       "areas": [
+        "perfis"
+       ],
+       "production_order_no": "OF4200",
+       "records": 1,
+       "statuses": [
+        "draft"
+       ]
+      },
+      "production_records": 0,
+      "responsible_dp": null,
+      "responsible_dp_values": [],
+      "sources": [
+       "cantoneiras",
+       "perfis"
+      ],
+      "status_values": [
+       "Em Produção"
+      ],
+      "work_type_code": null,
+      "work_type_code_values": [],
+      "work_type_description": null,
+      "work_type_description_values": []
+     },
+     {
+      "actual_finish_date": null,
+      "actual_finish_date_values": [],
+      "actual_start_date": null,
+      "actual_start_date_values": [],
+      "administrative_origin": "Macro — OF por identificar",
+      "area": "cantoneiras",
+      "conferences": 0,
+      "conflicts": [],
+      "cpis_copies": [],
+      "cpis_status": null,
+      "customer_name": "Cliente REF-X",
+      "customer_name_values": [
+       "Cliente REF-X"
+      ],
+      "delivery_date": null,
+      "delivery_date_values": [],
+      "documents": 0,
+      "execution_complete": false,
+      "factory_unit": null,
+      "factory_unit_values": [],
+      "local_order": null,
+      "observations": "Obra REF-X",
+      "observations_values": [
+       "Obra REF-X"
+      ],
+      "of": null,
+      "ovs": [
+       "OV-REF-X"
+      ],
+      "plan": {
+       "cantoneiras": 1
+      },
+      "planned_finish_date": null,
+      "planned_finish_date_values": [],
+      "planned_start_date": null,
+      "planned_start_date_values": [],
+      "population_counts": {
+       "active": 1,
+       "history": 0
+      },
+      "population_unknown_states": [],
+      "preparation": null,
+      "production_records": 0,
+      "raw_links": [
+       {
+        "area": "cantoneiras",
+        "href": "/planeamento/raw?area=cantoneiras&q=REF-X",
+        "key": "macro:c1:20",
+        "reference": "REF-X"
+       }
+      ],
+      "responsible_dp": null,
+      "responsible_dp_values": [],
+      "sources": [
+       "cantoneiras"
+      ],
+      "status_values": [],
+      "unidentified": true,
+      "work_type_code": null,
+      "work_type_code_values": [],
+      "work_type_description": null,
+      "work_type_description_values": []
+     }
+    ],
+    "page": 1,
+    "page_size": 50,
+    "pages": 1,
+    "population": "active",
+    "total": 10,
+    "version": "fallback:s1:c1"
+   }
+  },
+  {
+   "case": {
+    "pending_only": true,
+    "population": "all"
+   },
+   "result": {
+    "mode": "imported",
+    "orders": [
+     {
+      "actual_finish_date": null,
+      "actual_finish_date_values": [],
+      "actual_start_date": null,
+      "actual_start_date_values": [],
+      "administrative_origin": "Manual local",
+      "area": "perfis",
+      "conferences": 0,
+      "conflicts": [],
+      "cpis_copies": [],
+      "cpis_status": null,
+      "customer_name": null,
+      "customer_name_values": [],
+      "delivery_date": null,
+      "delivery_date_values": [],
+      "documents": 0,
+      "execution_complete": false,
+      "factory_unit": null,
+      "factory_unit_values": [],
+      "local_order": null,
+      "observations": null,
+      "observations_values": [],
+      "of": "OF998877",
+      "ovs": [],
+      "plan": {
+       "perfis": 1
+      },
+      "planned_finish_date": null,
+      "planned_finish_date_values": [],
+      "planned_start_date": null,
+      "planned_start_date_values": [],
+      "population_counts": {
+       "active": 1,
+       "history": 0
+      },
+      "population_unknown_states": [],
+      "preparation": {
+       "areas": [
+        "perfis"
+       ],
+       "production_order_no": "OF998877",
+       "records": 1,
+       "statuses": [
+        "draft"
+       ]
+      },
+      "production_records": 0,
+      "responsible_dp": null,
+      "responsible_dp_values": [],
+      "sources": [
+       "perfis"
+      ],
+      "status_values": [],
+      "work_type_code": null,
+      "work_type_code_values": [],
+      "work_type_description": null,
+      "work_type_description_values": []
+     },
+     {
+      "actual_finish_date": null,
+      "actual_finish_date_values": [],
+      "actual_start_date": null,
+      "actual_start_date_values": [],
+      "administrative_origin": "Manual local",
+      "area": "por_identificar",
+      "conferences": 0,
+      "conflicts": [],
+      "cpis_copies": [],
+      "cpis_status": null,
+      "customer_name": "Cliente local",
+      "customer_name_values": [
+       "Cliente local"
+      ],
+      "delivery_date": null,
+      "delivery_date_values": [],
+      "documents": 0,
+      "execution_complete": false,
+      "factory_unit": null,
+      "factory_unit_values": [],
+      "local_order": {
+       "actor": "Teste",
+       "production_order_no": "OF5555",
+       "revision": 1,
+       "values_json": {
+        "customer": "Cliente local",
+        "designation": "Obra local",
+        "ov": "OV-L"
+       }
+      },
+      "observations": "Obra local",
+      "observations_values": [
+       "Obra local"
+      ],
+      "of": "OF5555",
+      "ovs": [
+       "OV-L"
+      ],
+      "plan": {},
+      "planned_finish_date": null,
+      "planned_finish_date_values": [],
+      "planned_start_date": null,
+      "planned_start_date_values": [],
+      "population_counts": {
+       "active": 0,
+       "history": 0
+      },
+      "population_unknown_states": [],
+      "preparation": null,
+      "production_records": 0,
+      "responsible_dp": null,
+      "responsible_dp_values": [],
+      "sources": [],
+      "status_values": [],
+      "work_type_code": null,
+      "work_type_code_values": [],
+      "work_type_description": null,
+      "work_type_description_values": []
+     },
+     {
+      "actual_finish_date": null,
+      "actual_finish_date_values": [],
+      "actual_start_date": null,
+      "actual_start_date_values": [],
+      "administrative_origin": "Macro — sem contexto CPIS",
+      "area": "perfis",
+      "conferences": 0,
+      "conflicts": [],
+      "cpis_copies": [],
+      "cpis_status": null,
+      "customer_name": null,
+      "customer_name_values": [],
+      "delivery_date": null,
+      "delivery_date_values": [],
+      "documents": 0,
+      "execution_complete": false,
+      "factory_unit": null,
+      "factory_unit_values": [],
+      "local_order": null,
+      "observations": null,
+      "observations_values": [],
+      "of": "OF4995",
+      "ovs": [],
+      "plan": {
+       "perfis": 1
+      },
+      "planned_finish_date": null,
+      "planned_finish_date_values": [],
+      "planned_start_date": null,
+      "planned_start_date_values": [],
+      "population_counts": {
+       "active": 1,
+       "history": 0
+      },
+      "population_unknown_states": [],
+      "preparation": null,
+      "production_records": 0,
+      "responsible_dp": null,
+      "responsible_dp_values": [],
+      "sources": [
+       "perfis"
+      ],
+      "status_values": [],
+      "work_type_code": null,
+      "work_type_code_values": [],
+      "work_type_description": null,
+      "work_type_description_values": []
+     },
+     {
+      "actual_finish_date": null,
+      "actual_finish_date_values": [],
+      "actual_start_date": null,
+      "actual_start_date_values": [],
+      "administrative_origin": "Manual local",
+      "area": "por_identificar",
+      "conferences": 0,
+      "conflicts": [],
+      "cpis_copies": [],
+      "cpis_status": null,
+      "customer_name": "Cliente REF-J",
+      "customer_name_values": [
+       "Cliente REF-J"
+      ],
+      "delivery_date": null,
+      "delivery_date_values": [],
+      "documents": 0,
+      "execution_complete": false,
+      "factory_unit": null,
+      "factory_unit_values": [],
+      "local_order": null,
+      "observations": "Obra REF-J",
+      "observations_values": [
+       "Obra REF-J"
+      ],
+      "of": "OF4990",
+      "ovs": [
+       "OV-REF-J"
+      ],
+      "plan": {},
+      "planned_finish_date": null,
+      "planned_finish_date_values": [],
+      "planned_start_date": null,
+      "planned_start_date_values": [],
+      "population_counts": {
+       "active": 0,
+       "history": 0
+      },
+      "population_unknown_states": [],
+      "preparation": null,
+      "production_records": 0,
+      "responsible_dp": null,
+      "responsible_dp_values": [],
+      "sources": [],
+      "status_values": [],
+      "work_type_code": null,
+      "work_type_code_values": [],
+      "work_type_description": null,
+      "work_type_description_values": []
+     },
+     {
+      "actual_finish_date": null,
+      "actual_finish_date_values": [],
+      "actual_start_date": null,
+      "actual_start_date_values": [],
+      "area": "perfis",
+      "conferences": 0,
+      "conflicts": [],
+      "cpis_copies": [
+       "cantoneiras",
+       "perfis"
+      ],
+      "cpis_latest_copy": "perfis",
+      "cpis_status": "Pronta",
+      "customer_name": "Cliente OF4950",
+      "customer_name_values": [
+       "Cliente OF4950"
+      ],
+      "delivery_date": "<instante>",
+      "delivery_date_values": [
+       "<instante>"
+      ],
+      "documents": 0,
+      "execution_complete": false,
+      "factory_unit": "MTG II",
+      "factory_unit_values": [
+       "MTG II"
+      ],
+      "observations": "Obra OF4950",
+      "observations_values": [
+       "Obra OF4950"
+      ],
+      "of": "OF4950",
+      "ovs": [
+       "OV-OF4950"
+      ],
+      "plan": {
+       "perfis": 1
+      },
+      "planned_finish_date": "<instante>",
+      "planned_finish_date_values": [
+       "<instante>"
+      ],
+      "planned_start_date": null,
+      "planned_start_date_values": [],
+      "population_counts": {
+       "active": 1,
+       "history": 0
+      },
+      "population_unknown_states": [],
+      "preparation": null,
+      "production_records": 0,
+      "responsible_dp": null,
+      "responsible_dp_values": [],
+      "sources": [
+       "perfis"
+      ],
+      "status_values": [
+       "Pronta"
+      ],
+      "work_type_code": null,
+      "work_type_code_values": [],
+      "work_type_description": null,
+      "work_type_description_values": []
+     },
+     {
+      "actual_finish_date": null,
+      "actual_finish_date_values": [],
+      "actual_start_date": null,
+      "actual_start_date_values": [],
+      "area": "perfis",
+      "conferences": 0,
+      "conflicts": [],
+      "cpis_copies": [
+       "perfis"
+      ],
+      "cpis_latest_copy": "perfis",
+      "cpis_status": "Em Produção",
+      "customer_name": "Cliente OF4910",
+      "customer_name_values": [
+       "Cliente OF4910"
+      ],
+      "delivery_date": "<instante>",
+      "delivery_date_values": [
+       "<instante>"
+      ],
+      "documents": 0,
+      "execution_complete": false,
+      "factory_unit": "MTG II",
+      "factory_unit_values": [
+       "MTG II"
+      ],
+      "observations": "Obra OF4910",
+      "observations_values": [
+       "Obra OF4910"
+      ],
+      "of": "OF4910",
+      "ovs": [
+       "OV-OF4910"
+      ],
+      "plan": {
+       "perfis": 1
+      },
+      "planned_finish_date": "<instante>",
+      "planned_finish_date_values": [
+       "<instante>"
+      ],
+      "planned_start_date": null,
+      "planned_start_date_values": [],
+      "population_counts": {
+       "active": 0,
+       "history": 1
+      },
+      "population_unknown_states": [],
+      "preparation": null,
+      "production_records": 0,
+      "responsible_dp": null,
+      "responsible_dp_values": [],
+      "sources": [
+       "perfis"
+      ],
+      "status_values": [
+       "Em Produção"
+      ],
+      "work_type_code": null,
+      "work_type_code_values": [],
+      "work_type_description": null,
+      "work_type_description_values": []
+     },
+     {
+      "actual_finish_date": null,
+      "actual_finish_date_values": [],
+      "actual_start_date": null,
+      "actual_start_date_values": [],
+      "area": "por_identificar",
+      "conferences": 0,
+      "conflicts": [],
+      "cpis_copies": [
+       "cantoneiras"
+      ],
+      "cpis_latest_copy": "cantoneiras",
+      "cpis_status": "Fechada",
+      "customer_name": "Cliente OF4800",
+      "customer_name_values": [
+       "Cliente OF4800"
+      ],
+      "delivery_date": "<instante>",
+      "delivery_date_values": [
+       "<instante>"
+      ],
+      "documents": 0,
+      "execution_complete": false,
+      "factory_unit": "MTG II",
+      "factory_unit_values": [
+       "MTG II"
+      ],
+      "observations": "Obra OF4800",
+      "observations_values": [
+       "Obra OF4800"
+      ],
+      "of": "OF4800",
+      "ovs": [
+       "OV-OF4800"
+      ],
+      "plan": {},
+      "planned_finish_date": "<instante>",
+      "planned_finish_date_values": [
+       "<instante>"
+      ],
+      "planned_start_date": null,
+      "planned_start_date_values": [],
+      "population_counts": {
+       "active": 0,
+       "history": 0
+      },
+      "population_unknown_states": [],
+      "preparation": null,
+      "production_records": 0,
+      "responsible_dp": null,
+      "responsible_dp_values": [],
+      "sources": [],
+      "status_values": [
+       "Fechada"
+      ],
+      "work_type_code": null,
+      "work_type_code_values": [],
+      "work_type_description": null,
+      "work_type_description_values": []
+     },
+     {
+      "actual_finish_date": null,
+      "actual_finish_date_values": [],
+      "actual_start_date": null,
+      "actual_start_date_values": [],
+      "area": "por_identificar",
+      "conferences": 0,
+      "conflicts": [],
+      "cpis_copies": [
+       "perfis"
+      ],
+      "cpis_latest_copy": "perfis",
+      "cpis_status": "Em Aberto",
+      "customer_name": "Cliente sete",
+      "customer_name_values": [
+       "Cliente sete"
+      ],
+      "delivery_date": "<instante>",
+      "delivery_date_values": [
+       "<instante>"
+      ],
+      "documents": 0,
+      "execution_complete": false,
+      "factory_unit": "MTG II",
+      "factory_unit_values": [
+       "MTG II"
+      ],
+      "observations": "Obra OF4700",
+      "observations_values": [
+       "Obra OF4700"
+      ],
+      "of": "OF4700",
+      "ovs": [
+       "OV47"
+      ],
+      "plan": {},
+      "planned_finish_date": "<instante>",
+      "planned_finish_date_values": [
+       "<instante>"
+      ],
+      "planned_start_date": null,
+      "planned_start_date_values": [],
+      "population_counts": {
+       "active": 0,
+       "history": 0
+      },
+      "population_unknown_states": [],
+      "preparation": null,
+      "production_records": 0,
+      "responsible_dp": null,
+      "responsible_dp_values": [],
+      "sources": [],
+      "status_values": [
+       "Em Aberto"
+      ],
+      "work_type_code": null,
+      "work_type_code_values": [],
+      "work_type_description": null,
+      "work_type_description_values": []
+     },
+     {
+      "actual_finish_date": null,
+      "actual_finish_date_values": [],
+      "actual_start_date": null,
+      "actual_start_date_values": [],
+      "area": "perfis",
+      "conferences": 0,
+      "conflicts": [],
+      "cpis_copies": [
+       "perfis"
+      ],
+      "cpis_latest_copy": "perfis",
+      "cpis_status": "Estado novo",
+      "customer_name": "Cliente OF4600",
+      "customer_name_values": [
+       "Cliente OF4600"
+      ],
+      "delivery_date": "<instante>",
+      "delivery_date_values": [
+       "<instante>"
+      ],
+      "documents": 0,
+      "execution_complete": false,
+      "factory_unit": "MTG II",
+      "factory_unit_values": [
+       "MTG II"
+      ],
+      "observations": "Obra OF4600",
+      "observations_values": [
+       "Obra OF4600"
+      ],
+      "of": "OF4600",
+      "ovs": [
+       "OV-OF4600"
+      ],
+      "plan": {
+       "perfis": 1
+      },
+      "planned_finish_date": "<instante>",
+      "planned_finish_date_values": [
+       "<instante>"
+      ],
+      "planned_start_date": null,
+      "planned_start_date_values": [],
+      "population_counts": {
+       "active": 1,
+       "history": 0
+      },
+      "population_unknown_states": [
+       {
+        "source": "CPIS",
+        "value": "Estado novo"
+       },
+       {
+        "source": "Macro",
+        "value": "#VALUE!"
+       }
+      ],
+      "preparation": null,
+      "production_records": 0,
+      "responsible_dp": null,
+      "responsible_dp_values": [],
+      "sources": [
+       "perfis"
+      ],
+      "status_values": [
+       "Estado novo"
+      ],
+      "work_type_code": null,
+      "work_type_code_values": [],
+      "work_type_description": null,
+      "work_type_description_values": []
+     },
+     {
+      "actual_finish_date": null,
+      "actual_finish_date_values": [],
+      "actual_start_date": null,
+      "actual_start_date_values": [],
+      "administrative_origin": "Manual local",
+      "area": "ambas",
+      "conferences": 0,
+      "conflicts": [],
+      "cpis_copies": [],
+      "cpis_status": null,
+      "customer_name": "Cliente da macro",
+      "customer_name_values": [
+       "Cliente da macro"
+      ],
+      "delivery_date": null,
+      "delivery_date_values": [],
+      "documents": 0,
+      "execution_complete": false,
+      "factory_unit": null,
+      "factory_unit_values": [],
+      "local_order": {
+       "actor": "Teste",
+       "production_order_no": "OF4500",
+       "revision": 1,
+       "values_json": {
+        "customer": "Cliente da macro"
+       }
+      },
+      "observations": null,
+      "observations_values": [],
+      "of": "OF4500",
+      "ovs": [],
+      "plan": {
+       "cantoneiras": 1,
+       "perfis": 1
+      },
+      "planned_finish_date": null,
+      "planned_finish_date_values": [],
+      "planned_start_date": null,
+      "planned_start_date_values": [],
+      "population_counts": {
+       "active": 2,
+       "history": 0
+      },
+      "population_unknown_states": [],
+      "preparation": null,
+      "production_records": 0,
+      "responsible_dp": null,
+      "responsible_dp_values": [],
+      "sources": [
+       "cantoneiras",
+       "perfis"
+      ],
+      "status_values": [],
+      "work_type_code": null,
+      "work_type_code_values": [],
+      "work_type_description": null,
+      "work_type_description_values": []
+     },
+     {
+      "actual_finish_date": null,
+      "actual_finish_date_values": [],
+      "actual_start_date": null,
+      "actual_start_date_values": [],
+      "area": "perfis",
+      "conferences": 0,
+      "conflicts": [],
+      "cpis_copies": [
+       "perfis"
+      ],
+      "cpis_latest_copy": "perfis",
+      "cpis_status": "Em Produção",
+      "customer_name": "Cliente OF4400",
+      "customer_name_values": [
+       "Cliente OF4400"
+      ],
+      "delivery_date": "<instante>",
+      "delivery_date_values": [
+       "<instante>"
+      ],
+      "documents": 0,
+      "execution_complete": false,
+      "factory_unit": "MTG II",
+      "factory_unit_values": [
+       "MTG II"
+      ],
+      "observations": "Obra OF4400",
+      "observations_values": [
+       "Obra OF4400"
+      ],
+      "of": "OF4400",
+      "ovs": [
+       "OV-OF4400"
+      ],
+      "plan": {
+       "perfis": 1
+      },
+      "planned_finish_date": "<instante>",
+      "planned_finish_date_values": [
+       "<instante>"
+      ],
+      "planned_start_date": null,
+      "planned_start_date_values": [],
+      "population_counts": {
+       "active": 0,
+       "history": 1
+      },
+      "population_unknown_states": [],
+      "preparation": null,
+      "production_records": 0,
+      "responsible_dp": null,
+      "responsible_dp_values": [],
+      "sources": [
+       "perfis"
+      ],
+      "status_values": [
+       "Em Produção"
+      ],
+      "work_type_code": null,
+      "work_type_code_values": [],
+      "work_type_description": null,
+      "work_type_description_values": []
+     },
+     {
+      "actual_finish_date": null,
+      "actual_finish_date_values": [],
+      "actual_start_date": null,
+      "actual_start_date_values": [],
+      "area": "ambas",
+      "conferences": 0,
+      "conflicts": [],
+      "cpis_copies": [
+       "cantoneiras",
+       "perfis"
+      ],
+      "cpis_latest_copy": "cantoneiras",
+      "cpis_status": "Fechada",
+      "customer_name": "Cliente B2",
+      "customer_name_values": [
+       "Cliente B2",
+       "Cliente B"
+      ],
+      "delivery_date": "<instante>",
+      "delivery_date_values": [
+       "<instante>"
+      ],
+      "documents": 0,
+      "execution_complete": false,
+      "factory_unit": "MTG II",
+      "factory_unit_values": [
+       "MTG II"
+      ],
+      "observations": "Obra OF4300",
+      "observations_values": [
+       "Obra OF4300"
+      ],
+      "of": "OF4300",
+      "ovs": [
+       "OV-OF4300"
+      ],
+      "plan": {
+       "cantoneiras": 1,
+       "perfis": 1
+      },
+      "planned_finish_date": "<instante>",
+      "planned_finish_date_values": [
+       "<instante>"
+      ],
+      "planned_start_date": null,
+      "planned_start_date_values": [],
+      "population_counts": {
+       "active": 0,
+       "history": 2
+      },
+      "population_unknown_states": [],
+      "preparation": null,
+      "production_records": 2,
+      "responsible_dp": null,
+      "responsible_dp_values": [],
+      "sources": [
+       "cantoneiras",
+       "perfis"
+      ],
+      "status_values": [
+       "Fechada"
+      ],
+      "work_type_code": null,
+      "work_type_code_values": [],
+      "work_type_description": null,
+      "work_type_description_values": []
+     },
+     {
+      "actual_finish_date": null,
+      "actual_finish_date_values": [],
+      "actual_start_date": null,
+      "actual_start_date_values": [],
+      "area": "ambas",
+      "conferences": 1,
+      "conflicts": [],
+      "cpis_copies": [
+       "cantoneiras",
+       "perfis"
+      ],
+      "cpis_latest_copy": "perfis",
+      "cpis_status": "Em Produção",
+      "customer_name": "Cliente exemplo",
+      "customer_name_values": [
+       "Cliente exemplo"
+      ],
+      "delivery_date": "<instante>",
+      "delivery_date_values": [
+       "<instante>"
+      ],
+      "documents": 0,
+      "execution_complete": false,
+      "factory_unit": "MTG II",
+      "factory_unit_values": [
+       "MTG II"
+      ],
+      "observations": "Obra exemplo",
+      "observations_values": [
+       "Obra exemplo"
+      ],
+      "of": "OF4200",
+      "ovs": [
+       "OV21"
+      ],
+      "plan": {
+       "cantoneiras": 1,
+       "perfis": 2
+      },
+      "planned_finish_date": "<instante>",
+      "planned_finish_date_values": [
+       "<instante>"
+      ],
+      "planned_start_date": null,
+      "planned_start_date_values": [],
+      "population_counts": {
+       "active": 3,
+       "history": 0
+      },
+      "population_unknown_states": [],
+      "preparation": {
+       "areas": [
+        "perfis"
+       ],
+       "production_order_no": "OF4200",
+       "records": 1,
+       "statuses": [
+        "draft"
+       ]
+      },
+      "production_records": 0,
+      "responsible_dp": null,
+      "responsible_dp_values": [],
+      "sources": [
+       "cantoneiras",
+       "perfis"
+      ],
+      "status_values": [
+       "Em Produção"
+      ],
+      "work_type_code": null,
+      "work_type_code_values": [],
+      "work_type_description": null,
+      "work_type_description_values": []
+     },
+     {
+      "actual_finish_date": null,
+      "actual_finish_date_values": [],
+      "actual_start_date": null,
+      "actual_start_date_values": [],
+      "administrative_origin": "Macro — OF por identificar",
+      "area": "cantoneiras",
+      "conferences": 0,
+      "conflicts": [],
+      "cpis_copies": [],
+      "cpis_status": null,
+      "customer_name": "Cliente REF-X",
+      "customer_name_values": [
+       "Cliente REF-X"
+      ],
+      "delivery_date": null,
+      "delivery_date_values": [],
+      "documents": 0,
+      "execution_complete": false,
+      "factory_unit": null,
+      "factory_unit_values": [],
+      "local_order": null,
+      "observations": "Obra REF-X",
+      "observations_values": [
+       "Obra REF-X"
+      ],
+      "of": null,
+      "ovs": [
+       "OV-REF-X"
+      ],
+      "plan": {
+       "cantoneiras": 1
+      },
+      "planned_finish_date": null,
+      "planned_finish_date_values": [],
+      "planned_start_date": null,
+      "planned_start_date_values": [],
+      "population_counts": {
+       "active": 1,
+       "history": 0
+      },
+      "population_unknown_states": [],
+      "preparation": null,
+      "production_records": 0,
+      "raw_links": [
+       {
+        "area": "cantoneiras",
+        "href": "/planeamento/raw?area=cantoneiras&q=REF-X",
+        "key": "macro:c1:20",
+        "reference": "REF-X"
+       }
+      ],
+      "responsible_dp": null,
+      "responsible_dp_values": [],
+      "sources": [
+       "cantoneiras"
+      ],
+      "status_values": [],
+      "unidentified": true,
+      "work_type_code": null,
+      "work_type_code_values": [],
+      "work_type_description": null,
+      "work_type_description_values": []
+     }
+    ],
+    "page": 1,
+    "page_size": 50,
+    "pages": 1,
+    "population": "all",
+    "total": 14,
+    "version": "fallback:s1:c1"
+   }
+  },
+  {
+   "case": {
+    "query": "REF-B"
+   },
+   "result": {
+    "mode": "imported",
+    "orders": [],
+    "page": 1,
+    "page_size": 50,
+    "pages": 0,
+    "population": "active",
+    "total": 0,
+    "version": "fallback:s1:c1"
+   }
+  },
+  {
+   "case": {
+    "population": "all",
+    "query": "ref-c"
+   },
+   "result": {
+    "mode": "imported",
+    "orders": [
+     {
+      "actual_finish_date": null,
+      "actual_finish_date_values": [],
+      "actual_start_date": null,
+      "actual_start_date_values": [],
+      "area": "ambas",
+      "conferences": 0,
+      "conflicts": [],
+      "cpis_copies": [
+       "cantoneiras",
+       "perfis"
+      ],
+      "cpis_latest_copy": "cantoneiras",
+      "cpis_status": "Fechada",
+      "customer_name": "Cliente B2",
+      "customer_name_values": [
+       "Cliente B2",
+       "Cliente B"
+      ],
+      "delivery_date": "<instante>",
+      "delivery_date_values": [
+       "<instante>"
+      ],
+      "documents": 0,
+      "execution_complete": false,
+      "factory_unit": "MTG II",
+      "factory_unit_values": [
+       "MTG II"
+      ],
+      "observations": "Obra OF4300",
+      "observations_values": [
+       "Obra OF4300"
+      ],
+      "of": "OF4300",
+      "ovs": [
+       "OV-OF4300"
+      ],
+      "plan": {
+       "cantoneiras": 1,
+       "perfis": 1
+      },
+      "planned_finish_date": "<instante>",
+      "planned_finish_date_values": [
+       "<instante>"
+      ],
+      "planned_start_date": null,
+      "planned_start_date_values": [],
+      "population_counts": {
+       "active": 0,
+       "history": 2
+      },
+      "population_unknown_states": [],
+      "preparation": null,
+      "production_records": 2,
+      "responsible_dp": null,
+      "responsible_dp_values": [],
+      "sources": [
+       "cantoneiras",
+       "perfis"
+      ],
+      "status_values": [
+       "Fechada"
+      ],
+      "work_type_code": null,
+      "work_type_code_values": [],
+      "work_type_description": null,
+      "work_type_description_values": []
+     }
+    ],
+    "page": 1,
+    "page_size": 50,
+    "pages": 1,
+    "population": "all",
+    "total": 1,
+    "version": "fallback:s1:c1"
+   }
+  },
+  {
+   "case": {
+    "query": "OV47"
+   },
+   "result": {
+    "mode": "imported",
+    "orders": [
+     {
+      "actual_finish_date": null,
+      "actual_finish_date_values": [],
+      "actual_start_date": null,
+      "actual_start_date_values": [],
+      "area": "por_identificar",
+      "conferences": 0,
+      "conflicts": [],
+      "cpis_copies": [
+       "perfis"
+      ],
+      "cpis_latest_copy": "perfis",
+      "cpis_status": "Em Aberto",
+      "customer_name": "Cliente sete",
+      "customer_name_values": [
+       "Cliente sete"
+      ],
+      "delivery_date": "<instante>",
+      "delivery_date_values": [
+       "<instante>"
+      ],
+      "documents": 0,
+      "execution_complete": false,
+      "factory_unit": "MTG II",
+      "factory_unit_values": [
+       "MTG II"
+      ],
+      "observations": "Obra OF4700",
+      "observations_values": [
+       "Obra OF4700"
+      ],
+      "of": "OF4700",
+      "ovs": [
+       "OV47"
+      ],
+      "plan": {},
+      "planned_finish_date": "<instante>",
+      "planned_finish_date_values": [
+       "<instante>"
+      ],
+      "planned_start_date": null,
+      "planned_start_date_values": [],
+      "population_counts": {
+       "active": 0,
+       "history": 0
+      },
+      "population_unknown_states": [],
+      "preparation": null,
+      "production_records": 0,
+      "responsible_dp": null,
+      "responsible_dp_values": [],
+      "sources": [],
+      "status_values": [
+       "Em Aberto"
+      ],
+      "work_type_code": null,
+      "work_type_code_values": [],
+      "work_type_description": null,
+      "work_type_description_values": []
+     }
+    ],
+    "page": 1,
+    "page_size": 50,
+    "pages": 1,
+    "population": "active",
+    "total": 1,
+    "version": "fallback:s1:c1"
+   }
+  },
+  {
+   "case": {
+    "query": "Cliente B"
+   },
+   "result": {
+    "mode": "imported",
+    "orders": [],
+    "page": 1,
+    "page_size": 50,
+    "pages": 0,
+    "population": "active",
+    "total": 0,
+    "version": "fallback:s1:c1"
+   }
+  },
+  {
+   "case": {
+    "query": "NEW-A"
+   },
+   "result": {
+    "mode": "imported",
+    "orders": [
+     {
+      "actual_finish_date": null,
+      "actual_finish_date_values": [],
+      "actual_start_date": null,
+      "actual_start_date_values": [],
+      "administrative_origin": "Manual local",
+      "area": "perfis",
+      "conferences": 0,
+      "conflicts": [],
+      "cpis_copies": [],
+      "cpis_status": null,
+      "customer_name": null,
+      "customer_name_values": [],
+      "delivery_date": null,
+      "delivery_date_values": [],
+      "documents": 0,
+      "execution_complete": false,
+      "factory_unit": null,
+      "factory_unit_values": [],
+      "local_order": null,
+      "observations": null,
+      "observations_values": [],
+      "of": "OF998877",
+      "ovs": [],
+      "plan": {
+       "perfis": 1
+      },
+      "planned_finish_date": null,
+      "planned_finish_date_values": [],
+      "planned_start_date": null,
+      "planned_start_date_values": [],
+      "population_counts": {
+       "active": 1,
+       "history": 0
+      },
+      "population_unknown_states": [],
+      "preparation": {
+       "areas": [
+        "perfis"
+       ],
+       "production_order_no": "OF998877",
+       "records": 1,
+       "statuses": [
+        "draft"
+       ]
+      },
+      "production_records": 0,
+      "responsible_dp": null,
+      "responsible_dp_values": [],
+      "sources": [
+       "perfis"
+      ],
+      "status_values": [],
+      "work_type_code": null,
+      "work_type_code_values": [],
+      "work_type_description": null,
+      "work_type_description_values": []
+     }
+    ],
+    "page": 1,
+    "page_size": 50,
+    "pages": 1,
+    "population": "active",
+    "total": 1,
+    "version": "fallback:s1:c1"
+   }
+  },
+  {
+   "case": {
+    "query": "4950"
+   },
+   "result": {
+    "mode": "imported",
+    "orders": [
+     {
+      "actual_finish_date": null,
+      "actual_finish_date_values": [],
+      "actual_start_date": null,
+      "actual_start_date_values": [],
+      "area": "perfis",
+      "conferences": 0,
+      "conflicts": [],
+      "cpis_copies": [
+       "cantoneiras",
+       "perfis"
+      ],
+      "cpis_latest_copy": "perfis",
+      "cpis_status": "Pronta",
+      "customer_name": "Cliente OF4950",
+      "customer_name_values": [
+       "Cliente OF4950"
+      ],
+      "delivery_date": "<instante>",
+      "delivery_date_values": [
+       "<instante>"
+      ],
+      "documents": 0,
+      "execution_complete": false,
+      "factory_unit": "MTG II",
+      "factory_unit_values": [
+       "MTG II"
+      ],
+      "observations": "Obra OF4950",
+      "observations_values": [
+       "Obra OF4950"
+      ],
+      "of": "OF4950",
+      "ovs": [
+       "OV-OF4950"
+      ],
+      "plan": {
+       "perfis": 1
+      },
+      "planned_finish_date": "<instante>",
+      "planned_finish_date_values": [
+       "<instante>"
+      ],
+      "planned_start_date": null,
+      "planned_start_date_values": [],
+      "population_counts": {
+       "active": 1,
+       "history": 0
+      },
+      "population_unknown_states": [],
+      "preparation": null,
+      "production_records": 0,
+      "responsible_dp": null,
+      "responsible_dp_values": [],
+      "sources": [
+       "perfis"
+      ],
+      "status_values": [
+       "Pronta"
+      ],
+      "work_type_code": null,
+      "work_type_code_values": [],
+      "work_type_description": null,
+      "work_type_description_values": []
+     }
+    ],
+    "page": 1,
+    "page_size": 50,
+    "pages": 1,
+    "population": "active",
+    "total": 1,
+    "version": "fallback:s1:c1"
+   }
+  },
+  {
+   "case": {
+    "population": "all",
+    "query": "REF-X"
+   },
+   "result": {
+    "mode": "imported",
+    "orders": [
+     {
+      "actual_finish_date": null,
+      "actual_finish_date_values": [],
+      "actual_start_date": null,
+      "actual_start_date_values": [],
+      "administrative_origin": "Macro — OF por identificar",
+      "area": "cantoneiras",
+      "conferences": 0,
+      "conflicts": [],
+      "cpis_copies": [],
+      "cpis_status": null,
+      "customer_name": "Cliente REF-X",
+      "customer_name_values": [
+       "Cliente REF-X"
+      ],
+      "delivery_date": null,
+      "delivery_date_values": [],
+      "documents": 0,
+      "execution_complete": false,
+      "factory_unit": null,
+      "factory_unit_values": [],
+      "local_order": null,
+      "observations": "Obra REF-X",
+      "observations_values": [
+       "Obra REF-X"
+      ],
+      "of": null,
+      "ovs": [
+       "OV-REF-X"
+      ],
+      "plan": {
+       "cantoneiras": 1
+      },
+      "planned_finish_date": null,
+      "planned_finish_date_values": [],
+      "planned_start_date": null,
+      "planned_start_date_values": [],
+      "population_counts": {
+       "active": 1,
+       "history": 0
+      },
+      "population_unknown_states": [],
+      "preparation": null,
+      "production_records": 0,
+      "raw_links": [
+       {
+        "area": "cantoneiras",
+        "href": "/planeamento/raw?area=cantoneiras&q=REF-X",
+        "key": "macro:c1:20",
+        "reference": "REF-X"
+       }
+      ],
+      "responsible_dp": null,
+      "responsible_dp_values": [],
+      "sources": [
+       "cantoneiras"
+      ],
+      "status_values": [],
+      "unidentified": true,
+      "work_type_code": null,
+      "work_type_code_values": [],
+      "work_type_description": null,
+      "work_type_description_values": []
+     }
+    ],
+    "page": 1,
+    "page_size": 50,
+    "pages": 1,
+    "population": "all",
+    "total": 1,
+    "version": "fallback:s1:c1"
+   }
+  },
+  {
+   "case": {
+    "query": "inexistente"
+   },
+   "result": {
+    "mode": "imported",
+    "orders": [],
+    "page": 1,
+    "page_size": 50,
+    "pages": 0,
+    "population": "active",
+    "total": 0,
+    "version": "fallback:s1:c1"
+   }
+  },
+  {
+   "case": {
+    "page": 2,
+    "page_size": 3
+   },
+   "result": {
+    "mode": "imported",
+    "orders": [
+     {
+      "actual_finish_date": null,
+      "actual_finish_date_values": [],
+      "actual_start_date": null,
+      "actual_start_date_values": [],
+      "administrative_origin": "Manual local",
+      "area": "por_identificar",
+      "conferences": 0,
+      "conflicts": [],
+      "cpis_copies": [],
+      "cpis_status": null,
+      "customer_name": "Cliente REF-J",
+      "customer_name_values": [
+       "Cliente REF-J"
+      ],
+      "delivery_date": null,
+      "delivery_date_values": [],
+      "documents": 0,
+      "execution_complete": false,
+      "factory_unit": null,
+      "factory_unit_values": [],
+      "local_order": null,
+      "observations": "Obra REF-J",
+      "observations_values": [
+       "Obra REF-J"
+      ],
+      "of": "OF4990",
+      "ovs": [
+       "OV-REF-J"
+      ],
+      "plan": {},
+      "planned_finish_date": null,
+      "planned_finish_date_values": [],
+      "planned_start_date": null,
+      "planned_start_date_values": [],
+      "population_counts": {
+       "active": 0,
+       "history": 0
+      },
+      "population_unknown_states": [],
+      "preparation": null,
+      "production_records": 0,
+      "responsible_dp": null,
+      "responsible_dp_values": [],
+      "sources": [],
+      "status_values": [],
+      "work_type_code": null,
+      "work_type_code_values": [],
+      "work_type_description": null,
+      "work_type_description_values": []
+     },
+     {
+      "actual_finish_date": null,
+      "actual_finish_date_values": [],
+      "actual_start_date": null,
+      "actual_start_date_values": [],
+      "area": "perfis",
+      "conferences": 0,
+      "conflicts": [],
+      "cpis_copies": [
+       "cantoneiras",
+       "perfis"
+      ],
+      "cpis_latest_copy": "perfis",
+      "cpis_status": "Pronta",
+      "customer_name": "Cliente OF4950",
+      "customer_name_values": [
+       "Cliente OF4950"
+      ],
+      "delivery_date": "<instante>",
+      "delivery_date_values": [
+       "<instante>"
+      ],
+      "documents": 0,
+      "execution_complete": false,
+      "factory_unit": "MTG II",
+      "factory_unit_values": [
+       "MTG II"
+      ],
+      "observations": "Obra OF4950",
+      "observations_values": [
+       "Obra OF4950"
+      ],
+      "of": "OF4950",
+      "ovs": [
+       "OV-OF4950"
+      ],
+      "plan": {
+       "perfis": 1
+      },
+      "planned_finish_date": "<instante>",
+      "planned_finish_date_values": [
+       "<instante>"
+      ],
+      "planned_start_date": null,
+      "planned_start_date_values": [],
+      "population_counts": {
+       "active": 1,
+       "history": 0
+      },
+      "population_unknown_states": [],
+      "preparation": null,
+      "production_records": 0,
+      "responsible_dp": null,
+      "responsible_dp_values": [],
+      "sources": [
+       "perfis"
+      ],
+      "status_values": [
+       "Pronta"
+      ],
+      "work_type_code": null,
+      "work_type_code_values": [],
+      "work_type_description": null,
+      "work_type_description_values": []
+     },
+     {
+      "actual_finish_date": null,
+      "actual_finish_date_values": [],
+      "actual_start_date": null,
+      "actual_start_date_values": [],
+      "area": "por_identificar",
+      "conferences": 0,
+      "conflicts": [],
+      "cpis_copies": [
+       "perfis"
+      ],
+      "cpis_latest_copy": "perfis",
+      "cpis_status": "Em Aberto",
+      "customer_name": "Cliente sete",
+      "customer_name_values": [
+       "Cliente sete"
+      ],
+      "delivery_date": "<instante>",
+      "delivery_date_values": [
+       "<instante>"
+      ],
+      "documents": 0,
+      "execution_complete": false,
+      "factory_unit": "MTG II",
+      "factory_unit_values": [
+       "MTG II"
+      ],
+      "observations": "Obra OF4700",
+      "observations_values": [
+       "Obra OF4700"
+      ],
+      "of": "OF4700",
+      "ovs": [
+       "OV47"
+      ],
+      "plan": {},
+      "planned_finish_date": "<instante>",
+      "planned_finish_date_values": [
+       "<instante>"
+      ],
+      "planned_start_date": null,
+      "planned_start_date_values": [],
+      "population_counts": {
+       "active": 0,
+       "history": 0
+      },
+      "population_unknown_states": [],
+      "preparation": null,
+      "production_records": 0,
+      "responsible_dp": null,
+      "responsible_dp_values": [],
+      "sources": [],
+      "status_values": [
+       "Em Aberto"
+      ],
+      "work_type_code": null,
+      "work_type_code_values": [],
+      "work_type_description": null,
+      "work_type_description_values": []
+     }
+    ],
+    "page": 2,
+    "page_size": 3,
+    "pages": 4,
+    "population": "active",
+    "total": 10,
+    "version": "fallback:s1:c1"
+   }
+  },
+  {
+   "case": {
+    "page": 3,
+    "page_size": 3,
+    "population": "all"
+   },
+   "result": {
+    "mode": "imported",
+    "orders": [
+     {
+      "actual_finish_date": null,
+      "actual_finish_date_values": [],
+      "actual_start_date": null,
+      "actual_start_date_values": [],
+      "area": "ambas",
+      "conferences": 0,
+      "conflicts": [],
+      "cpis_copies": [
+       "perfis"
+      ],
+      "cpis_latest_copy": "perfis",
+      "cpis_status": "Em Produção",
+      "customer_name": "Cliente OF4900",
+      "customer_name_values": [
+       "Cliente OF4900"
+      ],
+      "delivery_date": "<instante>",
+      "delivery_date_values": [
+       "<instante>"
+      ],
+      "documents": 0,
+      "execution_complete": true,
+      "factory_unit": "MTG II",
+      "factory_unit_values": [
+       "MTG II"
+      ],
+      "observations": "Obra OF4900",
+      "observations_values": [
+       "Obra OF4900"
+      ],
+      "of": "OF4900",
+      "ovs": [
+       "OV-OF4900"
+      ],
+      "plan": {
+       "cantoneiras": 1,
+       "perfis": 1
+      },
+      "planned_finish_date": "<instante>",
+      "planned_finish_date_values": [
+       "<instante>"
+      ],
+      "planned_start_date": null,
+      "planned_start_date_values": [],
+      "population_counts": {
+       "active": 0,
+       "history": 2
+      },
+      "population_unknown_states": [],
+      "preparation": null,
+      "production_records": 1,
+      "responsible_dp": null,
+      "responsible_dp_values": [],
+      "sources": [
+       "cantoneiras",
+       "perfis"
+      ],
+      "status_values": [
+       "Em Produção"
+      ],
+      "work_type_code": null,
+      "work_type_code_values": [],
+      "work_type_description": null,
+      "work_type_description_values": []
+     },
+     {
+      "actual_finish_date": null,
+      "actual_finish_date_values": [],
+      "actual_start_date": null,
+      "actual_start_date_values": [],
+      "area": "por_identificar",
+      "conferences": 0,
+      "conflicts": [],
+      "cpis_copies": [
+       "cantoneiras"
+      ],
+      "cpis_latest_copy": "cantoneiras",
+      "cpis_status": "Fechada",
+      "customer_name": "Cliente OF4800",
+      "customer_name_values": [
+       "Cliente OF4800"
+      ],
+      "delivery_date": "<instante>",
+      "delivery_date_values": [
+       "<instante>"
+      ],
+      "documents": 0,
+      "execution_complete": false,
+      "factory_unit": "MTG II",
+      "factory_unit_values": [
+       "MTG II"
+      ],
+      "observations": "Obra OF4800",
+      "observations_values": [
+       "Obra OF4800"
+      ],
+      "of": "OF4800",
+      "ovs": [
+       "OV-OF4800"
+      ],
+      "plan": {},
+      "planned_finish_date": "<instante>",
+      "planned_finish_date_values": [
+       "<instante>"
+      ],
+      "planned_start_date": null,
+      "planned_start_date_values": [],
+      "population_counts": {
+       "active": 0,
+       "history": 0
+      },
+      "population_unknown_states": [],
+      "preparation": null,
+      "production_records": 0,
+      "responsible_dp": null,
+      "responsible_dp_values": [],
+      "sources": [],
+      "status_values": [
+       "Fechada"
+      ],
+      "work_type_code": null,
+      "work_type_code_values": [],
+      "work_type_description": null,
+      "work_type_description_values": []
+     },
+     {
+      "actual_finish_date": null,
+      "actual_finish_date_values": [],
+      "actual_start_date": null,
+      "actual_start_date_values": [],
+      "area": "por_identificar",
+      "conferences": 0,
+      "conflicts": [],
+      "cpis_copies": [
+       "perfis"
+      ],
+      "cpis_latest_copy": "perfis",
+      "cpis_status": "Em Aberto",
+      "customer_name": "Cliente sete",
+      "customer_name_values": [
+       "Cliente sete"
+      ],
+      "delivery_date": "<instante>",
+      "delivery_date_values": [
+       "<instante>"
+      ],
+      "documents": 0,
+      "execution_complete": false,
+      "factory_unit": "MTG II",
+      "factory_unit_values": [
+       "MTG II"
+      ],
+      "observations": "Obra OF4700",
+      "observations_values": [
+       "Obra OF4700"
+      ],
+      "of": "OF4700",
+      "ovs": [
+       "OV47"
+      ],
+      "plan": {},
+      "planned_finish_date": "<instante>",
+      "planned_finish_date_values": [
+       "<instante>"
+      ],
+      "planned_start_date": null,
+      "planned_start_date_values": [],
+      "population_counts": {
+       "active": 0,
+       "history": 0
+      },
+      "population_unknown_states": [],
+      "preparation": null,
+      "production_records": 0,
+      "responsible_dp": null,
+      "responsible_dp_values": [],
+      "sources": [],
+      "status_values": [
+       "Em Aberto"
+      ],
+      "work_type_code": null,
+      "work_type_code_values": [],
+      "work_type_description": null,
+      "work_type_description_values": []
+     }
+    ],
+    "page": 3,
+    "page_size": 3,
+    "pages": 5,
+    "population": "all",
+    "total": 15,
+    "version": "fallback:s1:c1"
+   }
+  },
+  {
+   "case": {
+    "page": 9,
+    "page_size": 3
+   },
+   "result": {
+    "mode": "imported",
+    "orders": [],
+    "page": 9,
+    "page_size": 3,
+    "pages": 4,
+    "population": "active",
+    "total": 10,
+    "version": "fallback:s1:c1"
+   }
+  }
+ ],
+ "needs": {
+  "active": [
+   [
+    "OF998877",
+    "NEW-A"
+   ],
+   [
+    "OF4995",
+    "REF-J"
+   ]
+  ],
+  "all": [
+   [
+    "OF998877",
+    "NEW-A"
+   ],
+   [
+    "OF4995",
+    "REF-J"
+   ],
+   [
+    "OF4300",
+    "REF-B"
+   ]
+  ],
+  "history": [
+   [
+    "OF4300",
+    "REF-B"
+   ]
+  ]
+ }
+}

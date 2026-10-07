@@ -2,12 +2,14 @@
 from __future__ import annotations
 
 import hashlib
+from collections import OrderedDict
 from contextlib import nullcontext
 import json
 import math
 import re
+import threading
 import uuid
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from decimal import Decimal
 
 import psycopg
@@ -303,24 +305,173 @@ def _document_context(query=''):
     return counts, sorted(matches), areas
 
 
+class _ImportCache:
+    """Values that depend only on immutable imports, kept for the newest `size` keys.
+
+    A macro import or a CPIS version never changes in place (a new file is a new snapshot,
+    a new CPIS content is a new version), so a value built for a key stays valid until a
+    newer key appears. One build per key at a time: simultaneous first requests wait for
+    the same build instead of each reading the imports again.
+    """
+
+    def __init__(self, size=2):
+        self.size = size
+        self._lock = threading.Lock()
+        self._values = OrderedDict()
+        self._flights = {}
+
+    def get(self, key, build):
+        with self._lock:
+            if key in self._values:
+                self._values.move_to_end(key)
+                return self._values[key]
+            flight = self._flights.setdefault(key, threading.Lock())
+        with flight:
+            with self._lock:
+                if key in self._values:
+                    return self._values[key]
+            value = build()
+            with self._lock:
+                self._values[key] = value
+                while len(self._values) > self.size:
+                    self._values.popitem(last=False)
+                self._flights.pop(key, None)
+        return value
+
+    def clear(self):
+        with self._lock:
+            self._values.clear()
+
+
+_generations = _ImportCache(size=2)
+
+
+def clear_cache():
+    """Forget the cached imports. Only for tests and trials that edit an import in place."""
+    _generations.clear()
+
+
+def _source_key(conn, direct, snapshots):
+    """Identity of what the slow part of the order list reads: one CPIS version and the macro imports."""
+    info = conn.info
+    return ((info.host, info.port, info.dbname), str(direct['id']) if direct else None,
+            tuple(sorted((dataset, row['snapshot_id'], row['loaded_at']) for dataset, row in snapshots.items())))
+
+
+def _interned(memo, compute, *inputs):
+    """One shared result per distinct input (repr keeps 1, 1.0 and True apart)."""
+    key = repr(inputs)
+    if key not in memo:
+        memo[key] = compute()
+    return memo[key]
+
+
+class _Generation:
+    """What the order list derives from one CPIS version and one set of macro imports. Read-only.
+
+    Memory (production, 07/10/2026: 70 000 CPIS orders, 87 000 macro lines): the full CPIS summaries
+    took 240 MB, so only the fields the list filters on are kept (`cpis`) together with the CPIS
+    rows as tuples; `summary(of)` rebuilds the complete summary for the orders actually returned.
+    """
+
+    LIGHT = ('of', 'status_values', 'ovs', 'customer_name_values', 'observations_values', 'conflicts')
+
+    def __init__(self, cpis_rows, source):
+        from . import planning_order_population as order_population
+        self.source = source
+        self._keys = next((tuple(group[0]) for group in cpis_rows.values()), ())
+        self._rows, self.cpis, self.cpis_closures = {}, {}, {}
+        memo = {}
+        for of, group in cpis_rows.items():
+            summary = _order_summary(group)
+            self._rows[of] = tuple(tuple(row.values()) for row in group)
+            self.cpis[of] = {key: summary[key] for key in self.LIGHT}
+            # A CPIS summary has no macro closure: its classification depends only on its states.
+            self.cpis_closures[of] = _interned(memo, lambda: planning_population.classify(summary),
+                                               'cpis', summary['status_values'])
+        cpis = self.cpis
+        # Each macro line on its own, classified as summarize() would with the CPIS states of its OF.
+        # A line's classification depends only on its closure values and those states.
+        self.line_closures = []
+        for member in source.singles:
+            context = cpis.get(member['of']) or source.summaries.get(member['of']) or {}
+            statuses = context.get('status_values', [])
+            self.line_closures.append((statuses, _interned(
+                memo, lambda: order_population.classify(member, context),
+                'line', member['macro_closure_values'], statuses)))
+
+    def plan_counts(self, members, singles, contexts):
+        """summarize() for this request, reusing the classification of lines that did not change."""
+        from . import planning_order_population as order_population
+        result = {}
+        for member, index in zip(members, singles):
+            context = contexts.get(member['of'], {})
+            closure = None
+            if index is not None:
+                statuses, closure = self.line_closures[index]
+                if context.get('status_values', []) != statuses:
+                    closure = None
+            if closure is None:
+                closure = order_population.classify(member, context)
+            order_population.tally(result, member, closure)
+        return result
+
+    def closure(self, item):
+        cached = self.cpis.get(item['of'])
+        return self.cpis_closures[item['of']] if item is cached else planning_population.classify(item)
+
+    def summary(self, of):
+        return _order_summary([dict(zip(self._keys, row)) for row in self._rows[of]])
+
+    def complete(self, items):
+        """The returned orders with their full CPIS summary (list items carry only LIGHT fields)."""
+        return [{**self.summary(item['of']), **item} if item['of'] in self.cpis else item for item in items]
+
+
+def _shared(pool, value):
+    """The same object for equal texts and dates, so repeated states, units and dates are kept once."""
+    if isinstance(value, (str, date)):  # datetime is a date; the offset decides how it is written
+        return pool.setdefault((type(value), value, getattr(value, 'tzinfo', None) and value.utcoffset()), value)
+    return value
+
+
+def _load_generation(conn, direct, snapshots):
+    from . import planning_order_population
+    grouped, pool = {}, {}
+    for row in _order_rows(conn, direct, '', None):
+        of = order_number(row['production_order_no']) or row['production_order_no']
+        if of:
+            grouped.setdefault(of, []).append(
+                {key: _shared(pool, value) for key, value in {**row, 'production_order_no': of}.items()})
+    return _Generation(grouped, planning_order_population.Source.load(conn, snapshots))
+
+
 def list_orders(*, query='', page=1, page_size=50, state='all', version=None,
                 pending_only=False, population='active'):
     try:
         page, page_size = max(1, int(page)), min(100, max(1, int(page_size)))
     except (TypeError, ValueError):
         raise planning.PlanningError('A paginação é inválida.') from None
-    result = _order_population(query=query, state=state, version=version,
-                               pending_only=pending_only, population=population)
-    total = len(result['orders'])
+    expected, mode, population, orders, generation = _population_items(
+        query=query, state=state, version=version, pending_only=pending_only, population=population)
+    total = len(orders)
     start = (page - 1) * page_size
+    result = _serial({'version': expected, 'mode': mode, 'population': population,
+                      'orders': generation.complete(orders[start:start + page_size])})
     return {**result, 'page': page, 'page_size': page_size, 'total': total,
-            'pages': math.ceil(total / page_size) if total else 0,
-            'orders': result['orders'][start:start + page_size]}
+            'pages': math.ceil(total / page_size) if total else 0}
 
 
 def _order_population(*, query='', state='all', version=None, pending_only=False,
                       population='active'):
     """Classify the complete result before any count or pagination is applied."""
+    expected, mode, population, orders, generation = _population_items(
+        query=query, state=state, version=version, pending_only=pending_only, population=population)
+    return _serial({'version': expected, 'mode': mode, 'population': population,
+                    'orders': generation.complete(orders)})
+
+
+def _population_items(*, query, state, version, pending_only, population):
     population = planning_population.scope(population)
     states = OPEN_STATES if state == 'open' else ((state,) if state and state != 'all' else None)
     document_counts, document_matches, document_areas = _document_context(query)
@@ -346,29 +497,49 @@ def _order_population(*, query='', state='all', version=None, pending_only=False
         if version and str(version) != expected:
             raise planning.PlanningError('A origem mudou. Atualiza a lista antes de continuar.', 409)
         from . import planning_order_population
-        members, fallback = planning_order_population.read(conn, snapshots)
-        rows = _order_rows(conn, direct, '', None)
-        grouped = {}
-        for row in rows:
-            of = order_number(row['production_order_no']) or row['production_order_no']
-            if of:
-                grouped.setdefault(of, []).append({**row, 'production_order_no': of})
-        contexts = {**fallback, **{of: _order_summary(group) for of, group in grouped.items()}}
-        plan_counts = planning_order_population.summarize(members, contexts)
+        # The imports are read once per version; the application's own data on every request.
+        generation = _generations.get(_source_key(conn, direct, snapshots),
+                                      lambda: _load_generation(conn, direct, snapshots))
+        members, fallback, singles = planning_order_population.assemble(conn, generation.source)
+        contexts = {**fallback, **generation.cpis}
+        plan_counts = generation.plan_counts(members, singles, contexts)
         needle = str(query or '').strip().casefold()[:160]
         reference_matches = {order_number(of) for of in reference_matches}
         if needle:
             reference_matches.update(m['of'] for m in members if any(
                 needle in str(ref or '').casefold() for ref in m['references']))
+        selected_states = {planning_population.token(s) for s in states} if states is not None else None
         summaries = []
         for of, item in contexts.items():
-            if states is not None and not any(planning_population.token(status) in
-                    {planning_population.token(s) for s in states} for status in item['status_values']):
+            if selected_states is not None and not any(planning_population.token(status) in selected_states
+                                                       for status in item['status_values']):
                 continue
             if needle and of not in reference_matches and not any(needle in str(value or '').casefold()
                     for value in [of, *item['ovs'], *item['customer_name_values'], *item['observations_values']]):
                 continue
-            summaries.append(item)
+            plan_state = plan_counts.get(item['of'], {})
+            closure = generation.closure(item)
+            unknown_states = list(closure['unknown_states'])
+            plan, population_counts = {}, {'active': 0, 'history': 0}
+            for area, value in plan_state.items():
+                counts = {'active': value['active'] if closure['active'] else 0,
+                          'history': value['history'] if closure['active'] else value['lines']}
+                for key, count in counts.items():
+                    population_counts[key] += count
+                selected = value['lines'] if population == 'all' else counts[population]
+                if selected:
+                    plan[area] = selected
+                for unknown in value['unknown_states']:
+                    if unknown not in unknown_states:
+                        unknown_states.append(unknown)
+            # Orders without imported pieces still have administrative context.
+            # A closed CPIS copy applies even when another copy matches the filter.
+            if not (population == 'all' or (population_counts[population] > 0 if plan_state else
+                                             closure['active'] == (population == 'active'))):
+                continue
+            # A copy: the cached entries are shared by every request (full CPIS summary: generation.complete).
+            summaries.append({**item, 'population_unknown_states': unknown_states, 'plan': plan,
+                              'population_counts': population_counts})
         ofs = [row['of'] for row in summaries]
         production_counts, prep_counts, conference_counts = {}, {}, {}
         if ofs:
@@ -391,26 +562,6 @@ def _order_population(*, query='', state='all', version=None, pending_only=False
                     conference_counts[row['production_order_no']] = row['records']
         for item in summaries:
             plan_state = plan_counts.get(item['of'], {})
-            closure = planning_population.classify(item)
-            item['population_unknown_states'] = list(closure['unknown_states'])
-            item['plan'] = {}
-            item['population_counts'] = {'active': 0, 'history': 0}
-            for area, value in plan_state.items():
-                counts = {'active': value['active'] if closure['active'] else 0,
-                          'history': value['history'] if closure['active'] else value['lines']}
-                for key, count in counts.items():
-                    item['population_counts'][key] += count
-                selected = value['lines'] if population == 'all' else counts[population]
-                if selected:
-                    item['plan'][area] = selected
-                for unknown in value['unknown_states']:
-                    if unknown not in item['population_unknown_states']:
-                        item['population_unknown_states'].append(unknown)
-            # Orders without imported pieces still have administrative context.
-            # A closed CPIS copy applies even when another copy matches the filter.
-            item['in_population'] = (population == 'all' or
-                (item['population_counts'][population] > 0 if plan_state else
-                 closure['active'] == (population == 'active')))
             # A closed imported plan does not cover additional local/PDF needs.
             item['execution_complete'] = (bool(plan_state) and not item['conflicts']
                 and not document_counts.get(item['of']) and not prep_counts.get(item['of']) and all(
@@ -423,12 +574,10 @@ def _order_population(*, query='', state='all', version=None, pending_only=False
             item['preparation'] = prep_counts.get(item['of'])
             item['documents'] = document_counts.get(item['of'], 0)
             item['conferences'] = conference_counts.get(item['of'], 0)
-        summaries = [item for item in summaries if item.pop('in_population')]
         if pending_only:
             summaries = [item for item in summaries if not item['execution_complete']]
         summaries.sort(key=lambda item: item['of'] or '', reverse=True)
-    return _serial({'version': expected, 'mode': 'direct' if direct else 'imported',
-                    'population': population, 'orders': summaries})
+    return expected, 'direct' if direct else 'imported', population, summaries, generation
 
 
 def _context_for_order(conn, of, version=None):
