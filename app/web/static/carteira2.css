@@ -53,7 +53,8 @@ button.link { background: none; border: 0; color: #15525c; text-decoration: unde
 /* Tabela */
 .cart-table { overflow-x: auto; border: 1px solid #dce6e8; border-radius: 10px; background: #fff; }
 table.tree { width: 100%; border-collapse: collapse; }
-table.tree > thead th { position: sticky; top: 0; background: #f4f6f8; text-align: left; font-weight: 700; padding: .4rem .5rem;
+/* Sem position:sticky: a caixa com scroll horizontal anulava-o. O cabeçalho fixo é a cópia de tabela_fixa.js (08/10). */
+table.tree > thead th { background: #f4f6f8; text-align: left; font-weight: 700; padding: .4rem .5rem;
   border-bottom: 1px solid #dce6e8; white-space: nowrap; text-transform: none; letter-spacing: normal; color: inherit; }
 table.tree > tbody > tr > td, table.tree > tbody > tr > th { padding: .3rem .5rem; border-bottom: 1px solid #eef0f3; vertical-align: middle;
   text-align: left; font-weight: normal; text-transform: none; letter-spacing: normal; color: inherit; background: transparent; }
@@ -71,6 +72,9 @@ table.tree .toggle:hover { background: #e6ecef; }
 table.tree .lupa { padding: 0 .3rem; min-height: 1.4rem; border: 1px solid #c9d4d7; border-radius: 5px; background: #fff; }
 table.tree .lupa[aria-expanded="true"] { background: #dbe8eb; }
 .pick-count { font-weight: 700; color: #3d4f56; font-variant-numeric: tabular-nums; }
+/* Data do grupo nas ordens por data (08/10): «28/07», «S42», «S42?», «sem data», «estacionada»; vermelho = atrasada. */
+.due { color: #5d737a; font-variant-numeric: tabular-nums; white-space: nowrap; cursor: help; }
+.due.late { color: #9d2a26; font-weight: 700; }
 td.plan .plan-cell { display: flex; align-items: center; gap: .6rem; white-space: nowrap; }
 td.plan .acts { display: inline-flex; flex-direction: column; gap: .15rem; }
 table.tree .act { padding: .05rem .5rem; min-height: 1.4rem; font-weight: 600; border-radius: 5px; border: 1px solid #a9bbc4; background: #fff; color: #10384b; }

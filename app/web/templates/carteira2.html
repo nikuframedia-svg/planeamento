@@ -8,8 +8,9 @@
   <link rel="stylesheet" href="/static/planning_hub.css">
   <link rel="stylesheet" href="/static/planning_typography.css">
   <link rel="stylesheet" href="/static/carteira2.css?v={{ version }}">
+  <script src="/static/tabela_fixa.js?v={{ version }}" defer></script>
   <script src="/static/carteira2.js?v={{ version }}" defer></script>
-  <link rel="stylesheet" href="/static/planeamento_ui.css?v=20261002">
+  <link rel="stylesheet" href="/static/planeamento_ui.css?v=20261008">
 </head>
 <body>
   {% set active = 'carteira' %}{% include "_app_nav.html" %}
@@ -49,7 +50,7 @@
           </details>
         </div>
         <label>Ordem
-          <select id="ordem"><option value="urgencia">Mais urgente primeiro</option><option value="metros">Mais metros primeiro</option></select>
+          <select id="ordem"><option value="corte">Data de corte mais próxima</option><option value="urgencia">Mais urgente primeiro</option><option value="metros">Mais metros primeiro</option></select>
         </label>
         <label>Estado
           <select id="estado"><option value="">Todos</option>{% for key, label in status.items() %}<option value="{{ key }}">{{ label }}</option>{% endfor %}</select>
@@ -64,9 +65,10 @@
 
     <p id="notice" class="notice" role="status" hidden></p>
     <p id="error" class="error" role="alert" hidden></p>
+    <p id="order-note" class="source-notice" role="status" hidden>A ordem por data precisa que o serviço do planeamento seja reiniciado.</p>
 
-    <div class="cart-table">
-      <table class="tree">
+    <div class="cart-table" id="cart-table">
+      <table class="tree" id="tree">
         <thead>
           <tr>
             <th scope="col" id="level-title">Perfil</th>

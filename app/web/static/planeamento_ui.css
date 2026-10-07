@@ -61,6 +61,16 @@ body.pl-fill>main{flex:1 1 auto;min-height:0;height:auto!important}
 .pl-toc a:hover{border-color:var(--pl-action);color:var(--pl-action)}
 section[id]{scroll-margin-top:110px}
 
+/* Cabeçalho fixo das tabelas largas (tabela_fixa.js, 08/10/2026): só atua nas páginas que chamam stickyHead.
+   z-index 15: abaixo das semanas (25), do menu (30) e do «Mais» (40). */
+html.has-sticky-head{scroll-padding-top:calc(var(--pl-head-h,53px) + var(--sticky-h,0px) + 8px)}
+.sticky-head{position:sticky;top:var(--pl-head-h,53px);z-index:15;height:0}
+.sticky-head-in{position:absolute;top:0;left:1px;right:auto;overflow:hidden;visibility:hidden;background:#f4f6f8;box-shadow:0 2px 0 #dce6e8}
+.sticky-head.on .sticky-head-in{visibility:visible}
+table.sticky-copy{table-layout:fixed;border-collapse:collapse;border-spacing:0;margin:0}
+table.sticky-copy thead th{position:static}
+table.loadgrid.sticky-copy thead th:first-child,html.has-sticky-head table.loadgrid thead th:first-child{position:sticky;left:0;z-index:2;background:#f4f6f8}
+
 @media(max-width:760px){
   .pl-header{gap:10px;padding:0 10px}
   .pl-brand{display:none}
