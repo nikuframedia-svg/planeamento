@@ -150,3 +150,23 @@ def test_past_forecast_is_late_and_blocked_operation_is_listed_with_its_reason()
     found = board.forecast_only(plan, ops + [{**op("c", "OF3", 1), "blocking_reasons": ["Sem máquina."]}], placed={"b"})
     assert found == [{"of": "OF1", "reference": None, "operation": None, "forecast": True, "forecast_day": "2026-09-08",
                       "reasons": ["Duração admissível por confirmar."]}]
+
+
+def test_unknown_pieces_never_become_zero_in_the_red_list_or_the_boxes():
+    """F09 (08/10): saldo por confirmar → peças None (e a contagem à parte), nunca 0 peças."""
+    result = board.unplanned("cantoneiras", data=data(line("OF1", pieces=None), line("OF1", reference="R2", pieces=None)), decisions={})
+    assert result["orders"][0]["pieces"] is None and result["orders"][0]["pieces_unknown"] == 2
+    mixed = board.unplanned("cantoneiras", data=data(line("OF1", pieces=None), line("OF1", reference="R2", pieces=4)), decisions={})
+    assert mixed["orders"][0]["pieces"] == 4 and mixed["orders"][0]["pieces_unknown"] == 1
+    plan = {"entries": [
+        {"key": "a", "resource_id": "m1", "start_date": "2026-10-01", "end_date_exclusive": "2026-10-02", "precision": "day"},
+        {"key": "b", "resource_id": "m1", "start_date": "2026-10-01", "end_date_exclusive": "2026-10-02", "precision": "day"},
+        {"key": "c", "resource_id": "m2", "start_date": "2026-10-01", "end_date_exclusive": "2026-10-02", "precision": "day"}]}
+    boxes = board.boxes_from_source_plan(plan, [op("a", "OF1", None), op("b", "OF1", 6), op("c", "OF2", None)])
+    assert [(b["of"], b["pieces"], b["pieces_unknown"]) for b in boxes] == [("OF1", 6, 1), ("OF2", None, 1)]
+
+
+def test_orders_with_machine_keeps_the_old_name_for_one_version():
+    """F15 (08/10): «planned_orders» contava OF com máquina, não planeadas; o nome novo é «orders_with_machine»."""
+    result = board.unplanned("cantoneiras", data=data(line("OF1"), line("OF2", machine="Peddi 8")), decisions={})
+    assert result["orders_with_machine"] == result["planned_orders"] == 1

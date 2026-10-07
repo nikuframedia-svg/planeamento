@@ -57,6 +57,15 @@ const baseLoad = () => [
     assert.deepEqual(await page.locator('#kpis .resumo tbody th').allTextContents(), ['Planeado', 'Planeado para nesting', 'Sem máquina atribuída']);
     assert.deepEqual(await page.locator('#kpis .resumo thead th').allTextContents(), ['', 'Metros', 'Horas', 'Toneladas']);
     assert.equal(await page.locator('#subtotal tr.subtotal th').textContent(), 'Subtotal');
+    // 08/10: avisos numa só linha discreta, só quando há casos (repetidas, produção acima da QTD); Excel por importar.
+    const note = page.locator('#subtotal tr.subtotal-note');
+    if (await note.count()) {
+      const said = await note.textContent();
+      assert.match(said, /^(\d[\d\s\u00a0\u202f.]* linhas? (possivelmente repetidas? \(\+[\d\s\u00a0\u202f.,]+ m\)|com produção acima da QTD \(\+[\d\s\u00a0\u202f.]+ peças\))( · )?)+$/);
+      console.log('Avisos da lista:', said);
+    }
+    const sourceNotice = page.locator('#source-notice');
+    if (await sourceNotice.isVisible()) assert.match(await sourceNotice.textContent(), /^O Excel de MTG[23] \S+ no Drive é mais recente/);
     assert.deepEqual(await page.locator('table.tree thead th').allTextContents(), ['Perfil', 'Planear', 'Metros', 'Peças', 'OF', 'Sem máquina', 'Em nesting']);
     const loadBefore = await page.evaluate(baseLoad);
 

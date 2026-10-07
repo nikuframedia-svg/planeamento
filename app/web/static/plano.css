@@ -187,3 +187,5 @@ body .pq-alert .pq-sec,body .pq-alert .pq-of span,body .pq-alert .pq-of small,bo
   .pq-untimed{padding-left:10px}
   .pq-elsewhere ul{columns:1}
 }
+/* Excel do setor no Drive por importar (08/10): uma linha discreta por baixo do título. */
+.pq-source-notice { margin: 0 0 .5rem; color: #8a5a00; }

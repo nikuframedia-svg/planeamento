@@ -22,10 +22,12 @@ import math
 from .. import planning, planning_needs as needs, planning_population
 from . import cache
 from .references import UNRESOLVED, master_reference
+from .week import lisbon_today
 
 UNITS = {"perfis": "MTG2", "cantoneiras": "MTG3"}
 NO_FAMILY = "Sem família SKU"
 NO_MACHINE = "Sem máquina"
+NO_CPIS_FAMILY = "Sem família (OF fora do CPIS)"  # o mesmo rótulo da Carteira (08/10)
 STATUS_CODES = {  # label in the projection -> code of the SKU family catalogue
     "Família confirmada pelo utilizador": "confirmada_pelo_utilizador",
     "Inferida — várias OF": "forte_padrao_e_varias_of",
@@ -189,7 +191,7 @@ def build(c, area: str, today: date | None = None) -> dict:
     from ..gantt import research, integrated
     from . import priority, scope, assignments
     from .portfolio import signals_of
-    today = today or date.today()
+    today = today or lisbon_today()  # dia de Lisboa, como a Carga (08/10)
     g, records = _records(c, area)
     codes, by_id, aliases, configs, package = resources_context(c)
     by_key = {r["row_key"]: r for r in records}
@@ -277,7 +279,7 @@ def build(c, area: str, today: date | None = None) -> dict:
             "sku_family": family or NO_FAMILY, "sku_family_state": state,
             "classification": CLASSIFICATION.get(state, "Sem catálogo") if family or state else ("Sem catálogo" if area == "perfis" else "Sem família"),
             "cpis_family_code": cpis_code,
-            "cpis_family": f"{cpis_code} {(cpis_row.get('work_type_description') or '').strip()}".strip() if cpis_code else "Sem família CPIS",
+            "cpis_family": f"{cpis_code} {(cpis_row.get('work_type_description') or '').strip()}".strip() if cpis_code else NO_CPIS_FAMILY,
             "material_type": material, "profile": profile, "profile_group": group_name,
             "length_mm": length, "pavilion": str(values.get("pavilion") or "Sem pavilhão"),
             "section_unit": _number(row.get("section_unit") if row.get("section_unit") is not None else values.get("section_unit")),
@@ -330,7 +332,7 @@ def load(area: str, *, today: date | None = None, conn=None, allow_stale: bool =
     Writes and previews never pass `allow_stale`: they always decide on the current versions.
     """
     planning.check_area(area)
-    today = today or date.today()
+    today = today or lisbon_today()  # dia de Lisboa, como a Carga (08/10)
     with (planning.connect(readonly=True) if conn is None else nullcontext(conn)) as c:
         if conn is None:
             c.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")

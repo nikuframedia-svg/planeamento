@@ -78,6 +78,20 @@ const fs = require('node:fs');
     const names = await page.locator('#body tr th').allInnerTexts();
     for (const li of await nocal.locator('li').allTextContents()) assert.ok(!names.includes(li.split(' · ')[0]), `${li} fora da tabela`);
   }
+  // 08/10 (com a Python nova): Atrasado por tipo no cursor, nota «noutro setor» sempre que há operações (mesmo sem
+  // horas) e o aviso do Excel por importar numa só linha. Com a Python antiga nada disto aparece e a página funciona.
+  const api = await page.evaluate(async () => (await fetch('/planeamento/api/setor/carga?setor=cantoneiras')).json());
+  if (api.machines.some((m) => m.late_before && m.late_before.plan !== undefined)) {
+    for (const t of await page.locator('#body tr > th + td.num').evaluateAll((tds) => tds.map((td) => td.title))) {
+      assert.match(t, /no plano [\d\s\u00a0\u202f.,]+ h · a vencer [\d\s\u00a0\u202f.,]+ h · sugerida [\d\s\u00a0\u202f.,]+ h/, `Atrasado por tipo: ${t}`);
+    }
+    const others = Boolean(api.elsewhere && api.elsewhere.operations);
+    assert.equal(await page.locator('#elsewhere-note').isVisible(), others, 'nota «noutro setor» quando há operações');
+    if (others) assert.match(await page.locator('#elsewhere-note').textContent(), /operações deste setor estão em máquinas de outro setor e não contam aqui/);
+    assert.equal(await page.locator('#source-notice').isVisible(), Boolean(api.source_notice), 'aviso do Excel só quando a API o manda');
+    console.log('Carga MTG3:', others ? await page.locator('#elsewhere-note').textContent() : 'sem operações noutro setor',
+                '|', api.source_notice || 'Excel importado é o mais recente');
+  }
   // «Aplicar todas» só junta recomendações do mesmo sentido e diz quantas.
   const plusAdvice = (await page.locator('#body td.c button.apply').allInnerTexts()).filter((t) => t.startsWith('+')).length;
   if (plusAdvice) assert.equal(await page.locator('#apply-all').innerText(), `Aplicar todas: mais turnos (${plusAdvice})`);
@@ -169,6 +183,13 @@ const fs = require('node:fs');
     await page.locator('#body tr').first().locator('td.c .load-cap').first().click();
     await page.waitForSelector('#week-shifts');
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), `Carga ${setor} sem scroll horizontal a 390 px`);
+    // 08/10: máquinas de um posto (Fita pav.1 com o Doall e a Thomas) com a nota da capacidade conjunta.
+    const posts = await page.evaluate(async (s) => (await (await fetch(`/planeamento/api/setor/carga?setor=${s}`)).json()).machines.filter((m) => m.shared && m.has_calendar).length, setor);
+    if (posts) {
+      assert.equal(await page.locator('#body th small.shared').count(), posts, `nota do posto em ${posts} máquina(s)`);
+      for (const t of await page.locator('#body th small.shared').allInnerTexts()) assert.match(t, /^(partilha o posto .+|posto com .+)(: juntas têm [\d\s\u00a0\u202f.,]+ h)?$/);
+      console.log(`Postos ${setor}:`, (await page.locator('#body th small.shared').allInnerTexts()).join(' | '));
+    }
     if (shots) await page.screenshot({path: `${shots}/carga-390-${setor}.png`, fullPage: true});
   }
   await page.setViewportSize({width: 1440, height: 1000});
@@ -330,6 +351,9 @@ const fs = require('node:fs');
   assert.ok(await page.locator('#gantt .pq-load').count() > 0, 'horas planeadas / capacidade por dia');
   assert.match(await page.locator('#gantt .pq-load').first().innerText(), /^[\d,]+ \/ [\d,]+ h$/);
   if (shots) await page.screenshot({path: `${shots}/gantt-semana.png`, fullPage: true});
+  // 08/10: aviso do Excel por importar só quando a API o manda (Python nova); sem ele a linha fica escondida.
+  const board = await (await page.request.get(`${base}/planeamento/api/setor/quadro?setor=cantoneiras`)).json();
+  assert.equal(await page.locator('#source-notice').isVisible(), Boolean(board.source_notice));
   await page.click('#next');
   await page.waitForFunction((r) => document.getElementById('range').textContent !== r, range);
   await page.click('#today');

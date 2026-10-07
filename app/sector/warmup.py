@@ -78,7 +78,8 @@ def warm(sectors=SECTORS) -> bool:
 
 
 def _today() -> date:
-    return date.today()  # o mesmo dia das chaves das caches (portfolio, occurrences)
+    from .week import lisbon_today
+    return lisbon_today()  # o mesmo dia (Lisboa) das chaves das caches (portfolio, occurrences), 08/10
 
 
 def _loop(stop: threading.Event, check_seconds: float) -> None:

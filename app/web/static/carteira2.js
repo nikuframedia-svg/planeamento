@@ -37,10 +37,12 @@
   }
 
   const metres = (m) => `${number.format(m || 0)} m`;
-  // Linhas com saldo por confirmar não somam metros: diz-se com um asterisco, como no peso.
+  // Linhas com metros por saber (saldo por confirmar ou sem comprimento) não somam: diz-se com um asterisco, como
+  // no peso. «metres_unknown» desde 08/10; com a Python antiga, as de saldo por confirmar.
   const metresKnown = (m, unknown) => unknown
-    ? el('span', {title: `${number.format(unknown)} linha(s) com saldo por confirmar (não contam)`}, metres(m), el('span', {class: 'muted'}, ' *'))
+    ? el('span', {title: `${number.format(unknown)} linha(s) com metros por saber: saldo por confirmar ou sem comprimento (não contam)`}, metres(m), el('span', {class: 'muted'}, ' *'))
     : metres(m);
+  const unknownMetres = (t) => (t.metres_unknown !== undefined ? t.metres_unknown : t.unknown_balances);
   const hours = (h) => `${hoursFmt.format(h || 0)} h`;
   const tonnes = (t) => `${hoursFmt.format(t || 0)} t`;
   const pathId = (path) => JSON.stringify(path);
@@ -205,7 +207,7 @@
           el('input', {type: 'checkbox', class: 'group-pick'}), toggle,
           el('strong', {}, group.key), lupa, el('span', {class: 'pick-count'}))),
       planCell(st, [plan, clear]),
-      el('td', {class: 'num'}, metresKnown(group.metres, group.unknown_balances)),
+      el('td', {class: 'num'}, metresKnown(group.metres, unknownMetres(group))),
       el('td', {class: 'num'}, number.format(group.pieces)),
       el('td', {class: 'num'}, number.format(group.ofs)),
       el('td', {class: 'num'}, st.sem_maquina.metres ? metres(st.sem_maquina.metres) : '—'),
@@ -220,14 +222,29 @@
 
   function subtotal(t) {
     const st = statusOf(t.status);
+    const note = subtotalNote(t);
     $('subtotal').replaceChildren(el('tr', {class: 'subtotal'},
       el('th', {scope: 'row'}, 'Subtotal'),
       planCell(st, null),
-      el('td', {class: 'num'}, metresKnown(t.metres, t.unknown_balances)),
+      el('td', {class: 'num'}, metresKnown(t.metres, unknownMetres(t))),
       el('td', {class: 'num'}, number.format(t.pieces)),
       el('td', {class: 'num'}, number.format(t.ofs)),
       el('td', {class: 'num'}, metres(st.sem_maquina.metres)),
-      el('td', {class: 'num'}, metres(st.nesting.metres))));
+      el('td', {class: 'num'}, metres(st.nesting.metres))), ...(note ? [note] : []));
+  }
+
+  // Avisos da lista (08/10), numa só linha discreta e só quando há casos: linhas possivelmente repetidas (contam a
+  // dobrar; nada é removido) e produção acima da QTD (incluindo as que já saíram da Carteira por isso).
+  function subtotalNote(t) {
+    const parts = [];
+    const r = t.repeated || {};
+    if (r.lines) parts.push(el('span', {title: 'Outra linha da mesma OF tem a mesma referência, perfil, comprimento, QTD, material e qualidade: pode estar a contar a dobrar. Confirma no Excel; a lupa mostra «repetida».'},
+      `${number.format(r.lines)} ${r.lines === 1 ? 'linha possivelmente repetida' : 'linhas possivelmente repetidas'} (+${metres(r.metres)})`));
+    const x = t.production_excess || {};
+    if (x.lines) parts.push(el('span', {title: `A produção registada passa a QTD${x.closed ? `; ${number.format(x.closed)} já saíram da Carteira com saldo 0` : ''}. Confere as folhas no MES.`},
+      `${number.format(x.lines)} ${x.lines === 1 ? 'linha com produção acima da QTD' : 'linhas com produção acima da QTD'} (+${number.format(x.pieces)} peças)`));
+    if (!parts.length) return null;
+    return el('tr', {class: 'subtotal-note'}, el('td', {colspan: '7', class: 'muted'}, parts.flatMap((p, i) => (i ? [' · ', p] : [p]))));
   }
 
   function inside(id, path) {
@@ -292,6 +309,8 @@
       if (ticket !== state.tickets.list || sector !== state.sector) return;
       subtotal(data.list_totals || data.totals);
       $('source').textContent = `Excel importado a ${new Date(data.imported_at).toLocaleString('pt-PT')}`;
+      // Excel no Drive mais recente do que o importado (08/10): uma linha, só quando a API a manda.
+      if ($('source-notice')) { $('source-notice').hidden = !data.source_notice; $('source-notice').textContent = data.source_notice || ''; }
       $('level-title').textContent = data.level.label;
       $('rows').replaceChildren(...data.groups.map((group) => row(group, data, [], 0)));
       data.groups.forEach((g) => paintRow([g.key]));
@@ -359,14 +378,26 @@
       if (box.checked) state.selected.set(m.key, m.token); else state.selected.delete(m.key);
       selectionChanged();
     });
+    // Só falta a operação seguinte (08/10): «Abocardar: 12» em vez de «0» peças e «0 m».
+    const following = !m.balance_unknown && !m.pieces && (m.following || []).length
+      ? m.following.map((f) => `${f.label}: ${f.remaining === null || f.remaining === undefined ? 'por confirmar' : number.format(f.remaining)}`).join(' · ') : '';
+    const unknownM = m.balance_unknown || m.metres === null || m.metres_unknown;
     return el('tr', {class: `member${code === 'nesting' ? ' is-nesting' : ''}${state.selected.has(m.key) ? ' is-selected' : ''}`, dataset: {key: m.key}},
       el('td', {}, box), el('td', {}, m.of), el('td', {}, m.reference), el('td', {}, m.profile),
       el('td', {class: 'num'}, m.length_mm ? `${number.format(m.length_mm)} mm` : '—'),
-      el('td', {class: 'num'}, m.balance_unknown ? 'por confirmar' : number.format(m.pieces)),
-      el('td', {class: 'num'}, m.balance_unknown ? '—' : `${metresFine.format(m.metres || 0)} m`),
+      el('td', {class: 'num', title: following ? 'O corte está feito; falta a operação seguinte' : null}, m.balance_unknown ? 'por confirmar' : following || number.format(m.pieces)),
+      el('td', {class: 'num', title: unknownM && !m.balance_unknown ? 'Sem comprimento: metros por saber' : null}, unknownM || following ? '—' : `${metresFine.format(m.metres || 0)} m`),
       el('td', {title: m.machine ? (SOURCE_LABEL[m.machine_source] || '') + (m.machine_source === 'carteira' && m.tabela_machine ? ` (Tabela: ${m.tabela_machine})` : '') : (m.suggested ? m.suggested.label : null)},
         m.machine || (m.suggested ? el('span', {class: 'muted'}, `— sugerida: ${shortName(m.suggested.machine)}`) : '—')),
-      el('td', {}, el('span', {class: `chip chip-${code}`}, STATE_LABEL[code])));
+      el('td', {}, el('span', {class: `chip chip-${code}`}, STATE_LABEL[code]), ...warnings(m)));
+  }
+
+  // Avisos de uma linha na lupa (08/10): nada é corrigido, só se diz.
+  function warnings(m) {
+    const out = [];
+    if (m.repeated > 1) out.push(el('span', {class: 'warn', title: 'Outra linha da mesma OF tem a mesma referência, perfil, comprimento, QTD, material e qualidade: pode estar a contar a dobrar. Confirma no Excel.'}, `repetida ${m.repeated}×`));
+    if (m.production_excess) out.push(el('span', {class: 'warn', title: 'A produção registada passa a QTD. Confere as folhas no MES.'}, `produção acima da QTD (+${number.format(m.production_excess)})`));
+    return out;
   }
 
   async function toggleLupa(tr, path, button) {

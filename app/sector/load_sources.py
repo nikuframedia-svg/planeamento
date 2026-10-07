@@ -7,7 +7,7 @@ prazo). Daqui só vêm valores por linha e as horas reais, que se juntam a esses
   velocidade Mt\\h da linha; MTG2 área ÷ taxa da folha CapacidadeMáquinas, ×3 no Thomas acima de 50 peças),
   calculada pelo motor de capacidade (raw/capacity_revision.py) e escalada ao saldo atual da linha
   (a regra é proporcional às peças).
-- Peso: peso da operação principal por peça × saldo atual.
+- Peso: já não vem daqui (08/10, F21): a Carga usa o peso da Carteira (load.fact_weight); o daqui fica nas provas.
 - Horas reais declaradas: folhas OCR validadas e horas corrigidas à mão, por máquina e semana ISO
   (pela data de produção; não depende da regra de semana do planeamento).
 - Cálculo de cada operação: taxa, fórmula, vigência e origem, tal como o motor as usou.
@@ -152,14 +152,24 @@ def proofs(c, sector: str, line_keys: list[str]) -> dict[tuple[str, str], dict]:
     return out
 
 
+def posts(by_id: dict, package) -> dict[str, list[str]]:
+    """Postos compostos por máquinas, {posto: [máquinas]} pelos IDs da Carga (relação «compoe» do catálogo)."""
+    if not package:
+        return {}
+    from .capacity import physical
+    return physical(by_id, (package.get("metadata") or {}).get("relations") or [])["members"]
+
+
 def context(c, sector: str) -> dict:
     """Tudo o que a Carga precisa destas fontes, numa ligação."""
     from .occurrences import resources_context
-    codes, by_id, aliases, _, _ = resources_context(c)
+    codes, by_id, aliases, _, package = resources_context(c)
     index = machine_index(codes, by_id, aliases)
     try:
         lines = excel_lines(c, sector)
         actual = actual_hours(c, sector, index)
     except planning.PlanningError:  # motor de capacidade ainda sem geração: a Carga funciona sem estes valores
         lines, actual = {}, {}
-    return {"lines": lines, "actual": actual, "index": index}
+    # Postos e nomes (08/10, F18): a nota «partilha o posto com …» das máquinas de um posto.
+    return {"lines": lines, "actual": actual, "index": index, "posts": posts(by_id, package),
+            "names": {rid: r.get("name") or rid for rid, r in by_id.items()}}

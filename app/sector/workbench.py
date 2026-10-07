@@ -17,7 +17,6 @@ que partilha preparação). Regras:
 from __future__ import annotations
 
 from collections import defaultdict
-from datetime import date
 
 from .. import planning, planning_needs as needs
 from . import capacity, estimates, occurrences, throughput
@@ -171,7 +170,7 @@ def overview(areas=None, scenario="mediana", today=None):
     areas = [planning.check_area(a) for a in (areas or list(planning.AREAS))]
     if scenario not in capacity.SCENARIOS:
         raise planning.PlanningError("Cenário de capacidade inválido.")
-    today = today or date.today()
+    today = today or occurrences.lisbon_today()  # o dia de Lisboa das chaves das ocorrências (08/10)
     cap_view = capacity.view(areas, horizon_weeks=12, scenario=scenario, today=today)
     key = (tuple(areas), scenario, today, tuple(sorted((a, v["stamp"], v["stale"]) for a, v in cap_view["stamps"].items())))
     if _cache.get("key") == key:

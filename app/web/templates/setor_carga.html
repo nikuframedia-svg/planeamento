@@ -27,12 +27,14 @@
       <button type="button" role="tab" id="tab-semanas" aria-selected="true">Semanas</button>
       <button type="button" role="tab" id="tab-maquinas" aria-selected="false" hidden>Máquinas</button>
     </div>
+    <p id="source-notice" class="source-notice" role="status" hidden></p>
     <p id="notice" class="notice" role="status" hidden></p>
     <p id="error" class="error" role="alert" hidden></p>
     <div id="weeks-view">
       <p class="legend muted">Cada célula: <b>carga / capacidade</b> da semana. <span class="sw folga"></span> folga · <span class="sw apertado"></span> apertado · <span class="sw falta"></span> falta. Clica numa célula para ver as OF e mudar os turnos.</p>
       <div class="grid-wrap"><table class="loadgrid"><thead id="head"></thead><tbody id="body"></tbody></table></div>
       <div id="no-calendar" class="no-calendar" hidden></div>
+      <p id="elsewhere-note" class="muted elsewhere-note" hidden></p>
       <section id="detail" class="detail" hidden></section>
     </div>
     <div id="machines-view" hidden>

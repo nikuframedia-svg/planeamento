@@ -6,18 +6,22 @@ Para cada máquina e semana ISO (a atual e as 12 seguintes):
 - no plano = horas das linhas «Planeado» (Planear + máquina) na sua máquina, na semana do prazo;
 - a vencer = trabalho aberto não planeado com prazo nessa semana: na máquina efetiva («com máquina») ou
   na sugerida (à parte);
-- atrasado = prazo antes da semana atual: fica à parte, por máquina («late_before»), e não entra na carga
-  da semana atual (07/10/2026); o que tem prazo entre segunda e ontem fica na semana atual, marcado como
-  atrasado (a mesma regra da Carteira e do painel Máquinas);
+- atrasado = prazo antes da semana atual: fica à parte, por máquina («late_before», separado em no plano, a vencer
+  e sugerida desde 08/10), e não entra na carga da semana atual (07/10/2026); o que tem prazo entre segunda e
+  ontem fica na semana atual, marcado como atrasado (a mesma regra da Carteira e do painel Máquinas);
 - linhas excluídas na Carteira não contam (como na lista vermelha do quadro);
 - máquinas do setor sem calendário que têm trabalho aparecem com capacidade 0 e «Sem calendário»;
 - recomendação de turnos (shifts.advise): na semana atual, atrasado + carga da semana contra as horas que
-  faltam; nas outras, a carga da semana. Tirar turnos só nas 3 primeiras semanas (mais à frente a carga ainda
-  está a chegar) e nunca numa máquina com trabalho atrasado ou sem prazo;
+  faltam, e o texto diz «inclui N h atrasadas» (08/10); nas outras, a carga da semana. Tirar turnos só nas 3
+  primeiras semanas (mais à frente a carga ainda está a chegar) e nunca numa máquina com trabalho atrasado ou
+  sem prazo;
 - cor da célula (status): carga da semana contra a capacidade da semana inteira, os mesmos números que a
   célula mostra; o atrasado não pinta a semana atual (tem a sua coluna);
 - ao lado, o que as antigas páginas Capacidades/Disponibilidade mostravam (load_sources.py): horas segundo o
-  Excel, peso, horas reais declaradas, calendário do Excel; e totais por máquina (separador Máquinas).
+  Excel, horas reais declaradas, calendário do Excel; e totais por máquina (separador Máquinas);
+- peso = peso unitário da linha da Carteira × saldo, como na Carteira (08/10); sem peso conta à parte, nunca 0 kg;
+- máquinas de um posto (ex.: Fita pav.1 com o Doall e a Thomas) continuam em linhas próprias, com a nota da
+  capacidade conjunta do posto (capacity.counted, 08/10).
 Prazo pela política do setor (MTG3 Data Corte; MTG2 Picking, depois Data Corte). As horas são as mesmas da
 Carteira (occurrences + estimates); horas desconhecidas nunca contam como zero — são contadas à parte.
 """
@@ -43,8 +47,8 @@ def _week_of(day) -> tuple[int, int] | None:
 
 
 def _today() -> date:
-    from zoneinfo import ZoneInfo
-    return datetime.now(ZoneInfo("Europe/Lisbon")).date()
+    from .week import lisbon_today
+    return lisbon_today()
 
 
 def week_list(today: date | None = None, count: int = WEEKS) -> list[tuple[int, int]]:
@@ -90,8 +94,12 @@ def _before_week(fact: dict, monday: date) -> bool:
     return bool(day) and str(day)[:10] < monday.isoformat()
 
 
-def advice_text(advice: dict, missing: float, shifts_now: int | None = None) -> dict:
-    """Texto simples da recomendação: «faltam 52 h · +1 turno» / «sobram 40 h · −1 turno» (07/10/2026)."""
+def advice_text(advice: dict, missing: float, shifts_now: int | None = None, late: float = 0.0) -> dict:
+    """Texto simples da recomendação: «faltam 52 h · +1 turno» / «sobram 40 h · −1 turno» (07/10/2026).
+
+    Na semana atual a recomendação conta o atrasado, que a cor não conta (decisão de 07/10): o texto diz
+    «inclui N h atrasadas», para não parecer que contradiz a cor (08/10).
+    """
     delta = advice.get("delta") or 0
     if delta > 0:
         text = f"faltam {missing:.0f} h · +{delta} turno{'s' if delta > 1 else ''}"
@@ -104,16 +112,21 @@ def advice_text(advice: dict, missing: float, shifts_now: int | None = None) -> 
         text = f"sobram {-missing:.0f} h"
     else:
         text = "certo"
+    if late > 0.05:
+        text += f" · inclui {late:.0f} h atrasadas"
     return {**advice, "text": text}
 
 
-def recommend(load_hours: float, capacity: float, n: int, settings: dict, *, workdays: int, can_reduce: bool) -> dict:
-    """Recomendação de turnos (shifts.advise) com o texto simples; −1 só quando `can_reduce`."""
+def recommend(load_hours: float, capacity: float, n: int, settings: dict, *, workdays: int, can_reduce: bool,
+              late: float = 0.0) -> dict:
+    """Recomendação de turnos (shifts.advise) com o texto simples; −1 só quando `can_reduce`.
+
+    `late`: horas atrasadas já incluídas em `load_hours` (só na semana atual), ditas no texto."""
     advice = shifts.advise(load_hours, capacity, n, settings, workdays_in_week=workdays)
     missing = load_hours - capacity
     if advice["delta"] < 0 and not can_reduce:
         advice = {"delta": 0}
-    return advice_text(advice, missing, n)
+    return advice_text(advice, missing, n, late)
 
 
 def _add_total(t: dict, f: dict, week, late: bool, excel, weight, applies: bool, before: bool = False) -> None:
@@ -145,6 +158,52 @@ def _add_total(t: dict, f: dict, week, late: bool, excel, weight, applies: bool,
         t["after"] += hours
     elif week == "sem_data":
         t["no_date"] += hours
+
+
+def weights_of(lines: list[dict]) -> dict:
+    """Peso unitário de cada linha da Carteira (values.weight_unit), pela chave da linha."""
+    return {x["key"]: x.get("weight_unit") for x in lines if x.get("key")}
+
+
+def fact_weight(fact: dict, weights: dict) -> float | None:
+    """Peso por cortar de uma ocorrência (F21, 08/10): o mesmo da Carteira, peso unitário da linha × saldo.
+
+    Uma só fonte para os kg da Carteira e da Carga (antes a Carga lia o peso de outra geração, capacity_items).
+    Só a operação principal tem peso; sem peso unitário ou sem saldo → None, contado à parte.
+    """
+    if fact.get("phase", "principal") != "principal":
+        return None
+    unit, remaining = weights.get(fact.get("line_key")), fact.get("remaining")
+    return unit * remaining if unit is not None and remaining is not None else None
+
+
+def shared_posts(rows: list[dict], posts: dict, names: dict) -> None:
+    """Nota das máquinas de um posto (F18, 08/10): «partilha o posto … com …: juntas têm X h».
+
+    O Fita pav.1 é um posto que contém o Doall e a Thomas: juntos têm uma só capacidade. As linhas continuam por
+    máquina; cada uma do posto (o posto incluído) recebe `shared` com a capacidade conjunta de cada semana, contada
+    por capacity.counted() (o posto com calendário substitui as máquinas; sem ele, somam-se as máquinas).
+    """
+    from .capacity import counted
+    by_id = {r["id"]: r for r in rows}
+    for post, members in posts.items():
+        group = [post, *members]
+        shown = [rid for rid in group if rid in by_id]
+        if not shown or len(group) < 2:
+            continue
+        resources = {rid: {"id": rid} for rid in group}
+        shape = {"roles": {m: "maquina" for m in members}, "members": {post: list(members)}}
+        weeks = []
+        for i in range(max(len(by_id[rid]["weeks"]) for rid in shown)):
+            caps = {rid: (by_id[rid]["weeks"][i]["full_capacity"] if rid in by_id and by_id[rid]["has_calendar"]
+                          and by_id[rid]["weeks"][i]["status"] != "sem_calendario" else None) for rid in group}
+            chosen = counted(resources, caps, shape=shape)
+            known = [caps[rid] for rid in chosen if caps[rid] is not None]
+            weeks.append(round(sum(known), 1) if known else None)
+        for rid in shown:
+            others = [names.get(x) or (by_id.get(x) or {}).get("name") or x for x in group if x not in (rid, post)]
+            by_id[rid]["shared"] = {"post": names.get(post) or (by_id.get(post) or {}).get("name") or post, "is_post": rid == post,
+                                    "with": others, "hours": weeks[0] if weeks else None, "weeks": weeks}
 
 
 def _context(sector: str, today: date | None = None):
@@ -186,9 +245,12 @@ def overview(sector: str, *, today: date | None = None, now: datetime | None = N
     totals = defaultdict(_empty_total)
     own = set(ids)
     elsewhere = defaultdict(lambda: {"operations": 0, "hours": 0.0, "unknown": 0})
+    elsewhere_work = _empty_total()  # peças, metros e kg dessas operações: para o fecho com a Carteira (08/10)
+    weights = weights_of(data["lines"])
     for f in occ["facts"]:
         found = classify(f, planned, current, horizon, today)
-        excel, weight, applies = load_sources.fact_values(f, src["lines"])
+        excel, _, applies = load_sources.fact_values(f, src["lines"])
+        weight = fact_weight(f, weights)
         if not found:  # sem máquina: só entra nos totais («Sem máquina»)
             _add_total(totals[None], f, "sem_data" if not f.get("priority_day") else None, False, excel, weight, applies)
             continue
@@ -197,6 +259,7 @@ def overview(sector: str, *, today: date | None = None, now: datetime | None = N
             e["operations"] += 1
             e["hours"] += f.get("load_hours") or 0
             e["unknown"] += f.get("load_hours") is None
+            _add_total(elsewhere_work, f, None, False, excel, weight, applies)
             continue
         kind, week, late = found
         before = week == current and _before_week(f, monday_now)
@@ -248,7 +311,8 @@ def overview(sector: str, *, today: date | None = None, now: datetime | None = N
             # Na semana atual a recomendação conta o atrasado + a carga da semana contra as horas que faltam.
             # Mais à frente (index >= REDUCE_WEEKS) a carga ainda está a chegar: mostrar a folga, sem propor cortar.
             need = load + (lb_hours if index == 0 else 0.0)
-            advice = (recommend(need, capacity, n, settings, workdays=len(open_days), can_reduce=can_reduce and index < REDUCE_WEEKS)
+            advice = (recommend(need, capacity, n, settings, workdays=len(open_days), can_reduce=can_reduce and index < REDUCE_WEEKS,
+                                late=lb_hours if index == 0 else 0.0)
                       if d else {"delta": 0, "text": "Sem calendário"})
             balance = capacity - need
             # A cor bate com o que a célula mostra («carga / capacidade da semana inteira»): o atrasado tem a sua
@@ -270,9 +334,12 @@ def overview(sector: str, *, today: date | None = None, now: datetime | None = N
         rows.append({"id": m["id"], "name": m["name"], "code": m["code"], "process": m["process"], "default_shifts": m["default_shifts"],
                      "has_calendar": has_calendar, "weeks": out,
                      "no_date": {"hours": round(nd_hours, 1), "unknown": nd["unknown"], "operations": nd["operations"]},
-                     "late_before": {"hours": round(lb_hours, 1), "unknown": lb["unknown"], "operations": lb["operations"]},
+                     # Atrasado por tipo (F12, 08/10): no plano / a vencer / máquina sugerida, além do total.
+                     "late_before": {"hours": round(lb_hours, 1), "unknown": lb["unknown"], "operations": lb["operations"],
+                                     PLAN: round(lb[PLAN], 1), DUE: round(lb[DUE], 1), SUGGESTED: round(lb[SUGGESTED], 1)},
                      "after": round(after, 1)})
     names = {rid: (r.get("name") or rid) for rid, r in (occ.get("resources") or {}).items()}
+    shared_posts(rows, src.get("posts") or {}, {**names, **(src.get("names") or {})})
     recent = [(today - timedelta(weeks=i)).isocalendar()[:2] for i in range(4, 0, -1)]  # 4 semanas completas antes desta
     machine_totals = []
     per_shift = shifts.shift_hours(settings["template"])
@@ -287,8 +354,16 @@ def overview(sector: str, *, today: date | None = None, now: datetime | None = N
         machine_totals.append({"id": None, "name": "Sem máquina", "process": None, **_round_total(totals[None]), "actual_recent": []})
     other = [{"id": rid, "name": names.get(rid) or rid, "operations": e["operations"], "hours": round(e["hours"], 1), "unknown": e["unknown"]}
              for rid, e in sorted(elsewhere.items(), key=lambda x: -x[1]["hours"])]
+    work = _round_total(elsewhere_work)
+    from . import drive_notice
     return needs.serial({"sector": sector, "today": today, "weeks": [{"year": y, "week": w, "monday": date.fromisocalendar(y, w, 1)} for y, w in weeks],
-                         "machines": rows, "totals": machine_totals, "elsewhere": {"operations": sum(o["operations"] for o in other), "hours": round(sum(o["hours"] for o in other), 1), "machines": other}, "settings": {k: settings[k] for k in ("template", "workdays", "holidays")},
+                         "machines": rows, "totals": machine_totals,
+                         "elsewhere": {"operations": sum(o["operations"] for o in other), "hours": round(sum(o["hours"] for o in other), 1),
+                                       "unknown": sum(o["unknown"] for o in other), "machines": other,
+                                       **{k: work[k] for k in ("pieces", "metres", "weight_kg", "weight_unknown")}},
+                         # Excel do setor no Drive mais recente do que o importado (F16, 08/10): uma linha de aviso.
+                         "source_notice": drive_notice.text(sector),
+                         "settings": {k: settings[k] for k in ("template", "workdays", "holidays")},
                          "shift_hours": shifts.shift_hours(settings["template"]), "stale": bool(occ.get("stale") or data.get("stale")),
                          "rules": __doc__.split("\n\n", 1)[1].strip()})
 
@@ -307,7 +382,12 @@ def _day_shifts(base: dict, days: dict, settings: dict, day: date) -> int:
 
 
 def cell(sector: str, machine: str, year: int, week: int, *, today: date | None = None) -> dict:
-    """O que está atrás de uma célula: uma linha por OF (horas, horas segundo o Excel, peso, peças, metros, prazo)."""
+    """O que está atrás de uma célula: uma linha por OF (horas, horas segundo o Excel, peso, peças, metros, prazo).
+
+    Na semana atual entram também as OF com prazo antes desta semana (coluna Atrasado). Desde 08/10 (F12) as horas
+    vêm separadas: `week_hours` são as da grelha (a carga da semana) e `late_before` as atrasadas, por tipo; `hours`
+    continua a ser o total, como antes. Peso, peças e metros desconhecidos contam-se à parte, nunca como 0 (F09).
+    """
     from . import load_sources
     planning.check_area(sector)
     today = today or _today()
@@ -317,15 +397,23 @@ def cell(sector: str, machine: str, year: int, week: int, *, today: date | None 
     with planning.connect(readonly=True) as c:
         src = load_sources.context(c, sector)
     lines = {x["key"]: x for x in data["lines"]}
+    weights = weights_of(data["lines"])
     target = (int(year), int(week))
+    monday_now = date.fromisocalendar(*current, 1)
     groups = {}
-    summary = {"plan_principal": 0.0, "excel_hours": 0.0, "excel_unknown": 0, "weight_kg": 0.0}
+    summary = {"plan_principal": 0.0, "excel_hours": 0.0, "excel_unknown": 0, "weight_kg": 0.0, "weight_unknown": 0}
+    late = {"hours": 0.0, "unknown": 0, "operations": 0, PLAN: 0.0, DUE: 0.0, SUGGESTED: 0.0}
     for f in _cell_facts(occ, planned, current, horizon, machine, target, today):
-        kind, late = f["_kind"], f["_late"]
-        excel, weight, applies = load_sources.fact_values(f, src["lines"])
+        kind = f["_kind"]
+        before = target == current and _before_week(f, monday_now)
+        excel, _, applies = load_sources.fact_values(f, src["lines"])
+        weight = fact_weight(f, weights)
+        principal = f.get("phase", "principal") == "principal"
         g = groups.setdefault(f["of"], {"of": f["of"], "customer": f.get("customer"), "work": f.get("work"), "hours": 0.0, "unknown": 0,
-                                        "pieces": 0.0, "metres": 0.0, "operations": 0, "references": set(), "kinds": set(),
-                                        "priority_day": None, "late_days": 0, "excel_hours": 0.0, "excel_unknown": 0, "weight_kg": 0.0})
+                                        "week_hours": 0.0, "late_before_hours": 0.0, "late_before_operations": 0,
+                                        "pieces": 0.0, "pieces_unknown": 0, "metres": 0.0, "metres_unknown": 0, "operations": 0,
+                                        "references": set(), "kinds": set(), "priority_day": None, "late_days": 0,
+                                        "excel_hours": 0.0, "excel_unknown": 0, "weight_kg": 0.0, "weight_unknown": 0, "_weights": 0})
         if applies:
             if excel is None:
                 g["excel_unknown"] += 1
@@ -333,22 +421,43 @@ def cell(sector: str, machine: str, year: int, week: int, *, today: date | None 
             else:
                 g["excel_hours"] += excel
                 summary["excel_hours"] += excel
-        if weight is not None:
-            g["weight_kg"] += weight
-            summary["weight_kg"] += weight
-        if f.get("phase", "principal") == "principal" and f.get("load_hours") is not None:
+        if principal:
+            if weight is None:
+                g["weight_unknown"] += 1
+                summary["weight_unknown"] += 1
+            else:
+                g["weight_kg"] += weight
+                g["_weights"] += 1
+                summary["weight_kg"] += weight
+        if principal and f.get("load_hours") is not None:
             summary["plan_principal"] += f["load_hours"]
         g["operations"] += 1
         g["references"].add(f.get("reference"))
         g["kinds"].add(kind)
-        if f.get("load_hours") is None:
+        hours = f.get("load_hours")
+        if hours is None:
             g["unknown"] += 1
         else:
-            g["hours"] += f["load_hours"]
+            g["hours"] += hours
+            g["late_before_hours" if before else "week_hours"] += hours
+        if before:
+            g["late_before_operations"] += 1
+            late["operations"] += 1
+            if hours is None:
+                late["unknown"] += 1
+            else:
+                late["hours"] += hours
+                late[kind] += hours
         line = lines.get(f.get("line_key"))
         if f.get("phase") == "principal" and line:
-            g["pieces"] += line["pieces"] or 0
-            g["metres"] += line["metres"] or 0
+            if line["pieces"] is None:
+                g["pieces_unknown"] += 1
+            else:
+                g["pieces"] += line["pieces"]
+            if line.get("metres_unknown", line.get("balance_unknown")):
+                g["metres_unknown"] += 1
+            else:
+                g["metres"] += line["metres"] or 0
         day = f.get("priority_day")
         if day and (g["priority_day"] is None or str(day) < str(g["priority_day"])):
             g["priority_day"] = day
@@ -357,14 +466,18 @@ def cell(sector: str, machine: str, year: int, week: int, *, today: date | None 
     for g in rows:
         g["references"] = len(g["references"])
         g["kinds"] = sorted(g["kinds"])
-        g["hours"] = round(g["hours"], 2)
+        for k in ("hours", "week_hours", "late_before_hours", "excel_hours"):
+            g[k] = round(g[k], 2)
         g["metres"] = round(g["metres"], 1)
         g["pieces"] = round(g["pieces"])
-        g["excel_hours"] = round(g["excel_hours"], 2)
-        g["weight_kg"] = round(g["weight_kg"], 1)
+        # Só operações sem peso → peso desconhecido («—»), nunca 0,0 kg (F09).
+        g["weight_kg"] = round(g["weight_kg"], 1) if g.pop("_weights") or not g["weight_unknown"] else None
     extra = src["actual"].get((machine, int(year), int(week))) or {}
+    hours = round(sum(g["hours"] for g in rows), 2)
     return needs.serial({"sector": sector, "machine": machine, "year": int(year), "week": int(week), "orders": rows,
-                         "hours": round(sum(g["hours"] for g in rows), 2), "unknown": sum(g["unknown"] for g in rows),
+                         "hours": hours, "unknown": sum(g["unknown"] for g in rows),
+                         "week_hours": round(hours - late["hours"], 2), "week_unknown": sum(g["unknown"] for g in rows) - late["unknown"],
+                         "late_before": {k: round(v, 2) if isinstance(v, float) else v for k, v in late.items()},
                          **{k: round(v, 2) if isinstance(v, float) else v for k, v in summary.items()},
                          "actual_hours": extra.get("actual_hours"), "excel_calendar_hours": extra.get("excel_calendar_hours")})
 
@@ -434,9 +547,11 @@ def operations(sector: str, machine: str, year: int, week: int, of: str, *, toda
         src = load_sources.context(c, sector)
         proofs = load_sources.proofs(c, sector, sorted({f["line_key"] for f in facts if f.get("line_key")}))
     KIND = {PLAN: "no plano", DUE: "a vencer", SUGGESTED: "a vencer, máquina sugerida"}
+    weights = weights_of(data["lines"])
     out = []
     for f in sorted(facts, key=lambda x: (str(x.get("reference")), x.get("occurrence") or 0)):
-        excel, weight, applies = load_sources.fact_values(f, src["lines"])
+        excel, _, applies = load_sources.fact_values(f, src["lines"])
+        weight = fact_weight(f, weights)  # o peso da Carteira (F21, 08/10)
         name = _estimate_name(f.get("operation"), sector, f.get("phase") == "principal")
         out.append({"reference": f.get("reference"), "operation": f.get("operation_label") or f.get("operation"), "phase": f.get("phase"),
                     "kind": KIND[f["_kind"]], "late": f["_late"], "remaining": f.get("remaining"), "length_mm": f.get("length_mm"),
