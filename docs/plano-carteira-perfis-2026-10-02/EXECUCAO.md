@@ -2,6 +2,125 @@
 
 Plano: [PLANO.md](PLANO.md). Estado: **ativo em produção desde 02/10/2026 ~19:17** (autorizado pelo Luís): migração 046 aplicada, `kanban-planning` e `kanban-research-sync` reiniciados, vistas da base de pesquisa aplicadas, ecrã antigo removido (cópia em `~/.local/state/planning-carteira-membros/antes-20261002/`, com as definições anteriores das vistas `consulta_v2`). Teste de browser aprovado contra a produção.
 
+## 07/10/2026: mínimo de burocracia (só os dados essenciais, gravar sempre)
+
+Plano aprovado: `~/.claude/plans/esta-horrivel-n-o-existe-gleaming-clarke.md`. Pedido do Luís: «se eu não preencher os campos que não são essenciais, deixa validar na mesma… quero o mínimo de burocracias». Decisões dele: Planear numa linha sem máquina usa a sugerida; em «Mais opções» sai tudo menos Observações.
+
+**Estado: pronto no ramo `release-20261007`, ativação pendente.** A paragem dos serviços foi bloqueada pelas permissões (deploy em produção) e fica para o Luís autorizar ou correr `scripts/ativar_2026-10-07.sh`.
+
+**Como foi feito.** Três partes em cópias isoladas (worktrees), cada uma com dois revisores (correção; produção, MES e hard links), mais uma verificação de cada ronda de correções. Os revisores encontraram dois bloqueios na Parte 1 (a ligação automática ao Excel podia apagar o saldo das duas linhas; uma peça nova de uma linha reimportada ficava quase vazia), corrigidos e verificados.
+
+**Dados essenciais.**
+
+| Para quê | MTG2 Perfis | MTG3 Cantoneiras |
+|---|---|---|
+| Gravar | OF | OF |
+| Entrar na Carteira | QTD inteiro | QTD inteiro |
+| Metros | Comp. | Comp. |
+| Planear | Máquina (sugerida se faltar) | Máquina (sugerida se faltar) |
+| Horas | Máquina + Tipo + Designação (ou Ø/L/A/E) | Máquina + Comp. + 1.ª Oper. (defeito 119) |
+| Prazo | Picking (sozinho), senão Data Corte | Data Corte |
+
+**Parte 1: preenchimento manual.**
+- **Campos que saem do ecrã** (os valores guardados ficam):
+  - Previsão de execução, Semana/Ano de planeamento, Requisitado?;
+  - Comprimento unitário do perfil, Quantidade a preparar agora;
+  - Variante, Outras operações, Perfil especial, Forma da secção, Picking ano.
+  - «Mais opções» fica só com Observações. Saiu também a lista morta `required_on_ready`.
+- **Avisos.** Só os cinco essenciais (QTD, comprimento, máquina, área de corte, operação não numérica), em nota discreta ao lado do campo. Aparecem depois de mexer no campo ou de carregar em Guardar e nunca bloqueiam.
+- **Valores por defeito:**
+  - cantoneiras: 1.ª Oper. 119 e 2.ª Oper. 0 (limpar volta ao defeito);
+  - Abocardar só X ou «-»;
+  - densidade 7850 sem Qual.;
+  - peça de PDF sem linha do Excel começa «sem produção».
+- **Peça possivelmente repetida** (`identity_pending` deixa de existir). Liga-se sozinha à linha do Excel só quando, ao mesmo tempo:
+  - há exatamente uma linha com a mesma OF e Referência;
+  - essa linha está livre;
+  - os campos escritos não a contradizem;
+  - a QTD é igual ou está vazia.
+
+  Caso contrário, conta como peça própria. O estado diz «…, ligada à linha do Excel».
+- **«Qtd em falta»** (campo novo `remaining_declared`): passa a ser o saldo da operação principal.
+  - Desconta a produção registada depois na mesma fonte.
+  - Ao lado aparece «saldo atual: N», com «(fonte mudou)» quando a fonte da produção muda.
+  - Substitui a conferência da quantidade.
+- **Campos não mexidos seguem a origem.** Quando o valor do Excel ou do PDF muda, os campos que ninguém escreveu acompanham, incluindo Data Corte, Máquina, Equipa, Pav., Observações, Abocardar e 2.ª Oper. Um campo escrito à mão fica, com a nota «(Excel: X)».
+- **Saíram:**
+  - a conferência da quantidade e «Concluir preparação»;
+  - o diálogo do PDF de outra OF (usa a OF do PDF);
+  - «peças semelhantes»;
+  - as caixas amarelas do PDF;
+  - o aviso ao sair, que só aparece se houver algo escrito.
+- **Sem 409 depois de importar:**
+  - Excel mudado no disco: só nos caminhos interativos; o worker continua a parar;
+  - catálogo na pré-visualização;
+  - revisões: junta só os campos mudados (`changed_fields`).
+
+  Os separadores antigos, sem `changed_fields`, continuam a receber 409.
+- **Datas escondidas** (Previsão, Semana/Ano de planeamento): deixam de contar nas peças registadas e ficam só de leitura na Tabela. Os 2 registos de produção passam a ter o prazo da Data Corte, como na Carteira.
+- **Semana W sem ano** (cantoneiras): ano deduzido, com a mesma regra da capacidade (`infer_iso_year(..., prefer_past=True)`).
+- Contrato de cálculo `planning-integral-20260925-v10`.
+
+**Parte 2: Carteira e Gantt.**
+- **Planear numa linha sem máquina** grava a máquina sugerida como escolha da Carteira e planeia.
+  - Ordem da sugestão: preferência aprendida dentro da ficha técnica, senão a previsão (`estimates`).
+  - Só entram máquinas do setor, e nunca por cima de textos da Tabela como «Subcontrato».
+  - A lupa mostra a mesma máquina. Fica marcada com a origem «sugerida» e não alimenta a aprendizagem.
+  - Mensagem: «N planeadas; M com a máquina sugerida (podes mudar)».
+- **Conflitos:** planeia o que não mudou e diz o que ficou de fora. Grupos até 3 000 linhas são enviados linha a linha.
+- **Bloqueios** sempre por esta ordem: seleção → conjuntos de famílias → máquina. As sugestões calculam-se antes dos bloqueios e a escrita é em lote.
+- **«Estado CPIS por confirmar»** deixa de tirar linhas da proposta: +21 linhas MTG2, +0 MTG3. As 3 386 MTG3 «Sem estado CPIS» estão fora por outras razões: 2 531 estacionadas S53, 782 sem prazo, 73 anuladas.
+- **Gantt:**
+  - Máquina escolhida por uma pessoa (Carteira, Tabela/Excel, conjunto, preferência aplicada ou escolha manual no Gantt):
+    - «rota por confirmar», «Rota CPIS difere» e «sequência» passam a avisos;
+    - a operação seguinte pode usar a máquina do Excel mesmo fora da ficha.
+  - O motivo da escolha manual é opcional e a «regra técnica» saiu do ecrã.
+  - Proposta desatualizada:
+    - recalcula sozinha (no máximo 2 vezes, só quando as fontes mudaram);
+    - não há duplicados na fila;
+    - um separador antigo que carregue em Aceitar recebe o 409 de antes.
+- **Motivos opcionais** («Sem motivo indicado»): Excluir, prazo, política e decisão de máquina por grupo.
+- **Abocardar** desconhecido = sem operação de abocardar.
+- **Dados reais:** MTG3: 14 355 das 14 396 linhas sem máquina recebem sugestão (41 ficam sem). MTG2: 299 de 478.
+
+**Parte 3: Definições, Tabela e Capacidades.**
+- **Máquina «confirmada»** deixa de ser precisa: conta qualquer máquina do setor no catálogo (+12 máquinas).
+  - A caixa saiu das Definições.
+  - Só se criam calendários para máquinas com turnos padrão > 0 (nunca calendários a 0).
+- **Horas reais corrigidas à mão:** a conferência faz-se ao gravar, «Substituir as horas OCR» vem por defeito e a origem por defeito é «Correção manual».
+- **Ano da semana W** deduzido; a confirmação por importação saiu.
+- **Tabela:**
+  - saiu «Guardar N linhas?»;
+  - com `partial: true` (só o ecrã novo envia) grava as linhas que não mudaram e diz quais ficaram de fora e porquê («O Excel mudou nesta linha.», «A linha mudou entretanto.»);
+  - faz uma leitura por versão.
+- **`capacity.js`:** as caixas «Confirmo…» vêm marcadas.
+- **Separadores das velocidades:** primeiro as operações mais usadas.
+- **Contratos:** `capacity_revision` v34 (com as máquinas do catálogo) e `ESTIMATE_CONTRACT` v4.
+
+**Testes:**
+- Suite completa com browser no ramo final: 1079 passam, 55 saltados, 11 falham.
+- As 11 falhas já falham no c074a8f: historical_cohort_audit ×5, macro_revisions ×2, original_hours ×2, sku_families ×2 (CSV fora do git).
+- Novos: `tests/test_manual_essentials.py`, `tests/test_planear_sugerida.py`, `tests/test_fewer_confirmations.py`, mais testes em `test_sector_selection.py`, `test_integrated_gantt.py` e `test_manual_to_carteira.py`. `planning_browser.cjs` e `planning_gantt_browser.cjs` foram reescritos.
+
+**Ativar** (`scripts/ativar_2026-10-07.sh`):
+- Os passos são: parar → código → hard links → arrancar.
+- Hard links com o MES: `need_editor.js`, `need_editor.css` e `capacity.js` escrevem-se no mesmo ficheiro físico.
+- **Antes:** pedir para fechar ou recarregar os separadores abertos (Registar, Tabela, Carteira, Gantt).
+- **Durante:** o primeiro recálculo completo (contratos v10, v34 e v4) ocupa cerca de 1–1,5 GB e dura 2–3 min. Nesse tempo as gravações ficam à espera.
+- **Depois:**
+  - os cenários do Gantt ficam desatualizados e recalculam ao abrir;
+  - confirmar no log: sem Traceback, ImportError ou ValueError;
+  - novas gerações `planning:*` e `capacity:*`;
+  - testes de browser contra a produção, com as gravações intercetadas: `carteira_browser.cjs`, `setor_browser.cjs`, `manual_browser.cjs`.
+
+**Retorno:**
+1. Parar os três serviços.
+2. `git diff --name-only c074a8f HEAD | xargs git checkout c074a8f --`.
+3. Repor os 3 hard links da mesma forma.
+4. Arrancar.
+
+Voltar atrás provoca outro recálculo completo. As máquinas sugeridas gravadas identificam-se por `sector_member_machine.seen->>'origem'='sugerida'`.
+
 ## 06/10/2026 (tarde): Carga completa, Gantt por turno e por dia, nomes do CPIS, auditoria
 
 Plano aprovado: `~/.claude/plans/esta-horrivel-n-o-existe-gleaming-clarke.md`. Ponto de partida guardado no commit `6c284b0`. Ativo a 06/10 ao longo da tarde, com 3 reinícios do kanban-planning.
