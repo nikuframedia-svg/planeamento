@@ -12,6 +12,11 @@ Lê e grava sem criar uma segunda fonte de verdade:
   o único fator sobre as horas (horas do Excel × 100 / eficiência). Substitui a margem do setor, que deixa de se
   editar. Ao lado mostra-se o «medido» (histórico ÷ Excel), só para comparar.
 Cada gravação guarda a definição inteira: chaves que o ecrã não envia ficam como estavam (S01, 08/10).
+
+Secção «Planeamento» (P9, Etapa 2, 08/10): um só dicionário, `PLANNING`, diz que parâmetros há, a unidade, os
+limites, a origem (pressuposto, declarado, regra ou medido), onde se aplicam e o que recalculam. O ecrã desenha-se a
+partir dele (`planning_view`) e a gravação `tipo='planeamento'` valida por ele. As máquinas da 2.ª operação das
+cantoneiras saem da lista das Definições (`second_operation.machine`), mas não de `machine_rows` (calendários e turnos).
 """
 from __future__ import annotations
 
@@ -28,7 +33,53 @@ from . import shifts
 UNIT = {"cantoneiras": "MTG3", "perfis": "MTG2"}
 HORIZON_WEEKS = 52
 METHODS = {"metres_hour": "m/h", "area_hour": "mm²/h", "units_hour": "peças/h", "minutes_unit": "min/peça", "fixed_minutes": "min"}
-TIMING = {"margin_pct": ("Margem (substituída pela eficiência de cada máquina)", 0, 300), "piece_minutes": ("Tempo fixo por peça (min)", 0, 120)}
+
+# Parâmetros do planeamento (P9, 08/10). A chave é a da definição do setor (sector_settings.definition) quando
+# `stored`; a política de prazo tem a sua tabela (priority) e os postos vêm do catálogo (só leitura).
+# `kind` diz ao ecrã como desenhar: por_maquina, numero, lista, por_turno, politica, postos.
+# Só os `active` aparecem e se gravam; os da Etapa 3 ficam aqui prontos (basta ativá-los, o ecrã já os desenha).
+ORIGINS = {"pressuposto": "Pressuposto", "declarado": "Declarado", "regra": "Regra", "medido": "Medido"}
+RECALC_HOURS = "Vai recalcular as horas (2–3 min)."
+PLANNING = {
+    "efficiency": {
+        "label": "Eficiência", "kind": "por_maquina", "unit": "%", "default": 100, "limits": (10, 200),
+        "origin": "pressuposto", "stored": True, "active": True,
+        "applies_in": "Horas desta máquina em todas as páginas: horas do Excel × 100 ÷ eficiência. A capacidade não muda.",
+        "recalcula": RECALC_HOURS},
+    "piece_minutes": {
+        "label": "Tempo fixo por peça", "kind": "numero", "unit": "min", "default": 0, "limits": (0, 120),
+        "origin": "pressuposto", "stored": True, "active": True,
+        "applies_in": "Horas de todas as linhas do setor: mais este tempo por peça (não nas velocidades medidas).",
+        "recalcula": RECALC_HOURS},
+    "deadline_policy": {
+        "label": "Prazo usado", "kind": "politica", "unit": None, "default": None, "limits": None,
+        "origin": "regra", "stored": False, "active": True,
+        "applies_in": "Prazo de cada linha: semana na Carteira e na Carga, atraso e ordem. O primeiro campo que a linha tiver.",
+        "recalcula": "Os prazos recalculam em segundo plano (cerca de 2 min)."},
+    "posts": {
+        "label": "Posto e máquinas", "kind": "postos", "unit": None, "default": None, "limits": None,
+        "origin": "declarado", "stored": False, "active": True,
+        "applies_in": "Capacidade na Carga e nos totais do setor: conta uma vez.", "recalcula": None},
+    # Etapa 3 (motor de previsão): ainda não se mostram nem se gravam.
+    "folga_dias": {
+        "label": "Folga antes do prazo", "kind": "numero", "unit": "dias úteis", "default": 2, "limits": (0, 20),
+        "origin": "pressuposto", "stored": True, "active": False,
+        "applies_in": "Estado «Em risco» da previsão; as datas mostradas não mudam.", "recalcula": "Só a previsão."},
+    "clientes_prioritarios": {
+        "label": "Clientes prioritários", "kind": "lista", "unit": None, "default": [], "limits": (0, 50),
+        "origin": "declarado", "stored": True, "active": False,
+        "applies_in": "Ordem da previsão, depois da prioridade escrita.", "recalcula": "Só a previsão."},
+    "pessoas_por_maquina": {
+        "label": "Pessoas por máquina a trabalhar", "kind": "numero", "unit": "pessoas", "default": 1, "limits": (0, 10),
+        "origin": "pressuposto", "stored": True, "active": False,
+        "applies_in": "Pessoas necessárias no Calendário e em Capacidade e prazos.", "recalcula": None},
+    "pessoas_por_turno": {
+        "label": "Pessoas disponíveis por turno", "kind": "por_turno", "unit": "pessoas", "default": None, "limits": (0, 200),
+        "origin": "declarado", "stored": True, "active": False,
+        "applies_in": "Falta de pessoas por turno (vazio = não se calcula).", "recalcula": None},
+}
+TIMING = {"margin_pct": ("Margem (substituída pela eficiência de cada máquina)", 0, 300),
+          "piece_minutes": ("Tempo fixo por peça (min)", *PLANNING["piece_minutes"]["limits"])}
 EFFICIENCY_LABEL = "Eficiência da máquina (% da velocidade do Excel)"
 # Campos do payload «maquina» que mudam o recurso físico (raw_objects); a eficiência fica nas Definições do setor.
 RESOURCE_FIELDS = {"turnos_padrao", "confirmada", "ficha", "nomes", "operacoes", "janela_historico"}
@@ -70,12 +121,21 @@ def _weeks(today: date | None = None, count: int = HORIZON_WEEKS):
         yield y, w
 
 
-def machine_rows(c, sector: str) -> list[dict]:
-    """Máquinas do setor pelo catálogo de recursos (members.rule); a área dos calendários não conta."""
-    from .members import rule
+def _resources(c):
+    """Recursos físicos e catálogo (occurrences.resources_context), lidos uma vez por pedido das Definições."""
     from .occurrences import resources_context
+    return resources_context(c)
+
+
+def machine_rows(c, sector: str, *, context=None) -> list[dict]:
+    """Máquinas do setor pelo catálogo de recursos (members.rule); a área dos calendários não conta.
+
+    Todas, também as da 2.ª operação: os calendários (regenerate, extend_horizon) e os turnos (shifts.apply) usam
+    esta lista. Só a vista das Definições (`overview`) as tira. `context` = o resultado de `_resources(c)`, se já lido.
+    """
+    from .members import rule
     from .portfolio_kpis import catalog
-    codes, by_id, _, configs, package = resources_context(c)
+    codes, by_id, _, configs, package = context if context is not None else _resources(c)
     info = catalog(c, sector) if by_id else {}
     own = rule(by_id, info, sector)
     objects = {str(cfg["id"]): cfg for cfg in configs if cfg["kind"] == "resource"}
@@ -225,6 +285,79 @@ def measured_view(m: dict, measured: dict) -> list[dict]:
     return out
 
 
+def _second_operation_rule():
+    """`second_operation.machine(sector, process)` (decisão do Luís, 08/10: a 2.ª operação das cantoneiras só sai das
+    listas); None enquanto o módulo não existir (código antigo), e então a lista fica como estava."""
+    try:
+        from . import second_operation
+    except ImportError:
+        return None
+    return getattr(second_operation, "machine", None)
+
+
+def split_second_operation(sector: str, machines: list[dict], rule=None) -> tuple[list[dict], list[dict]]:
+    """(máquinas do plano, máquinas da 2.ª operação) pela regra comum; sem regra, todas ficam no plano."""
+    rule = rule if rule is not None else _second_operation_rule()
+    if rule is None:
+        return list(machines), []
+    outside = [m for m in machines if rule(sector, m.get("process"))]
+    ids = {m["id"] for m in outside}
+    return [m for m in machines if m["id"] not in ids], outside
+
+
+def posts_view(by_id: dict, package, own: set) -> list[dict]:
+    """Postos compostos por máquinas do setor (relação «compoe» do catálogo, a mesma de capacity.counted e da Carga).
+
+    Ex.: «Serrote Fita pav.1 (posto) = Serrote Fita pav.1 + Serrote Doall Pav.1 + Thomas IS639: uma só capacidade».
+    Só leitura: o catálogo é a origem.
+    """
+    if not package or not by_id:
+        return []
+    from .capacity import physical
+    members = physical(by_id, (package.get("metadata") or {}).get("relations") or [])["members"]
+    out = []
+    for post, children in sorted(members.items(), key=lambda kv: str((by_id.get(kv[0]) or {}).get("name") or kv[0])):
+        if post not in own and not own.intersection(children):
+            continue
+        name = (by_id.get(post) or {}).get("name") or post
+        names = [(by_id.get(rid) or {}).get("name") or rid for rid in children]
+        out.append({"post": post, "name": name, "members": names,
+                    "text": f"{name} (posto) = {' + '.join([name, *names])}: uma só capacidade"})
+    return out
+
+
+def planning_view(settings: dict, machines: list[dict], policy: dict | None, posts: list[dict]) -> list[dict]:
+    """Linhas da secção «Planeamento» pela ordem de `PLANNING`, só os parâmetros ativos (P9, 08/10).
+
+    Cada linha leva o rótulo, a unidade, os limites, a origem, onde se aplica, o que recalcula e o valor atual. A
+    eficiência é por máquina (as de `machines`, já sem a 2.ª operação), com o medido em `machines[].measured`.
+    """
+    from . import priority
+    out = []
+    for key, p in PLANNING.items():
+        if not p["active"]:
+            continue
+        row = {"key": key, "label": p["label"], "kind": p["kind"], "unit": p["unit"], "default": p["default"],
+               "min": p["limits"][0] if p["limits"] else None, "max": p["limits"][1] if p["limits"] else None,
+               "origin": p["origin"], "origin_label": ORIGINS[p["origin"]], "applies_in": p["applies_in"],
+               "recalcula": p["recalcula"], "editable": p["kind"] != "postos"}
+        if p["kind"] == "por_maquina":
+            row["value"] = {m["id"]: m.get("efficiency_pct", p["default"]) for m in machines}
+        elif p["kind"] == "politica":
+            policy = policy or {}
+            row["value"] = {k: policy.get(k) for k in ("principal", "following", "milestone", "assume_picking_year", "origin")}
+            row["value"]["revision"] = policy.get("revision") or 0
+            row["choices"] = [{"key": k, "label": v} for k, v in priority.FIELDS.items()]
+        elif p["kind"] == "postos":
+            if not posts:
+                continue  # setor sem postos compostos: nada a mostrar
+            row["value"] = posts
+        else:
+            row["value"] = settings.get(key, p["default"])
+        out.append(row)
+    return out
+
+
 def _rate_view(r: dict, today: str) -> dict:
     from ..raw.productivity import rate_tier
     d = r["definition"]
@@ -242,7 +375,11 @@ def overview(sector: str) -> dict:
     today = date.today().isoformat()
     with planning.connect(readonly=True) as c:
         settings = read(c, sector)
-        machines = machine_rows(c, sector)
+        context = _resources(c)
+        # 2.ª operação das cantoneiras (P3-A, 08/10): fora da lista das Definições, numa linha à parte;
+        # machine_rows fica com todas (calendários e turnos).
+        machines, second = split_second_operation(sector, machine_rows(c, sector, context=context))
+        posts = posts_view(context[1], context[4], {m["id"] for m in machines})
         rates = c.execute("SELECT id, name, revision, definition FROM planning_mtg.raw_objects WHERE kind='rate' AND NOT archived ORDER BY name").fetchall()
         study = throughput.load(c) if research.enabled() and sector == "cantoneiras" else None
         excel_area = _excel_area(c, machines) if sector == "perfis" else {}
@@ -296,8 +433,10 @@ def overview(sector: str) -> dict:
         all_rates = [r for m in machines for r in m["rates"]]
         tabs = operation_tabs(machines, all_rates)
         seed = excel_seed(sector, machines, study, excel_area)
+    chain = " → ".join(priority.FIELDS.get(f, f) for f in policy.get("principal") or [])
     rules = [
-        "Prazo: " + ("Data Corte." if sector == "cantoneiras" else "Picking (semana do Excel; ano deduzido), depois Data Corte."),
+        # O prazo segue a política em uso (08/10): o primeiro campo que a linha tiver.
+        "Prazo: " + (chain or "por definir") + (" (o primeiro que a linha tiver)." if len(policy.get("principal") or []) > 1 else "."),
         "Máquina de cada linha: escolha da Carteira → coluna Máquina da Tabela → conjunto de famílias.",
         "Estados: Planeado (Planear + máquina) · Planeado para nesting (tem máquina) · Sem máquina atribuída. Sem máquina não se planeia.",
         "Horas: taxa confirmada da tabela de velocidades; senão velocidade do Excel da máquina da linha" +
@@ -321,7 +460,10 @@ def overview(sector: str) -> dict:
                    "margin_editable": False, "efficiency_label": EFFICIENCY_LABEL}
     return needs.serial({"sector": sector, "settings": settings, "machines": machines, "weeks": weeks, "rules": rules,
                          "policy": policy, "methods": METHODS, "shift_hours": shifts.shift_hours(settings["template"]),
-                         "speed_table": speed_table})
+                         "speed_table": speed_table,
+                         # P9 e P3-A (08/10): o ecrã só mostra a secção e a linha quando estes campos vêm.
+                         "planning": planning_view(settings, machines, policy, posts),
+                         "second_operation": [{"id": m["id"], "name": m["name"], "process": m.get("process")} for m in second]})
 
 
 def regenerate(c, sector: str, settings: dict, request_id: uuid.UUID, *, machines: list[dict] | None = None,
@@ -507,6 +649,54 @@ def _efficiency_store(current: dict, changes: dict, machines: dict) -> dict:
     return stored
 
 
+def _planning_number(p: dict, value, *, empty=None):
+    """Um número dentro dos limites do parâmetro; inteiro quando dá. Vazio = `empty`."""
+    if value in (None, "") and empty is not None:
+        return empty
+    if value in (None, ""):
+        raise planning.PlanningError(f"{p['label']}: indica um número.")
+    number = _number(value, p["label"])
+    low, high = p["limits"]
+    if not low <= number <= high:
+        raise planning.PlanningError(f"{p['label']}: entre {low:g} e {high:g}{' ' + p['unit'] if p['unit'] else ''}.")
+    return int(number) if number.is_integer() else round(number, 3)
+
+
+def _validate_planning(values, current: dict, machines: dict) -> dict:
+    """Valores da secção «Planeamento» ({chave: valor}) validados por `PLANNING` → chaves a gravar na definição.
+
+    Só os parâmetros ativos e gravados nas Definições do setor (a política de prazo tem a sua gravação; os postos são
+    do catálogo). A eficiência passa por `_efficiency_store` (só as diferentes de 100 ficam; a margem antiga fica a 0).
+    """
+    if not isinstance(values, dict) or not values:
+        raise planning.PlanningError("Indica pelo menos um valor.")
+    out = {}
+    for key, value in values.items():
+        p = PLANNING.get(key)
+        if not p or not p["active"] or not p["stored"]:
+            raise planning.PlanningError(f"Parâmetro desconhecido nas Definições: {key}.")
+        if p["kind"] == "por_maquina":
+            if not isinstance(value, dict) or not value or len(value) > 200:
+                raise planning.PlanningError(f"{p['label']}: indica o valor de pelo menos uma máquina.")
+            out[key] = _efficiency_store(current, value, machines)
+            out["margin_pct"] = 0
+        elif p["kind"] == "numero":
+            out[key] = _planning_number(p, value)
+        elif p["kind"] == "lista":
+            items = value if isinstance(value, list) else str(value or "").splitlines()
+            clean = list(dict.fromkeys(str(x).strip() for x in items if str(x).strip()))
+            if len(clean) > p["limits"][1] or any(len(x) > 120 for x in clean):
+                raise planning.PlanningError(f"{p['label']}: no máximo {p['limits'][1]} nomes, até 120 caracteres cada.")
+            out[key] = clean
+        elif p["kind"] == "por_turno":
+            if not isinstance(value, list) or len(value) > shifts.MAX_SHIFTS:
+                raise planning.PlanningError(f"{p['label']}: um valor por turno (até {shifts.MAX_SHIFTS}).")
+            out[key] = [None if x in (None, "") else _planning_number(p, x) for x in value]
+        else:
+            raise planning.PlanningError(f"Parâmetro desconhecido nas Definições: {key}.")
+    return out
+
+
 def _seed_now(c, sector: str, machines: list[dict]) -> list[dict]:
     from . import throughput
     from ..gantt import research
@@ -656,6 +846,14 @@ def save(payload: dict, *, conn=None) -> dict:
                 raise planning.PlanningError("Indica a eficiência de pelo menos uma máquina.")
             _store(c, sector, {**_first_store(c, sector, current), "efficiency": _efficiency_store(current, changes, machines),
                                "margin_pct": 0}, actor)
+            changed = 1
+        elif kind == "planeamento":  # secção «Planeamento» (P9, 08/10): parâmetros de PLANNING, numa só gravação
+            if payload.get("expected_revision") != current["revision"]:
+                raise planning.PlanningError("As definições mudaram entretanto. Recarrega a página.", 409)
+            values = payload.get("valores")
+            per_machine = isinstance(values, dict) and any((PLANNING.get(k) or {}).get("kind") == "por_maquina" for k in values)
+            machines = {m["id"]: m for m in machine_rows(c, sector)} if per_machine else {}
+            _store(c, sector, {**_first_store(c, sector, current), **_validate_planning(values, current, machines)}, actor)
             changed = 1
         elif kind == "maquina":
             machines = {m["id"]: m for m in machine_rows(c, sector)}
