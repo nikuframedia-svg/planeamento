@@ -2,6 +2,65 @@
 
 Plano: [PLANO.md](PLANO.md). Estado: **ativo em produção desde 02/10/2026 ~19:17** (autorizado pelo Luís): migração 046 aplicada, `kanban-planning` e `kanban-research-sync` reiniciados, vistas da base de pesquisa aplicadas, ecrã antigo removido (cópia em `~/.local/state/planning-carteira-membros/antes-20261002/`, com as definições anteriores das vistas `consulta_v2`). Teste de browser aprovado contra a produção.
 
+## 07/10/2026 (noite): velocidade
+
+O Luís pediu: «foca-te na velocidade do sistema, está muito lento». Fizeram-se quatro trabalhos em worktrees, cada um com um revisor (correção e produção/MES) e uma ronda de correções quando foi preciso. **Ativo desde as 21:00**: os três serviços foram parados e arrancados com o merge `422f296`.
+
+**Causas encontradas:**
+- **Memória do servidor esgotada:**
+  - o `pyrefly` (verificador de Python da extensão do editor Antigravity) estava com 24 GB;
+  - a swap estava cheia (31/31 GB);
+  - às 15:00 o sistema matou o `kanban-planning` por falta de memória (pico de 10,1 GB). O serviço voltou sozinho 5 s depois.
+  - Com autorização do Luís, o `pyrefly` foi reiniciado: a memória usada desceu de 52 para 21 GB.
+- **Processador partilhado com os testes do PP1:** carga de 15 a 38 em 20 núcleos. Os processos do PP1 passaram a `nice 15` (à mão, temporário).
+- **Caches esvaziadas a toda a hora:** a cada dado novo, a página seguinte refazia tudo (Gantt simples até 61 s).
+- **Cada exportação do OCR** (~50 por dia útil) regravava as 15 611 linhas de `original:*`, porque `source_export.version`/`line` iam dentro de cada linha.
+- **A lista de ordens** relia as importações inteiras a cada pedido.
+
+**O que mudou:**
+- **Exportação do OCR** (`app/raw/ocr_export.py`, `research_sync.py`):
+  - a versão fica só nos metadados da geração; contrato da projeção `http-export-v2`;
+  - uma exportação normal grava 1 conteúdo em vez de 15 610 (de ~52 MB para alguns KB; publicação de 3,9 para 1 s);
+  - um minuto sem exportação nova sai logo;
+  - houve uma regravação única às 21:00.
+- **Caches e arranque** (`app/sector/cache.py` e `warmup.py`, mais portfolio, occurrences, board, load, KPIs, routes, `plano.js`, `setor_carga.js`):
+  - **chaves:** dependem só do que cada página usa;
+  - **dados novos:** a página responde logo com a versão anterior (marcada) e refaz uma vez em segundo plano, um cálculo de cada vez, com prioridade;
+  - **erros:** um erro repetido volta a aparecer, em vez de ficar escondido;
+  - **arranque:** aquecimento dos dois setores (cantoneiras 136 s, perfis 16 s).
+  - Interruptores: `MES_PLANNING_WARMUP_SECTORS` e `MES_PLANNING_WARMUP_DISABLED=1`.
+- **Lista de ordens** (`app/planning_hub.py`, `planning_order_population.py`): as importações são lidas uma vez por versão. A consulta das linhas da macro passou de 4,0 para 0,7 s. As respostas são iguais byte a byte (teste de referência).
+- **Pequenas:**
+  - o Gantt técnico recalcula sozinho uma vez quando a proposta é de outra versão do motor;
+  - `.eyebrow` passa a 11 pt;
+  - o motivo das quotas de capacidade passa a opcional.
+
+**Medido em produção (antes → depois):**
+
+| Pedido | Antes | Depois |
+|---|---|---|
+| Gantt simples MTG3 | 61 s | 0,18 s |
+| Lista de ordens | 8,4 s | 5,2 s no 1.º pedido, 0,26 s depois |
+| Carga MTG3 | 1,2 s | 0,5 s |
+| Carteira e KPI | 0,2–0,6 s | 0,2–0,6 s |
+| Pelo link | — | todas as páginas abaixo de 1 s |
+
+A app fica com 2,1 GB depois do aquecimento.
+
+**Testes:**
+- Suite completa: 1177 passam, 11 falham (as mesmas de antes).
+- `carteira_browser`, `setor_browser` e `manual_browser` passam contra a produção, com as gravações intercetadas.
+
+**Limpeza do disco:** agendada para 07/10 às 23:30.
+- Timer `planning-retention-20261007`; script `~/.local/state/planning-retention/noite-2026-10-07.sh`; registo `noite-2026-10-07.log`.
+- Passos: índices de apoio CONCURRENTLY → migração 050 → `raw_retention.py --execute`, online → `VACUUM (ANALYZE)`.
+
+**Por fazer:**
+- **`ocr_original.export_rows`:** guarda uma cópia completa por versão (~22 MB por exportação, ~1,1 GB por dia útil). Proposta: migração 051 com conteúdos por hash e membros por intervalo de versões. Precisa de coordenação com o MES.
+- **Detalhe da OF** (`/api/ordens/{of}`, 0,4–2,4 s): falta um índice em `raw_mtg.cpis_rows` (CONCURRENTLY, dono `dataresearchmtg_owner`).
+- **`pyrefly`:** vai voltar a crescer se continuar a analisar `~/PPX_MVP_WORKTREES`. A correção duradoura é uma definição do editor do Luís.
+- **Problema anterior, MES:** o MES não tem `app/cpis_copies.py`, mas o `planning_hub.py` partilhado importa-o desde 06/10, por isso o MES não arranca até isto se resolver.
+
 ## 07/10/2026: mínimo de burocracia (só os dados essenciais, gravar sempre)
 
 Plano aprovado: `~/.claude/plans/esta-horrivel-n-o-existe-gleaming-clarke.md`. Pedido do Luís: «se eu não preencher os campos que não são essenciais, deixa validar na mesma… quero o mínimo de burocracias». Decisões dele: Planear numa linha sem máquina usa a sugerida; em «Mais opções» sai tudo menos Observações.
