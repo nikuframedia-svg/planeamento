@@ -38,10 +38,10 @@ Os caminhos documentais antigos também apontam para `data/dossiers/` desta past
 
 ## GitHub
 
-Repositório privado dedicado: [nikuframedia-svg/planeamento](https://github.com/nikuframedia-svg/planeamento).
+Repositório público dedicado: [nikuframedia-svg/planeamento](https://github.com/nikuframedia-svg/planeamento).
 O ramo principal é `main`; o histórico local iniciado em 28/09/2026 está preservado.
 
-Para obter uma cópia com uma conta autorizada no GitHub:
+Para obter uma cópia:
 
 ```sh
 git clone https://github.com/nikuframedia-svg/planeamento.git
