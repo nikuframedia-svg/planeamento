@@ -387,8 +387,8 @@ def test_sector_timing_form_sends_the_margin_only_when_editable():
     assert settings._validate_timing({"piece_minutes": "1,5"}, {"margin_pct": 10, "piece_minutes": 0}) == {"piece_minutes": 1.5}
     js = (Path(__file__).resolve().parents[1] / "app/web/static/setor_definicoes.js").read_text(encoding="utf-8")
     form = js[js.index("function timingForm"):js.index("function seedBox")]
-    assert "st.margin_editable !== false" in form and "if (editable) body.margin_pct" in form
-    assert "editable ? el('label', {}, labels.margin_pct" in form
+    assert "st.margin_editable !== false" in form and "if (margin) payload.margin_pct" in form
+    assert "margin ? el('label', {}, labels.margin_pct" in form
 
 
 def test_activation_of_08_10_waits_for_the_worker_and_keeps_the_hard_links():
