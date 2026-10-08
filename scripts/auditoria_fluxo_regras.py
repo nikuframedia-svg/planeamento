@@ -320,7 +320,7 @@ def ocr_da_operacao(setor, por_linha: dict, registos: dict, plan_key, operacoes_
 
 # ---------------------------------------------------------------- peso e área
 
-_CANTONEIRA = re.compile(r"^\s*L\s*(\d+(?:[.,]\d+)?)\s*[xX×*]\s*(\d+(?:[.,]\d+)?)\s*[xX×*]\s*(\d+(?:[.,]\d+)?)\s*$")
+_CANTONEIRA = re.compile(r"^\s*[Ll]\s*(\d+(?:[.,]\d+)?)\s*[xX×*]\s*(\d+(?:[.,]\d+)?)\s*[xX×*]\s*(\d+(?:[.,]\d+)?)\s*$")
 
 
 def dimensoes_cantoneira(perfil):
