@@ -211,19 +211,10 @@ def line_from_row(row: dict, today: date, *, policy: dict | None = None, overrid
     """One open plan line, or None when nothing is left to cut (`keep_done`: the line anyway, for the warnings)."""
     from . import priority
     v = row["v"]
-    quantity = _number(v.get("quantity_required"))
+    detail = row.get('detail') or {}
+    quantity, pieces, done, b = balance_of(v, detail)
     if quantity is None:
         return None
-    from ..planning_estimates import select_balance
-    detail = row.get('detail') or {}
-    op = 'corte' if detail.get('area') == 'perfis' else str(v.get('operation') or '')
-    b = select_balance({**detail, 'values':v},op)
-    pieces = _number(v.get('planning_remaining')) if 'planning_remaining' in v else b['planning_remaining']
-    # A single documentary counter is usable; an OCR overlap without a resolved
-    # production source remains unknown rather than selecting a maximum.
-    if pieces is None and 'planning_remaining' not in v and not detail.get('calculation') and v.get('ocr_quantity') is None and _number(v.get('made')) is not None:
-        pieces = quantity - _number(v.get('made'))
-    done = quantity - pieces if pieces is not None else None
     following=(detail.get('calculation') or {}).get('integrated_operations',[])
     pending_operations=[s for s in following if s.get('remaining') is None or s['remaining']>0]
     if pieces is not None and pieces <= 0 and not pending_operations and not keep_done:
@@ -318,6 +309,27 @@ def line_from_row(row: dict, today: date, *, policy: dict | None = None, overrid
     }
 
 
+def balance_of(v: dict, detail: dict, area: str | None = None) -> tuple:
+    """(QTD, saldo da operação principal, feito, evidência) de uma linha, pela reconciliação comum.
+
+    O mesmo cálculo na Carteira e no âmbito do Gantt (scope.planning_lines, quantidade parcial 08/10).
+    """
+    from ..planning_estimates import select_balance
+    quantity = _number(v.get("quantity_required"))
+    if quantity is None:
+        return None, None, None, None
+    area = area or detail.get('area')
+    op = 'corte' if area == 'perfis' else str(v.get('operation') or '')
+    b = select_balance({**detail, 'area': area, 'values': v} if area else {**detail, 'values': v}, op)
+    pieces = _number(v.get('planning_remaining')) if 'planning_remaining' in v else b['planning_remaining']
+    # A single documentary counter is usable; an OCR overlap without a resolved
+    # production source remains unknown rather than selecting a maximum.
+    if pieces is None and 'planning_remaining' not in v and not detail.get('calculation') and v.get('ocr_quantity') is None and _number(v.get('made')) is not None:
+        pieces = quantity - _number(v.get('made'))
+    done = quantity - pieces if pieces is not None else None
+    return quantity, pieces, done, b
+
+
 def following_balances(operations: list[dict]) -> list[dict]:
     """[{label, remaining}] das operações seguintes por fazer: «Abocardar» ou «2.ª op.», saldo somado por rótulo;
     None quando algum saldo é desconhecido."""
@@ -381,8 +393,79 @@ def decision_of(line: dict, decisions: dict | None) -> str | None:
     return effective(line, decisions)["decision"]
 
 
+def open_effective(line: dict, decisions: dict | None) -> dict:
+    """effective() com a parte planeada por fazer (quantidade parcial, 08/10): `planned_open` quando a decisão tem
+    quantidade; com a parte toda feita (0) a linha volta a «Planeado para nesting» pelo resto (`consumed`)."""
+    found = effective(line, decisions)
+    if found["decision"] == "selected" and found.get("planned_quantity") is not None:
+        part = resolution.planned_open(found, line.get("pieces"), line.get("done"))
+        found = {**found, "planned_open": part}
+        if part == 0:
+            found.update(decision=None, consumed=True)
+    return found
+
+
 def status_of(line: dict, decisions: dict | None) -> dict:
-    return planning_status.classify(effective(line, decisions), line["machine"])
+    return planning_status.classify(open_effective(line, decisions), line["machine"])
+
+
+def plan_split(line: dict, decisions: dict | None = None, *, found: dict | None = None) -> dict:
+    """Parte planeada e resto de uma linha (quantidade parcial, 08/10), em peças da operação principal.
+
+    - não planeada: planned 0, rest = saldo; planeada inteira: planned = saldo, rest 0;
+    - parcial (parte por fazer > 0 e menor do que o saldo): planned = parte, rest = saldo − parte.
+    `share` = parte ÷ saldo (1 inteira, 0 não planeada): as horas e os metros são lineares nas peças.
+    Saldo por confirmar: a linha fica inteira (planned/rest None).
+    """
+    found = found or open_effective(line, decisions)
+    status = planning_status.classify(found, line["machine"])
+    pieces, part = line.get("pieces"), found.get("planned_open")
+    partial = bool(status["planeado"] and part is not None and pieces is not None and part < pieces)
+    if partial:
+        planned, rest, share = part, pieces - part, (part / pieces if pieces else 0.0)
+    elif status["planeado"]:
+        planned, rest, share = pieces, (0 if pieces is not None else None), 1.0
+    else:
+        planned, rest, share = (0 if pieces is not None else None), pieces, 0.0
+    return {"status": status, "partial": partial, "planned_pieces": planned, "rest_pieces": rest, "share": share,
+            "planned_quantity": found.get("planned_quantity"), "found": found}
+
+
+def planned_parts(lines: list[dict], decisions: dict | None) -> dict:
+    """{chave: peças planeadas por fazer ou None}: as linhas «Planeado»; None = a linha inteira (contrato da Carga)."""
+    out = {}
+    for x in lines:
+        split = plan_split(x, decisions)
+        if split["status"]["planeado"]:
+            out[x["key"]] = split["planned_pieces"] if split["partial"] else None
+    return out
+
+
+def split_fact(fact: dict, part, principal_remaining) -> tuple[dict | None, dict | None]:
+    """(parte planeada, resto) de uma ocorrência de uma linha planeada em parte; `part` None = linha inteira.
+
+    A operação principal leva min(parte, saldo); as seguintes as peças já cortadas que lhes faltam mais a parte
+    (decisions.operation_part). Saldo, horas, peças e metros dividem-se na mesma proporção (as horas são lineares
+    nas peças, também com o fator da Thomas, que é pela QTD). Saldo desconhecido fica inteiro na parte.
+    """
+    remaining = fact.get("remaining")
+    principal = fact.get("phase", "principal") == "principal"
+    planned = resolution.operation_part(remaining, part, principal_remaining, principal)
+    if part is None or remaining is None or planned is None or planned >= remaining:
+        return fact, None
+    if planned <= 0:
+        return None, {**fact, "_part": "rest"}
+
+    def scaled(amount, extra):
+        share = amount / remaining
+        out = {**fact, "remaining": amount, "planned_of": remaining, "_part": "plan" if not extra else "rest"}
+        for name in ("load_hours", "metres", "pieces"):
+            if fact.get(name) is not None:
+                out[name] = fact[name] * share
+        if extra:
+            out["_extra"] = True  # a mesma operação: não conta outra vez nem os desconhecidos
+        return out
+    return scaled(planned, False), scaled(remaining - planned, True)
 
 
 def state_of(line: dict, decisions: dict | None) -> str:
@@ -529,7 +612,9 @@ def matches(line: dict, filters: dict, decisions: dict | None = None) -> bool:
     if wanted:
         check_estado(wanted)
         if wanted in STATUS:
-            return planning_status.matches(status_of(line, decisions), wanted)
+            split = plan_split(line, decisions)
+            # Parcial (08/10): a linha aparece em Planeado e também no estado do resto (nesting).
+            return planning_status.matches(split["status"], wanted) or (split["partial"] and wanted == "nesting")
         return state_of(line, decisions) == wanted
     return True
 
@@ -539,10 +624,31 @@ def _summary(lines: list[dict], decisions: dict | None = None) -> dict:
     by_state = defaultdict(float)
     state_counts=defaultdict(int)
     status = {code: {"lines": 0, "metres": 0.0, "pieces": 0.0, "kg": 0.0, "kg_unknown": 0, "ofs": set()} for code in STATUS}
+    partial_lines = 0
     for x in lines:
-        by_state[state_of(x, decisions)] += x["metres"]
-        state_counts[state_of(x,decisions)]+=1
-        for code, value in status_of(x, decisions).items():
+        state = state_of(x, decisions)
+        split = plan_split(x, decisions)
+        state_counts[state]+=1
+        if split["partial"]:
+            # Parte planeada (08/10): os metros planeados vão para Planeado e o resto (com máquina) para «Em
+            # nesting»; a linha conta uma vez, em Planeado (`partial_lines`).
+            partial_lines += 1
+            share = split["share"]
+            by_state[state] += x["metres"] * share
+            by_state["proposta" if x["proposal"] else "por_decidir"] += x["metres"] * (1 - share)
+            for code, part in (("planeado", share), ("nesting", 1 - share)):
+                s = status[code]
+                s["lines"] += code == "planeado"
+                s["metres"] += x["metres"] * part
+                s["pieces"] += split["planned_pieces"] if code == "planeado" else split["rest_pieces"]
+                if x.get("kg") is None:
+                    s["kg_unknown"] += code == "planeado"
+                else:
+                    s["kg"] += x["kg"] * part
+                s["ofs"].add(x["of"])
+            continue
+        by_state[state] += x["metres"]
+        for code, value in split["status"].items():
             if value:
                 s = status[code]
                 s["lines"] += 1
@@ -589,7 +695,8 @@ def _summary(lines: list[dict], decisions: dict | None = None) -> dict:
         "tonnes": round(sum(x["kg"] for x in lines if x.get("kg") is not None) / 1000, 2),
         "weight_unknown": sum(x.get("kg") is None for x in lines),
         "status": {code: {"lines": s["lines"], "metres": round(s["metres"], 1), "pieces": round(s["pieces"]), "ofs": len(s["ofs"]),
-                          "tonnes": round(s["kg"] / 1000, 2), "weight_unknown": s["kg_unknown"]}
+                          "tonnes": round(s["kg"] / 1000, 2), "weight_unknown": s["kg_unknown"],
+                          **({"partial_lines": partial_lines} if code == "planeado" else {})}
                    for code, s in status.items()},
         "earliest_cut_date": min(cut_dates) if cut_dates else None,
         "earliest_priority_day": min(priority_days) if priority_days else None,
@@ -745,14 +852,14 @@ def groups(sector: str, view: str = "referencia", path: list[str] | None = None,
         "generation": data["generation"], "snapshot": data["snapshot"], "imported_at": data["imported_at"], "today": data["today"], "stale": bool(data.get("stale")),
         "list_totals": subtotal, "totals": subtotal, "groups": result[:limit], "truncated": len(result) > limit, "group_count": len(result),
         # Eco da ordem e o que esta versão sabe (P6, 08/10): o ecrã só mostra as datas quando vê isto.
-        "order": sort, "capabilities": {"ordem_data": True},
+        "order": sort, "capabilities": {"ordem_data": True, "parcial": True},
         "windows": WINDOWS, "signals": SIGNALS, "states": STATES, "status": STATUS,
         "rules": {
             "saldo": "Saldo por operação segundo a reconciliação comum; sobreposições por resolver ficam desconhecidas. O saldo documental conserva a origem. Concluir a primeira operação não encerra as seguintes.",
             "modelo": "Referência mestre = código do modelo no início da referência (ED4T40 → ED4, DLT319 → DLT, 1283V053 → 1283).",
             "semana": "Semana ISO do prazo do setor: MTG3 pela Data Corte; MTG2 pelo Picking com ano confirmado, depois Galvanização e Data Corte. Sem prazo fica em «Sem semana definida».",
             "familias": "Família SKU vem do catálogo versionado de referências (por exemplo M1, M2); Família de Produto é o tipo de obra do CPIS. São dimensões diferentes.",
-            "estado": "Planeado = Planear e Máquina; Planeado para nesting = tem Máquina, ainda sem Planear; Sem máquina atribuída = coluna Máquina vazia. Cada linha tem um só estado. Planear numa linha sem máquina usa a máquina sugerida (podes mudar).",
+            "estado": "Planeado = Planear e Máquina; Planeado para nesting = tem Máquina, ainda sem Planear; Sem máquina atribuída = coluna Máquina vazia. Cada linha tem um só estado. Planear numa linha sem máquina usa a máquina sugerida (podes mudar). Planear parte: a parte vai para Planeado e o resto fica em nesting; a produção registada depois consome primeiro a parte planeada.",
             "selecao": "As caixas de seleção são um rascunho desta sessão e deste setor; filtrar, pesquisar, ordenar ou mudar a vista não as altera. Planear e Limpar gravam só os membros marcados dessa linha (ou o grupo inteiro, se nenhum estiver marcado).",
         },
     }
@@ -765,7 +872,8 @@ def member_token(line: dict, revision: int) -> str:
 
 def member_view(line: dict, decisions: dict | None) -> dict:
     found = effective(line, decisions)
-    status = planning_status.classify(found, line["machine"])
+    split = plan_split(line, found=open_effective(line, decisions))
+    status = split["status"]
     return {
         "key": line["key"], "of": line["of"], "reference": line["reference"], "profile": line["profile"],
         "length_mm": line["length_mm"], "quantity": line["quantity"], "pieces": line["pieces"],
@@ -784,6 +892,10 @@ def member_view(line: dict, decisions: dict | None) -> dict:
         # Avisos da lupa (08/10): «repetida n×», «produção acima da QTD», «Abocardar: N» quando só falta essa operação.
         "repeated": line.get("repeated"), "production_excess": line.get("production_excess"),
         "following": line.get("following"),
+        # Quantidade parcial (08/10): a parte planeada por fazer e o resto, em peças da operação principal.
+        "planned_pieces": split["planned_pieces"], "planned_quantity": split["planned_quantity"],
+        "rest_pieces": split["rest_pieces"], "partial": split["partial"],
+        "done": line.get("done"),
     }
 
 
@@ -828,7 +940,7 @@ def members(sector: str, view: str, path: list[str], *, cursor: int = 0, limit: 
     items = [{**member_view(x, decisions), "visible": visible is None or x["key"] in visible,
               "suggested": None if x["machine"] else found.get(x["key"]) if found is not None else for_line(learned, checked, x)}
              for x in page]
-    statuses = [planning_status.classify(effective(x, decisions), x["machine"]) for x in universe]
+    statuses = [status_of(x, decisions) for x in universe]
     return {
         "sector": sector, "view": view, "path": path, "order": sort, "total": len(universe), "matching": len(shown),
         "keys": [x["key"] for x in universe],
@@ -840,6 +952,7 @@ def members(sector: str, view: str, path: list[str], *, cursor: int = 0, limit: 
         # O servidor aceita o grupo inteiro como membros com token («todo_o_grupo», 07/10/2026): a Carteira só o
         # manda assim quando vê isto, para nunca o mandar a uma versão que não respeite as exclusões do grupo.
         "todo_o_grupo": True,
+        "parcial": True,  # aceita «quantidade» por membro no Planear (08/10)
     }
 
 

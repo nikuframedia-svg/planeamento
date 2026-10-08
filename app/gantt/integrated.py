@@ -35,6 +35,11 @@ def balance(row):
     application=row.get('application_balance_evidence') or {}
     if application:
         reasons += application.get('coverage_reasons') or application.get('reasons') or []
+    planned = row.get('planned_part')
+    if planned and value is not None:
+        # Planear parte (08/10): o Gantt técnico só planeia a parte planeada por fazer (a mesma regra da Carga).
+        from ..sector.decisions import operation_part
+        value = operation_part(value, planned['part'], planned['principal'], row.get('fase') == 'principal')
     return {'planning_remaining': value if coherent else None, 'reconciled_remaining': confirmed,
             'balance_provisional': confirmed is None,
             'balance_origin': application.get('origin') or application.get('balance_origin') or ('Reconciliado' if confirmed is not None else 'Excel provisório'), 'reasons': reasons}
@@ -401,6 +406,9 @@ def capture(c, definition, started_at, *, expected_references=None):
         **({'data_corte_prevista':r['current_planning']['cut_date']} if r.get('current_planning',{}).get('cut_date') else {})} for r in rows]
     for i, r in enumerate(rows):
         info = record_info.get(r.get('matched_application_key') or r.get('application_row_key'))
+        planned = (records_by_key.get(r.get('matched_application_key') or r.get('application_row_key')) or {}).get('planned_part')
+        if planned:  # linha planeada em parte (08/10): balance() limita o saldo à parte
+            rows[i] = r = {**r, 'planned_part': planned}
         if r['fase'] == 'principal' and info and info[1].get('source') in ('carteira', 'conjunto'):
             code = next((k for k, res in codes.items() if res.get('id') == info[1].get('resource_id')), None)
             rows[i] = {**r, 'maquina_original': info[1]['machine'], 'recurso_atual': code}

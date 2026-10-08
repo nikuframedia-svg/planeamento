@@ -325,7 +325,7 @@
             el('td', {class: 'num', title: o.weight_unknown ? `${o.weight_unknown} operação(ões) sem peso unitário (não contam)` : null},
               o.weight_kg === undefined ? '' : known(o.weight_kg, o.weight_unknown, h, 'sem peso')),
             el('td', {}, o.priority_day ? dm(o.priority_day) : '—'), el('td', {class: 'num'}, o.late_days ? `${o.late_days} d` : ''),
-            el('td', {}, o.kinds.map((k) => KIND[k]).join(', ')),
+            el('td', {}, o.kinds.map((k) => KIND[k]).join(', ') + (o.planned_text ? ` · ${o.planned_text}` : '')),
             el('td', {}, el('a', {href: carteiraLink(o.of, current && (d.week_hours === undefined || o.late_before_operations) ? null : week)}, 'Carteira')));
           const go = () => showOperations(m, w, o.of).catch(error);
           tr.addEventListener('click', (e) => { if (!e.target.closest('a')) go(); });
@@ -433,7 +433,7 @@
           el('td', {class: 'num', title: o.load_hours === null ? (o.hours_reason || '') : ''}, o.load_hours !== null ? h1.format(o.load_hours) : 'sem horas'),
           el('td', {class: 'num'}, o.excel_hours !== null && o.excel_hours !== undefined ? h1.format(o.excel_hours) : '—'),
           el('td', {class: 'num'}, o.weight_kg !== null && o.weight_kg !== undefined ? h.format(o.weight_kg) : o.phase === 'principal' ? '—' : ''),
-          el('td', {title: o.priority_source || ''}, o.priority_day ? dm(o.priority_day) : '—'), el('td', {}, o.kind + (o.late ? ' · atrasada' : '')));
+          el('td', {title: o.priority_source || ''}, o.priority_day ? dm(o.priority_day) : '—'), el('td', {}, o.kind + (o.planned_text ? ` · ${o.planned_text}` : '') + (o.late ? ' · atrasada' : '')));
         const details = el('details', {}, el('summary', {}, 'Ver cálculo'), originNote(o), ...calculation(o));
         tr.append(el('td', {}, details));
         return [tr];

@@ -21,6 +21,9 @@ continuam sem mexer nos KPIs.
   exemplo Ficep XP T7) aparecem com o nome, sem serem classificados.
 - 2.ª operação das cantoneiras (08/10, second_operation.py): fora do plano; não soma horas nem «horas
   desconhecidas» (como na Carga, que a tira das células e dos totais).
+- Linha planeada em parte (08/10): B leva só a parte planeada (horas e metros na proporção das peças, exato
+  porque as horas são lineares nas peças); no Resumo a parte fica em Planeado e o resto em nesting, e a linha
+  conta uma vez, em Planeado. Na pré-visualização o resto entra no acréscimo.
 """
 from __future__ import annotations
 
@@ -59,6 +62,28 @@ def _add(target, fact, line, sector=None):
         target["hours_unknown"] += 1
     else:
         target["hours"] += hours
+
+
+def _parts(facts, line, split) -> tuple[list, list]:
+    """([(ocorrência, linha)] da parte planeada, [(ocorrência, linha)] do resto) de uma linha (08/10).
+
+    Linha inteira: tudo de um lado. Parcial: cada ocorrência dividida por portfolio.split_fact e os metros da
+    linha na mesma proporção das peças da operação principal.
+    """
+    if not split["partial"]:
+        both = [(f, line) for f in facts]
+        return (both, []) if split["status"]["planeado"] else ([], both)
+    share = split["share"]
+    planned_line = {**line, "metres": line["metres"] * share, "key": line["key"]}
+    rest_line = {**line, "metres": line["metres"] * (1 - share)}
+    plan, rest = [], []
+    for f in facts:
+        a, b = portfolio.split_fact(f, split["planned_pieces"], line["pieces"])
+        if a is not None:
+            plan.append((a, planned_line))
+        if b is not None:
+            rest.append((b, rest_line))
+    return plan, rest
 
 
 def _metres_unknown(line) -> bool:
@@ -210,39 +235,47 @@ def overview(sector: str, weeks: list[str] | None = None, *, today: date | None 
     summary = {code: {**_empty(), "pieces": 0.0, "ofs": set(), "kg": 0.0, "kg_unknown": 0} for code in planning_status.STATUS}
     in_week = {code: {"metres": 0.0, "metres_unknown": 0, "kg": 0.0, "kg_unknown": 0, "lines": 0} for code in planning_status.STATUS}
     for line in data["lines"]:
-        found = portfolio.effective(line, decisions)
-        status = planning_status.classify(found, line["machine"])
+        split = portfolio.plan_split(line, decisions)
+        status = split["status"]
         facts = ctx["facts"].get(line["key"], [])
+        plan, rest = _parts(facts, line, split)
         for f in facts:
             b = bucket(f, ctx["names"])
             if b and b not in machines:
                 machines[b] = {"id": b, "name": b.removeprefix("nome:"), "code": None, "process": None, "unit": None,
                                "type": None, "in_catalog": False}
-            if b and status["planeado"]:
-                _add(base[b], f, line, sector)
+        for f, part_line in plan:  # B: só a parte planeada (a linha inteira quando não é parcial)
+            b = bucket(f, ctx["names"])
+            if b:
+                _add(base[b], f, part_line, sector)
         code = next((c for c, value in status.items() if value), None)
         if code is None:  # linha excluída: fora do Resumo (planning_status, A8-5)
             continue
-        s = summary[code]
-        s["pieces"] += line["pieces"] or 0
-        s["ofs"].add(line["of"])
-        if line.get("kg") is None:
-            s["kg_unknown"] += 1  # sem peso unitário: não conta como zero
-        else:
-            s["kg"] += line["kg"]
-        for f in facts:
-            _add(s, f, line, sector)
-        if codes and portfolio.matches(line, {"semanas": codes}):  # a semana da linha = a da operação principal
-            w = in_week[code]
-            w["lines"] += 1
-            if _metres_unknown(line):
-                w["metres_unknown"] += 1
-            else:
-                w["metres"] += line["metres"]
+        shares = ((code, 1.0, plan or rest),) if not split["partial"] else (("planeado", split["share"], plan),
+                                                                              ("nesting", 1 - split["share"], rest))
+        for part_code, share, pairs in shares:
+            s = summary[part_code]
+            s["pieces"] += (line["pieces"] or 0) * share
+            s["ofs"].add(line["of"])
             if line.get("kg") is None:
-                w["kg_unknown"] += 1
+                s["kg_unknown"] += part_code == code  # sem peso unitário: não conta como zero (uma vez por linha)
             else:
-                w["kg"] += line["kg"]
+                s["kg"] += line["kg"] * share
+            for f, part_line in pairs:
+                _add(s, f, part_line, sector)
+            if part_code != code:
+                s["lines"].discard(line["key"])  # a linha parcial conta uma vez, em Planeado
+            if codes and portfolio.matches(line, {"semanas": codes}):  # a semana da linha = a da operação principal
+                w = in_week[part_code]
+                w["lines"] += part_code == code
+                if _metres_unknown(line):
+                    w["metres_unknown"] += part_code == code
+                else:
+                    w["metres"] += line["metres"] * share
+                if line.get("kg") is None:
+                    w["kg_unknown"] += part_code == code
+                else:
+                    w["kg"] += line["kg"] * share
     panels = {code: {"id": code, "label": label, "machines": []} for code, label, _ in PANELS[sector]}
     others = []
     for rid, m in machines.items():
@@ -320,17 +353,20 @@ def preview(payload: dict, **kw) -> dict:
             else:
                 no_machine["metres"] += line["metres"]
             continue
-        status = planning_status.classify(portfolio.effective(line, decisions), line["machine"])
+        split = portfolio.plan_split(line, decisions)
+        status = split["status"]
         if status["nesting"]:
             to_plan["lines"] += 1
             if line.get("kg") is None:
                 to_plan["kg_unknown"] += 1
             else:
                 to_plan["kg"] += line["kg"]
-        for f in ctx["facts"].get(key, []):
-            b = bucket(f, ctx["names"])
-            if b:  # uma operação seguinte ainda sem máquina não tem destino: não acrescenta a nenhuma
-                _add(already if status["planeado"] else delta[b], f, line, sector)
+        plan, rest = _parts(ctx["facts"].get(key, []), line, split)
+        for pairs, planned in ((plan, True), (rest, False)):
+            for f, part_line in pairs:
+                b = bucket(f, ctx["names"])
+                if b:  # uma operação seguinte ainda sem máquina não tem destino: não acrescenta a nenhuma
+                    _add(already if planned else delta[b], f, part_line, sector)
     return {
         "sector": sector, "version": version(ctx), "stale": bool(ctx["occ"].get("stale") or data.get("stale")),
         "members": len(dict.fromkeys(keys)) - len(unknown), "unknown_keys": unknown[:50], "unknown_count": len(unknown),

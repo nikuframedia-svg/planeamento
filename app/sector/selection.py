@@ -18,6 +18,13 @@ puder ser planeada, a ação é recusada.
 
 Excluir: o motivo é opcional desde 07/10/2026; o autor e a hora ficam sempre registados.
 
+Planear parte (migração 052, 08/10/2026): cada membro pode levar «quantidade», peças inteiras (≥ 1) da operação
+principal. Uma quantidade igual ou maior do que o saldo, ou nenhuma, é a linha inteira (NULL). Grava-se também
+`made_at_plan`, a produção já feita nesse momento (QTD − saldo): a produção registada depois consome primeiro a
+parte planeada (decisions.planned_open). Mudar só a quantidade, ou passar uma linha parcial a inteira, também
+grava (sobe a revisão, por isso o token, o selo e os digests mudam). Uma linha com o saldo por confirmar só se
+pode planear inteira. Planear não regista produção: o saldo e o feito da linha não mudam.
+
 Precedência na leitura: membro → (OF, referência) → (OF, '*') (ver decisions.py). As decisões antigas
 por OF/referência continuam a valer; novas ações só escrevem decisões por membro. Limpar um membro
 coberto por uma decisão herdada grava uma desmarcação explícita ('cleared'), que vence a herança.
@@ -45,6 +52,8 @@ CHANGED = "Mudou desde a pré-visualização (saldo, máquina, variante ou decis
 GONE = "Já não está na carteira aberta (concluído ou mudou na importação)."
 NO_SUGGESTION = "Sem máquina sugerida: a ficha técnica e o histórico não indicam nenhuma máquina do setor."
 SUGGESTION_UNAVAILABLE = "Máquina sugerida indisponível neste momento; tenta outra vez ou atribui a máquina."
+UNKNOWN_BALANCE = "Saldo por confirmar: só se pode planear a linha inteira."
+NO_QUANTITY = "Planear parte ainda não está instalado (migração 052)."
 
 
 def current(sector: str, conn=None) -> resolution.Decisions:
@@ -172,8 +181,54 @@ def _legacy(payload: dict, data: dict) -> list[tuple[dict, None]]:
     return [(x, None) for x in chosen]
 
 
+def quantities(payload: dict, data: dict, action: str) -> dict[str, int]:
+    """{chave atual: peças a planear} dos membros que trazem «quantidade» (Planear parte, 08/10).
+
+    Peças inteiras ≥ 1 (3 e 3.0 valem; 2.5, 0, texto ou verdadeiro/falso não). Só no Planear e só por membros.
+    """
+    members = payload.get("membros")
+    if not isinstance(members, list):
+        return {}
+    wanted = [m for m in members if isinstance(m, dict) and m.get("quantidade") is not None]
+    if not wanted:
+        return {}
+    if action != "selected":
+        raise planning.PlanningError("A quantidade só se usa com Planear.")
+    by_key = {x["key"]: x for x in data["lines"]}
+    aliases = _alias_index(data["lines"])
+    out = {}
+    for item in wanted:
+        value = _valid_quantity(item["quantidade"])
+        line = by_key.get(item.get("chave")) or aliases.get(item.get("chave"))
+        if line is not None:
+            out[line["key"]] = int(value)
+    return out
+
+
+def _valid_quantity(value) -> int:
+    import math
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or int(value) != value or value < 1:
+        raise planning.PlanningError("Quantidade inválida: indica peças inteiras (1 ou mais).")
+    return int(value)
+
+
+def check_quantities(payload: dict) -> None:
+    """As quantidades vêm em peças inteiras ≥ 1 — conferido antes de tudo (também antes do resumo do pedido)."""
+    for item in payload.get("membros") if isinstance(payload.get("membros"), list) else ():
+        if isinstance(item, dict) and item.get("quantidade") is not None:
+            _valid_quantity(item["quantidade"])
+
+
+def planned_quantity(line: dict, quantity: int | None) -> int | None:
+    """Quantidade gravada: None (a linha inteira) sem quantidade ou com quantidade ≥ saldo."""
+    if quantity is None or line["pieces"] is None or quantity >= line["pieces"]:
+        return None
+    return int(quantity)
+
+
 def request_hash(payload: dict, action: str) -> str:
-    """O pedido tal como foi enviado (não o grupo recalculado): uma repetição devolve o resultado gravado."""
+    """O pedido tal como foi enviado (não o grupo recalculado): uma repetição devolve o resultado gravado.
+    Os membros vão inteiros, com a «quantidade»: outra quantidade é outro pedido."""
     keep = ("setor", "acao", "motivo", "membros", "grupo", "vista", "caminho", "filtros", "maquina")
     whole = {"todo_o_grupo": True} if payload.get("todo_o_grupo") else {}  # só quando vem: os pedidos antigos mantêm o resumo
     return needs.digest({"action": action, **{k: payload.get(k) for k in keep}, **whole})
@@ -284,11 +339,13 @@ def apply(payload: dict, *, data: dict | None = None, conn=None) -> dict:
     except ValueError:
         raise planning.PlanningError("Pedido sem identificador; recarrega a página.") from None
 
+    check_quantities(payload)
     content = request_hash(payload, action)
     repeated = _repeated_early(request_id, content, conn)
     if repeated:  # um pedido repetido (por exemplo depois de um erro de rede) volta logo, sem calcular nada
         return repeated
     data = data or portfolio.current(sector)
+    wanted = quantities(payload, data, action)
     actor = registration.human_actor(payload)
     # As sugestões calculam-se antes de qualquer bloqueio, com ligações próprias só de leitura: nenhum outro pedido
     # espera pela previsão. Sob os bloqueios voltam a conferir-se os tokens e a máquina de cada linha.
@@ -308,11 +365,15 @@ def apply(payload: dict, *, data: dict | None = None, conn=None) -> dict:
             chosen = [(line, token) for line, token in chosen if portfolio.effective(line, decisions)["decision"] != "excluded"]
             if not chosen:
                 raise planning.PlanningError("Todas estas linhas estão excluídas; escolhe-as uma a uma na lupa para as planear.")
+        if wanted and not resolution.has_quantity(c):
+            raise planning.PlanningError(NO_QUANTITY, 503)
         ready = []
         for line, token in chosen:
             before = portfolio.effective(line, decisions)
             if token is not None and token != portfolio.member_token(line, before["revision"]):
                 skipped.append(_skipped(line, CHANGED))
+            elif line["key"] in wanted and line["pieces"] is None:
+                skipped.append(_skipped(line, UNKNOWN_BALANCE))
             else:
                 ready.append((line, before, token))
         machines, no_machine = [], 0  # (linha, sugestão): a máquina sugerida fica como escolha da Carteira
@@ -324,9 +385,9 @@ def apply(payload: dict, *, data: dict | None = None, conn=None) -> dict:
             raise planning.PlanningError("Nenhuma destas linhas tem máquina nem máquina sugerida. Dá-lhes máquina antes de Planear.")
         changes = []
         for line, before, _ in ready:
-            after = _after(action, line, decisions)
-            if after["decision"] == before["decision"]:
-                continue  # a decisão efetiva já é esta: nada a gravar neste membro
+            after = _after(action, line, decisions, wanted.get(line["key"]))
+            if not _changed(line, before, after):
+                continue  # a decisão efetiva (e a quantidade) já é esta: nada a gravar neste membro
             changes.append((line, before, after))
         # Planeadas neste pedido: as que passam a Planear e as já marcadas que só agora recebem a máquina sugerida.
         planned = {line["key"] for line, _, _ in changes} | {line["key"] for line, _ in machines} if action == "selected" else set()
@@ -334,8 +395,9 @@ def apply(payload: dict, *, data: dict | None = None, conn=None) -> dict:
         result = {"changed": len(changes), "planned": len(planned), "members": len(ready), "skipped_no_machine": no_machine,
                   "suggested_machine": len(machines), "skipped": skipped[:200], "skipped_count": len(skipped),
                   "group_changed": bool(scope.get("grupo_mudou")), "action": action, "actor": actor,
-                  "metres": round(sum(line["metres"] for line, _, _ in changes), 1), "repeated": False,
-                  "keys": [line["key"] for line, _, _ in changes]}
+                  "metres": round(sum(_planned_metres(line, after) for line, _, after in changes), 1), "repeated": False,
+                  "keys": [line["key"] for line, _, _ in changes],
+                  "partial": sum(1 for _, _, after in changes if after.get("planned_quantity") is not None)}
         _write(c, sector, action, reason, actor, request_id, detail, changes, content, result, machines)
     return result
 
@@ -379,12 +441,36 @@ def _with_machines(c, sector, ready, skipped, suggestions, unavailable):
     return out, machines, no_machine
 
 
-def _after(action, line, decisions) -> dict:
-    """Decisão gravada: selected/excluded; Limpar = sem decisão do membro, ou desmarcação explícita se herdar."""
+def _after(action, line, decisions, quantity: int | None = None) -> dict:
+    """Decisão gravada: selected/excluded; Limpar = sem decisão do membro, ou desmarcação explícita se herdar.
+    No Planear também a quantidade (None = a linha inteira) e a produção já feita quando é parcial."""
+    if action == "selected":
+        planned = planned_quantity(line, quantity)
+        return {"decision": action, "planned_quantity": planned,
+                "made_at_plan": (line.get("done") or 0) if planned is not None else None}
     if action != "cleared":
         return {"decision": action}
     inherited = resolution.resolve(decisions, {}, [(line["of"], line["reference"]), (line["of"], WHOLE)], [])
     return {"decision": None, "explicit": inherited["decision"] is not None}
+
+
+def _changed(line: dict, before: dict, after: dict) -> bool:
+    """Há alguma coisa a gravar? Outra decisão; no Planear também outra quantidade, ou a mesma quantidade com a
+    parte já consumida pela produção (planear outra vez a mesma parte recomeça a contar a partir de agora)."""
+    if after["decision"] != before["decision"]:
+        return True
+    if after["decision"] != "selected":
+        return False
+    if after.get("planned_quantity") != before.get("planned_quantity"):
+        return True
+    return after.get("planned_quantity") is not None and \
+        resolution.planned_open(before, line["pieces"], line.get("done")) != after["planned_quantity"]
+
+
+def _planned_metres(line: dict, after: dict) -> float:
+    if after.get("planned_quantity") is not None and line["pieces"]:
+        return line["metres"] * after["planned_quantity"] / line["pieces"]
+    return line["metres"]
 
 
 def _cleared(cur, table: str, sector: str, lines: list[dict]) -> dict[str, int]:
@@ -416,22 +502,26 @@ def _write(c, sector, action, reason, actor, request_id, detail, changes, conten
         if not changes:
             return
         revisions = _cleared(cur, "sector_member_selection", sector, [line for line, _, _ in changes])
+        with_quantity = resolution.has_quantity(c)
         rows, events = [], []
         for line, before, after in changes:
             revision = revisions[line["key"]]
             stored = after["decision"] if after["decision"] else ("cleared" if after.get("explicit") else None)
+            quantity = {k: after.get(k) for k in ("planned_quantity", "made_at_plan")} if stored == "selected" else {}
             if stored:
                 rows.append((sector, line["key"], line["of"], line["reference"], stored,
                              resolution.reason_or_default(reason) if stored == "excluded" else None, actor, revision, request_id,
-                             Jsonb(_seen(line))))
+                             Jsonb(_seen(line)),
+                             *((quantity.get("planned_quantity"), quantity.get("made_at_plan")) if with_quantity else ())))
             events.append((sector, line["of"], line["reference"], line["key"], action, reason, actor, request_id,
                            Jsonb({**detail, "seen": _seen(line), "revision": revision,
-                                  "before": {k: before[k] for k in ("decision", "source", "revision")},
-                                  "after": {"decision": after["decision"], "stored": stored}})))
+                                  "before": {k: before[k] for k in ("decision", "source", "revision", "planned_quantity") if k in before},
+                                  "after": {"decision": after["decision"], "stored": stored, **quantity}})))
         if rows:
-            cur.executemany("""INSERT INTO planning_mtg.sector_member_selection
-                                   (area, member_key, production_order_no, reference, decision, reason, actor, revision, request_id, seen)
-                               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""", rows)
+            columns = "area, member_key, production_order_no, reference, decision, reason, actor, revision, request_id, seen"
+            columns += ", planned_quantity, made_at_plan" if with_quantity else ""
+            cur.executemany(f"INSERT INTO planning_mtg.sector_member_selection ({columns}) "
+                            f"VALUES ({', '.join(['%s'] * len(rows[0]))})", rows)
         cur.executemany("""INSERT INTO planning_mtg.sector_decision_events
                                (area, kind, production_order_no, reference, member_key, action, reason, actor, request_id, detail)
                            VALUES (%s, 'member', %s, %s, %s, %s, %s, %s, %s, %s)""", events)

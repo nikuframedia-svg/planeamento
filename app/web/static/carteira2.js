@@ -35,6 +35,7 @@
     kpisWeek: false,  // KPIs da semana (filtro Prazo, 08/10): números das células da Carga, sem os acréscimos (+…)
     kpisBase: null,   // a última resposta sem semanas, para «Limpar filtros» voltar logo a ela
     noDateOrder: false, // Python antiga sem as ordens por data (P6, 08/10)
+    parcial: false,     // a Python aceita «quantidade» no Planear (capabilities.parcial, 08/10): mostra o botão «%»
   };
 
   function el(tag, attrs = {}, ...children) {
@@ -200,8 +201,11 @@
   }
 
   function planCell(st, buttons) {
+    // Linha planeada em parte (08/10): «Planeado: 1 987 m (parte)».
+    const part = (st.planeado.partial_lines || 0) > 0;
     return el('td', {class: 'plan'}, el('div', {class: 'plan-cell'}, buttons ? el('span', {class: 'acts'}, buttons) : null,
-      el('span', {class: 'planned'}, `Planeado: ${metres(st.planeado.metres)}`)));
+      el('span', {class: 'planned', title: part ? `${number.format(st.planeado.partial_lines)} linha(s) planeada(s) em parte: o resto fica em nesting` : null},
+        `Planeado: ${metres(st.planeado.metres)}${part ? ' (parte)' : ''}`)));
   }
 
   function row(group, data, path, depth) {
@@ -214,13 +218,15 @@
     const lupa = el('button', {type: 'button', class: 'lupa', 'aria-expanded': 'false', 'aria-label': `Ver os membros de ${group.key}`, title: 'Ver e marcar um a um'}, '🔍');
     const plan = el('button', {type: 'button', class: 'act act-plan', title: 'Planear as linhas marcadas (todas, se nenhuma estiver marcada). Só as que têm máquina.'}, 'Planear');
     const clear = el('button', {type: 'button', class: 'act act-clear', title: 'Tirar o Planear das linhas marcadas (todas, se nenhuma estiver marcada)'}, 'Limpar');
+    // «%» = Planear parte (08/10): só quando a Python o aceita.
+    const part = state.parcial ? el('button', {type: 'button', class: 'act act-part', title: 'Planear parte', 'aria-label': `Planear parte de ${group.key}`}, '%') : null;
     const tr = el('tr', {class: `group level-${depth}${allNesting ? ' is-nesting' : ''}`,
                          dataset: {path: pathId(key), depth: String(depth), total: String(group.member_total), name: group.key, view: data.view}},
       el('th', {scope: 'row', class: 'name'},
         el('div', {class: 'name-cell', style: `--depth:${depth}`},
           el('input', {type: 'checkbox', class: 'group-pick'}), toggle,
           el('strong', {}, group.key), dueTag(group.due_tag, data.order), lupa, el('span', {class: 'pick-count'}))),
-      planCell(st, [plan, clear]),
+      planCell(st, [part ? el('span', {class: 'plan-pair'}, plan, part) : plan, clear]),
       el('td', {class: 'num'}, metresKnown(group.metres, unknownMetres(group))),
       el('td', {class: 'num'}, number.format(group.pieces)),
       el('td', {class: 'num'}, number.format(group.ofs)),
@@ -231,6 +237,7 @@
     lupa.addEventListener('click', () => toggleLupa(tr, key, lupa));
     plan.addEventListener('click', () => act(key, 'selecionar', tr));
     clear.addEventListener('click', () => act(key, 'limpar', tr));
+    if (part) part.addEventListener('click', () => openPartial(key, tr, part));
     return tr;
   }
 
@@ -335,6 +342,7 @@
     try {
       const data = await api('/planeamento/api/carteira', query());
       if (ticket !== state.tickets.list || sector !== state.sector) return;
+      state.parcial = Boolean((data.capabilities || {}).parcial);
       // Python antiga, sem «order» (P6, 08/10): ordenava por metros sem dizer. Fica a ordem de hoje e uma nota.
       if (!('order' in data) && BY_DATE.has(order)) {
         state.noDateOrder = true;
@@ -424,7 +432,9 @@
       el('td', {class: 'num', title: unknownM && !m.balance_unknown ? 'Sem comprimento: metros por saber' : null}, unknownM || following ? '—' : `${metresFine.format(m.metres || 0)} m`),
       el('td', {title: m.machine ? (SOURCE_LABEL[m.machine_source] || '') + (m.machine_source === 'carteira' && m.tabela_machine ? ` (Tabela: ${m.tabela_machine})` : '') : (m.suggested ? m.suggested.label : null)},
         m.machine || (m.suggested ? el('span', {class: 'muted'}, `— sugerida: ${shortName(m.suggested.machine)}`) : '—')),
-      el('td', {}, el('span', {class: `chip chip-${code}`}, STATE_LABEL[code]), ...warnings(m)));
+      el('td', {}, el('span', {class: `chip chip-${code}`},
+        code === 'planeado' && m.partial ? `Planeado ${number.format(m.planned_pieces)} de ${number.format(m.pieces)}` : STATE_LABEL[code]),
+        ...warnings(m)));
   }
 
   // Avisos de uma linha na lupa (08/10): nada é corrigido, só se diz.
@@ -537,6 +547,185 @@
       }
     } finally {
       buttons.forEach((b) => { b.disabled = false; });
+    }
+  }
+
+  // --- Planear parte (P5, 08/10)
+  // O âmbito é o do Planear: os membros marcados do grupo, ou o grupo todo. O total pedido (peças ou metros)
+  // distribui-se pela ordem de prazo, a encher linha a linha; cada linha pode ser mudada. Metros → peças inteiras
+  // por round(m × 1000 / comprimento), com mínimo 1 na última linha. Planear grava logo; não regista produção.
+
+  const PARTIAL_LIMIT = 500;
+  const metresOne = new Intl.NumberFormat('pt-PT', {minimumFractionDigits: 1, maximumFractionDigits: 1});
+  const pieceMetres = (line, n) => (line.length_mm ? n * line.length_mm / 1000 : 0);
+
+  function byDue(a, b) {
+    const da = a.priority_day || a.cut_date || '9999-12-31', db = b.priority_day || b.cut_date || '9999-12-31';
+    return da < db ? -1 : da > db ? 1 : 0;  // estável: dentro do mesmo prazo fica a ordem da lista
+  }
+
+  // Distribuição do total: {chave: peças}. `unit` = 'pecas' | 'm'.
+  function distribute(lines, amount, unit) {
+    const out = {};
+    let left = Math.max(0, Number(amount) || 0);
+    for (const line of lines) {
+      let take = 0;
+      if (left > 0) {
+        if (unit === 'm') {
+          const full = pieceMetres(line, line.pieces);
+          if (!line.length_mm) take = 0;
+          else if (left >= full - 1e-9) { take = line.pieces; left -= full; }
+          else { take = Math.min(line.pieces, Math.max(1, Math.round(left * 1000 / line.length_mm))); left = 0; }
+        } else {
+          take = Math.min(line.pieces, Math.floor(left));
+          left -= take;
+        }
+      }
+      out[line.key] = take;
+    }
+    return out;
+  }
+
+  function partialDialog() {
+    let dialog = $('parcial');
+    if (!dialog) {
+      dialog = el('dialog', {id: 'parcial', class: 'parcial', 'aria-labelledby': 'parcial-title'});
+      document.body.append(dialog);
+    }
+    return dialog;
+  }
+
+  async function openPartial(path, tr, button) {
+    const dialog = partialDialog();
+    const name = path[path.length - 1];
+    const close = el('button', {type: 'button', class: 'small', value: 'cancel'}, 'Cancelar');
+    close.addEventListener('click', () => dialog.close());
+    dialog.replaceChildren(el('h2', {id: 'parcial-title'}, `Planear parte · ${name}`), el('p', {class: 'muted'}, 'A carregar…'));
+    if (!dialog.open) dialog.showModal();
+    button.disabled = true;
+    try {
+      const data = await api('/planeamento/api/carteira/membros',
+        query({vista: tr.dataset.view, caminho: path, cursor: 0, limite: PARTIAL_LIMIT}));
+      if (data.total > PARTIAL_LIMIT || data.next_cursor !== null && data.next_cursor !== undefined) {
+        dialog.replaceChildren(el('h2', {id: 'parcial-title'}, `Planear parte · ${name}`),
+          el('p', {}, 'Abre um nível abaixo para planear parte.'), el('div', {class: 'parcial-acts'}, close));
+        return;
+      }
+      const marked = data.items.filter((m) => state.selected.has(m.key));
+      const scope = marked.length ? marked : data.items.filter((m) => m.decision !== 'excluded');
+      // Só as linhas com saldo conhecido e por cortar podem ir em parte; as outras ficam de fora deste diálogo.
+      const lines = scope.filter((m) => !m.balance_unknown && m.pieces > 0).slice().sort(byDue);
+      const out = scope.length - lines.length;
+      renderPartial(dialog, path, tr, name, lines, out, close);
+    } catch (error) {
+      dialog.close();
+      showError(error);
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+  function renderPartial(dialog, path, tr, name, lines, out, close) {
+    const totalPieces = lines.reduce((a, l) => a + l.pieces, 0);
+    const totalMetres = lines.reduce((a, l) => a + pieceMetres(l, l.pieces), 0);
+    const amount = el('input', {type: 'number', id: 'parcial-quantidade', min: '0', step: 'any', inputmode: 'decimal',
+                                'aria-label': 'Quanto planear'});
+    const unit = el('select', {id: 'parcial-unidade', 'aria-label': 'Unidade'}, el('option', {value: 'pecas'}, 'peças'), el('option', {value: 'm'}, 'm'));
+    const chosenText = el('p', {class: 'parcial-escolhido', id: 'parcial-escolhido'});
+    const restText = el('p', {class: 'muted', id: 'parcial-resto'});
+    const save = el('button', {type: 'button', class: 'act-plan', id: 'parcial-planear', disabled: true}, 'Planear');
+    let take = Object.fromEntries(lines.map((l) => [l.key, 0]));
+    let asked = null; // {amount, unit}: o que se pediu, para dizer o arredondamento
+    const inputs = {};
+    const metresCells = {};
+    const table = lines.length > 1 ? el('div', {class: 'parcial-scroll'}, el('table', {class: 'members parcial-linhas'},
+      el('thead', {}, el('tr', {}, ...['OF', 'Referência', 'Comp.', 'Saldo', 'Planear', 'm']
+        .map((h, i) => el('th', {scope: 'col', class: i >= 2 ? 'num' : null}, h)))),
+      el('tbody', {}, lines.map((l) => {
+        const input = el('input', {type: 'number', min: '0', max: String(l.pieces), step: '1', value: '0', class: 'parcial-linha',
+                                   'aria-label': `Peças a planear de ${l.of} ${l.reference}`, dataset: {key: l.key}});
+        input.addEventListener('input', () => {
+          const n = Math.max(0, Math.min(l.pieces, Math.floor(Number(input.value) || 0)));
+          take[l.key] = n;
+          asked = null;
+          update(false);
+        });
+        inputs[l.key] = input;
+        metresCells[l.key] = el('td', {class: 'num'}, '0');
+        return el('tr', {}, el('td', {}, l.of), el('td', {}, l.reference),
+          el('td', {class: 'num'}, l.length_mm ? number.format(l.length_mm) : '—'), el('td', {class: 'num'}, number.format(l.pieces)),
+          el('td', {class: 'num'}, input), metresCells[l.key]);
+      })))) : null;
+
+    function update(fromTotal) {
+      if (fromTotal) {
+        take = distribute(lines, amount.value, unit.value);
+        asked = amount.value !== '' ? {amount: Number(amount.value), unit: unit.value} : null;
+      }
+      let pieces = 0, m = 0;
+      for (const l of lines) {
+        pieces += take[l.key];
+        m += pieceMetres(l, take[l.key]);
+        if (inputs[l.key] && fromTotal) inputs[l.key].value = String(take[l.key]);
+        if (metresCells[l.key]) metresCells[l.key].textContent = metresOne.format(pieceMetres(l, take[l.key]));
+      }
+      const rounding = asked && asked.unit === 'm' && Math.abs(asked.amount - m) > 0.05
+        ? ` (pediste ${number.format(asked.amount)} m → ${number.format(pieces)} peças inteiras)` : '';
+      chosenText.textContent = `Escolhido: ${number.format(pieces)} peças · ${metresOne.format(m)} m${rounding}`;
+      restText.textContent = `Fica na Carteira: ${number.format(totalPieces - pieces)} peças · ${metresOne.format(totalMetres - m)} m`;
+      save.disabled = pieces <= 0;
+    }
+    amount.addEventListener('input', () => update(true));
+    unit.addEventListener('change', () => update(true));
+    save.addEventListener('click', () => savePartial(dialog, path, tr, name, lines, take, save));
+    dialog.replaceChildren(
+      el('h2', {id: 'parcial-title'}, `Planear parte · ${name}`),
+      el('p', {id: 'parcial-saldo'}, `Saldo: ${number.format(totalPieces)} peças · ${metresOne.format(totalMetres)} m`),
+      out ? el('p', {class: 'muted'}, `${number.format(out)} linha(s) sem saldo por cortar ou com saldo por confirmar ficam de fora.`) : null,
+      el('div', {class: 'parcial-entrada'}, amount, unit),
+      chosenText, restText, table,
+      el('p', {class: 'muted'}, 'Planear não regista produção.'),
+      el('div', {class: 'parcial-acts'}, close, save));
+    update(true);
+    amount.focus();
+  }
+
+  async function savePartial(dialog, path, tr, name, lines, take, save) {
+    const membros = [];
+    for (const l of lines) {
+      const n = take[l.key];
+      if (!n) continue;
+      const item = {chave: l.key, token: state.selected.get(l.key) || l.token};
+      if (n < l.pieces) item.quantidade = n; // a linha toda vai sem quantidade (linha inteira)
+      membros.push(item);
+    }
+    if (!membros.length) return;
+    save.disabled = true;
+    $('error').hidden = true;
+    const sector = state.sector;
+    try {
+      const result = await post('/planeamento/api/carteira/selecao',
+        {setor: sector, acao: 'selecionar', request_id: crypto.randomUUID(), membros}, {retry: true});
+      if (sector !== state.sector) return;
+      dialog.close();
+      lines.forEach((l) => state.selected.delete(l.key));
+      state.groups.delete(pathId(path));
+      const partial = result.partial || 0;
+      notice(result.repeated ? 'Este pedido já tinha sido gravado.'
+        : `${name}: ${number.format(result.planned ?? result.changed)} linha(s) planeada(s)${partial ? `, ${number.format(partial)} em parte` : ''}.` + left(result));
+      selectionChanged();
+      await Promise.all([load(), loadKpis()]);
+    } catch (error) {
+      save.disabled = false;
+      const fields = (error.body || {}).fields || {};
+      dialog.close();
+      if (fields.conflicts && fields.conflicts.length) {
+        state.groups.delete(pathId(path));
+        await refreshTokens();
+        showError(new Error(`${error.message} (${fields.conflict_count} linha(s)). Os dados foram atualizados: abre outra vez.`));
+      } else {
+        showError(error);
+      }
     }
   }
 

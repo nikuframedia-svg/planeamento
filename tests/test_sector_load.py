@@ -37,7 +37,7 @@ def test_excluded_line_does_not_count_in_the_load(monkeypatch):
     monkeypatch.setattr(occurrences, "load", lambda sector, allow_stale=True: {"facts": [fact("o1", "m1", "2026-10-07", 1.0, line_key="L1"),
                                                                                         fact("o2", "m1", "2026-10-07", 1.0, line_key="L2")]})
     _, planned, occ = load._context("perfis", TODAY)
-    assert planned == set() and [f["key"] for f in occ["facts"]] == ["o1"]
+    assert not planned and [f["key"] for f in occ["facts"]] == ["o1"]  # dict desde 08/10 (quantidade parcial)
 
 
 class _Rows:

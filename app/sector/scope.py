@@ -65,6 +65,39 @@ def decision(selection, area, of, reference, keys=()):
     return resolve(selection, members, [(area,of,reference),(area,of,'*')], list(keys))['decision']
 
 
+def resolved(selection, area, of, reference, keys=()):
+    """A decisão completa (resolve), com a quantidade parcial quando a há (08/10)."""
+    if selection is None:
+        return {'decision': None}
+    from .decisions import resolve
+    reference = str(reference or '').strip() or 'Sem referência'
+    return resolve(selection, _area_members(selection, area), [(area,of,reference),(area,of,'*')], list(keys))
+
+
+def planned_part(selection, area, record):
+    """(planeada agora?, {'part', 'principal'} ou None) de uma linha ativa (quantidade parcial, 08/10).
+
+    A parte por fazer vem da regra única decisions.planned_open, com o saldo e o feito da Carteira
+    (portfolio.balance_of). Parte 0 = já feita: a linha deixa de estar planeada (volta a nesting pelo resto).
+    None = a linha inteira.
+    """
+    from .decisions import planned_open
+    v = record['values_json']
+    decided = resolved(selection, area, v.get('of'), v.get('component_ref'), member_keys(record))
+    if decided.get('decision') != 'selected':
+        return False, None
+    if decided.get('planned_quantity') is None:
+        return True, None
+    from .portfolio import balance_of
+    _, pieces, done, _ = balance_of(v, record.get('detail') or {}, area)
+    part = planned_open(decided, pieces, done)
+    if part == 0:
+        return False, None
+    if part is None or pieces is None or part >= pieces:
+        return True, None
+    return True, {'part': part, 'principal': pieces}
+
+
 def _area_members(selection, area):
     members = getattr(selection,'members',None)
     if not members:
@@ -119,14 +152,16 @@ def planning_lines(c, selection, areas):
         for row in rows:
             v = row['values_json']
             seen_keys.update(member_keys(row)); active_orders.add(v.get('of'))
-            if decision(selection,area,v.get('of'),v.get('component_ref'),member_keys(row))=='selected':
+            chosen, part = planned_part(selection, area, row)
+            if chosen:
                 # O Gantt só recebe linhas com máquina. Desde 07/10/2026 o Planear dá a máquina sugerida a uma linha
                 # sem máquina; aqui ficam de fora só as decisões antigas e as linhas a que tiraram a máquina depois.
                 found = effective_machine(mctx, member_keys(row), v.get('sku_family'), v.get('machine'))
                 if not found['machine']:
                     no_machine += 1
                     continue
-                records.append({**row,'area':area,'effective_machine':found})
+                records.append({**row,'area':area,'effective_machine':found,
+                                **({'planned_part':part} if part else {})})
         if no_machine:
             missing.append({'area':area,'reason':f'{no_machine} linha(s) escolhida(s) sem máquina: entram quando tiverem máquina.'})
         # Membros de linhas já concluídas não são pendentes; só os de OF ainda ativas sem correspondência.
