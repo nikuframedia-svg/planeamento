@@ -1,7 +1,7 @@
 """Aquecimento das caches do setor ao arrancar e no início de cada dia (07/10/2026).
 
 Depois de o serviço arrancar, um fio em segundo plano calcula, para os dois setores (MTG3 primeiro), o mesmo
-que as páginas pedem: Carteira, ocorrências, Gantt simples, Carga e KPIs. O primeiro utilizador já não espera
+que as páginas pedem: Carteira, ocorrências, Carga, Previsão, Gantt simples e KPIs. O primeiro utilizador já não espera
 pelos 25–30 s de cada cache fria. As caches são por dia: de 5 em 5 minutos o fio vê se o dia mudou (ou se o
 último aquecimento falhou) e volta a aquecer. Um só aquecimento por processo; nada é gravado; um pedido que
 chegue a meio espera pelo mesmo cálculo em vez de o repetir (cache.py).
@@ -46,11 +46,13 @@ def sectors() -> tuple[str, ...]:
 
 
 def _steps(sector: str):
-    from . import board, load, occurrences, portfolio, portfolio_kpis
+    """Pela ordem das dependências (Etapa 3, 08/10): a previsão lê a Carga, o Gantt simples lê a previsão."""
+    from . import board, forecast, load, occurrences, portfolio, portfolio_kpis
     return (("Carteira", lambda: portfolio.current(sector)),
             ("ocorrências", lambda: occurrences.load(sector)),
-            ("Gantt simples", lambda: board.board(sector)),
             ("Carga", lambda: load.overview(sector)),
+            ("Previsão", lambda: forecast.current(sector)),
+            ("Gantt simples", lambda: board.board(sector)),
             ("KPIs", lambda: portfolio_kpis.overview(sector)))
 
 

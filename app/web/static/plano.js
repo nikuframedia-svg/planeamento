@@ -55,7 +55,9 @@
   function render() {
     const d = state.data;
     const imported = d.imported_at ? new Date(d.imported_at).toLocaleString("pt-PT", {timeZone: "Europe/Lisbon", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit"}) : "—";
-    $("source").textContent = d.source.kind === "aceite"
+    $("source").textContent = d.source.kind === "plano_em_uso"  // Etapa 3 (08/10): as linhas Planeado na previsão
+      ? `${d.sector_label} · Plano em uso (previsão com capacidade finita) · ${plural(d.source.placed || 0, "operação Planeada", "operações Planeadas")} · dados de ${imported}`
+      : d.source.kind === "aceite"
       ? `${d.sector_label} · plano aceite «${d.source.name}» de ${short(d.source.accepted_at)} · dados do Excel de ${imported}`
       : d.source.kind === "automatica"
         ? `${d.sector_label} · proposta automática (não aceite; o Excel é o plano oficial) · ${number(d.source.placed)} de ${number(d.source.operations)} operações com hora · as restantes no dia da Tabela · dados de ${imported}`
@@ -281,7 +283,9 @@
     }
     empty.append(el("strong", "Ainda não há nada no plano."), el("span", "Para uma OF aparecer aqui:"));
     const steps = el("ol");
-    steps.append(el("li", "Carrega em «Planear» na lista vermelha (ou na Carteira)."), el("li", "Na Tabela, escreve a Máquina e a Data de corte (é o dia em que aparece aqui)."));
+    steps.append(el("li", "Carrega em «Planear» na lista vermelha (ou na Carteira)."), state.data.source.kind === "plano_em_uso"
+      ? el("li", "A linha precisa de máquina: o dia vem da previsão, pela fila da máquina.")
+      : el("li", "Na Tabela, escreve a Máquina e a Data de corte (é o dia em que aparece aqui)."));
     empty.append(steps);
     const selected = state.data.source.selected_orders || 0;
     if (selected) empty.append(el("p", `Já ${selected === 1 ? "há 1 OF marcada" : `há ${number(selected)} OF marcadas`}; falta máquina ou dia.`));
@@ -299,7 +303,12 @@
       ["Horas", box.hours ? `${hours(box.hours)} h${box.hours_estimated ? " (estimativa)" : ""}${perDay ? ` · ${perDay}` : ""}${box.hours_unknown ? ` · ${box.hours_unknown} sem horas` : ""}` : "Por calcular"],
       ...(box.shifts?.length ? [["Turnos", shiftText(box.shifts)]] : []),
       ["Faltam fazer", `${pieces(box.pieces, box.pieces_unknown)}${box.lines > 1 ? ` (${box.lines} linhas)` : ""}`],
-      ["Prazo", box.due ? `${short(box.due)}${box.late ? " · vai ficar atrasada" : ""}` : "Sem prazo", box.late ? "late" : ""]];
+      ["Prazo", box.due ? `${short(box.due)}${box.late ? " · vai ficar atrasada" : ""}` : "Sem prazo", box.late ? "late" : ""],
+      // Plano em uso (08/10): início e fim exatos nesta máquina, conclusão prevista da OF e margem; só quando a API os manda.
+      ...(box.start_at ? [["Nesta máquina", `${moment(box.start_at)} a ${box.end_at ? moment(box.end_at) : "depois do fim dos calendários"}`]] : []),
+      ...(box.conclusion ? [["Conclusão prevista", moment(box.conclusion)]] : []),
+      ...(box.margin_days != null ? [["Margem", margin(box.margin_days), box.margin_days < 0 ? "late" : ""]] : []),
+      ...(box.conflicts?.length ? [["Avisos", box.conflicts.join(" · ")]] : [])];
     for (const [label, value, cls] of rows) body.append(el("dt", label), el("dd", value, cls));
     const actions = $("dialog-actions"); actions.replaceChildren();
     const open = el("a", "Ver na Carteira");
@@ -314,6 +323,10 @@
     actions.append(close);
     $("dialog").showModal();
   }
+
+  const moment = value => new Date(value).toLocaleString("pt-PT", {timeZone: "Europe/Lisbon", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit"});
+  const margin = n => n === 0 ? "0 dias úteis (acaba no dia do prazo)" : n > 0 ? `${plural(n, "dia útil", "dias úteis")} antes do prazo`
+    : `${plural(-n, "dia útil", "dias úteis")} depois do prazo`;
 
   // «07/10 1.º 3,5 h · 2.º 7,5 h»: horas de uma caixa por dia e turno (turno vazio = fora do horário dos turnos)
   function shiftText(list) {
@@ -356,7 +369,7 @@
     // As que a proposta não coloca mas têm previsão da Tabela aparecem só como previsão: ditas à parte.
     const forecast = list.filter(op => op.forecast), gone = list.length - forecast.length;
     box.querySelector("summary").textContent = [
-      gone ? `${plural(gone, "operação planeada não aparece", "operações planeadas não aparecem")} no quadro (sem dia ou sem máquina)` : "",
+      gone ? `${plural(gone, "operação planeada não aparece", "operações planeadas não aparecem")} no quadro${state.data.source.kind === "plano_em_uso" ? "" : " (sem dia ou sem máquina)"}` : "",
       forecast.length ? `${plural(forecast.length, "operação planeada fica", "operações planeadas ficam")} fora da proposta automática (só previsão da Tabela)` : ""].filter(Boolean).join(" · ");
     const ul = box.querySelector("ul"); ul.replaceChildren();
     for (const op of list) ul.append(el("li", `${op.of} · ${op.reference || ""} · ${op.operation || ""}: ${op.reasons.join("; ") || "motivo por indicar"}` +

@@ -328,6 +328,24 @@ def board(setor: str = "cantoneiras"):
     return _call(lambda: needs.serial(quadro.board(setor, allow_stale=True)))
 
 
+@router.get("/planeamento/api/setor/previsao")
+def forecast_summary(setor: str = "cantoneiras"):
+    """Previsão com capacidade finita (Etapa 3, 08/10): recurso limitante, contagens de risco, por máquina o fim da
+    fila, a recuperação e as horas que acabam depois do prazo, e a fiabilidade. Só leitura."""
+    _guard()
+    from . import forecast
+    return _call(lambda: forecast.summary(portfolio.check_sector(setor)))
+
+
+@router.get("/planeamento/api/setor/previsao/ordens")
+def forecast_orders(setor: str = "cantoneiras", estado: str = "todas"):
+    """OF com a conclusão prevista, a margem em dias úteis, o estado (atrasa, em_risco, sem_previsao, ok, já em
+    atraso, sem prazo) e o motivo. Só leitura."""
+    _guard()
+    from . import forecast
+    return _call(lambda: forecast.orders(portfolio.check_sector(setor), estado))
+
+
 @router.get("/planeamento/api/setor/quadro/dia")
 def board_day(setor: str = "cantoneiras", dia: str = "", maquina: str | None = None):
     """Gantt de um dia por máquina do setor: horas, turnos e o que não tem hora (pedido de 06/10/2026)."""

@@ -6,16 +6,17 @@ Só leitura. Duas partes:
   a OF também não entra no Gantt; a lista diz que já está marcada. Linhas excluídas na Carteira não
   contam. As OF que entraram no CPIS nos últimos 3 meses e não aparecem em nenhum plano vêm à parte,
   porque ainda não se sabe o setor.
-- Caixas do Gantt: o plano aceite mais recente deste setor; sem plano aceite, a proposta automática e,
-  para o que ela não coloca, as previsões do planeamento (máquina e dia/semana). Uma caixa = uma OF numa
-  máquina, de um dia a outro, com as peças em falta somadas — nunca uma barra por operação.
+- Caixas do Gantt: o plano em uso (Etapa 3, 08/10) = as linhas Planeado na previsão com capacidade finita
+  (forecast.py, a fila por máquina de dispatch.py), na máquina da Carteira e com as horas da Carga. Uma caixa =
+  uma OF numa máquina, de um dia a outro, com as peças em falta somadas — nunca uma barra por operação — e as
+  chaves das operações (`keys`), o início e o fim exatos, a conclusão prevista da OF, a margem e o risco. O Gantt
+  técnico (plano aceite e proposta automática) é um estudo e já não entra aqui.
 - Só as máquinas do setor (members.py). Trabalho do setor em máquinas de outro setor fica numa nota
   (`elsewhere`), nunca como linha (pedido do Luís, 06/10/2026).
 - 2.ª operação das cantoneiras (08/10, second_operation.py): as operações seguintes da MTG3 saem da lista das
   que não aparecem no quadro (`source.missing`) e ficam só contadas em `source.second_operation`.
 - Turnos e dia (06/10/2026): cada caixa diz as horas por dia e turno; `day()` dá o Gantt de um dia com
-  eixo de horas, faixas dos turnos e totais por turno. Previsões sem horas recebem a estimativa da
-  Carteira (`hours_estimated`).
+  eixo de horas, faixas dos turnos e totais por turno, dos segmentos da previsão.
 """
 from __future__ import annotations
 
@@ -27,7 +28,7 @@ from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 from .. import cpis_copies, planning, planning_needs as needs
-from . import cache, portfolio, second_operation, selection
+from . import cache, portfolio, selection
 
 LISBON = ZoneInfo("Europe/Lisbon")
 RECENT_DAYS = 91  # «Sem peças nos planos»: só as OF registadas há menos de 3 meses (decisão de 28/09)
@@ -160,13 +161,13 @@ def not_in_plans(*, today: date | None = None, conn=None) -> list[dict]:
 
 
 def _merge(items: list[dict], today: date | None = None) -> list[dict]:
-    """Uma caixa por OF e máquina enquanto os dias se tocam; peças, linhas e horas por dia somadas.
+    """Uma caixa por OF e máquina enquanto os dias se tocam; peças, linhas, horas por dia e chaves somadas.
 
-    Atrasada: acaba depois do prazo ou o prazo já passou (antes de hoje), como na Carga e na Carteira.
-    Sem isto, uma previsão da Tabela com data passada (prazo = dia da caixa) nunca ficava atrasada (A8-2).
+    Atrasada: acaba depois do prazo (pela previsão, como instante: `late_exact`) ou o prazo já passou (antes de
+    hoje), como na Carga e na Carteira. Sem `late_exact`, a regra antiga pelo dia da caixa.
     """
     boxes: list[dict] = []
-    for item in sorted(items, key=lambda x: (x["resource_id"], x["of"], x["start"], x["end"])):
+    for item in sorted(items, key=lambda x: (x["resource_id"], x["of"], x["start"], x["end"], x.get("start_at") or datetime.min.replace(tzinfo=timezone.utc))):
         last = boxes[-1] if boxes else None
         days = dict(item.get("days") or {})
         if last and last["resource_id"] == item["resource_id"] and last["of"] == item["of"] and item["start"] <= last["end"]:
@@ -177,11 +178,18 @@ def _merge(items: list[dict], today: date | None = None) -> list[dict]:
                 last["pieces"] += item["pieces"]
             last["lines"] += 1
             last["approximate"] = last["approximate"] or item["approximate"]
-            last["forecast"] = last.get("forecast", False) or item.get("forecast", False)
             last["hours_unknown"] += item.get("hours") is None
             last["hours_estimated"] += int(bool(item.get("estimated")))
             last["hours"] += item.get("hours") or 0
             last["timed"] = last.get("timed", []) + list(item.get("timed") or [])
+            last["keys"] = last.get("keys", []) + list(item.get("keys") or [])
+            last["late_exact"] = last.get("late_exact", False) or item.get("late_exact", False)
+            for c in item.get("conflicts") or []:
+                if c not in last.setdefault("conflicts", []):
+                    last["conflicts"].append(c)
+            for name, pick in (("start_at", min), ("end_at", max)):
+                if item.get(name) is not None:
+                    last[name] = item[name] if last.get(name) is None else pick(last[name], item[name])
             for d, h in days.items():
                 last["days"][d] = last["days"].get(d, 0) + h
             if item["due"] and (last["due"] is None or item["due"] < last["due"]):
@@ -189,10 +197,12 @@ def _merge(items: list[dict], today: date | None = None) -> list[dict]:
         else:
             boxes.append({**item, "pieces": item["pieces"] or 0, "pieces_unknown": int(item["pieces"] is None),
                           "lines": 1, "days": days, "hours": item.get("hours") or 0, "hours_unknown": int(item.get("hours") is None),
-                          "hours_estimated": int(bool(item.get("estimated"))), "timed": list(item.get("timed") or [])})
+                          "hours_estimated": int(bool(item.get("estimated"))), "timed": list(item.get("timed") or []),
+                          "keys": list(item.get("keys") or []), "conflicts": list(item.get("conflicts") or [])})
             boxes[-1].pop("estimated", None)
     for box in boxes:
-        box["late"] = bool(box["due"] and (box["due"] < box["end"] - timedelta(days=1) or (today and box["due"] < today)))
+        by_day = bool(box["due"] and box["due"] < box["end"] - timedelta(days=1))
+        box["late"] = bool(box.pop("late_exact", by_day) or (box["due"] and today and box["due"] < today))
         # Peças desconhecidas não viram 0 (08/10): só desconhecidas → None; algumas → soma das conhecidas + contagem.
         box["pieces"] = None if box["pieces_unknown"] == box["lines"] else round(box["pieces"])
         box["hours"] = round(box["hours"], 2)
@@ -200,126 +210,99 @@ def _merge(items: list[dict], today: date | None = None) -> list[dict]:
     return boxes
 
 
-def _due(op: dict) -> date | None:
-    value = (op.get("priority") or {}).get("priority_day") or (op.get("milestones") or {}).get("priority_day")
+def _day(instant: datetime) -> date:
+    return instant.astimezone(LISBON).date()
+
+
+def _due_day(value) -> date | None:
     try:
         return date.fromisoformat(str(value)[:10]) if value else None
     except ValueError:
         return None
 
 
-def _day(instant: datetime) -> date:
-    return instant.astimezone(LISBON).date()
-
-
-def boxes_from_source_plan(plan: dict, operations: list[dict], *, skip: set | None = None, estimates: dict | None = None,
-                           today: date | None = None) -> list[dict]:
-    """Previsões do planeamento (máquina e Data Corte da Tabela); as horas ficam todas nesse dia.
-
-    Sem horas na previsão, usa a estimativa da Carteira para a mesma operação (`estimates`: chave → horas).
-    """
-    ops = {op["key"]: op for op in operations}
-    items = []
-    for entry in plan.get("entries") or []:
-        op = ops.get(entry["key"])
-        if not op or (skip and entry["key"] in skip):
-            continue
-        start = date.fromisoformat(entry["start_date"])
-        hours = entry.get("hours")
-        estimated = hours is None and (estimates or {}).get(entry["key"]) is not None
-        if estimated:
-            hours = estimates[entry["key"]]
-        items.append({"resource_id": entry["resource_id"], "of": op["of"],
-                      "start": start, "end": date.fromisoformat(entry["end_date_exclusive"]),
-                      "pieces": op.get("planning_remaining"), "due": _due(op),
-                      "approximate": entry.get("precision") == "week", "forecast": True, "hours": hours, "estimated": estimated,
-                      "days": {start.isoformat(): hours} if hours and entry.get("precision") != "week" else {}})
-    return _merge(items, today)
-
-
-def forecast_only(plan: dict, operations: list[dict], placed: set) -> list[dict]:
-    """Operações que a proposta automática não coloca (bloqueadas) e que só aparecem como previsão da Tabela.
-
-    Ficam na lista das operações sem hora com o motivo do bloqueio (ex.: «Duração admissível por confirmar.»),
-    para a caixa de previsão não passar por plano (auditoria 06/10/2026, A8-2).
-    """
-    shown = {e["key"]: e for e in plan.get("entries") or []}
+def _conflicts(meta: dict, rid: str, names: dict, warnings=()) -> list[str]:
+    """Avisos de uma operação no plano em uso (nunca bloqueiam): iniciada noutra máquina e os das âncoras."""
     out = []
-    for op in operations:
-        reasons = op.get("blocking_reasons") or []
-        entry = shown.get(op["key"])
-        if op["key"] in placed or not entry or not reasons:
-            continue
-        out.append({"of": op["of"], "reference": op.get("reference"), "operation": op.get("operation"), "forecast": True,
-                    "forecast_day": entry.get("start_date"), "reasons": list(reasons)})
+    other = meta.get("documentary_resource_id")
+    if meta.get("started") and other and other != rid:
+        out.append(f"Iniciada na {names.get(other) or meta.get('hours_machine') or 'outra máquina'}")
+    for w in warnings or ():
+        out.append({"fora_de_horario": "Fixada em hora fechada: passou para a abertura seguinte",
+                    "ja_passou": "Ajuste já passou: o resto vai à frente da fila"}.get(w)
+                   or (f"Sobrepõe outra âncora ({w.split(':', 1)[1]})" if w.startswith("sobreposta:") else w))
     return out
 
 
-def missing_operations(sector: str, plan: dict, operations: list[dict], placed: set) -> tuple[list[dict], int]:
-    """Operações escolhidas que não ficam em caixa nenhuma (sem hora na proposta e sem dia/máquina na previsão),
-    com o motivo; e quantas delas são 2.ª operação das cantoneiras (08/10), que saem da lista e só se contam.
+def boxes_from_forecast(fc: dict, *, today: date | None = None, names: dict | None = None) -> tuple[list[dict], list[dict], dict]:
+    """(caixas, operações sem caixa, trabalho noutro setor) do plano em uso: o âmbito 0 da previsão (linhas Planeado).
 
-    A fase de uma operação do Gantt vem da ocorrência (a 1.ª é a principal, second_operation.phase)."""
-    seconds = [op for op in operations if second_operation.operation(sector, {"phase": second_operation.phase(op.get("occurrence"))})]
-    second = {op["key"] for op in seconds}
-    kept = [op for op in operations if op["key"] not in second]
-    ops = {op["key"]: op for op in kept}
-    pending = [p for p in plan.get("pending") or [] if p["key"] not in placed]
-    missing = [{"of": ops[p["key"]]["of"], "reference": ops[p["key"]].get("reference"), "operation": ops[p["key"]].get("operation"),
-                "reasons": p.get("reasons") or []} for p in pending if p["key"] in ops]
-    missing += forecast_only(plan, kept, placed)
-    return missing, sum(p["key"] in second for p in pending) + len(forecast_only(plan, seconds, placed))
-
-
-def boxes_from_proposal(snapshot: dict, proposal: dict, *, area: str | None = None, today: date | None = None) -> list[dict]:
-    """Caixas da proposta (ou do plano aceite); com `area`, só as operações desse setor.
-
-    Cada caixa guarda os segmentos com hora (`timed`, UTC) para os turnos e o Gantt do dia.
+    Uma caixa = uma OF numa máquina, de um dia a outro (_merge), com as chaves das operações (`keys`), o início e o
+    fim exatos, a conclusão prevista da OF, a margem, o risco e os avisos. O que a previsão não coloca fica na lista
+    das operações sem caixa, com o motivo; a 2.ª operação das cantoneiras só se conta.
     """
-    from .week import split_segments
-    start = datetime.fromisoformat(snapshot["started_at"])
-    if start.tzinfo is None:
-        start = start.replace(tzinfo=timezone.utc)
-    ops = {op["key"]: op for op in snapshot["operations"]}
-    items = []
-    for key, bar in (proposal.get("bars") or {}).items():
-        op = ops.get(key)
-        segments = bar.get("segments") or [[bar.get("start_minute"), bar.get("end_minute")]]
-        segments = [s for s in segments if s and s[0] is not None and s[1] is not None]
-        if not op or not segments or (area and op.get("area") and op["area"] != area):
+    from .forecast import REASON_TEXT
+    from .week import split_interval
+    names = names or {}
+    meta, orders = fc["meta"], fc.get("orders") or {}
+    items, missing = [], []
+    for key, r in fc["operations"].items():
+        if r["scope"] != 0:
             continue
-        first = _day(start + timedelta(minutes=min(s[0] for s in segments)))
-        last = _day(start + timedelta(minutes=max(s[1] for s in segments) - 1))
-        days = split_segments(snapshot["started_at"], segments)
-        timed = [{"start": start + timedelta(minutes=a), "end": start + timedelta(minutes=b), "key": key,
-                  "reference": op.get("reference"), "operation": op.get("operation")} for a, b in segments if b > a]
-        items.append({"resource_id": bar["resource_id"], "of": op["of"], "start": first, "end": last + timedelta(days=1),
-                      "pieces": op.get("planning_remaining"), "due": _due(op), "approximate": False,
-                      "hours": sum(days.values()), "days": days, "timed": timed})
-    return _merge(items, today)
+        m = meta.get(key) or {}
+        timed = [{"start": a, "end": b, "key": key, "reference": m.get("reference"), "operation": m.get("operation")}
+                 for a, b, *_ in r["segments"] if b > a]
+        if r["status"] != "colocada":
+            missing.append({"of": r["of"], "reference": m.get("reference"), "operation": m.get("operation"),
+                            "reasons": [REASON_TEXT["alem_do_horizonte"]]})
+        first = timed[0]["start"] if timed else r["start"]
+        if first is None:
+            continue
+        last = timed[-1]["end"] if timed else r["end"] or first
+        days = defaultdict(float)
+        for t in timed:
+            for d, h in split_interval(t["start"], t["end"]).items():
+                days[d] += h
+        due = _due_day(m.get("due_day"))
+        items.append({"resource_id": r["resource_id"], "of": r["of"], "start": _day(first),
+                      "end": _day(last - timedelta(microseconds=1) if last > first else last) + timedelta(days=1),
+                      "pieces": m.get("pieces"), "due": due, "approximate": False,
+                      "hours": sum((t["end"] - t["start"]).total_seconds() for t in timed) / 3600,
+                      "estimated": m.get("load_basis") == "estimada", "days": dict(days), "timed": timed, "keys": [key],
+                      "start_at": first, "end_at": last if r["status"] == "colocada" else None,
+                      "late_exact": bool(r.get("due") and (r["end"] is None or r["end"] > r["due"])),
+                      "conflicts": _conflicts(m, r["resource_id"], names, r.get("warnings"))})
+    second, elsewhere = 0, defaultdict(lambda: {"orders": set(), "hours": 0.0, "operations": 0, "items": []})
+    for u in fc["unschedulable"]:
+        if u["scope"] != 0:
+            continue
+        m = meta.get(u["key"]) or {}
+        if u["reason"] == "segunda_operacao":
+            second += 1
+        elif u["reason"] == "outro_setor":
+            e = elsewhere[u["resource_id"]]
+            e["orders"].add(u["of"])
+            e["hours"] += (u.get("seconds") or 0) / 3600
+            e["operations"] += 1
+            e["items"].append({"of": u["of"], "start": None, "end": None})
+        else:
+            missing.append({"of": u["of"], "reference": m.get("reference"), "operation": m.get("operation"),
+                            "reasons": [REASON_TEXT.get(u["reason"], u["reason"])]})
+    boxes = _merge(items, today)
+    for box in boxes:
+        o = orders.get(box["of"]) or {}
+        box.update(conclusion=o.get("end"), margin_days=o.get("margin_days"), risk=o.get("state"),
+                   already_late=bool(o.get("already_late")))
+    machines = [{"id": rid, "name": names.get(rid) or rid, "orders": len(e["orders"]), "hours": round(e["hours"], 1),
+                 "operations": e["operations"], "items": e["items"][:50]} for rid, e in sorted(elsewhere.items(), key=lambda x: -x[1]["hours"])]
+    note = {"operations": sum(m["operations"] for m in machines), "orders": len({o for e in elsewhere.values() for o in e["orders"]}),
+            "hours": round(sum(m["hours"] for m in machines), 1), "machines": machines}
+    missing.sort(key=lambda x: (str(x["of"]), str(x["reference"] or ""), str(x["operation"] or "")))
+    return boxes, missing, {"elsewhere": note, "second_operation": second}
 
 
-def _accepted(sector: str) -> tuple[dict, dict, dict] | None:
-    """O plano aceite mais recente que inclui este setor e ainda usa as fontes atuais."""
-    from ..gantt import service
-    candidates = []
-    for scenario in service.scenarios()["scenarios"]:
-        accepted = (scenario.get("definition") or {}).get("accepted")
-        areas = (scenario.get("definition") or {}).get("areas") or [scenario.get("area")]
-        if accepted and sector in areas and not scenario.get("stale"):
-            candidates.append((accepted.get("accepted_at") or "", scenario, accepted))
-    if not candidates:
-        return None
-    _, scenario, accepted = max(candidates, key=lambda c: c[0])
-    job = service.job(accepted["job_id"])
-    snapshot, proposal = (job.get("input") or {}).get("snapshot"), (job.get("result") or {}).get("proposal")
-    if not snapshot or not proposal:
-        return None
-    return scenario, snapshot, proposal
-
-
-# Por setor: (resposta da semana, pormenores privados por máquina). A chave segue as fontes do Gantt; o que ela
-# não segue (estimativas das ocorrências, Definições do setor…) refaz-se ao fim de 10 minutos. Nos dois casos a
+# Por setor: (resposta da semana, pormenores privados por máquina). A chave é o carimbo da previsão (forecast.stamp:
+# ocorrências, linhas, decisões com quantidades, calendários, Definições, origem e dia); 10 minutos no máximo. A
 # leitura recebe logo o quadro anterior (marcado «stale») e o novo calcula-se uma vez em segundo plano (cache.py).
 BOARD_CACHE_SECONDS = 600
 _board = cache.Cache("Quadro", mark=lambda value: ({**value[0], "stale": True}, value[1]), max_age=BOARD_CACHE_SECONDS)
@@ -351,50 +334,14 @@ def _shift_hours(timed: list[dict], template) -> list[dict]:
     return [{"date": d, "shift": n, "hours": round(h, 2)} for (d, n), h in sorted(acc.items(), key=lambda x: (x[0][0], x[0][1] or 9))]
 
 
-def _elsewhere(boxes: list[dict], resources: dict) -> dict:
-    """Trabalho deste setor em máquinas de outro setor: nota visível em vez de linha no Gantt."""
-    by = defaultdict(lambda: {"orders": set(), "hours": 0.0, "operations": 0, "items": []})
-    for b in boxes:
-        m = by[b["resource_id"]]
-        m["orders"].add(b["of"])
-        m["hours"] += b["hours"] or 0
-        m["operations"] += b["lines"]
-        m["items"].append({"of": b["of"], "start": b["start"], "end": b["end"]})
-    machines = [{"id": rid, "name": (resources.get(rid) or {}).get("name") or rid, "orders": len(m["orders"]),
-                 "hours": round(m["hours"], 1), "operations": m["operations"], "items": m["items"][:50]}
-                for rid, m in sorted(by.items(), key=lambda x: -x[1]["hours"])]
-    return {"operations": sum(m["operations"] for m in machines), "orders": len({b["of"] for b in boxes}),
-            "hours": round(sum(m["hours"] for m in machines), 1), "machines": machines}
-
-
-def _estimates(sector: str) -> dict:
-    """Horas da Carteira por operação (mesma chave do Gantt), para as previsões sem horas."""
-    from . import occurrences
-    try:
-        return {f["key"]: f.get("load_hours") for f in occurrences.load(sector, allow_stale=True)["facts"]
-                if f.get("key") and f.get("load_hours") is not None}
-    except planning.PlanningError:  # ocorrências ainda em construção: fica sem estimativa
-        return {}
-
-
 def _sources(sector: str) -> str:
-    """Fontes do quadro: as referências do Gantt e os cenários com plano aceite.
-
-    As referências têm as gerações dos dois setores de propósito: as taxas históricas que dão as durações
-    leem a produção dos dois (productivity.Context) e um plano aceite fica antigo com qualquer fonte. As
-    exportações do OCR original (original:*) não entram.
-    """
-    from ..gantt import integrated
-    with planning.connect(readonly=True) as c:
-        c.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")
-        refs = integrated.references(c)
-        accepted = c.execute("SELECT id, revision FROM planning_mtg.raw_objects WHERE kind = 'gantt' AND NOT archived "
-                             "AND definition ? 'accepted' ORDER BY id").fetchall()
-    return needs.digest(needs.serial({"references": refs, "accepted": accepted}))
+    """Fontes do quadro: o carimbo da previsão (o plano em uso vem dela; o Gantt técnico já não entra)."""
+    from . import forecast
+    return forecast.stamp(sector)
 
 
 def _built(sector: str, data: dict, *, allow_stale: bool = False) -> tuple[dict, dict]:
-    """(resposta da semana, pormenores privados por máquina), em cache pelas fontes e pelo dia (10 minutos no máximo).
+    """(resposta da semana, pormenores privados por máquina), em cache pelo carimbo da previsão e pelo dia.
 
     `allow_stale`: com fontes novas ou passados os 10 minutos, devolve logo o quadro anterior do mesmo dia e
     refaz uma vez em segundo plano.
@@ -405,72 +352,50 @@ def _built(sector: str, data: dict, *, allow_stale: bool = False) -> tuple[dict,
 
 
 def _build(sector: str) -> tuple[dict, dict]:
-    from ..gantt import service, baseline, source_plan
-    from . import settings as sector_settings
-    from .members import members
-    data = portfolio.current(sector)  # as linhas atuais, nunca as da geração anterior
+    """O quadro a partir da previsão atual (nunca a anterior: o resultado fica na cache com a chave nova)."""
+    from . import forecast
+    fc = forecast.current(sector)
+    data = portfolio.current(sector, allow_stale=True)
     customers = {}
     for line in data["lines"]:
         customers.setdefault(line["of"], {"customer": line["customer"], "designation": short_text(line["designation"])})
-    accepted = _accepted(sector)
-    if accepted:
-        scenario, snapshot, proposal = accepted
-        resources = snapshot["resources"]
-        boxes = boxes_from_proposal(snapshot, proposal, area=sector, today=data["today"])
-        source = {"kind": "aceite", "name": scenario.get("name"), "accepted_at": scenario["definition"]["accepted"].get("accepted_at")}
-    else:
-        snapshot = service.snapshot(area=sector)
-        resources = snapshot["resources"]
-        plan = source_plan.build(snapshot)
-        selected = len({op["of"] for op in snapshot["operations"]})
-        estimates = _estimates(sector)
-        try:
-            proposal = baseline.build(snapshot)
-            placed = set(proposal.get("bars") or {})
-            boxes = (boxes_from_proposal(snapshot, proposal, area=sector, today=data["today"])
-                     + boxes_from_source_plan(plan, snapshot["operations"], skip=placed, estimates=estimates, today=data["today"]))
-            source = {"kind": "automatica", "selected_orders": selected, "placed": len(placed),
-                      "operations": len(snapshot["operations"])}
-        except Exception:  # a proposta falhou a sua validação: fica-se pelas previsões da Tabela
-            import logging
-            logging.getLogger(__name__).exception("Proposta automática indisponível para o quadro")
-            boxes = boxes_from_source_plan(plan, snapshot["operations"], estimates=estimates, today=data["today"])
-            source = {"kind": "previsoes", "selected_orders": selected}
-            placed = set()
-        source["missing"], source["second_operation"] = missing_operations(sector, plan, snapshot["operations"], placed)
-    with planning.connect(readonly=True) as c:
-        template = sector_settings.read(c, sector)["template"]
-        own = set(members(c, sector))
+    names = {rid: m["name"] for rid, m in fc["machines"].items()}
+    names.update({u["resource_id"]: u["resource_id"] for u in fc["unschedulable"] if u.get("resource_id") and u["resource_id"] not in names})
+    names.update(fc.get("names") or {})
+    boxes, missing, extra = boxes_from_forecast(fc, today=fc["today"], names=names)
+    template = fc["template"]
+    placed = sum(1 for r in fc["operations"].values() if r["scope"] == 0 and r["status"] == "colocada")
+    source = {"kind": "plano_em_uso", "origin": fc["origin"], "placed": placed, "missing": missing,
+              "second_operation": extra["second_operation"],
+              "operations": sum(1 for r in fc["operations"].values() if r["scope"] == 0)
+              + sum(1 for u in fc["unschedulable"] if u["scope"] == 0 and u["reason"] != "segunda_operacao"),
+              "selected_orders": len({m["of"] for m in fc["meta"].values() if m.get("plan")})}
     for box in boxes:
         box.update(customers.get(box["of"], {"customer": "", "designation": ""}))
         box["shifts"] = _shift_hours(box["timed"], template)
-        if not box["timed"] and not box["approximate"]:  # previsão com dia mas sem hora: horas «sem hora» nesse dia
-            box["shifts"] += [{"date": x["date"], "shift": None, "hours": x["hours"]} for x in box["days"] if x["hours"]]
     private = {"timed": defaultdict(list), "boxes": defaultdict(list), "template": template}
     machines = []
-    for rid, resource in resources.items():
-        if rid not in own:
-            continue
+    for rid, m in fc["machines"].items():
         mine = [b for b in boxes if b["resource_id"] == rid]
-        if mine or resource.get("windows"):
-            for b in mine:
-                private["boxes"][rid].append(b)
-                private["timed"][rid].extend((b, t) for t in b["timed"])
-            machines.append({"id": rid, "name": resource.get("name") or rid, "member": True,
-                             "boxes": [{k: v for k, v in b.items() if k != "timed"} for b in mine]})
-    days = _machine_days([m["id"] for m in machines], data["today"])
+        if not (mine or m.get("has_calendar")):
+            continue
+        for b in mine:
+            private["boxes"][rid].append(b)
+            private["timed"][rid].extend((b, t) for t in b["timed"])
+        machines.append({"id": rid, "name": m["name"], "member": True,
+                         "boxes": [{k: v for k, v in b.items() if k != "timed"} for b in mine]})
+    days = _machine_days([m["id"] for m in machines], fc["today"])
     for m in machines:
         m["days"] = days.get(m["id"], {})
     machines.sort(key=lambda m: (not m["boxes"], m["name"]))
-    result = {"sector": sector, "sector_label": portfolio.SECTORS[sector], "today": data["today"],
+    result = {"sector": sector, "sector_label": portfolio.SECTORS[sector], "today": fc["today"],
               "imported_at": data["imported_at"], "source": source, "machines": machines, "template": template, "day_view": True,
-              "elsewhere": _elsewhere([b for b in boxes if b["resource_id"] not in own], resources),
-              "not_in_plans": not_in_plans(today=data["today"]), "stale": False}
+              "elsewhere": extra["elsewhere"], "not_in_plans": not_in_plans(today=fc["today"]), "stale": bool(fc.get("stale"))}
     return result, private
 
 
 def board(sector: str, *, allow_stale: bool = False) -> dict:
-    """Gantt simples: plano aceite; senão proposta automática (com previsões para o que ela não coloca).
+    """Gantt simples: o plano em uso (as linhas Planeado na previsão com capacidade finita).
 
     `allow_stale` (a rota GET): o Gantt e as linhas podem ser os anteriores enquanto se refazem; a lista
     vermelha usa sempre as decisões atuais. `stale` diz se alguma parte é a anterior.
