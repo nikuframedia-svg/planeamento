@@ -2,6 +2,7 @@
 
 A escolha fica na aplicação (sector_member_machine), por membro, e vence a coluna Máquina da Tabela e o
 conjunto de famílias (machine_choice.py). O Excel não muda. `maquina: null` tira a escolha da Carteira.
+A escrita está em `write_choice`, também usada pelo Gantt (origem «gantt», Etapa 4).
 Mesmo contrato do Planear: membros exatos com token (ou grupo com selo), 409 sem escrita parcial se algo
 mudou, request_id idempotente, uma transação com um evento por membro. Pode misturar conjuntos.
 """
@@ -63,26 +64,51 @@ def apply(payload: dict, *, data: dict | None = None, conn=None) -> dict:
                   "action": "machine", "actor": actor, "repeated": False, "keys": [line["key"] for line, _, _ in changes],
                   "metres": round(sum(line["metres"] for line, _, _ in changes), 1)}
         detail = {"ambito": scope, "geracao": data["generation"], "importacao": data["snapshot"]}
-        with c.cursor() as cur:
-            cur.execute("INSERT INTO planning_mtg.sector_selection_requests (request_id, area, action, content_hash, actor, result) "
-                        "VALUES (%s, %s, 'machine', %s, %s, %s)", (request_id, sector, content, actor, Jsonb(result)))
-            for line, keys, current in changes:
-                old = cur.execute("DELETE FROM planning_mtg.sector_member_machine WHERE area = %s AND member_key = ANY(%s) RETURNING revision",
-                                  (sector, keys)).fetchall()
-                revision = max((r["revision"] for r in old), default=0) + 1
-                if machine:
-                    cur.execute("""INSERT INTO planning_mtg.sector_member_machine
-                                       (area, member_key, production_order_no, reference, resource_id, machine_name, actor, revision, request_id, seen)
-                                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
-                                (sector, line["key"], line["of"], line["reference"], machine["id"], machine["name"], actor, revision,
-                                 request_id, Jsonb(selection._seen(line))))
-                cur.execute("""INSERT INTO planning_mtg.sector_decision_events
-                                   (area, kind, production_order_no, reference, member_key, action, actor, request_id, detail)
-                               VALUES (%s, 'machine', %s, %s, %s, %s, %s, %s, %s)""",
-                            (sector, line["of"], line["reference"], line["key"], "machine" if machine else "machine_cleared", actor, request_id,
-                             Jsonb({**detail, "seen": selection._seen(line), "revision": revision,
-                                    "before": {"carteira": (current or {}).get("machine_name"), "tabela": line.get("tabela_machine"),
-                                               "efetiva": line["machine"], "origem": line.get("machine_source"),
-                                               "familia": line.get("sku_family"), "perfil": line.get("profile")},
-                                    "after": {"carteira": machine["name"] if machine else None}})))
+        c.execute("INSERT INTO planning_mtg.sector_selection_requests (request_id, area, action, content_hash, actor, result) "
+                  "VALUES (%s, %s, 'machine', %s, %s, %s)", (request_id, sector, content, actor, Jsonb(result)))
+        write_choice(c, sector, [line for line, _, _ in changes], machine, "carteira", actor=actor, request_id=request_id,
+                     detail=detail, ctx=ctx)
     return result
+
+
+def write_choice(conn, sector: str, lines: list[dict], machine: dict | None, origem: str, *, actor: str, request_id,
+                 detail: dict | None = None, ctx: dict | None = None) -> list[dict]:
+    """Grava a escolha da Carteira de cada linha (`machine` {id, name}; None tira a escolha), um evento por linha.
+
+    A mesma escrita de «Atribuir máquina» (origem «carteira») e do Gantt (origem «gantt», Etapa 4): a Carteira, a
+    Carga e o Gantt leem todos a mesma escolha (machine_choice.py). Sem verificação de tokens nem pedido gravado:
+    quem chama decide o que muda e guarda o pedido. Outra origem fica em `seen` e no evento.
+
+    Devolve, por linha: {key, keys, before ({resource_id, machine_name, revision} da escolha anterior ou None),
+    revision (a gravada)} — o que o Desfazer do Gantt precisa para só repor se a escolha atual ainda for esta.
+    """
+    ctx = ctx if ctx is not None else machine_choice.context(sector, conn=conn)
+    extra = {} if origem == "carteira" else {"origem": origem}
+    written = []
+    with conn.cursor() as cur:
+        for line in lines:
+            keys = [line["key"], *line.get("aliases", ())]
+            current = next((ctx["members"][k] for k in keys if k in ctx["members"]), None)
+            old = cur.execute("DELETE FROM planning_mtg.sector_member_machine WHERE area = %s AND member_key = ANY(%s) RETURNING revision",
+                              (sector, keys)).fetchall()
+            revision = max((r["revision"] for r in old), default=0) + 1
+            seen = selection._seen(line)
+            if machine:
+                cur.execute("""INSERT INTO planning_mtg.sector_member_machine
+                                   (area, member_key, production_order_no, reference, resource_id, machine_name, actor, revision, request_id, seen)
+                               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+                            (sector, line["key"], line["of"], line["reference"], machine["id"], machine["name"], actor, revision,
+                             request_id, Jsonb({**seen, **extra})))
+            cur.execute("""INSERT INTO planning_mtg.sector_decision_events
+                               (area, kind, production_order_no, reference, member_key, action, actor, request_id, detail)
+                           VALUES (%s, 'machine', %s, %s, %s, %s, %s, %s, %s)""",
+                        (sector, line["of"], line["reference"], line["key"], "machine" if machine else "machine_cleared", actor, request_id,
+                         Jsonb({**(detail or {}), **extra, "seen": seen, "revision": revision,
+                                "before": {"carteira": (current or {}).get("machine_name"), "tabela": line.get("tabela_machine"),
+                                           "efetiva": line["machine"], "origem": line.get("machine_source"),
+                                           "familia": line.get("sku_family"), "perfil": line.get("profile")},
+                                "after": {"carteira": machine["name"] if machine else None}})))
+            written.append({"key": line["key"], "keys": keys, "revision": revision,
+                            "before": {"resource_id": current["resource_id"], "machine_name": current["machine_name"],
+                                       "revision": current["revision"]} if current else None})
+    return written

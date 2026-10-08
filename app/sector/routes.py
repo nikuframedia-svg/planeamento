@@ -329,6 +329,15 @@ def board(setor: str = "cantoneiras"):
     return _call(lambda: needs.serial(quadro.board(setor, allow_stale=True)))
 
 
+@router.post("/planeamento/api/setor/quadro/ajustes")
+async def board_adjustments(request: Request):
+    """Edição manual do Gantt (Etapa 4): {setor, acao: mover|retirar|desfazer, of, de?, maquina, dia, hora? | turno?,
+    ajuste_id?, request_id} → {ajuste, impacto, avisos, quadro}. Sem a migração 053 responde 503."""
+    _guard()
+    from . import anchors
+    return await _post(request, lambda payload: needs.serial(anchors.save(payload)))
+
+
 @router.get("/planeamento/api/setor/previsao")
 def forecast_summary(setor: str = "cantoneiras"):
     """Previsão com capacidade finita (Etapa 3, 08/10): recurso limitante, contagens de risco, por máquina o fim da
