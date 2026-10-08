@@ -1,0 +1,433 @@
+{
+  "verificado_em_utc": "2026-10-01T14:24:22.675036+00:00",
+  "verificacoes": [
+    {
+      "nome": "catalogo_sem_duplicados",
+      "ok": true,
+      "skus": 31603,
+      "agrupamentos": 329
+    },
+    {
+      "nome": "todas_referencias_excel_mes_manual_catalogadas",
+      "ok": true,
+      "referencias_atuais": 31603,
+      "referencias_em_falta": []
+    },
+    {
+      "nome": "mapeamentos_na_versao_atual",
+      "ok": true
+    },
+    {
+      "nome": "classificacoes_originais_preservadas",
+      "ok": true,
+      "referencias_originais": 31413
+    },
+    {
+      "nome": "m2_confirmacao_limitada_a_lista",
+      "ok": true,
+      "skus_m2_confirmados": 395
+    },
+    {
+      "nome": "m1_preservada",
+      "ok": true,
+      "skus_atuais": 181
+    },
+    {
+      "nome": "m2011_separada",
+      "ok": true
+    },
+    {
+      "nome": "perfis_completos_separados_da_producao_individual",
+      "ok": true
+    },
+    {
+      "nome": "cobertura_explica_todas_linhas",
+      "ok": true,
+      "linhas_por_fonte": {
+        "excel:cantoneiras": 77635,
+        "mes:production_records": 3249
+      }
+    },
+    {
+      "nome": "evidencias_sem_duplicados",
+      "ok": true
+    },
+    {
+      "nome": "evidencias_coerentes_com_cobertura",
+      "ok": true
+    },
+    {
+      "nome": "nos_unicos_grafo_completo",
+      "ok": true,
+      "nos": 993417,
+      "tipos": {
+        "of": 3279,
+        "artigo": 35263,
+        "variante": 37340,
+        "item": 85252,
+        "ocorrencia_operacao": 110719,
+        "gama": 618,
+        "ocorrencia_gama": 2022,
+        "tipo_operacao": 220,
+        "recurso": 29,
+        "apontamento_mes": 3790,
+        "versao_cpis": 1,
+        "versao_excel": 19,
+        "componente_cpis": 259940,
+        "ocorrencia_cpis_of": 344458,
+        "regra": 34,
+        "tipo_lacuna": 17,
+        "familia_sku": 329,
+        "sku_catalogado": 31603,
+        "setor": 2,
+        "publicacao_aplicacao": 7,
+        "evidencia_familia": 78471,
+        "referencia_of_por_confirmar": 4
+      }
+    },
+    {
+      "nome": "relacoes_familias_unicas_e_sem_orfaos",
+      "ok": true,
+      "relacoes": 550907,
+      "referencias_ausentes": []
+    },
+    {
+      "nome": "todas_evidencias_com_of_ligadas",
+      "ok": true,
+      "ligacoes_esperadas": 78459
+    },
+    {
+      "nome": "referencias_of_ambiguas_nao_promovidas",
+      "ok": true
+    },
+    {
+      "nome": "planeamento_sem_multiplicacao",
+      "ok": true,
+      "original": 77635,
+      "com_familia": 77635
+    },
+    {
+      "nome": "historico_completo_e_sem_repeticoes",
+      "ok": true,
+      "registos": 63016
+    }
+  ],
+  "pendencias": {
+    "agrupamentos_por_confirmar": 293,
+    "referencias_sem_familia": 251,
+    "familias_confirmadas_ou_inferidas_com_evidencia": 36
+  },
+  "m2": {
+    "area": "cantoneiras",
+    "familia": "M2",
+    "setor_contexto": "MTG3",
+    "estado_classificacao": "confirmada_pelo_utilizador",
+    "skus_catalogados": 395,
+    "versao_regras": "9e1e4071de345765b4921fef8fe6d0e3b9030744934b807f41db6ddb6c5d1d87",
+    "evidencia_classificacao": {
+      "ambito": "lista_explicita_de_skus",
+      "estado": "confirmada_pelo_utilizador",
+      "familia": "M2",
+      "evidencia": {
+        "area": "cantoneiras",
+        "scope": "Apenas estes 395 SKUs. Nao classifica todos os codigos iniciados por M2.",
+        "family": "M2",
+        "orders": [
+          "OF264186",
+          "OF264198",
+          "OF264293"
+        ],
+        "source": "Confirmacao do utilizador nesta conversa, apos a identificacao dos 395 SKUs TENNET A225; pedido de catalogacao e integracao na ontologia.",
+        "project": "TENNET A225 / LH-14-338",
+        "snapshot": {
+          "loaded_at": "2026-09-30 12:23:48.098979+00:00",
+          "snapshot_id": "mtg_ef26928918339ece",
+          "source_filename": "Met3_Plan_Cantoneiras.xlsm"
+        },
+        "confirmed_on": "2026-10-01",
+        "sector_context": "MTG3"
+      },
+      "skus_confirmados": 395
+    },
+    "familia_no": "kgf:familia:cantoneiras:M2",
+    "registos_mes": 0,
+    "skus_com_mes": 0,
+    "primeira_data_mes": null,
+    "ultima_data_mes": null,
+    "skus_com_acumulado_excel": 0,
+    "skus_planeados_mtg3": 395,
+    "associacoes_indiretas_mes": 1,
+    "ultima_data_indireta_mes": "2026-09-30",
+    "estado_evidencia_producao": "associacao_indireta_por_confirmar",
+    "registos_manuais": 0,
+    "skus_planeados_manualmente": 0
+  },
+  "evidencias_por_fonte": {
+    "registo_mes": 2735,
+    "associacao_indireta_mes": 374,
+    "acumulado_excel": 58211,
+    "planeamento_excel": 17151
+  },
+  "cobertura_por_fonte": [
+    {
+      "fonte": "excel:cantoneiras",
+      "estado": "integrada",
+      "linhas": 75152
+    },
+    {
+      "fonte": "excel:cantoneiras",
+      "estado": "integrada_sem_familia",
+      "linhas": 210
+    },
+    {
+      "fonte": "excel:cantoneiras",
+      "estado": "pavilhao_nao_mtg3",
+      "linhas": 2273
+    },
+    {
+      "fonte": "mes:production_records",
+      "estado": "integrada",
+      "linhas": 2967
+    },
+    {
+      "fonte": "mes:production_records",
+      "estado": "integrada_sem_familia",
+      "linhas": 142
+    },
+    {
+      "fonte": "mes:production_records",
+      "estado": "quantidade_nao_positiva",
+      "linhas": 45
+    },
+    {
+      "fonte": "mes:production_records",
+      "estado": "sem_referencia",
+      "linhas": 95
+    }
+  ],
+  "ofs_acrescentadas": [
+    {
+      "codigo": "OF\"\"",
+      "referencias_originais": [
+        "\"\""
+      ],
+      "versoes_fonte": [
+        "1f2cbaf2dbca9259e5a9d1a6dc7197c535a3ccbcdb06c6776d25f6deb6a3e80a"
+      ],
+      "estado": "referencia_de_of_por_confirmar",
+      "no_id": "kgf:referencia_of:OF\"\"",
+      "tipo_no": "referencia_of_por_confirmar"
+    },
+    {
+      "codigo": "OF264528'",
+      "referencias_originais": [
+        "264528'"
+      ],
+      "versoes_fonte": [
+        "1f2cbaf2dbca9259e5a9d1a6dc7197c535a3ccbcdb06c6776d25f6deb6a3e80a"
+      ],
+      "estado": "referencia_de_of_por_confirmar",
+      "no_id": "kgf:referencia_of:OF264528'",
+      "tipo_no": "referencia_of_por_confirmar"
+    },
+    {
+      "codigo": "OF264.529",
+      "referencias_originais": [
+        "264.529"
+      ],
+      "versoes_fonte": [
+        "1f2cbaf2dbca9259e5a9d1a6dc7197c535a3ccbcdb06c6776d25f6deb6a3e80a"
+      ],
+      "estado": "referencia_de_of_por_confirmar",
+      "no_id": "kgf:referencia_of:OF264.529",
+      "tipo_no": "referencia_of_por_confirmar"
+    },
+    {
+      "codigo": "OF264599",
+      "referencias_originais": [
+        "264599"
+      ],
+      "versoes_fonte": [
+        "1f2cbaf2dbca9259e5a9d1a6dc7197c535a3ccbcdb06c6776d25f6deb6a3e80a"
+      ],
+      "estado": "observada_nas_fontes_atuais",
+      "no_id": "of:OF264599",
+      "tipo_no": "of"
+    },
+    {
+      "codigo": "OF26485S",
+      "referencias_originais": [
+        "26485S"
+      ],
+      "versoes_fonte": [
+        "1f2cbaf2dbca9259e5a9d1a6dc7197c535a3ccbcdb06c6776d25f6deb6a3e80a"
+      ],
+      "estado": "referencia_de_of_por_confirmar",
+      "no_id": "kgf:referencia_of:OF26485S",
+      "tipo_no": "referencia_of_por_confirmar"
+    },
+    {
+      "codigo": "OF266583",
+      "referencias_originais": [
+        "OF266583"
+      ],
+      "versoes_fonte": [
+        "bee504e5f3287800e2afb556ad2dea75915d60d77fb6b07b8a6dbaa69c26c693"
+      ],
+      "estado": "observada_nas_fontes_atuais",
+      "no_id": "of:OF266583",
+      "tipo_no": "of"
+    },
+    {
+      "codigo": "OF266589",
+      "referencias_originais": [
+        "OF266589"
+      ],
+      "versoes_fonte": [
+        "bee504e5f3287800e2afb556ad2dea75915d60d77fb6b07b8a6dbaa69c26c693"
+      ],
+      "estado": "observada_nas_fontes_atuais",
+      "no_id": "of:OF266589",
+      "tipo_no": "of"
+    },
+    {
+      "codigo": "OF266594",
+      "referencias_originais": [
+        "OF266594"
+      ],
+      "versoes_fonte": [
+        "bee504e5f3287800e2afb556ad2dea75915d60d77fb6b07b8a6dbaa69c26c693"
+      ],
+      "estado": "observada_nas_fontes_atuais",
+      "no_id": "of:OF266594",
+      "tipo_no": "of"
+    },
+    {
+      "codigo": "OF266601",
+      "referencias_originais": [
+        "OF266601"
+      ],
+      "versoes_fonte": [
+        "bee504e5f3287800e2afb556ad2dea75915d60d77fb6b07b8a6dbaa69c26c693"
+      ],
+      "estado": "observada_nas_fontes_atuais",
+      "no_id": "of:OF266601",
+      "tipo_no": "of"
+    },
+    {
+      "codigo": "OF266605",
+      "referencias_originais": [
+        "OF266605"
+      ],
+      "versoes_fonte": [
+        "bee504e5f3287800e2afb556ad2dea75915d60d77fb6b07b8a6dbaa69c26c693"
+      ],
+      "estado": "observada_nas_fontes_atuais",
+      "no_id": "of:OF266605",
+      "tipo_no": "of"
+    },
+    {
+      "codigo": "OF363394",
+      "referencias_originais": [
+        "363394"
+      ],
+      "versoes_fonte": [
+        "1f2cbaf2dbca9259e5a9d1a6dc7197c535a3ccbcdb06c6776d25f6deb6a3e80a"
+      ],
+      "estado": "observada_nas_fontes_atuais",
+      "no_id": "of:OF363394",
+      "tipo_no": "of"
+    },
+    {
+      "codigo": "OF364855",
+      "referencias_originais": [
+        "364855"
+      ],
+      "versoes_fonte": [
+        "1f2cbaf2dbca9259e5a9d1a6dc7197c535a3ccbcdb06c6776d25f6deb6a3e80a"
+      ],
+      "estado": "observada_nas_fontes_atuais",
+      "no_id": "of:OF364855",
+      "tipo_no": "of"
+    }
+  ],
+  "fontes": [
+    {
+      "conjunto": "application:records",
+      "versao": "5085df5370d16b721dc7822ab4c38bb501b7d543c40384d6db49f88e6c9d03e1",
+      "confirmada_em": "2026-10-01 14:24:16.569156+00:00",
+      "metadata": {
+        "contract": "planning-live-v1",
+        "database": "dataresearchmtg"
+      },
+      "linhas": 2
+    },
+    {
+      "conjunto": "application:sku_family_heads",
+      "versao": "0489959f4cfe19253967152941bd0140e79edd0d952f95c674ea7e8af3daac5a",
+      "confirmada_em": "2026-10-01 14:24:16.569156+00:00",
+      "metadata": {
+        "contract": "planning-live-v1",
+        "database": "dataresearchmtg"
+      },
+      "linhas": 1
+    },
+    {
+      "conjunto": "application:sku_family_mappings",
+      "versao": "82798bddc7b24c4c5394f4c7a92acac38125b9c8409860c68f124541378c474d",
+      "confirmada_em": "2026-10-01 14:24:16.569156+00:00",
+      "metadata": {
+        "contract": "planning-live-v1",
+        "database": "dataresearchmtg"
+      },
+      "linhas": 31603
+    },
+    {
+      "conjunto": "application:sku_family_rules",
+      "versao": "784d053fb6cc6db75c3706bfdaf46a8b146b14fbcba62b5e1c8f3744e2dd2f71",
+      "confirmada_em": "2026-10-01 14:24:16.569156+00:00",
+      "metadata": {
+        "contract": "planning-live-v1",
+        "database": "dataresearchmtg"
+      },
+      "linhas": 2
+    },
+    {
+      "conjunto": "excel:cantoneiras",
+      "versao": "bee504e5f3287800e2afb556ad2dea75915d60d77fb6b07b8a6dbaa69c26c693",
+      "confirmada_em": "2026-10-01 14:24:16.569156+00:00",
+      "metadata": {
+        "contract": "planning-live-v1",
+        "database": "dataresearchmtg",
+        "snapshot": {
+          "loaded_at": "2026-09-30T12:23:48.098979+00:00",
+          "snapshot_id": "mtg_ef26928918339ece",
+          "source_filename": "Met3_Plan_Cantoneiras.xlsm"
+        }
+      },
+      "linhas": 77635
+    },
+    {
+      "conjunto": "mes:production_records",
+      "versao": "1f2cbaf2dbca9259e5a9d1a6dc7197c535a3ccbcdb06c6776d25f6deb6a3e80a",
+      "confirmada_em": "2026-10-01 14:24:16.569156+00:00",
+      "metadata": {
+        "contract": "planning-live-v1",
+        "database": "dataresearchmtg"
+      },
+      "linhas": 4057
+    },
+    {
+      "conjunto": "mes:validated_sheets",
+      "versao": "6a14ffb71a1f8476fd8dafed46028dc3f39645c20ecf870196697e495c6d89a1",
+      "confirmada_em": "2026-10-01 14:24:16.569156+00:00",
+      "metadata": {
+        "contract": "planning-live-v1",
+        "database": "dataresearchmtg"
+      },
+      "linhas": 492
+    }
+  ],
+  "segundos": 76.344,
+  "ok": true
+}

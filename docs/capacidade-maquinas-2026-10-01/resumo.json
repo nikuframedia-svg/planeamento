@@ -1,0 +1,283 @@
+{
+  "gerado_em": "2026-10-01",
+  "hoje_do_estudo": "2026-10-01",
+  "fontes": {
+    "snapshot": "mtg_ef26928918339ece",
+    "loaded_at": "2026-09-30 12:23:48.098979+00:00",
+    "research_version": "3631a77921d91150caacd5e05f860b91720f1c0edf2393fb842ae92fa311d30e"
+  },
+  "janela_debito": {
+    "from": "2026-06-08",
+    "to": "2026-09-27",
+    "weeks": 16
+  },
+  "linhas_excluidas_do_debito": {
+    "data_zero_excel": 1947,
+    "sem_data": 6352,
+    "varias_datas": 1394,
+    "data_ilegivel": 4,
+    "horas_teoricas_desconhecidas": 2
+  },
+  "debito_semanal_horas_teoricas": {
+    "Ficep Rapid 20T -1": {
+      "weeks": 16,
+      "zero_weeks": 0,
+      "hours_p25": 62.54,
+      "hours_median": 71.7,
+      "hours_p75": 77.74,
+      "metres_p25": 2815.61,
+      "metres_median": 3228.31,
+      "metres_p75": 3502.96
+    },
+    "Ficep Rapid 20T -2": {
+      "weeks": 16,
+      "zero_weeks": 0,
+      "hours_p25": 58.76,
+      "hours_median": 73.07,
+      "hours_p75": 80.69,
+      "metres_p25": 2644.1,
+      "metres_median": 3283.18,
+      "metres_p75": 3668.76
+    },
+    "Ficep Rapid 25T": {
+      "weeks": 16,
+      "zero_weeks": 0,
+      "hours_p25": 61.57,
+      "hours_median": 76.86,
+      "hours_p75": 85.02,
+      "metres_p25": 2160.98,
+      "metres_median": 2643.0,
+      "metres_p75": 2977.72
+    },
+    "Ficep XP T4": {
+      "weeks": 16,
+      "zero_weeks": 0,
+      "hours_p25": 79.33,
+      "hours_median": 86.35,
+      "hours_p75": 104.24,
+      "metres_p25": 9519.18,
+      "metres_median": 10377.78,
+      "metres_p75": 12489.5
+    },
+    "Ficep XP T6": {
+      "weeks": 16,
+      "zero_weeks": 0,
+      "hours_p25": 73.61,
+      "hours_median": 94.74,
+      "hours_p75": 100.13,
+      "metres_p25": 8327.14,
+      "metres_median": 10858.4,
+      "metres_p75": 11868.12
+    },
+    "Peddi 6": {
+      "weeks": 16,
+      "zero_weeks": 2,
+      "hours_p25": 14.99,
+      "hours_median": 18.89,
+      "hours_p75": 23.04,
+      "metres_p25": 749.46,
+      "metres_median": 1017.14,
+      "metres_p75": 1212.96
+    },
+    "Peddi 8": {
+      "weeks": 16,
+      "zero_weeks": 0,
+      "hours_p25": 38.75,
+      "hours_median": 51.69,
+      "hours_p75": 74.71,
+      "metres_p25": 4627.34,
+      "metres_median": 6165.4,
+      "metres_p75": 8406.81
+    }
+  },
+  "previsibilidade_semanal": {
+    "Ficep Rapid 20T -1": {
+      "semanas_testadas": 24,
+      "erro_ponderado_pct": 23.9,
+      "cobertura_p25_p75_pct": 45.8
+    },
+    "Ficep Rapid 20T -2": {
+      "semanas_testadas": 24,
+      "erro_ponderado_pct": 24.9,
+      "cobertura_p25_p75_pct": 50.0
+    },
+    "Ficep Rapid 25T": {
+      "semanas_testadas": 24,
+      "erro_ponderado_pct": 29.7,
+      "cobertura_p25_p75_pct": 37.5
+    },
+    "Ficep XP T4": {
+      "semanas_testadas": 24,
+      "erro_ponderado_pct": 17.2,
+      "cobertura_p25_p75_pct": 45.8
+    },
+    "Ficep XP T6": {
+      "semanas_testadas": 24,
+      "erro_ponderado_pct": 24.5,
+      "cobertura_p25_p75_pct": 45.8
+    },
+    "Peddi 6": {
+      "semanas_testadas": 15,
+      "erro_ponderado_pct": 41.0,
+      "cobertura_p25_p75_pct": 53.3
+    },
+    "Peddi 8": {
+      "semanas_testadas": 24,
+      "erro_ponderado_pct": 25.7,
+      "cobertura_p25_p75_pct": 37.5
+    }
+  },
+  "disponibilidade_declarada_mtg2": {
+    "Vanguard": {
+      "hours": 112.5,
+      "p25": 75.0,
+      "weeks": 24,
+      "min": 60.0,
+      "max": 135.0,
+      "label": "mediana de 24 semanas declaradas W3/2025–W7/2026, 60–135 h"
+    },
+    "Serrote Disco pav 1": {
+      "hours": 37.5,
+      "p25": 37.5,
+      "weeks": 26,
+      "min": 8.0,
+      "max": 75.0,
+      "label": "mediana de 26 semanas declaradas W3/2025–W39/2026, 8–75 h"
+    },
+    "Serrote Fita pav.1": {
+      "hours": 75.0,
+      "p25": 52.5,
+      "weeks": 26,
+      "min": 8.0,
+      "max": 82.5,
+      "label": "mediana de 26 semanas declaradas W3/2025–W39/2026, 8–82.5 h"
+    },
+    "Serrote MEBA IS381 Pav 3": {
+      "hours": 37.5,
+      "p25": 37.5,
+      "weeks": 26,
+      "min": 10.0,
+      "max": 75.0,
+      "label": "mediana de 26 semanas declaradas W3/2025–W39/2026, 10–75 h"
+    }
+  },
+  "sugestoes_validacao": {
+    "sem precedente": {
+      "linhas": 1755,
+      "acerto_pct": 97.8,
+      "acerto_familia_pct": 99.0,
+      "excel_entre_candidatas_pct": 99.6
+    },
+    "1 OF": {
+      "linhas": 429,
+      "acerto_pct": 96.5,
+      "acerto_familia_pct": 99.3,
+      "excel_entre_candidatas_pct": 97.2
+    },
+    "2+ OF": {
+      "linhas": 867,
+      "acerto_pct": 97.3,
+      "acerto_familia_pct": 98.6,
+      "excel_entre_candidatas_pct": 99.8
+    },
+    "com linhas vizinhas já decididas": {
+      "linhas": 2936,
+      "acerto_pct": 99.9,
+      "acerto_familia_pct": 99.9
+    },
+    "grupo novo, sem vizinhas": {
+      "linhas": 115,
+      "acerto_pct": 36.5,
+      "acerto_familia_pct": 73.9
+    }
+  },
+  "carteira": {
+    "cantoneiras": {
+      "ocorrencias": 22591,
+      "maquina": {
+        "atribuída": 3051,
+        "sugerida": 19364,
+        "sem": 176
+      },
+      "horas": {
+        "documental": 3361,
+        "estimada": 12463,
+        "sem": 6767
+      },
+      "horas_documentais": 1854.1,
+      "horas_estimadas": 4137.9
+    },
+    "perfis": {
+      "ocorrencias": 1191,
+      "maquina": {
+        "sugerida": 152,
+        "atribuída": 750,
+        "sem": 289
+      },
+      "horas": {
+        "estimada": 125,
+        "documental": 671,
+        "sem": 395
+      },
+      "horas_documentais": 1454.4,
+      "horas_estimadas": 295.9
+    }
+  },
+  "atraso_14_dias": {
+    "MTG2 Perfis": {
+      "initial_known_hours": 1529.67,
+      "initial_estimated_hours": 205.75,
+      "entries": null,
+      "entries_note": "Sem previsão de entradas: só a carteira atual (não é previsão de procura).",
+      "planned_completion_hours": null,
+      "planned_note": "Sem plano aceite em vigor: conclusão prevista por calcular.",
+      "final_known_hours": null,
+      "capacity_hours": 525.0,
+      "capacity_estimated": true,
+      "capacity_basis": [
+        "declarada"
+      ],
+      "covered_hours": 1529.67,
+      "uncovered_hours": 0.0,
+      "deficit_hours": 1004.67,
+      "late_weeks_at_capacity": 4.5,
+      "without_capacity": [
+        "Abocardar",
+        "Corte Tubo Laser",
+        "Corte Tubo Plasma",
+        "Serrote Fita Maqfort Pav 3"
+      ],
+      "capacity_known_hours": 525.0,
+      "capacity_partial": true,
+      "capacity_note": null
+    },
+    "MTG3 Cantoneiras": {
+      "initial_known_hours": 2865.02,
+      "initial_estimated_hours": 1861.53,
+      "entries": null,
+      "entries_note": "Sem previsão de entradas: só a carteira atual (não é previsão de procura).",
+      "planned_completion_hours": null,
+      "planned_note": "Sem plano aceite em vigor: conclusão prevista por calcular.",
+      "final_known_hours": null,
+      "capacity_hours": 946.6,
+      "capacity_estimated": true,
+      "capacity_basis": [
+        "observada"
+      ],
+      "covered_hours": 2865.02,
+      "uncovered_hours": 0.0,
+      "deficit_hours": 1918.42,
+      "late_weeks_at_capacity": 5.2,
+      "without_capacity": [
+        "Fresadora",
+        "Plasma manual",
+        "Prensa",
+        "Quinadora MTG2",
+        "Saca bocados"
+      ],
+      "capacity_known_hours": 946.6,
+      "capacity_partial": true,
+      "capacity_note": null
+    }
+  }
+}

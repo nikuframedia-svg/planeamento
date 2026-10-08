@@ -1,0 +1,67 @@
+Auditoria das famílias de SKU MTG3 — 01/10/2026
+
+Conclusão: a entrega anterior tinha lacunas de cobertura e manutenção.
+As correções abaixo estão aplicadas à aplicação e à base de pesquisa.
+Catalogar todas as referências não equivale a confirmar a taxonomia de todas.
+
+Falhas encontradas e corrigidas
+
+1. A atualização periódica procurava SKUs apenas no Excel e nos registos
+   manuais. Faltavam 190 referências literais do MES, presentes em 214 linhas.
+   Passou a recolher model_ref e plan_identity das folhas identificadas como
+   MTG3, sem fundir grafias, variantes ou trabalho físico. Repetir a atualização
+   após a inclusão acrescentou zero registos e zero revisões.
+
+2. As ligações às OF dependiam da carga arquivada. Existiam 50 observações
+   classificadas com OF sem ligação no grafo. As OF atuais passaram a ter nós
+   documentais; códigos de grafia não reconhecida ficam como referências por
+   confirmar. Não foram criadas OF nas tabelas operacionais.
+
+3. Os registos manuais eram espelhados, mas não tinham evidência na extensão
+   de famílias. Agora incluem revisão, valores atuais, texto introduzido,
+   origem e avisos, incluindo rascunhos e edições RAW. São planeamento manual,
+   sem promoção a produção real. Não há registos manuais MTG3 na base atual;
+   o percurso de criação/edição e atualização da evidência foi testado numa
+   base descartável, sem inserir dados fictícios na produção.
+
+4. Reinstalar a análise inicial podia retirar a confirmação da M2 e deixar
+   referências descobertas posteriormente numa versão antiga das regras.
+   A instalação conserva confirmações humanas e atualiza todas as referências
+   conhecidas na mesma transação. Testes cobrem ambos os casos.
+
+5. As observações sem família eram omitidas da extensão. Agora conservam
+   ligações à referência, OF, setor e fonte, sem inventar uma família. A nova
+   consulta kg_familias_cobertura explica todas as linhas das fontes atuais,
+   incluindo exclusões de pavilhão, quantidade ou referência.
+
+Resultado e limites
+
+- 31 603 referências literais; 329 agrupamentos; 251 referências sem família.
+- M1 e M2 confirmadas pelo utilizador; 34 famílias inferidas com evidência;
+  293 agrupamentos ainda por confirmar. Os 11 novos agrupamentos candidatos
+  são AEHI, ASI, ASII, ASM, AT, ATI, ATIT, ATQT, CDOSTG, E02 e OA.
+- M1 mantém 181 referências. M2 mantém os 395 SKUs da lista explícita.
+  M2011 permanece separado. A M2 tem uma associação indireta MES; não há
+  registo individual MES nem acumulado Excel positivo para os seus SKUs.
+- Evidência MES, acumulados Excel e planeamento manual continuam separados.
+  A auditoria verifica que os joins não multiplicam as linhas do planeamento;
+  não afirma reconciliação física completa entre eventos de fontes diferentes.
+- A exportação OCR está disponível: 15 103 linhas e sem erro na consulta
+  efetuada. Existem zero instâncias nativas publicadas. A atribuição inequívoca
+  do OCR à MTG3 e a ligação nativa via VPN continuam por validar; não se
+  acrescentaram essas linhas aos totais MES/Excel nem se alterou a VPN.
+
+Verificação
+
+validacao.json contém o resultado da auditoria à base real, incluindo cobertura
+por fonte, versões, histórico, unicidade de nós/relações e todos os destinos.
+A validação compara as referências atuais das fontes com o catálogo, em vez
+de considerar uma contagem fixa como prova de completude.
+
+Os testes de catálogo, histórico, confirmação M2, descoberta MES, gravação
+manual, edição livre, sincronização e extensão da ontologia passaram. A consulta
+real da RAW devolveu 181 referências M1 e 395 M2 (auditoria-api.json).
+
+catalogo-familias.csv e sku-familia.csv são as exportações atuais.
+cobertura-fontes.csv explicita a situação de cada linha de origem.
+As análises anteriores noutros ficheiros continuam como fotografias históricas.

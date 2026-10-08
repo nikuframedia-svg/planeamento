@@ -1,0 +1,14 @@
+﻿setor,recurso,sheets,sheets_with_hours,ambiguous,hours_per_sheet_median,metres_per_hour_median,metres_per_hour_p25,metres_per_hour_p75,rate_samples
+MTG2,VANGUARD,41,11,0,8.0,22.4,15.5,13200.6,11
+MTG2,MEBA,24,2,0,10.0,,,,0
+MTG2,POSTO_FITA,10,0,0,,,,,0
+MTG2,DOALL,20,2,0,6.5,422.3,339.5,505.2,2
+MTG3,XPT4,61,4,0,6.25,60.4,56.2,71.0,4
+MTG3,XPT6,42,5,0,7.56,142.9,138.7,152.5,5
+MTG3,PEDDI8,53,5,0,7.5,91.4,91.4,105.6,5
+MTG3,RAPID25,35,0,0,,,,,0
+MTG3,RAPID20_2,45,3,0,7.5,50.8,44.6,53.2,3
+MTG3,RAPID20_1,58,3,0,11.5,32.4,30.3,32.4,3
+MTG2,ABOCARDAR,37,3,0,10.0,,,,0
+MTG2,POSTO_DISCO,19,0,0,,,,,0
+MTG3,PEDDI6,10,2,0,8.0,31.8,30.9,32.7,2

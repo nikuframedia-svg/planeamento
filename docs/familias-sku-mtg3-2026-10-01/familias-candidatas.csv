@@ -1,0 +1,318 @@
+﻿familia,estado,skus_distintos,linhas,ofs,skus_em_linhas_ativas,skus_encontrados_cpis,ofs_com_familia_na_designacao,codfam_cpis,exemplos_sku,evidencia_designacoes,regra
+M,prefixo_demasiado_generico,1366,1366,8,1361,1362,0,-,M002-801 | M002-802 | M002-803,,prefixo_alfabetico
+DLA,forte_padrao_e_varias_of,1363,5587,121,705,1362,80,-,DLA1 | DLA10 | DLA11,= BASES DLA / DLR =  = URGENTE = | = BASES DLA = | = BASES DLA / DLR / DLS / DLT =,familia_mae_corrobora_designacao
+DLR,forte_padrao_e_varias_of,1347,4383,118,404,1346,56,-,DLR1 | DLR10 | DLR11,= PROEF=ADITAMENTO OF246198= PROLONGAMENTO POSTE Nº287 DLR9= | = ALTERAÇÃO BASES DLR / DLT = | = BASES DLA / DLR =  = URGENTE =,familia_mae_corrobora_designacao
+H92,forte_padrao_e_varias_of,1225,2989,45,0,1219,22,-,H92H-S-1503T | H92H-S-1504T | H92H-S-1505T,"RTE | POSTES H92HS1-T4H26 + H92HS1-H4H22 | EP2508 | RTE | POSTE H92HT-T4 | H30, H27, H17 = FABRICAR APÓS ENSAIO EP2503 (OF250466) | RTE | POSTE H92HT-T4 | H23, H21 | POSTE H92HT-H4 | H23, H20, H17 = FABRICAR APÓS ENSAIO EP2503 (OF250466)",familia_mae_corrobora_designacao
+XZ,candidata_por_confirmar,1136,1225,5,602,1136,0,-,XZ211501 | XZ211502 | XZ211503,,prefixo_alfabetico
+T,prefixo_demasiado_generico,1063,1397,17,42,1063,0,-,T0111 | T01110 | T01111,,prefixo_alfabetico
+G4,forte_padrao_e_varias_of,992,1231,7,151,991,6,-,G4HA1000DT | G4HA1000GT | G4HA1001DT,RTE | G4S0-B3-R1 AVEC 9 CONSOLES | EP2641 | RTE | G4HA-B3-X | EP2669 | RTE | G4T-B3-X+3 E W+3 = EP2679 ,familia_mae_corrobora_designacao
+DLT,forte_padrao_e_varias_of,913,6831,152,584,913,96,-,DLT1 | DLT10 | DLT11,= PROLONGAMENTOS DLT = | = CME= 4 POSTES DLT10 = | = ALTERAÇÃO BASES DLR / DLT =,familia_mae_corrobora_designacao
+P4,forte_padrao_e_varias_of,724,1366,22,0,722,7,-,P4HS111000T | P4HS111001T | P4HS111002DT,"RTE | P4HS11-N401 - H16 /  H22 / H34  + P4HS11-N400 - H18 / H24 / H33 | EP2602 | RTE | P4HT-N400 - HAUTEURS 15M / 17M / 18M / 21M / 22M / 23M / 24M | EP2608 | RTE | P4HS11-N400 H21 + H14 | P4HS11-N410 H20 + H16, H17, H19 | EP2512",familia_mae_corrobora_designacao
+DLS,forte_padrao_e_varias_of,699,1809,45,275,699,32,-,DLS1 | DLS10 | DLS101D,= BASES DLA / DLR / DLS / DLT = | = CANTONEIRAS CABEÇA TROÇO 2 - DLS = | = BASES DLA / DLS =,familia_mae_corrobora_designacao
+W,prefixo_demasiado_generico,671,1125,10,25,662,0,-,W061601 | W061602 | W061603,,prefixo_alfabetico
+ZE,candidata_por_confirmar,608,1622,4,535,608,0,-,ZE-1 | ZE-101 | ZE-1012,,prefixo_alfabetico
+D3,candidata_por_confirmar,588,588,1,0,588,0,-,D3A1001 | D3A1002 | D3A1003,,letras_numero_letras_numero
+ZG,candidata_por_confirmar,550,1110,3,476,550,0,-,ZG-1 | ZG-1001L | ZG-1001R,,prefixo_alfabetico
+Z,prefixo_demasiado_generico,475,528,18,115,378,0,-,Z010329 | Z010330 | Z011102,,prefixo_alfabetico
+ZD,candidata_por_confirmar,464,1138,3,439,464,0,-,ZD-0001 | ZD-0002 | ZD-0006,,prefixo_alfabetico
+ZA,candidata_por_confirmar,416,953,6,266,416,0,-,ZA-0001 | ZA-0002 | ZA-0007,,prefixo_alfabetico
+E,prefixo_demasiado_generico,411,490,16,48,411,1,-,E100 | E101 | E102,TRAVERSE E132807  = RECLAMAÇÃO DQ61-089 =,prefixo_alfabetico
+QR,forte_padrao_e_varias_of,403,752,15,252,403,6,-,QR013473 | QR013875 | QR01A,= PERNAS QR = | = BASES DLT / MTR2G / QR / QT = | = BASES DLA / DLR / DLS / DLT / QA / QR / QT =,familia_mae_corrobora_designacao
+ELT,forte_padrao_e_varias_of,384,646,15,248,384,7,-,ELT1 | ELT10 | ELT11,= POSTE ELT2 = 1 PRIORIDADE = | = PERNAS ELT = | = FALTAS MATERIAL POSTES ELT = DQ52-039 =,familia_mae_corrobora_designacao
+N,prefixo_demasiado_generico,382,1532,5,0,382,0,-,N25103 | N25104 | N25105,,prefixo_alfabetico
+N43,forte_padrao_e_uma_of,372,372,1,0,372,1,-,N43HA1000T | N43HA1001T | N43HA1002T,RTE | N43HA-N-Z1 | EP2611,familia_mae_corrobora_designacao
+24,codigo_de_projeto_por_confirmar,366,581,5,67,366,0,-,24M1405 | 24M1406 | 24M1407,,codigo_numerico_candidato_a_projeto
+QA,forte_padrao_e_varias_of,363,763,19,222,363,14,-,QA013907 | QA014307 | QA014309,= PERNAS QA = | =CME=POSTES QA=10 UN= | = BASES DLA / DLT / QA / QS / QT =,familia_mae_corrobora_designacao
+QT,forte_padrao_e_varias_of,359,2111,30,252,359,24,-,QT014178 | QT014578 | QT014581,= PERNAS QT = | = PROLONGAMENTO QT = | =PROEF=POSTE QT2=1 UN=,familia_mae_corrobora_designacao
+CWA,forte_padrao_e_varias_of,354,1402,7,284,354,5,-,CWA01AD | CWA01AE | CWA01BD,= PERNAS CWA = | = POSTES CWA = 7UN = 1 PRIORIDADE = | = POSTES CWA = 7UN = 2 PRIORIDADE =,familia_mae_corrobora_designacao
+EA6,candidata_por_confirmar,352,1450,37,0,352,0,-,EA6A1 | EA6A10 | EA6A2,,letras_numero_letras_numero
+A35,candidata_por_confirmar,351,351,1,0,351,0,-,A35H103 | A35H12 | A35H13,,letras_numero_letras_numero
+CWR,forte_padrao_e_varias_of,340,1241,6,321,339,4,-,CWR01AD | CWR01AE | CWR01BD,= POSTES CWR = 7UN = 1 PRIORIDADE = | = POSTES CWR = 7UN = 2 PRIORIDADE = | = BASES CWR =,familia_mae_corrobora_designacao
+ELS,forte_padrao_e_uma_of,310,324,5,0,310,1,-,ELS1 | ELS10 | ELS11,= POSTE ELS6 = 1 PRIORIDADE =,familia_mae_corrobora_designacao
+A4,candidata_por_confirmar,309,1168,38,9,250,0,-,A4A10 | A4A14 | A4A2,,letras_numero_letras_numero
+ELA,forte_padrao_e_varias_of,308,320,5,0,301,2,-,ELA1 | ELA10 | ELA11,= POSTE ELA6 = 1 PRIORIDADE = | = BASES ELA =,familia_mae_corrobora_designacao
+QS,forte_padrao_e_varias_of,296,396,8,1,296,8,-,QS012954 | QS013354 | QS013356,= MATERIAL QT/QS = | =CME=POSTES QS=4 UN= | = BASES DLA / DLT / QA / QS / QT =,familia_mae_corrobora_designacao
+A6,candidata_por_confirmar,291,803,32,16,291,0,-,A6A3 | A6A7 | A6C1,,letras_numero_letras_numero
+CWS,forte_padrao_e_varias_of,288,790,4,232,288,2,-,CWS01AD | CWS01AE | CWS01BD,= POSTES CWS =13UN = 1 PRIORIDADE = | = POSTES CWS = 9UN = 2 PRIORIDADE =,familia_mae_corrobora_designacao
+HG,candidata_por_confirmar,282,765,6,258,282,0,-,HG01AD | HG01AE | HG01BD,,prefixo_alfabetico
+IT,candidata_por_confirmar,271,273,4,245,271,0,-,IT01A | IT01B | IT01C,,prefixo_alfabetico
+EG,candidata_por_confirmar,267,271,2,267,267,0,-,EG1 | EG10 | EG100,,prefixo_alfabetico
+C4,forte_padrao_e_varias_of,252,697,4,0,252,4,-,C4HN1000HT | C4HN1001HT | C4HN1002HT,RTE | POSTES C4HN-C-W | FABRICAR APÓS VALIDAÇÃO DO ENSAIO EP2609 | RTE | POSTES C4HN-C-W | EP2609 | RTE | POSTES C4HN-C-W | PERNAS DESNIVELADAS | EP2620,familia_mae_corrobora_designacao
+D10,forte_padrao_e_uma_of,247,377,7,0,247,1,-,D10A2 | D10A3 | D10A6,METALSEC | ABADIA - POSTES DUERO 10K-T4323832C 15M + D10K-F441CE+1D 18M,familia_mae_corrobora_designacao
+D8,candidata_por_confirmar,247,602,14,45,245,0,-,D8A2 | D8A3 | D8A5,,letras_numero_letras_numero
+J,prefixo_demasiado_generico,242,447,3,236,242,0,-,J100 | J101 | J102,,prefixo_alfabetico
+JG,candidata_por_confirmar,238,238,1,238,238,0,-,JG1 | JG10 | JG100A,,prefixo_alfabetico
+G,prefixo_demasiado_generico,231,673,4,225,231,0,-,G100 | G101 | G102,,prefixo_alfabetico
+CWT,forte_padrao_e_varias_of,230,845,9,208,230,6,-,CWT01AD | CWT01AE | CWT01BD,= BASES CWT / DLA / DLR / DLT / MTR2G / QT = | = POSTES CWT = 6UN = 1 PRIORIDADE = | = PROLONGAMENTO CWT =,familia_mae_corrobora_designacao
+36,codigo_de_projeto_por_confirmar,216,432,2,57,216,0,-,36H11 | 36H110 | 36H111,,codigo_numerico_candidato_a_projeto
+IA,candidata_por_confirmar,210,210,1,210,210,0,-,IA10 | IA100 | IA101,,prefixo_alfabetico
+ED4,candidata_por_confirmar,201,2031,29,176,201,0,-,ED4A1 | ED4A13 | ED4A15,,letras_numero_letras_numero
+D6,candidata_por_confirmar,181,325,9,0,181,0,-,D6A2 | D6A3 | D6B1,,letras_numero_letras_numero
+M1,confirmada_pelo_utilizador,181,181,1,0,181,1,-,M1ES11000M4DT | M1ES11000M4GT | M1ES11001M4DT,RTE | M1ES1-M4-R1 | EP2654,familia_mae_corrobora_designacao
+DLTN,forte_padrao_e_uma_of,176,224,2,0,176,1,-,DLTN1 | DLTN10 | DLTN11,= TRANSF. DLT9 PARA DLTN9 =,familia_mae_corrobora_designacao
+D32,candidata_por_confirmar,167,433,6,136,167,0,-,D32A11 | D32A2 | D32A3,,letras_numero_letras_numero
+A8,candidata_por_confirmar,164,353,17,0,164,0,-,A8A2 | A8A3 | A8A6,,letras_numero_letras_numero
+ED13,candidata_por_confirmar,164,723,25,51,151,0,-,ED13A1 | ED13A10 | ED13A5,,letras_numero_letras_numero
+D16,candidata_por_confirmar,161,161,1,0,158,0,-,D16B132 | D16B133 | D16B134,,letras_numero_letras_numero
+S2,candidata_por_confirmar,154,155,3,0,142,0,-,S2M1000 | S2M1002 | S2M1003,,letras_numero_letras_numero
+EA12,candidata_por_confirmar,150,534,21,2,150,0,-,EA12A1 | EA12A5 | EA12B50,,letras_numero_letras_numero
+EA4,candidata_por_confirmar,150,996,34,5,150,0,-,EA4A1 | EA4A12 | EA4A13,,letras_numero_letras_numero
+TUAA,candidata_por_confirmar,142,710,5,142,142,0,-,TUAA-101 | TUAA-102 | TUAA-103,,prefixo_alfabetico
+S3,candidata_por_confirmar,139,139,3,0,127,0,-,S3M1000 | S3M1001 | S3M1002,,letras_numero_letras_numero
+H2,forte_padrao_e_varias_of,138,141,6,0,138,2,-,H2HA1004T | H2HA1005T | H2HA1006T,RTE | H2HS2-H2Y | EP2519 | RTE | H2HA-T1-R1 + H2HA-T1-R2 | EP2588,familia_mae_corrobora_designacao
+7152,codigo_de_projeto_por_confirmar,137,137,1,137,137,0,-,7152VS1-1 | 7152VS1-17 | 7152VS1-18,,codigo_numerico_candidato_a_projeto
+AT1,candidata_por_confirmar,133,799,7,0,133,0,-,AT1T101 | AT1T102 | AT1T103,,letras_numero_letras_numero
+EA8,candidata_por_confirmar,133,714,15,0,133,0,-,EA8A1 | EA8A16 | EA8A17,,letras_numero_letras_numero
+ZF,candidata_por_confirmar,128,222,4,105,128,0,-,ZF-1001 | ZF-1003 | ZF-1004,,prefixo_alfabetico
+XS,candidata_por_confirmar,126,129,3,0,126,0,-,XS1 | XS10 | XS100,,prefixo_alfabetico
+D13,candidata_por_confirmar,125,630,24,40,105,0,-,D13A2 | D13A3 | D13A6,,letras_numero_letras_numero
+5877,codigo_de_projeto_por_confirmar,118,657,24,98,118,0,-,5877T1 | 5877T101 | 5877T113,,codigo_numerico_candidato_a_projeto
+ED8,candidata_por_confirmar,117,312,10,70,117,0,-,ED8A5 | ED8A7 | ED8B102,,letras_numero_letras_numero
+CS,forte_padrao_e_uma_of,116,172,5,0,114,1,-,CS04H004 | CS05H007 | CS10,= POSTE CS =,familia_mae_corrobora_designacao
+D20,candidata_por_confirmar,113,113,1,0,113,0,-,D20B24 | D20B25 | D20B26,,letras_numero_letras_numero
+ED6,candidata_por_confirmar,113,246,9,0,113,0,-,ED6A15 | ED6A5 | ED6B42,,letras_numero_letras_numero
+A12,forte_padrao_e_uma_of,101,444,19,0,101,1,-,A12A1 | A12A2 | A12A3,TECPOLES | MCA - BASES PARA ENSAIOS A_10K - EP2504 / A12K - EP2505 / A6KS - EP2506,familia_mae_corrobora_designacao
+WA,forte_padrao_e_varias_of,98,98,2,0,98,2,-,WA03D4734 | WA03E4734 | WA190D,= BASES WA = | = PROLONGAMENTO WA =  = EP2619 =,familia_mae_corrobora_designacao
+A18,forte_padrao_e_uma_of,97,284,8,0,97,1,-,A18A2 | A18A3 | A18A6,"MCA | POSTE A18K-27M / D320/T420+BC - CABEÇA D320, T420+BC - EP2656",familia_mae_corrobora_designacao
+A31,candidata_por_confirmar,97,268,6,0,97,0,-,A31H720 | A31H720A | A31H721,,letras_numero_letras_numero
+V,prefixo_demasiado_generico,95,114,5,34,80,0,-,V077501 | V077502 | V077503,,prefixo_alfabetico
+TUAB,candidata_por_confirmar,92,460,5,92,92,0,-,TUAB-201 | TUAB-202 | TUAB-203,,prefixo_alfabetico
+A21,candidata_por_confirmar,90,172,4,82,85,0,-,A21A12 | A21A2 | A21A3,,letras_numero_letras_numero
+EA10,candidata_por_confirmar,89,371,23,29,89,0,-,EA10A1 | EA10A5 | EA10B100,,letras_numero_letras_numero
+A30,candidata_por_confirmar,88,88,2,0,88,0,-,A30H625 | A30H625A | A30H626,,letras_numero_letras_numero
+DS,forte_padrao_e_varias_of,88,91,3,0,88,3,-,DS-D | DS-E | DS-N,= POSTE DS SEM BASE =  = URGENTE = | = MATERIAL DS = | = C.M.E. = MONTANTES P/ POSTE DS4 =,familia_mae_corrobora_designacao
+A10,candidata_por_confirmar,86,513,23,68,86,0,-,A10A1 | A10A2 | A10A3,,letras_numero_letras_numero
+A9,candidata_por_confirmar,84,108,3,0,84,0,-,A9H630 | A9H630A | A9H631,,letras_numero_letras_numero
+AT2,candidata_por_confirmar,84,505,7,0,84,0,-,AT2T501 | AT2T502 | AT2T503,,letras_numero_letras_numero
+E2,candidata_por_confirmar,84,471,15,0,84,0,-,E2F1 | E2F10 | E2F11,,letras_numero_letras_numero
+ED32,candidata_por_confirmar,84,216,7,68,84,0,-,ED32A1 | ED32A10 | ED32B1,,letras_numero_letras_numero
+A25,candidata_por_confirmar,81,81,2,0,81,0,-,A25H720 | A25H720A | A25H721,,letras_numero_letras_numero
+M8,candidata_por_confirmar,74,80,12,0,74,0,-,M8B1006 | M8C108L | M8C123L,,letras_numero_letras_numero
+EA18,candidata_por_confirmar,73,181,8,0,67,0,-,EA18A1 | EA18A5 | EA18B110,,letras_numero_letras_numero
+A7,candidata_por_confirmar,72,88,3,0,72,0,-,A7H520 | A7H520A | A7H521,,letras_numero_letras_numero
+AS,candidata_por_confirmar,72,378,8,0,72,1,-,AS1101 | AS1102 | AS1103,"= TENNET A390 | PEÇAS PARA REPOR - POSTE 49, 52, 77, 78, 82 =",prefixo_alfabetico
+EA21,candidata_por_confirmar,68,120,4,52,50,0,-,EA21A1 | EA21A11 | EA21A5,,letras_numero_letras_numero
+P040,candidata_por_confirmar,66,66,1,0,66,0,-,P040B7 | P040B71 | P040B72,,letras_numero_letras_numero
+EPJ23,candidata_por_confirmar,64,64,3,64,64,0,-,EPJ23HA6000+1_5MT | EPJ23HA6001T | EPJ23HA6002+1_5MT,,letras_numero_letras_numero
+Z2893,candidata_por_confirmar,63,63,1,0,63,0,-,Z2893T01 | Z2893T02 | Z2893T03,,letras_numero_letras_numero
+ED10,candidata_por_confirmar,61,120,3,0,61,0,-,ED10A8 | ED10B40 | ED10B41,,letras_numero_letras_numero
+ME,candidata_por_confirmar,58,58,1,0,58,0,-,ME11D | ME11E | ME12D,,prefixo_alfabetico
+MG,candidata_por_confirmar,58,174,3,58,58,0,-,MG11D | MG11E | MG12D,,prefixo_alfabetico
+AEH,candidata_por_confirmar,53,318,6,0,53,0,-,AEH12 | AEH13 | AEH14,,prefixo_alfabetico
+CA22,forte_padrao_e_varias_of,53,158,14,4,0,12,,CA22O107 | CA22O125 | CA22O126,TORRE PINHEIRO 16M - MOD. CA22O | TORRE PINHEIRO 30M - MOD. CA22O | TORRE PINHEIRO 24M - MOD.CA22O,familia_mae_corrobora_designacao
+SD,forte_padrao_e_uma_of,53,55,2,0,53,1,-,SD1 | SD10 | SD11,= POSTES SD SEM BASE =  = URGENTE =,familia_mae_corrobora_designacao
+5826,codigo_de_projeto_por_confirmar,50,61,12,0,37,0,-,5826PP106 | 5826PP114 | 5826PP116,,codigo_numerico_candidato_a_projeto
+RD,forte_padrao_e_uma_of,49,49,1,0,49,1,-,RD1 | RD10 | RD10A,= POSTE RD SEM BASE =  = URGENTE =,familia_mae_corrobora_designacao
+T2883,candidata_por_confirmar,49,49,1,0,49,0,-,T2883T101 | T2883T102 | T2883T103,,letras_numero_letras_numero
+HV,candidata_por_confirmar,47,47,1,0,0,0,,HV-6-20-X | HV-6-20-Z | HV-6001,,prefixo_alfabetico
+DC64,candidata_por_confirmar,44,51,8,0,44,0,-,DC64B38 | DC64B40 | DC64C1,,letras_numero_letras_numero
+1234,codigo_de_projeto_por_confirmar,43,312,19,43,0,0,,1234T001 | 1234T002 | 1234T003,,codigo_numerico_candidato_a_projeto
+IR,candidata_por_confirmar,43,43,2,40,43,0,-,IR02A | IR02B | IR02C,,prefixo_alfabetico
+IS,candidata_por_confirmar,43,43,1,0,43,0,-,IS283D | IS283E | IS5411E,,prefixo_alfabetico
+0854,codigo_de_projeto_por_confirmar,42,199,16,0,0,0,,0854U001 | 0854U004 | 0854U005,,codigo_numerico_candidato_a_projeto
+5829,codigo_de_projeto_por_confirmar,38,38,5,0,30,0,-,5829PP106 | 5829PP35 | 5829PP43,,codigo_numerico_candidato_a_projeto
+5827,codigo_de_projeto_por_confirmar,35,35,1,0,35,0,-,5827T11 | 5827T110 | 5827T111,,codigo_numerico_candidato_a_projeto
+5828,codigo_de_projeto_por_confirmar,35,35,4,0,30,0,-,5828PP20 | 5828PP34 | 5828PP35,,codigo_numerico_candidato_a_projeto
+CD05,candidata_por_confirmar,34,64,10,3,0,0,,CD05T001 | CD05T002 | CD05T003,,letras_numero_letras_numero
+X,prefixo_demasiado_generico,32,32,2,10,22,1,-,X306-307 | X306-308 | X306-309,= TENNET A390 = TROÇOS POSTE 54 =   = EP2661 =,prefixo_alfabetico
+1115,codigo_de_projeto_por_confirmar,31,31,2,0,0,0,,1115V050 | 1115V051 | 1115V052,,codigo_numerico_candidato_a_projeto
+D,prefixo_demasiado_generico,30,30,3,0,30,0,-,D0902T | D0903 | D0920,,prefixo_alfabetico
+A,prefixo_demasiado_generico,28,31,10,1,27,0,-,A0201D | A0201E | A0201T,,prefixo_alfabetico
+S,prefixo_demasiado_generico,28,28,5,0,28,0,-,S066838 | S113601 | S113602,,prefixo_alfabetico
+VZ,candidata_por_confirmar,28,29,1,0,0,0,,VZ739803 | VZ739804 | VZ739805,,prefixo_alfabetico
+CA63,forte_padrao_e_varias_of,26,206,14,21,0,2,,CA63O065 | CA63O076 | CA63O077,1UN - CA63OJ16 + 1UN. CA1AOJ18 | CA63OJ19 - DA61-153,familia_mae_corrobora_designacao
+9422,codigo_de_projeto_por_confirmar,25,51,5,0,0,1,,9422N11 | 9422N12 | 9422N13,SUP. ESCADAS (REF. 9422N53) - 6X  DQ52-191,codigo_numerico_candidato_a_projeto
+TZ,candidata_por_confirmar,25,25,1,0,0,0,,TZ429804 | TZ429805 | TZ429806,,prefixo_alfabetico
+CR,candidata_por_confirmar,24,24,1,0,24,0,-,CR4 | CR50 | CR51,,prefixo_alfabetico
+ETC,candidata_por_confirmar,21,28,2,0,21,0,-,ETC-10 | ETC-11 | ETC-12,,prefixo_alfabetico
+AB,candidata_por_confirmar,19,30,2,19,0,0,,AB26-302 | AB26-303 | AB26-304,,prefixo_alfabetico
+BA12,candidata_por_confirmar,19,22,2,0,0,0,,BA12U010 | BA12U011 | BA12U012,,letras_numero_letras_numero
+TC154,candidata_por_confirmar,18,18,4,0,18,0,-,TC154B30 | TC154C1 | TC154C15,,letras_numero_letras_numero
+D4,candidata_por_confirmar,17,173,17,13,17,0,-,D4A2 | D4A3 | D4F102,,letras_numero_letras_numero
+PA3,forte_padrao_e_uma_of,17,28,4,15,0,1,,PA3H004 | PA3H005 | PA3SV101,ACESSÓRIOS P/TORRE PA3SV - 24M(X2)/30M(X3)/36M(X11)/42M(X12) E PA5SV - 48M(X2),familia_mae_corrobora_designacao
+2625,codigo_de_projeto_por_confirmar,16,32,4,0,0,0,,2625P003 | 2625P009 | 2625P010,,codigo_numerico_candidato_a_projeto
+6708,codigo_de_projeto_por_confirmar,16,16,2,0,0,0,,6708V002 | 6708V003 | 6708V004,,codigo_numerico_candidato_a_projeto
+T57,candidata_por_confirmar,15,15,1,0,15,0,-,T57H631 | T57H631A | T57H632,,letras_numero_letras_numero
+EEB,candidata_por_confirmar,13,91,7,0,13,0,-,EEB16 | EEB17 | EEB18,,prefixo_alfabetico
+CA1,forte_padrao_e_varias_of,12,145,28,0,0,2,,CA1AO1 | CA1AO10 | CA1AO11,1UN - CA63OJ16 + 1UN. CA1AOJ18 | RECLAMAÇÃO DQ63-147  ESCADA CA1AOJ20,familia_mae_corrobora_designacao
+S1,candidata_por_confirmar,12,12,1,0,0,0,,S1M1004 | S1M1005 | S1M1013,,letras_numero_letras_numero
+DA,candidata_por_confirmar,11,11,2,0,11,0,-,DA181L | DA181R | DA182R,,prefixo_alfabetico
+EC,candidata_por_confirmar,11,77,7,0,11,0,-,EC11 | EC12 | EC13,,prefixo_alfabetico
+S4,candidata_por_confirmar,11,11,1,0,0,0,,S4M1000 | S4M1001 | S4M1009,,letras_numero_letras_numero
+S6,candidata_por_confirmar,11,11,1,0,0,0,,S6M1000 | S6M1001 | S6M1009,,letras_numero_letras_numero
+S8,candidata_por_confirmar,11,11,1,0,0,0,,S8M1000 | S8M1001 | S8M1009,,letras_numero_letras_numero
+MDB274,candidata_por_confirmar,10,10,1,0,0,0,,MDB274S1L | MDB274S1R | MDB274S2L,,letras_numero_letras_numero
+9579,codigo_de_projeto_por_confirmar,9,16,2,0,0,0,,9579U001 | 9579U002 | 9579U003,,codigo_numerico_candidato_a_projeto
+MDA241,candidata_por_confirmar,9,9,1,0,0,0,,MDA241S2L | MDA241S2R | MDA241S4L,,letras_numero_letras_numero
+QTD,candidata_por_confirmar,9,72,8,9,9,0,-,QTD161 | QTD162 | QTD163,,prefixo_alfabetico
+S5,candidata_por_confirmar,9,9,1,0,0,0,,S5M1000 | S5M1001 | S5M1009,,letras_numero_letras_numero
+S7,candidata_por_confirmar,9,9,1,0,0,0,,S7M1000 | S7M1001 | S7M1009,,letras_numero_letras_numero
+1476,codigo_de_projeto_por_confirmar,8,8,3,0,0,0,,1476V001 | 1476V002 | 1476V004,,codigo_numerico_candidato_a_projeto
+6647,codigo_de_projeto_por_confirmar,8,16,2,8,0,0,,6647V001 | 6647V002 | 6647V003,,codigo_numerico_candidato_a_projeto
+7355,codigo_de_projeto_por_confirmar,8,8,1,8,0,0,,7355V001 | 7355V002 | 7355V003,,codigo_numerico_candidato_a_projeto
+S9,candidata_por_confirmar,8,8,1,0,0,0,,S9M1000 | S9M1001 | S9M1009,,letras_numero_letras_numero
+CE,candidata_por_confirmar,7,12,4,0,0,0,,CE012022 | CE012023 | CE012024,,prefixo_alfabetico
+CR00,candidata_por_confirmar,7,24,9,0,0,0,,CR00I003 | CR00I006 | CR00I007,,letras_numero_letras_numero
+S10,candidata_por_confirmar,7,7,1,0,0,0,,S10M1000 | S10M1001 | S10M1009,,letras_numero_letras_numero
+TC254,candidata_por_confirmar,7,7,2,0,7,0,-,TC254C13 | TC254C14 | TC254C15,,letras_numero_letras_numero
+TL,candidata_por_confirmar,7,25,5,6,1,0,-,TL306-322 | TL465-108 | TL465-109,,prefixo_alfabetico
+WZ,candidata_por_confirmar,7,7,1,7,0,0,,WZ05-301 | WZ05-302 | WZ05-303,,prefixo_alfabetico
+12,codigo_de_projeto_por_confirmar,6,7,2,0,6,0,-,12A140 | 12A155 | 12A177R,,codigo_numerico_candidato_a_projeto
+2205,codigo_de_projeto_por_confirmar,6,6,2,0,0,0,,2205T038 | 2205T051 | 2205T053,,codigo_numerico_candidato_a_projeto
+8951,codigo_de_projeto_por_confirmar,6,12,2,0,0,0,,8951M001 | 8951M004 | 8951M005,,codigo_numerico_candidato_a_projeto
+CA6,candidata_por_confirmar,6,7,2,1,0,0,,CA6AO001 | CA6AO011 | CA6AO015,,letras_numero_letras_numero
+EEC,candidata_por_confirmar,6,42,13,0,6,0,-,EEC1 | EEC10 | EEC2,,prefixo_alfabetico
+MDA,candidata_por_confirmar,6,6,1,0,0,0,,MDA122LS | MDA122RS | MDA123LS,,prefixo_alfabetico
+PA01,candidata_por_confirmar,6,6,1,0,6,1,-,PA01C035 | PA01C048 | PA01C049,1UN.BASE 45M - MOD. PA01C ||| 4UN. CADA PA01C126 / PA01C035 / PA01C178 ,letras_numero_letras_numero
+1675,codigo_de_projeto_por_confirmar,5,5,2,0,0,0,,1675V009 | 1675V015 | 1675V016,,codigo_numerico_candidato_a_projeto
+CA,candidata_por_confirmar,5,10,5,1,0,0,,CA077003 | CA077004 | CA077019,,prefixo_alfabetico
+EA,candidata_por_confirmar,5,5,1,0,5,0,-,EA18H-1 | EA18H-2 | EA18H-3,,prefixo_alfabetico
+MDA251,candidata_por_confirmar,5,5,1,0,0,0,,MDA251S3L | MDA251S3R | MDA251S4,,letras_numero_letras_numero
+MDC,candidata_por_confirmar,5,5,1,0,0,0,,MDC119S | MDC120S | MDC122S,,prefixo_alfabetico
+PA23,candidata_por_confirmar,5,62,28,4,0,0,,PA23H004 | PA23H005 | PA23H019,,letras_numero_letras_numero
+POS,candidata_por_confirmar,5,5,2,0,0,0,,POS2.15 | POS2.16 | POS5.6,,prefixo_alfabetico
+0406,codigo_de_projeto_por_confirmar,4,4,1,0,0,0,,0406UPR1 | 0406UPR2 | 0406UPR5,,codigo_numerico_candidato_a_projeto
+1,codigo_de_projeto_por_confirmar,4,4,2,0,0,2,,1PR2 | 1PR3 | 1W1,ALSTOM | MONORAIL | MODELO 1 | CANTONEIRAS (585X) + ANILHAS (702X) = 1287X | ALSTOM | MONORAIL | MODELO 1 | VARANDINS ESQ / DIR = 374X,codigo_numerico_candidato_a_projeto
+2,codigo_de_projeto_por_confirmar,4,4,2,0,0,2,,2PR2 | 2PR3 | 2W1,ALSTOM | MONORAIL | MODELO 2 | CANTONEIRAS (2876X) + ANILHAS (7458X) = 10334X | ALSTOM | MONORAIL | MODELO 2 | VARANDINS ESQ / DIR = 648X,codigo_numerico_candidato_a_projeto
+C091,candidata_por_confirmar,4,4,1,0,0,0,,C091U002 | C091U003 | C091U004,,letras_numero_letras_numero
+CR03,candidata_por_confirmar,4,12,4,0,3,0,-,CR03B018 | CR03B18 | CR03B18A,,letras_numero_letras_numero
+CR10,candidata_por_confirmar,4,17,16,1,0,0,,CR10H002 | CR10H002_REV.A | CR10H002_REVA,,letras_numero_letras_numero
+DB,candidata_por_confirmar,4,4,1,0,4,0,-,DB155 | DB165 | DB260L,,prefixo_alfabetico
+E4,candidata_por_confirmar,4,4,2,0,4,0,-,E4A1818DR2T | E4A1818GR2T | E4A2020DT,,letras_numero_letras_numero
+ES03,candidata_por_confirmar,4,4,1,0,0,1,,ES03U001 | ES03U002 | ES03U003,ESTRUTURAS SOLARES - ES03U,letras_numero_letras_numero
+EXT31,candidata_por_confirmar,4,5,2,0,0,0,,EXT31C16 | EXT31C25 | EXT31C28,,letras_numero_letras_numero
+HG01,candidata_por_confirmar,4,8,2,0,4,0,-,HG01D3723 | HG01D4123 | HG01E3723,,letras_numero_letras_numero
+PA02,candidata_por_confirmar,4,4,2,0,0,0,,PA02MD004 | PA02MD04 | PA02ME004,,letras_numero_letras_numero
+PR,candidata_por_confirmar,4,7,2,0,0,0,,PR1 | PR2 | PR5,,prefixo_alfabetico
+TC104,candidata_por_confirmar,4,4,3,0,4,0,-,TC104F152 | TC104F21 | TC104F251,,letras_numero_letras_numero
+Z346,candidata_por_confirmar,4,4,2,0,4,0,-,Z346M02 | Z346M03 | Z346M05,,letras_numero_letras_numero
+1008,codigo_de_projeto_por_confirmar,3,3,1,0,0,0,,1008V001 | 1008V002 | 1008V003,,codigo_numerico_candidato_a_projeto
+2035,codigo_de_projeto_por_confirmar,3,4,2,0,0,0,,2035V109 | 2035V200 | 2035V201,,codigo_numerico_candidato_a_projeto
+4960,codigo_de_projeto_por_confirmar,3,9,3,0,0,0,,4960J050 | 4960J051 | 4960J052,,codigo_numerico_candidato_a_projeto
+6273,codigo_de_projeto_por_confirmar,3,12,3,0,0,0,,6273U200 | 6273U201 | 6273U202,,codigo_numerico_candidato_a_projeto
+9697,codigo_de_projeto_por_confirmar,3,7,5,0,0,0,,9697T002 | 9697T003 | 9697T005,,codigo_numerico_candidato_a_projeto
+CA10,candidata_por_confirmar,3,4,2,0,0,0,,CA10H064 | CA10H067 | CA10H069,,letras_numero_letras_numero
+CA54,candidata_por_confirmar,3,6,2,0,0,2,,CA54N018 | CA54N019 | CA54N020,TORRE PALMEIRA 12M - MOD. CA54N,letras_numero_letras_numero
+CF,candidata_por_confirmar,3,181,66,3,3,0,-,CF150D | CF150E | CF300A,,prefixo_alfabetico
+DB202,candidata_por_confirmar,3,3,1,0,0,0,,DB202S3 | DB202S4 | DB202S5,,letras_numero_letras_numero
+EPH,candidata_por_confirmar,3,5,4,1,3,0,-,EPH92KRT | EPH92SRT | EPH92ST,,prefixo_alfabetico
+IR02,candidata_por_confirmar,3,3,1,0,3,0,-,IR02D3687 | IR02E3687 | IR02E4088,,letras_numero_letras_numero
+IT03,candidata_por_confirmar,3,3,1,0,3,0,-,IT03D4397 | IT03E4397 | IT03E4797,,letras_numero_letras_numero
+W2192,candidata_por_confirmar,3,3,1,0,3,0,-,W2192M1 | W2192M2 | W2192M3,,letras_numero_letras_numero
+XZ41,candidata_por_confirmar,3,3,1,0,3,0,-,XZ41M1 | XZ41M2 | XZ41M6,,letras_numero_letras_numero
+XZ72,candidata_por_confirmar,3,3,1,0,3,0,-,XZ72M16 | XZ72M7 | XZ72M8,,letras_numero_letras_numero
+0187,codigo_de_projeto_por_confirmar,2,3,2,0,0,0,,0187S001 | 0187S002,,codigo_numerico_candidato_a_projeto
+0979,codigo_de_projeto_por_confirmar,2,2,2,2,0,0,,0979T007 | 0979T008,,codigo_numerico_candidato_a_projeto
+107,codigo_de_projeto_por_confirmar,2,2,1,0,0,0,,107H4ASD | 107H4ASG,,codigo_numerico_candidato_a_projeto
+110,codigo_de_projeto_por_confirmar,2,2,1,0,0,0,,110H4ASD | 110H4ASG,,codigo_numerico_candidato_a_projeto
+111,codigo_de_projeto_por_confirmar,2,2,1,0,0,0,,111H4ASD | 111H4ASG,,codigo_numerico_candidato_a_projeto
+114,codigo_de_projeto_por_confirmar,2,2,1,0,0,0,,114H4ASD | 114H4ASG,,codigo_numerico_candidato_a_projeto
+12640,codigo_de_projeto_por_confirmar,2,2,2,0,0,0,,12640P16 | 12640R01,,codigo_numerico_candidato_a_projeto
+1934,codigo_de_projeto_por_confirmar,2,2,1,0,0,0,,1934U006 | 1934U007,,codigo_numerico_candidato_a_projeto
+1943,codigo_de_projeto_por_confirmar,2,2,1,0,0,0,,1943U008 | 1943U009,,codigo_numerico_candidato_a_projeto
+2046,codigo_de_projeto_por_confirmar,2,2,1,0,0,0,,2046V011_A | 2046V011_B,,codigo_numerico_candidato_a_projeto
+2263,codigo_de_projeto_por_confirmar,2,3,3,0,0,0,,2263V003 | 2263V009,,codigo_numerico_candidato_a_projeto
+2568,codigo_de_projeto_por_confirmar,2,2,1,0,0,0,,2568V001 | 2568V002,,codigo_numerico_candidato_a_projeto
+3159,codigo_de_projeto_por_confirmar,2,2,1,0,0,0,,3159V002 | 3159V004,,codigo_numerico_candidato_a_projeto
+4270,codigo_de_projeto_por_confirmar,2,2,1,0,0,0,,4270V000 | 4270V002,,codigo_numerico_candidato_a_projeto
+8102,codigo_de_projeto_por_confirmar,2,2,2,0,0,0,,8102V150 | 8102V151,,codigo_numerico_candidato_a_projeto
+CA17,candidata_por_confirmar,2,2,1,0,0,0,,CA17H022 | CA17H023,,letras_numero_letras_numero
+CE01,candidata_por_confirmar,2,2,1,0,0,0,,CE01D017 | CE01D018,,letras_numero_letras_numero
+CR17,candidata_por_confirmar,2,5,5,0,0,0,,CR17L001 | CR17L002,,letras_numero_letras_numero
+D25,candidata_por_confirmar,2,2,1,0,2,0,-,D25A3 | D25A7,,letras_numero_letras_numero
+DC,candidata_por_confirmar,2,2,1,0,2,0,-,DC240R | DC241R,,prefixo_alfabetico
+E1818,candidata_por_confirmar,2,2,1,0,2,0,-,E1818DR2T | E1818GR2T,,letras_numero_letras_numero
+E3,candidata_por_confirmar,2,2,1,0,2,0,-,E3D2828 | E3E2828,,letras_numero_letras_numero
+E41512,candidata_por_confirmar,2,4,2,0,2,0,-,E41512DR2T | E41512GR2T,,letras_numero_letras_numero
+E41518,candidata_por_confirmar,2,2,1,0,2,0,-,E41518DR2T | E41518GR2T,,letras_numero_letras_numero
+E42024,candidata_por_confirmar,2,2,1,0,2,0,-,E42024DR2T | E42024GR2T,,letras_numero_letras_numero
+EE2,candidata_por_confirmar,2,18,9,0,2,0,-,EE2F41 | EE2FP42,,letras_numero_letras_numero
+EI12,candidata_por_confirmar,2,2,1,0,0,0,,EI12V007 | EI12V009,,letras_numero_letras_numero
+EP,candidata_por_confirmar,2,2,1,0,2,0,-,EP4HTDRT | EP4HTGRT,,prefixo_alfabetico
+EP4,candidata_por_confirmar,2,2,1,0,2,0,-,EP4HS11R2T | EP4HS11RT,,letras_numero_letras_numero
+ES01,candidata_por_confirmar,2,2,1,0,0,1,,ES01V001 | ES01V002,ESTRUTURAS SOLARES ES01V - 3V8 E 3V24,letras_numero_letras_numero
+ES04,candidata_por_confirmar,2,2,1,0,0,1,,ES04U001 | ES04U002,ESTRUTURAS SOLARES 2V14 E 2V28 - ES04U,letras_numero_letras_numero
+ET40,candidata_por_confirmar,2,2,1,0,2,0,-,ET40A5 | ET40A6,,letras_numero_letras_numero
+G6,candidata_por_confirmar,2,2,1,0,2,0,-,G6D3130 | G6E3130,,letras_numero_letras_numero
+IT01,candidata_por_confirmar,2,2,1,0,2,0,-,IT01D4397 | IT01E4397,,letras_numero_letras_numero
+J2,candidata_por_confirmar,2,2,1,0,2,0,-,J2D3834 | J2E3834,,letras_numero_letras_numero
+MDA191,candidata_por_confirmar,2,2,1,0,0,0,,MDA191S1 | MDA191S2,,letras_numero_letras_numero
+MDA274,candidata_por_confirmar,2,2,1,0,0,0,,MDA274S5L | MDA274S5R,,letras_numero_letras_numero
+MDC130,candidata_por_confirmar,2,2,1,0,0,0,,MDC130S1 | MDC130S2,,letras_numero_letras_numero
+MDC20,candidata_por_confirmar,2,2,1,0,0,0,,MDC20S1 | MDC20S2,,letras_numero_letras_numero
+PA54,candidata_por_confirmar,2,2,2,0,0,1,,PA54R279 | PA54RVR1,FALTAS PA54R,letras_numero_letras_numero
+PTJ,candidata_por_confirmar,2,3,3,0,0,0,,PTJ3009668 | PTJ300966B,,prefixo_alfabetico
+TTZ,candidata_por_confirmar,2,2,1,0,2,0,-,TTZ9315 | TTZ9316,,prefixo_alfabetico
+0093,codigo_de_projeto_por_confirmar,1,1,1,0,0,0,,0093V001,,codigo_numerico_candidato_a_projeto
+0110,codigo_de_projeto_por_confirmar,1,1,1,0,0,0,,0110U001,,codigo_numerico_candidato_a_projeto
+0381,codigo_de_projeto_por_confirmar,1,1,1,0,0,0,,0381V011,,codigo_numerico_candidato_a_projeto
+0543,codigo_de_projeto_por_confirmar,1,1,1,0,0,0,,0543U002,,codigo_numerico_candidato_a_projeto
+0771,codigo_de_projeto_por_confirmar,1,1,1,0,0,0,,0771N002,,codigo_numerico_candidato_a_projeto
+0917,codigo_de_projeto_por_confirmar,1,1,1,0,0,0,,0917U004,,codigo_numerico_candidato_a_projeto
+102,codigo_de_projeto_por_confirmar,1,1,1,0,0,0,,102H4AS,,codigo_numerico_candidato_a_projeto
+103,codigo_de_projeto_por_confirmar,1,1,1,0,0,0,,103H4AS,,codigo_numerico_candidato_a_projeto
+104,codigo_de_projeto_por_confirmar,1,1,1,0,0,0,,104H4AS,,codigo_numerico_candidato_a_projeto
+105,codigo_de_projeto_por_confirmar,1,1,1,0,0,0,,105H4AS,,codigo_numerico_candidato_a_projeto
+1066,codigo_de_projeto_por_confirmar,1,1,1,0,0,0,,1066V001,,codigo_numerico_candidato_a_projeto
+1130,codigo_de_projeto_por_confirmar,1,1,1,0,0,0,,1130M002,,codigo_numerico_candidato_a_projeto
+1148,codigo_de_projeto_por_confirmar,1,1,1,0,0,0,,1148V001,,codigo_numerico_candidato_a_projeto
+1283,codigo_de_projeto_por_confirmar,1,2,2,0,0,0,,1283V033,,codigo_numerico_candidato_a_projeto
+2244,codigo_de_projeto_por_confirmar,1,2,2,0,0,0,,2244U200,,codigo_numerico_candidato_a_projeto
+2657,codigo_de_projeto_por_confirmar,1,1,1,0,0,0,,2657V001,,codigo_numerico_candidato_a_projeto
+2698,codigo_de_projeto_por_confirmar,1,1,1,0,0,0,,2698U001,,codigo_numerico_candidato_a_projeto
+2778,codigo_de_projeto_por_confirmar,1,1,1,0,0,0,,2778V039,,codigo_numerico_candidato_a_projeto
+2793,codigo_de_projeto_por_confirmar,1,2,2,0,0,0,,2793V002,,codigo_numerico_candidato_a_projeto
+2998,codigo_de_projeto_por_confirmar,1,2,2,0,0,0,,2998U005,,codigo_numerico_candidato_a_projeto
+4291,codigo_de_projeto_por_confirmar,1,1,1,0,0,0,,4291V004,,codigo_numerico_candidato_a_projeto
+4553,codigo_de_projeto_por_confirmar,1,1,1,0,0,0,,4553V000,,codigo_numerico_candidato_a_projeto
+4752,codigo_de_projeto_por_confirmar,1,1,1,0,0,0,,4752U003,,codigo_numerico_candidato_a_projeto
+4788,codigo_de_projeto_por_confirmar,1,1,1,0,0,0,,4788V005,,codigo_numerico_candidato_a_projeto
+5004,codigo_de_projeto_por_confirmar,1,1,1,0,0,0,,5004V006,,codigo_numerico_candidato_a_projeto
+5120,codigo_de_projeto_por_confirmar,1,1,1,0,0,0,,5120U010,,codigo_numerico_candidato_a_projeto
+5158,codigo_de_projeto_por_confirmar,1,1,1,0,0,0,,5158V200,,codigo_numerico_candidato_a_projeto
+5189,codigo_de_projeto_por_confirmar,1,4,4,0,0,0,,5189K005,,codigo_numerico_candidato_a_projeto
+5943,codigo_de_projeto_por_confirmar,1,2,2,0,0,0,,5943N012,,codigo_numerico_candidato_a_projeto
+5954,codigo_de_projeto_por_confirmar,1,2,2,0,0,0,,5954Q002,,codigo_numerico_candidato_a_projeto
+8072,codigo_de_projeto_por_confirmar,1,1,1,1,0,0,,8072V3,,codigo_numerico_candidato_a_projeto
+8741,codigo_de_projeto_por_confirmar,1,1,1,0,0,0,,8741U009,,codigo_numerico_candidato_a_projeto
+A131,candidata_por_confirmar,1,1,1,0,0,0,,A131T032,,letras_numero_letras_numero
+A3,candidata_por_confirmar,1,1,1,0,1,0,-,A3M901,,letras_numero_letras_numero
+A562,candidata_por_confirmar,1,3,3,0,0,0,,A562U000,,letras_numero_letras_numero
+A620,candidata_por_confirmar,1,2,2,0,0,0,,A620S016,,letras_numero_letras_numero
+A902,candidata_por_confirmar,1,2,2,0,0,0,,A902U001,,letras_numero_letras_numero
+B307,candidata_por_confirmar,1,1,1,0,0,0,,B307U001,,letras_numero_letras_numero
+B713,candidata_por_confirmar,1,1,1,0,0,0,,B713U002,,letras_numero_letras_numero
+C097,candidata_por_confirmar,1,1,1,0,0,0,,C097U000,,letras_numero_letras_numero
+C195,candidata_por_confirmar,1,1,1,0,0,0,,C195U009,,letras_numero_letras_numero
+CA24,candidata_por_confirmar,1,2,2,1,0,2,,CA24I026,TORRE CIPRESTE 20M - MOD. CA24I | TORRE CIPRESTE 12M - MOD.CA24I,letras_numero_letras_numero
+CD,candidata_por_confirmar,1,1,1,0,0,0,,CD10001,,prefixo_alfabetico
+CD10,candidata_por_confirmar,1,82,82,1,0,0,,CD10P001,,letras_numero_letras_numero
+CDBRO,candidata_por_confirmar,1,7,7,0,0,0,,CDBRO001,,prefixo_alfabetico
+CDPTM,candidata_por_confirmar,1,93,93,1,0,0,,CDPTM001,,prefixo_alfabetico
+CDPTO,candidata_por_confirmar,1,2,2,0,0,0,,CDPTO003,,prefixo_alfabetico
+CDTPM,candidata_por_confirmar,1,1,1,0,0,0,,CDTPM001,,prefixo_alfabetico
+CES4,candidata_por_confirmar,1,2,2,0,0,0,,CES4J007,,letras_numero_letras_numero
+CG22,candidata_por_confirmar,1,1,1,0,0,0,,CG22P16,,letras_numero_letras_numero
+CR12,candidata_por_confirmar,1,4,4,0,0,0,,CR12I024,,letras_numero_letras_numero
+CR19,candidata_por_confirmar,1,3,3,0,0,0,,CR19Q001,,letras_numero_letras_numero
+CT,candidata_por_confirmar,1,1,1,0,1,0,-,CT011100,,prefixo_alfabetico
+ED,candidata_por_confirmar,1,1,1,0,0,0,,ED4A,,prefixo_alfabetico
+ED25,candidata_por_confirmar,1,1,1,0,1,0,-,ED25A6,,letras_numero_letras_numero
+EH,candidata_por_confirmar,1,2,2,0,1,0,-,EH92HNRT,,prefixo_alfabetico
+EH92,candidata_por_confirmar,1,1,1,0,1,0,-,EH92HTR2T,,letras_numero_letras_numero
+EI16,candidata_por_confirmar,1,1,1,0,0,0,,EI16V013,,letras_numero_letras_numero
+EPH92,candidata_por_confirmar,1,1,1,0,1,0,-,EPH92S1RT,,letras_numero_letras_numero
+EXT30,candidata_por_confirmar,1,1,1,0,0,0,,EXT30C60,,letras_numero_letras_numero
+M2011,candidata_por_confirmar,1,1,1,0,0,0,,M2011P4,,letras_numero_letras_numero
+MDB,candidata_por_confirmar,1,1,1,0,0,0,,MDB128S,,prefixo_alfabetico
+MDB270,candidata_por_confirmar,1,1,1,0,0,0,,MDB270S2,,letras_numero_letras_numero
+PA31,candidata_por_confirmar,1,3,3,0,0,1,,PA31M816,ACESSÓRIOS | TORRE PA31M 15M (1 UN)+ 18M (2 UN),letras_numero_letras_numero
+PENAS,candidata_por_confirmar,1,1,1,0,1,0,-,PENAS5,,prefixo_alfabetico
+PM20,candidata_por_confirmar,1,7,7,0,0,0,,PM20PP632,,letras_numero_letras_numero
+SR03,candidata_por_confirmar,1,1,1,0,0,0,,SR03T001,,letras_numero_letras_numero
+T336,candidata_por_confirmar,1,1,1,1,1,0,-,T336M02,,letras_numero_letras_numero
+T364,candidata_por_confirmar,1,1,1,0,1,0,-,T364M02,,letras_numero_letras_numero
+T40,candidata_por_confirmar,1,1,1,0,1,0,-,T40A3,,letras_numero_letras_numero
+TC354,candidata_por_confirmar,1,1,1,0,1,0,-,TC354C25,,letras_numero_letras_numero
+W2132,candidata_por_confirmar,1,1,1,0,1,0,-,W2132M1,,letras_numero_letras_numero
+Z359,candidata_por_confirmar,1,1,1,0,1,0,-,Z359M02,,letras_numero_letras_numero

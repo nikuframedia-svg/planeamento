@@ -1,0 +1,37 @@
+Famílias com evidência de produção na MTG3 — 01/10/2026
+
+33 famílias do conjunto de 35 anteriormente identificado têm evidência no setor.
+
+15 têm registos MES validados, com quantidade positiva e referência exata:
+A18, C4, CWA, CWS, D10, DLA, DLR, DLS, DLT, ELT, G4, H92, QA, QS, QT.
+As folhas MES consultadas abrangem 26/08/2026 a 30/09/2026.
+
+Outras 18 têm acumulado de produção positivo no Excel, com Pav. = MTG3:
+A12, CA1, CA22, CS, CWR, CWT, DLTN, DS, ELA, ELS, H2, M1, N43, P4, QR,
+RD, SD e WA. Este é um indício documental; não confirma uma folha de produção,
+a data real de execução ou que haja produção em curso. Data Corte não foi usada
+como data real de produção. M1 tem 181 SKUs distintos com acumulado positivo.
+
+CA63 consta do pavilhão 1. PA3 tem atribuições ao pavilhão 1 ou sem pavilhão;
+não foi encontrada evidência suficiente para as incluir nesta lista MTG3.
+Isto não permite afirmar que nunca foram produzidas na MTG3.
+
+Há também 51 agrupamentos candidatos com registos MES positivos (por exemplo
+ED13, D13, ZD, ED4, ZG e A4). A produção está registada, mas a definição desses
+agrupamentos como famílias ainda está por confirmar. Prefixos genéricos e
+possíveis códigos de projeto conservam o seu estado anterior.
+
+Ficheiros:
+- familias-identificadas.csv: 33 famílias, fontes, SKUs distintos, máquinas e datas MES;
+- todos-agrupamentos-com-evidencia.csv: inclui também os agrupamentos candidatos;
+- evidencias-por-fonte.csv: identificadores originais dos registos que sustentam a análise;
+- resumo.json: versões, critérios, exclusões e limites.
+
+O cruzamento usa uma transação estritamente de leitura e preserva as fontes.
+Não soma MES, Excel ou OCR, nem altera a classificação ou os saldos da aplicação.
+Perfis completos e referências sem correspondência exata não são usados para
+atribuir produção individual nesta análise. A exportação OCR consultada não
+permitiu identificar inequivocamente produção na MTG3 pelas máquinas listadas.
+
+Reprodução, a partir da raiz do projeto:
+.venv/bin/python docs/familias-sku-mtg3-2026-10-01/analisar-producao.py

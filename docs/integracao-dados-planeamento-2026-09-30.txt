@@ -1,0 +1,110 @@
+Integração de dados de planeamento — 30/09/2026
+
+INSTALADO
+
+A aplicação continua a gravar na base operacional dataresearchmtg. O serviço
+kanban-research-sync publica os dados atuais e o histórico manual na nova base
+dataresearchmtg_planeamento_20260930. As gravações não dependem da disponibilidade
+da segunda base; uma falha mantém a última publicação íntegra e é recuperada no
+ciclo seguinte. O serviço espera 60 segundos entre ciclos. O primeiro carregamento
+completo demorou cerca de 70 segundos; fotografias Excel e gerações RAW inalteradas
+são agora reutilizadas sem reler todas as linhas.
+
+REGISTO LIVRE
+
+MES_PLANNING_FREE_ENTRY=1 está ativo nos serviços da aplicação e do trabalhador RAW.
+Os catálogos são sugestões. Campos incompletos, máquinas/perfis fora do catálogo,
+quantidades manuais e datas por interpretar podem ser guardados. input_values
+conserva o que foi introduzido; values_json mantém os valores utilizáveis para
+cálculos. Há histórico de revisões e avisos não bloqueantes. As edições RAW também
+gravaram e reabriram corretamente no ensaio, incluindo cliente/data de entrega.
+Continuam as proteções de identidade do pedido e de concorrência entre edições.
+
+Uma correspondência técnica completa e única reutiliza a necessidade existente.
+Quando a identidade é ambígua, o registo fica guardado com identity_pending e
+candidatas, sem entrar nos totais automáticos por OF. Não se somam os contadores
+Excel e MES/OCR para representar a mesma produção.
+
+NOVA BASE: CONSULTAS ATUAIS
+
+consulta_v2.planeamento_atual
+  Uma linha por identidade publicada da RAW. Inclui valores, valores_introduzidos,
+  identidade_pendente, necessidade_id, versão e data de confirmação.
+consulta_v2.planeamento_cpis_atual
+  Mantém uma linha por identidade de planeamento e agrega as candidatas da cópia
+  CPIS já existente. Nunca adiciona as quantidades CPIS à procura Excel/manual.
+  Uma coincidência de OF/referência é apenas candidata, não uma ligação confirmada.
+consulta_v2.planeamento_duplicados_potenciais
+  Lista coincidências de OF/referência/comprimento/perfil para conferência.
+consulta_v2.registos_manuais_atuais
+consulta_v2.historico_registos_manuais
+consulta_v2.producao_mes_atual
+consulta_v2.ocr_original_atual
+consulta_v2.dados_aplicacao_atuais
+  A última inclui também origens Excel, CPIS importado do Excel, CPIS direto quando
+  existir, necessidades, operações, associações e contexto administrativo local.
+
+origem_v2.aplicacao_sincronizacao regista o último sucesso e erro do serviço.
+origem_v2.aplicacao_fontes aponta para uma única versão de cada conjunto.
+origem_v2.aplicacao_versoes/membros/conteudos conservam o histórico sem duplicar
+conteúdo idêntico. A troca de todas as versões é uma única transação.
+
+As tabelas da reestruturação inicial e as vistas antigas permanecem fotografias
+históricas reproduzíveis. Para dados atualizados usar as vistas *_atual acima;
+não somar essas fotografias às vistas atuais. Os conjuntos excel:*, cpis_excel:*
+e planning:* descrevem origens/projeções do mesmo trabalho, não procura adicional.
+
+OCR ORIGINAL
+
+A leitura utiliza GET http://127.0.0.1:18080/export/cpis?validated_only=true.
+Não requer a nova VPN nem modifica a aplicação OCR. Foram guardadas 14 934 linhas
+validadas; última data de produção válida 29/09/2026. O conteúdo integral de cada
+linha, incluindo avisos de datas futuras/inválidas, fica conservado.
+
+A exportação não fornece os identificadores nativos de folha/linha. Por isso usa
+ocr_original.export_sources/export_versions/export_rows, separadas do conector
+nativo. Conteúdo repetido reutiliza a versão; uma nova exportação substitui a
+população atual. Ocorrências iguais dentro da mesma exportação são conservadas.
+As linhas podem ser consultadas em /planeamento/ocr-original e na origem OCR da
+RAW; não são somadas automaticamente aos saldos MES/Excel. Não há ligação fictícia
+a uma folha nativa. Quando houver fonte nativa, a sincronização prefere essa
+representação e retira a exportação da população atual para evitar sobreposição.
+
+A configuração e verificação da nova VPN ficaram com Luís, conforme pedido.
+A ligação direta CPIS continua sem publicação; não foi declarada operacional.
+
+INSTALAÇÃO E RECUPERAÇÃO
+
+Migrações 042_free_registration.sql e 043_original_ocr_export.sql aplicadas e
+registadas nas duas bases. A migração 041 de outro trabalho não foi aplicada.
+Na nova base foram aplicados sql/integration/research_live.sql e research_cpis.sql.
+Unidades e suplementos instalados em ~/.config/systemd/user; cópias em deploy/.
+Credenciais dos publicadores em ~/.config/kanban-planning (ficheiros privados),
+com papéis planning_research_sync e planning_ocr_export limitados à integração.
+Não há credenciais neste documento.
+
+Backup anterior: /home/luis/.local/state/planning-data-integration/20260930T172722Z
+Inclui esquema das duas bases, dados manuais e cópia dos ficheiros anteriores.
+As alterações são aditivas. Para suspender apenas a réplica:
+  systemctl --user stop kanban-research-sync.service
+Para reativar:
+  systemctl --user start kanban-research-sync.service
+Para voltar ao comportamento estrito, retirar MES_PLANNING_FREE_ENTRY dos dois
+suplementos data-integration.conf e reiniciar aplicação/trabalhador. Os valores
+introduzidos e o histórico ficam conservados.
+
+VERIFICAÇÃO
+
+Testes em PostgreSQL descartável: gravação livre, repetição idempotente, concorrência,
+ambiguidade, edição RAW, troca de operação, datas inválidas e filtros, reabertura,
+histórico, substituição de versões OCR e sincronização integral. Ensaio Playwright
+isolado gravou e reabriu um registo livre. Verificação adicional na aplicação real
+foi apenas de leitura. Nenhum registo de teste foi criado nas bases de produção.
+
+Comando reproduzível:
+  RUN_PG_INTEGRATION=1 .venv/bin/python -m pytest -q tests/test_data_integration.py tests/test_free_registration.py tests/test_planning_needs.py tests/test_original_ocr.py
+
+Primeira conferência na nova base: 85 288 linhas de planeamento (77 635 cantoneiras,
+7 653 perfis), 3 803 registos MES e 2 registos manuais existentes com histórico.
+A segunda publicação incluiu as 14 934 linhas OCR. São contagens por origem, não
+parcelas para somar em totais de produção.

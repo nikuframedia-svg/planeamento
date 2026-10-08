@@ -1,0 +1,290 @@
+{
+  "updated_at_utc": "2026-09-30T13:17:40.809530+00:00",
+  "application": "Planeamento MTG2/MTG3 — ambiente de desenvolvimento",
+  "key_updated": true,
+  "active_model": "xai.grok-4.6",
+  "requested_model": "openai.gpt-6.1-sol",
+  "requested_model_status": "agreement_available_but_inference_still_account_access_denied",
+  "model_access_checks": [
+    {
+      "region": "us-east-1",
+      "path": "/openai/v1/chat/completions",
+      "http_status": 401,
+      "error": "{\"error\":{\"code\":\"access_denied\",\"message\":\"openai.gpt-6.1-sol is not available for this account. You can explore other available models on Amazon Bedrock. For additional access options, contact AWS Sales at https://aws.amazon.com/contact-us/sales-support/\",\"param\":null,\"type\":\"permission_denied_error\"}}"
+    },
+    {
+      "endpoint": "https://bedrock-runtime.us-east-1.amazonaws.com/openai/v1/responses",
+      "http_status": 403,
+      "error": "{\"error\":{\"message\":\"openai.gpt-6.1-sol is not available for this account. You can explore other available models on Amazon Bedrock. For additional access options, contact AWS Sales at https://aws.amazon.com/contact-us/sales-support/\",\"type\":\"permission_denied_error\",\"param\":null,\"code\":\"access_denied\"}}"
+    }
+  ],
+  "active_model_validation": {
+    "checked_at_utc": "2026-09-30T12:14:54.935716+00:00",
+    "http_status": 200,
+    "duration_s": 4.19,
+    "result": {
+      "ok": true,
+      "message": "Ligação e leitura de imagem confirmadas."
+    }
+  },
+  "dossiers_and_raw_share_configuration": true,
+  "configuration_secret_mode": "0600",
+  "configuration_excluded_from_git": true,
+  "application_services_active": true,
+  "model_documentation": "https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-openai-gpt-6-1-sol.html",
+  "next_required_action": "Pedir à AWS investigação do acesso ao modelo: acordo AVAILABLE, autorização e entitlement disponíveis, mas inferência continua recusada na aplicação e no CloudShell. Só aplicar a troca após teste de texto e imagem bem-sucedido.",
+  "root_cause_investigation": {
+    "checked_at_utc": "2026-09-30T12:27:57.532617+00:00",
+    "requested_model": "openai.gpt-6.1-sol",
+    "confirmed_missing_condition": "O acordo GPT-6.1 Sol não está disponível (NOT_AVAILABLE); a tentativa de ativação foi recusada porque a identidade da chave não tem uma política que permita bedrock:CreateFoundationModelAgreement.",
+    "model_availability": {
+      "agreementAvailability": {
+        "errorMessage": null,
+        "status": "NOT_AVAILABLE"
+      },
+      "authorizationStatus": "AUTHORIZED",
+      "entitlementAvailability": "AVAILABLE",
+      "modelId": "openai.gpt-6.1-sol",
+      "regionAvailability": "AVAILABLE"
+    },
+    "comparison_active_grok": {
+      "agreementAvailability": {
+        "errorMessage": null,
+        "status": "AVAILABLE"
+      },
+      "authorizationStatus": "AUTHORIZED",
+      "entitlementAvailability": "AVAILABLE",
+      "modelId": "xai.grok-4.6",
+      "regionAvailability": "AVAILABLE"
+    },
+    "available_offer_count": 1,
+    "offers": [
+      {
+        "offer_id": "offer-wbhj4kycntgkk",
+        "legal_term_url": null,
+        "standard_prices_raw": [
+          {
+            "description": "input_tokens_standard",
+            "dimension": "input_tokens_standard",
+            "price": "2.2",
+            "unit": "Units"
+          },
+          {
+            "description": "output_tokens_standard",
+            "dimension": "output_tokens_standard",
+            "price": "11",
+            "unit": "Units"
+          }
+        ]
+      }
+    ],
+    "runtime_inference_profile": {
+      "id": "us.openai.gpt-6.1-sol",
+      "status": "ACTIVE"
+    },
+    "mantle_model_metadata": {
+      "http_status": 404,
+      "body": {
+        "error": {
+          "code": "not_found_error",
+          "message": "The model 'openai.gpt-6.1-sol' does not exist",
+          "param": null,
+          "type": "invalid_request_error"
+        }
+      }
+    },
+    "additional_metadata_inconsistency": {
+      "control_plane_start_of_life": "2026-10-15T10:00:00Z",
+      "control_plane_lifecycle": "ACTIVE",
+      "public_announcement_date": "2026-09-29",
+      "note": "O catálogo Mantle ainda devolve 404 e a data de início no control plane diverge do anúncio público. Não se presume que ativar o acordo, por si só, garanta inferência imediata."
+    },
+    "unconfirmed": [
+      "A recusa IAM da ativação está confirmada pela resposta HTTP 403. Não se inspecionaram as restantes políticas IAM/SCP nem as permissões AWS Marketplace.",
+      "Não se confirmou se a falha de ativação automática tem exatamente a mesma causa da tentativa explícita.",
+      "O país de faturação da conta AWS não foi consultado; não foi demonstrada uma restrição geográfica específica desta conta.",
+      "A ativação ainda não ocorreu, pelo que não se pode garantir que resolver esta permissão baste para a inferência. Persistem as divergências do catálogo anteriormente registadas."
+    ],
+    "next_steps": [
+      "Um administrador autorizado deve ativar uma vez o acordo GPT-6.1 Sol na conta, com as permissões Bedrock e AWS Marketplace aplicáveis. A ativação por administrador evita conceder permissões de subscrição permanentes à chave da aplicação.",
+      "Confirmar agreementAvailability = AVAILABLE.",
+      "Testar o endpoint Mantle us-east-1 com openai.gpt-6.1-sol e leitura de imagem. O perfil Runtime us.openai.gpt-6.1-sol pode servir para diagnóstico adicional.",
+      "Aplicar a troca na aplicação apenas após um teste completo bem-sucedido.",
+      "Se a recusa persistir, apresentar à AWS os request IDs e a divergência entre anúncio, ciclo de vida e catálogo Mantle."
+    ],
+    "sources": {
+      "availability_api": "https://docs.aws.amazon.com/bedrock/latest/APIReference/API_GetFoundationModelAvailability.html",
+      "activation_process": "https://docs.aws.amazon.com/bedrock/latest/userguide/model-access.html",
+      "model_card": "https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-openai-gpt-6-1-sol.html",
+      "public_announcement": "https://aws.amazon.com/about-aws/whats-new/2026/09/openai-gpt-6-1-sol-on-amazon-bedrock/",
+      "create_agreement_api": "https://docs.aws.amazon.com/bedrock/latest/APIReference/API_CreateFoundationModelAgreement.html",
+      "openai_bedrock_terms": "https://aws.amazon.com/legal/bedrock/third-party-models/",
+      "supported_countries_referenced_by_terms": "https://help.openai.com/en/articles/5347006-openai-api-supported-countries-and-territories"
+    },
+    "agreement_activation_attempt": {
+      "requested_at_utc": "2026-09-30T12:21:58.021035+00:00",
+      "http_status": 403,
+      "request_id": "78f7a192-08fe-4356-b028-62b2d68b7a57",
+      "missing_permission": "bedrock:CreateFoundationModelAgreement",
+      "denial_reason": "No identity-based policy allows this action for the requested foundation model.",
+      "model_resource": "arn:aws:bedrock:us-east-1::foundation-model/openai.gpt-6.1-sol",
+      "agreement_created": false,
+      "iam_policies_changed": false
+    },
+    "europe_investigation": {
+      "checked_at_utc": "2026-09-30T12:27:57.532617+00:00",
+      "conclusion": "Não foi encontrada evidência de que estar na Europa explique a recusa observada. Os termos OpenAI específicos do Bedrock contemplam clientes no EEE/Suíça e remetem para uma lista de países suportados que inclui Portugal e Alemanha. A ativação falhou explicitamente por falta de permissão IAM.",
+      "documented_inference_locations": {
+        "mantle": "us-east-1 (N. Virginia)",
+        "runtime": "US geographic inference profile us.openai.gpt-6.1-sol",
+        "eu_inference_documented_for_this_model": false,
+        "interpretation": "Localização do processamento e localização do cliente são condições diferentes. A documentação consultada não anuncia execução europeia deste modelo no Bedrock."
+      },
+      "regional_control_plane_checks": {
+        "checked_at_utc": "2026-09-30T12:23:06.864129+00:00",
+        "results": [
+          {
+            "region": "us-east-1",
+            "http_status": 200,
+            "request_id": "0efadeb3-22c7-47d6-88e9-dd5ee5939b50",
+            "result": {
+              "agreementAvailability": {
+                "errorMessage": null,
+                "status": "NOT_AVAILABLE"
+              },
+              "authorizationStatus": "AUTHORIZED",
+              "entitlementAvailability": "AVAILABLE",
+              "modelId": "openai.gpt-6.1-sol",
+              "regionAvailability": "AVAILABLE"
+            }
+          },
+          {
+            "region": "eu-west-1",
+            "http_status": 200,
+            "request_id": "9b074723-e0a8-438f-b1df-43c24ec2fa19",
+            "result": {
+              "agreementAvailability": {
+                "errorMessage": null,
+                "status": "NOT_AVAILABLE"
+              },
+              "authorizationStatus": "AUTHORIZED",
+              "entitlementAvailability": "AVAILABLE",
+              "modelId": "openai.gpt-6.1-sol",
+              "regionAvailability": "AVAILABLE"
+            }
+          },
+          {
+            "region": "eu-central-1",
+            "http_status": 200,
+            "request_id": "1a8e29a0-7588-4437-b2f4-5607119dfbeb",
+            "result": {
+              "agreementAvailability": {
+                "errorMessage": null,
+                "status": "NOT_AVAILABLE"
+              },
+              "authorizationStatus": "AUTHORIZED",
+              "entitlementAvailability": "AVAILABLE",
+              "modelId": "openai.gpt-6.1-sol",
+              "regionAvailability": "AVAILABLE"
+            }
+          }
+        ]
+      },
+      "regional_check_limitation": "regionAvailability = AVAILABLE no diagnóstico de acesso não demonstra que exista um endpoint de inferência local nessa região. A comparação não altera o país da conta nem a origem de rede do pedido.",
+      "terms_sections": [
+        "OpenAI Services Agreement - Amazon Bedrock, 14.13: acesso limitado aos Supported Countries and Territories.",
+        "Definições: OpenAI Ireland Ltd. para clientes localizados no EEE ou Suíça; lista pública OpenAI define os países suportados."
+      ]
+    },
+    "screenshot_followup": {
+      "visible_model": "anthropic.claude-sonnet-5-5",
+      "visible_error": "AccessDeniedException: model is not available for this account; contact AWS Sales for additional access options.",
+      "console_identity_and_region_visible": false,
+      "read_only_comparison": {
+        "checked_at_utc": "2026-09-30T12:51:59.310916+00:00",
+        "checks": [
+          {
+            "region": "us-east-1",
+            "model": "openai.gpt-6.1-sol",
+            "http_status": 200,
+            "request_id": "e4c61fc7-b0d3-4d01-b8a2-1a58c372ef63",
+            "availability": {
+              "authorizationStatus": "AUTHORIZED",
+              "entitlementAvailability": "AVAILABLE",
+              "regionAvailability": "AVAILABLE",
+              "agreementAvailability": {
+                "errorMessage": null,
+                "status": "NOT_AVAILABLE"
+              },
+              "modelId": "openai.gpt-6.1-sol"
+            }
+          },
+          {
+            "region": "us-east-1",
+            "model": "anthropic.claude-sonnet-5-5",
+            "http_status": 200,
+            "request_id": "ac66a494-bc6e-4716-855f-a3c5bc93d815",
+            "availability": {
+              "authorizationStatus": "AUTHORIZED",
+              "entitlementAvailability": "AVAILABLE",
+              "regionAvailability": "AVAILABLE",
+              "agreementAvailability": {
+                "errorMessage": null,
+                "status": "NOT_AVAILABLE"
+              },
+              "modelId": "anthropic.claude-sonnet-5-5"
+            }
+          },
+          {
+            "region": "us-west-2",
+            "model": "xai.grok-4.6",
+            "http_status": 200,
+            "request_id": "eebfce50-20a1-4fce-bcb3-5d1590607953",
+            "availability": {
+              "authorizationStatus": "AUTHORIZED",
+              "entitlementAvailability": "AVAILABLE",
+              "regionAvailability": "AVAILABLE",
+              "agreementAvailability": {
+                "errorMessage": null,
+                "status": "AVAILABLE"
+              },
+              "modelId": "xai.grok-4.6"
+            }
+          }
+        ],
+        "scope": "Read-only model availability; no agreement activation, first-use form submission or inference."
+      },
+      "interpretation": "Ambos os modelos pedidos ao diagnóstico apresentam agreementAvailability NOT_AVAILABLE; o Grok apresenta AVAILABLE. A causa da recusa no playground Claude não está confirmada. A recusa CreateFoundationModelAgreement documentada anteriormente refere-se apenas à identidade da chave API e não comprova as permissões do utilizador da consola."
+    }
+  },
+  "historical_sections_note": "root_cause_investigation conserva os testes anteriores à ativação; o estado atual encontra-se em post_activation_result.",
+  "post_activation_result": {
+    "agreement_activated_by_user": true,
+    "agreement_available_first_observed_utc": "2026-09-30T12:57:21+00:00",
+    "cloudshell_inference_same_denial": true,
+    "cloudshell_evidence": "Captura enviada pelo utilizador em 2026-09-30 às 14:01:18 (hora de Lisboa); Converse, us-east-1, us.openai.gpt-6.1-sol.",
+    "last_check": {
+      "checked_at_utc": "2026-09-30T13:11:01.512594+00:00",
+      "availability_http": 200,
+      "availability": {
+        "agreementAvailability": {
+          "errorMessage": null,
+          "status": "AVAILABLE"
+        },
+        "authorizationStatus": "AUTHORIZED",
+        "entitlementAvailability": "AVAILABLE",
+        "modelId": "openai.gpt-6.1-sol",
+        "regionAvailability": "AVAILABLE"
+      },
+      "inference_http": 403,
+      "request_id": "fad5534d-1aa3-4bcd-ba36-11758defc486",
+      "inference": {
+        "message": "openai.gpt-6.1-sol is not available for this account. You can explore other available models on Amazon Bedrock. For additional access options, contact AWS Sales at https://aws.amazon.com/contact-us/sales-support/"
+      },
+      "user_console_test": "Converse SigV4 failed with the same account-unavailable message after successful agreement creation; screenshot 2026-09-30 14:01 Lisbon."
+    },
+    "conclusion": "A ativação resolveu o acordo em falta, mas não resolveu a inferência. A causa da recusa restante não foi demonstrada; a resposta da AWS indica indisponibilidade para a conta. Não foi demonstrado bloqueio por residência na Europa nem uma falha exclusiva da chave da aplicação.",
+    "active_config_change": "Chave nova instalada. Modelo ativo mantido em xai.grok-4.6, validado com imagem; GPT-6.1 Sol ainda não aplicado.",
+    "support_draft": "aws-acesso-gpt-6-1-sol-2026-09-30.txt"
+  }
+}

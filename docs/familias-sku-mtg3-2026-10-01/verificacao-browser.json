@@ -1,0 +1,25 @@
+{
+  "api": {
+    "total": 181,
+    "version": "3232",
+    "distinct_skus": 181
+  },
+  "ui_count": "181 linhas",
+  "headers": [
+    "OF",
+    "OV",
+    "Referência",
+    "Família de SKU",
+    "Estado da família de SKU",
+    "Data de corte",
+    "Tipo de material",
+    "QTD",
+    "Descrição do material",
+    "Comp. (mm)",
+    "1.ª op.",
+    "2.ª op.",
+    "Equipa",
+    "Pavilhão"
+  ],
+  "errors": []
+}

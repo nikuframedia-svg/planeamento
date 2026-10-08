@@ -1,0 +1,17 @@
+{
+  "verificado_em_utc": "2026-10-01T14:22:18.925479+00:00",
+  "familias": [
+    {
+      "familia": "M1",
+      "linhas": 181,
+      "referencias_distintas": 181,
+      "versao": "3596"
+    },
+    {
+      "familia": "M2",
+      "linhas": 395,
+      "referencias_distintas": 395,
+      "versao": "3596"
+    }
+  ]
+}

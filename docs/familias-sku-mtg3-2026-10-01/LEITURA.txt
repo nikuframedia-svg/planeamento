@@ -1,0 +1,70 @@
+Mapeamento de famílias de SKU da MTG3 — aplicado em 01/10/2026
+
+Atualização: ontologia/LEITURA.txt e ontologia/catalogo-familias.csv contêm o
+catálogo mais recente, com M2 confirmada e ligada à ontologia. Os ficheiros
+iniciais nesta pasta conservam a análise e a primeira aplicação anteriores
+a essa confirmação; os seus 317 agrupamentos passaram a 318 na versão atual.
+
+Complemento: producao/LEITURA.txt distingue famílias com produção MES, famílias
+com acumulado no Excel explicitamente atribuído à MTG3 e casos de outros pavilhões.
+O simples facto de um SKU constar do Excel de cantoneiras não confirma produção
+na MTG3; esta distinção não altera a classificação por família do SKU.
+
+Base de análise: 77 635 linhas de planeamento, 31 413 SKUs distintos.
+Inclui o histórico existente no Excel/planeamento e OF fechadas, não apenas ordens
+abertas. Cada código SKU é contado uma vez, mesmo quando aparece em várias OF.
+
+familias-com-evidencia.csv contém M1 (confirmada pelo utilizador) e 34 novas
+candidatas cujo padrão também aparece em designações de OF. O estado distingue
+corroboração numa OF ou em várias. A classificação foi aplicada à base da
+aplicação e sincronizada para a nova base de research, conservando estes estados.
+
+familias-candidatas.csv contém todos os 317 agrupamentos extraídos por regras,
+incluindo códigos possivelmente de projeto, prefixos demasiado genéricos e
+agrupamentos por confirmar. Não são 317 famílias confirmadas.
+
+sku-para-familia.csv permite conferir a proposta para cada SKU e ver a designação
+e descrição CPIS usadas como evidência. 141 SKUs ficaram sem padrão atribuído.
+mapeamento-aplicado.csv é a exportação da classificação efetivamente registada,
+com estado, regra, versão e revisão para cada um dos 31 413 SKUs.
+aplicacao.json documenta a verificação após aplicação. resumo.json conserva a
+fotografia da análise anterior à aplicação e não deve ser confundido com ela.
+
+Na RAW: selecionar MTG3/Cantoneiras e usar as colunas «Família de SKU» e «Estado
+da família de SKU». Podem ser filtradas, ordenadas e exportadas. Para consultar
+todo o histórico analisado, selecionar «Todos · ativo e histórico». Vistas pessoais
+anteriores podem precisar de adicionar estas duas colunas no seletor de colunas.
+
+Na nova base dataresearchmtg_planeamento_20260930:
+- cadastro_v2.mapeamento_familias_sku: uma entrada por área e SKU original;
+- cadastro_v2.familias_sku: catálogo dos 317 agrupamentos com estado e evidência;
+- consulta_v2.planeamento_com_familias_sku: planeamento com classificação;
+- consulta_v2.resumo_familias_sku: contagens distintas de SKU e OF por família.
+
+Na aplicação, planning_mtg.sku_family_mappings conserva o mapa atual e
+planning_mtg.sku_family_history conserva cada revisão. As regras estão versionadas
+em planning_mtg.sku_family_rules e a versão ativa em planning_mtg.sku_family_heads.
+Os novos SKUs de Excel e de registo manual são classificados pelas mesmas regras;
+padrões desconhecidos ficam por confirmar ou sem família identificada.
+
+Validação: 34 testes automáticos passaram; a consulta e o filtro M1 na RAW
+devolveram 181 SKUs em 181 linhas, sem incluir M10. A junção na nova base preservou
+as 77 635 linhas de planeamento e todos os 31 413 SKUs. Reaplicar o mesmo mapa
+produziu zero alterações e zero entradas adicionais no histórico.
+
+M1 é identificada separadamente de M10. DLT é mantida separada de DLTN. Uma
+família-mãe corroborada nas designações tem prioridade sobre fragmentos que
+podem ser apenas números/sufixos de peça, por exemplo CWA01D3913 -> CWA.
+Os sufixos DT/GT/D/E e semelhantes ficam preservados; o seu significado técnico
+não foi assumido. Agrupar não significa que as peças sejam intercambiáveis.
+
+O campo codfam do CPIS não é tomado como sinónimo desta família de SKU. A origem
+CPIS é uma cópia versionada. resumo.json regista as versões utilizadas e a hora
+da leitura; analisar.py reproduz a análise com ligações estritamente de leitura.
+
+Instalação reproduzível (a partir da raiz do projeto, com .env configurado):
+1. Aplicar sql/044_sku_family_mapping.sql na base da aplicação.
+2. Executar .venv/bin/python -m app.raw.sku_families --analysis docs/familias-sku-mtg3-2026-10-01
+3. Aplicar sql/integration/research_sku_families.sql na nova base de research e
+   conceder SELECT nas quatro vistas ao utilizador de leitura dessa base.
+4. Carregar o código atualizado nos serviços de planeamento, RAW e sincronização.

@@ -36,11 +36,28 @@ O MES existente ainda importa módulos e páginas do planeamento. Os caminhos ex
 
 Os caminhos documentais antigos também apontam para `data/dossiers/` desta pasta. A mudança conserva os mesmos ficheiros, inodes e base SQLite, incluindo os bloqueios usados pelos processos existentes.
 
-## Git (desde 28/09/2026)
+## GitHub
 
-O código está em git, só localmente. Ficam fora do histórico:
+Repositório privado dedicado: [nikuframedia-svg/planeamento](https://github.com/nikuframedia-svg/planeamento).
+O ramo principal é `main`; o histórico local iniciado em 28/09/2026 está preservado.
 
-- `.env`, `data/` e `.venv`;
+Para obter uma cópia com uma conta autorizada no GitHub:
+
+```sh
+git clone https://github.com/nikuframedia-svg/planeamento.git
+cd planeamento
+uv sync --frozen --extra dev
+cp .env.example .env
+```
+
+Preencher o `.env` com a configuração da instalação antes de arrancar. Os dados
+PostgreSQL, os documentos em `data/` e os Excel de origem em `DATARESEARCHMTG`
+continuam externos ao repositório.
+
+Ficam fora do histórico:
+
+- `.env` e variantes privadas, `data/` e `.venv`;
+- worktrees de agentes em `.claude/`, caches e resultados temporários `.pkl` na raiz;
 - a evidência pesada de `docs/validacao-planeamento-integral/`, que continua no disco (ver `.gitignore`).
 
 **Cuidado com os ficheiros partilhados com o MES.** Os JS/CSS de `app/web/static/` são ligações físicas com `kanban-mes-mtg2/app/web/static/`. Por isso:

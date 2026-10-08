@@ -1,0 +1,55 @@
+{
+  "gerado_em_utc": "2026-10-01T08:10:37.004340+00:00",
+  "setor": "MTG3",
+  "escopo": "Fotografia atual completa do planeamento: inclui OF históricas e fechadas; não apenas trabalho pendente.",
+  "fontes_planeamento": [
+    {
+      "conjunto": "planning:cantoneiras",
+      "versao": "83d0e9407a9614a86745413885729088373ff5122a5b3b13b809ebcd617689cc",
+      "confirmada_em": "2026-10-01 08:09:13.215018+00:00",
+      "metadata": {
+        "contract": "planning-live-v1",
+        "database": "dataresearchmtg",
+        "snapshot": {
+          "loaded_at": "2026-09-30T12:23:48.098979+00:00",
+          "snapshot_id": "mtg_ef26928918339ece",
+          "source_filename": "Met3_Plan_Cantoneiras.xlsm"
+        },
+        "generation": 3074,
+        "published_at": "2026-10-01 08:00:22.784743+00:00",
+        "source_refresh_pending": false
+      }
+    }
+  ],
+  "versoes_cpis": [
+    {
+      "id": "316bc906-2f9e-40ef-bc46-db1bb92166a5",
+      "origem": "Mac:cpis_copia.dados",
+      "capturado_em": "2026-09-30 11:40:57.226910+00:00",
+      "sha256": "e891f8a06a600a798860142f2010da53c1b923385bc4b5a1d3ca4889dce60158",
+      "estado": "validada"
+    }
+  ],
+  "linhas": 77635,
+  "skus_distintos": 31413,
+  "familias_candidatas": 317,
+  "familias_com_evidencia": 35,
+  "estados": {
+    "prefixo_demasiado_generico": 13,
+    "forte_padrao_e_varias_of": 24,
+    "candidata_por_confirmar": 192,
+    "forte_padrao_e_uma_of": 10,
+    "codigo_de_projeto_por_confirmar": 77,
+    "confirmada_pelo_utilizador": 1
+  },
+  "skus_sem_padrao": 141,
+  "classificacoes_na_base_alteradas": false,
+  "regra_anterior_reutilizada": "docs/analise-planeamento-2026-09-25/pedido-2026-09-28/referencias/scripts/modelo_da_referencia.py",
+  "limites": [
+    "Classificação candidata, exceto M1 confirmada pelo utilizador.",
+    "Designações corroboram agrupamentos; não estabelecem intercambiabilidade das peças nem significado de sufixos.",
+    "Não une variantes, não elimina SKUs e não soma quantidades de fontes diferentes.",
+    "Códigos numéricos e prefixos de uma letra requerem análise adicional.",
+    "Famílias-mãe corroboradas têm prioridade sobre sufixos de peças; nos restantes casos a regra pode subdividir um modelo e exige revisão."
+  ]
+}

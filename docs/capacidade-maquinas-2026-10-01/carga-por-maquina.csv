@@ -1,0 +1,19 @@
+﻿setor,recurso,papel,carga_h,das_quais_estimadas_h,ocorrencias_sugeridas,ocorrencias_sem_horas,atraso_h,capacidade_semanal_h,origem_capacidade,semanas_de_carga
+MTG2 Perfis,Serrote MEBA IS381 Pav 3,maquina,268.02,36.47,31,0,116.9,37.5,declarada,7.1
+MTG2 Perfis,Vanguard,maquina,662.0,208.82,24,58,383.84,112.5,declarada,5.9
+MTG2 Perfis,Abocardar,maquina,0,0,22,22,0,,,
+MTG2 Perfis,Serrote Doall Pav.1,maquina,80.93,0,0,0,80.93,,,
+MTG2 Perfis,Serrote Disco pav 1,posto_composto,654.02,10.17,40,26,545.81,37.5,declarada,17.4
+MTG2 Perfis,Serrote Fita pav.1,posto_composto,85.32,40.41,35,0,45.23,75.0,declarada,1.1
+MTG3 Cantoneiras,Peddi 8,maquina,1700.31,631.84,1712,8,571.03,51.69,observada,32.9
+MTG3 Cantoneiras,Ficep Rapid 20T -1,maquina,844.74,622.78,3711,588,435.21,71.7,observada,11.8
+MTG3 Cantoneiras,Ficep Rapid 20T -2,maquina,860.77,755.72,3564,70,558.64,73.07,observada,11.8
+MTG3 Cantoneiras,Ficep Rapid 25T,maquina,905.59,751.88,2255,454,543.46,76.86,observada,11.8
+MTG3 Cantoneiras,Ficep XP T4,maquina,805.5,668.57,1347,0,215.5,86.35,observada,9.3
+MTG3 Cantoneiras,Ficep XP T6,maquina,812.44,698.59,1308,19,76.51,94.74,observada,8.6
+MTG3 Cantoneiras,Peddi 6,maquina,62.68,8.55,15,0,57.37,18.89,observada,3.3
+MTG3 Cantoneiras,Fresadora,maquina,0,0,515,515,0,,,
+MTG3 Cantoneiras,Plasma manual,maquina,0,0,3555,3555,0,,,
+MTG3 Cantoneiras,Prensa,maquina,0,0,786,786,0,,,
+MTG3 Cantoneiras,Quinadora MTG2,maquina,0,0,102,102,0,,,
+MTG3 Cantoneiras,Soldadura,fila_funcional,0,0,494,494,0,,,

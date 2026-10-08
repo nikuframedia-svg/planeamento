@@ -1,0 +1,214 @@
+﻿familia,familia_com_evidencia_de_classificacao,estado_classificacao,evidencia_producao,mes_registos,mes_skus_distintos,mes_primeira_data,mes_ultima_data,mes_maquinas,excel_skus_distintos_com_acumulado,excel_linhas_com_acumulado
+0854,False,codigo_de_projeto_por_confirmar,Acumulado Excel,0,0,,,,42,199
+1,False,codigo_de_projeto_por_confirmar,Acumulado Excel,0,0,,,,2,2
+1148,False,codigo_de_projeto_por_confirmar,Acumulado Excel,0,0,,,,1,1
+12,False,codigo_de_projeto_por_confirmar,Acumulado Excel,0,0,,,,6,7
+1234,False,codigo_de_projeto_por_confirmar,Acumulado Excel,0,0,,,,43,141
+1283,False,codigo_de_projeto_por_confirmar,Acumulado Excel,0,0,,,,1,2
+1476,False,codigo_de_projeto_por_confirmar,Acumulado Excel,0,0,,,,2,2
+2,False,codigo_de_projeto_por_confirmar,Acumulado Excel,0,0,,,,4,4
+24,False,codigo_de_projeto_por_confirmar,MES validado + acumulado Excel,75,70,2026-09-21,2026-09-30,Ficep Rapid 20T -1 | Ficep Rapid 20T -2,366,516
+2568,False,codigo_de_projeto_por_confirmar,Acumulado Excel,0,0,,,,2,2
+2698,False,codigo_de_projeto_por_confirmar,Acumulado Excel,0,0,,,,1,1
+2998,False,codigo_de_projeto_por_confirmar,Acumulado Excel,0,0,,,,1,1
+36,False,codigo_de_projeto_por_confirmar,MES validado + acumulado Excel,81,78,2026-09-21,2026-09-30,Ficep Rapid 20T -1,216,375
+4553,False,codigo_de_projeto_por_confirmar,MES validado + acumulado Excel,1,1,2026-09-23,2026-09-23,Peddi 8,1,1
+4960,False,codigo_de_projeto_por_confirmar,Acumulado Excel,0,0,,,,3,6
+5189,False,codigo_de_projeto_por_confirmar,Acumulado Excel,0,0,,,,1,1
+5826,False,codigo_de_projeto_por_confirmar,Acumulado Excel,0,0,,,,37,43
+5827,False,codigo_de_projeto_por_confirmar,Acumulado Excel,0,0,,,,35,35
+5828,False,codigo_de_projeto_por_confirmar,Acumulado Excel,0,0,,,,30,30
+5829,False,codigo_de_projeto_por_confirmar,Acumulado Excel,0,0,,,,30,30
+5877,False,codigo_de_projeto_por_confirmar,MES validado + acumulado Excel,2,2,2026-09-22,2026-09-22,Ficep Rapid 25T,118,530
+8951,False,codigo_de_projeto_por_confirmar,Acumulado Excel,0,0,,,,6,6
+9422,False,codigo_de_projeto_por_confirmar,Acumulado Excel,0,0,,,,1,1
+9579,False,codigo_de_projeto_por_confirmar,Acumulado Excel,0,0,,,,2,2
+A,False,prefixo_demasiado_generico,MES validado + acumulado Excel,5,3,2026-09-22,2026-09-28,Peddi 8,27,30
+A10,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,84,441
+A12,True,forte_padrao_e_uma_of,Acumulado Excel,0,0,,,,101,444
+A18,True,forte_padrao_e_uma_of,MES validado + acumulado Excel,33,30,2026-08-27,2026-09-18,Ficep XP T6 | Peddi 8,97,284
+A21,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,90,90
+A25,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,81,81
+A3,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,1,1
+A30,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,88,88
+A31,False,candidata_por_confirmar,MES validado + acumulado Excel,32,30,2026-08-26,2026-08-28,Ficep Rapid 25T,97,268
+A35,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,351,351
+A4,False,candidata_por_confirmar,MES validado + acumulado Excel,137,122,2026-08-28,2026-09-22,Ficep XP T4,308,1157
+A6,False,candidata_por_confirmar,MES validado + acumulado Excel,12,12,2026-09-21,2026-09-24,Ficep XP T4 | Ficep XP T6,275,787
+A7,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,72,88
+A8,False,candidata_por_confirmar,MES validado + acumulado Excel,1,1,2026-08-26,2026-08-26,Ficep XP T6,164,353
+A9,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,84,108
+AEH,False,candidata_por_confirmar,MES validado + acumulado Excel,3,3,2026-08-28,2026-08-28,Ficep Rapid 25T,53,318
+AS,False,candidata_por_confirmar,MES validado + acumulado Excel,2,2,2026-08-28,2026-09-24,Ficep Rapid 20T -2 | Ficep Rapid 25T,72,378
+AT1,False,candidata_por_confirmar,MES validado + acumulado Excel,8,8,2026-08-27,2026-08-28,Ficep Rapid 25T,133,799
+AT2,False,candidata_por_confirmar,MES validado + acumulado Excel,4,4,2026-08-28,2026-09-24,Ficep Rapid 20T -1 | Ficep Rapid 20T -2 | Ficep Rapid 25T,84,505
+BA12,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,3,3
+C4,True,forte_padrao_e_varias_of,MES validado + acumulado Excel,25,19,2026-08-27,2026-08-28,Ficep Rapid 20T -1,252,697
+CA1,True,forte_padrao_e_varias_of,Acumulado Excel,0,0,,,,4,4
+CA22,True,forte_padrao_e_varias_of,Acumulado Excel,0,0,,,,7,7
+CA54,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,3,3
+CD10,False,candidata_por_confirmar,MES validado + acumulado Excel,5,1,2026-09-22,2026-09-22,Peddi 8,1,2
+CDBRO,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,1,2
+CDPTM,False,candidata_por_confirmar,MES validado + acumulado Excel,4,1,2026-09-22,2026-09-22,Peddi 8,1,12
+CDPTO,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,1,2
+CF,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,3,116
+CR,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,24,24
+CR10,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,2,4
+CS,True,forte_padrao_e_uma_of,Acumulado Excel,0,0,,,,114,169
+CWA,True,forte_padrao_e_varias_of,MES validado + acumulado Excel,124,113,2026-09-16,2026-09-30,Peddi 6 | Peddi 8,354,875
+CWR,True,forte_padrao_e_varias_of,Acumulado Excel,0,0,,,,340,617
+CWS,True,forte_padrao_e_varias_of,MES validado + acumulado Excel,153,119,2026-08-28,2026-08-31,Peddi 6 | Peddi 8,288,558
+CWT,True,forte_padrao_e_varias_of,Acumulado Excel,0,0,,,,217,635
+D,False,prefixo_demasiado_generico,Acumulado Excel,0,0,,,,30,30
+D10,True,forte_padrao_e_uma_of,MES validado + acumulado Excel,5,5,2026-09-01,2026-09-24,Ficep XP T4 | Ficep XP T6,247,377
+D13,False,candidata_por_confirmar,MES validado + acumulado Excel,180,64,2026-09-18,2026-09-30,Ficep Rapid 25T | Ficep XP T4 | Ficep XP T6 | Peddi 8,125,590
+D16,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,161,161
+D20,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,113,113
+D25,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,2,2
+D3,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,588,588
+D32,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,167,297
+D4,False,candidata_por_confirmar,MES validado + acumulado Excel,4,4,2026-09-29,2026-09-30,Ficep XP T6,17,103
+D6,False,candidata_por_confirmar,MES validado + acumulado Excel,2,2,2026-09-24,2026-09-24,Ficep XP T6,181,325
+D8,False,candidata_por_confirmar,MES validado + acumulado Excel,60,48,2026-09-01,2026-09-29,Ficep XP T4,247,557
+DA,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,11,11
+DB,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,4,4
+DB202,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,3,3
+DC,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,2,2
+DC64,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,44,51
+DLA,True,forte_padrao_e_varias_of,MES validado + acumulado Excel,61,61,2026-09-16,2026-09-30,Ficep Rapid 20T -2 | Ficep XP T4,1360,4229
+DLR,True,forte_padrao_e_varias_of,MES validado + acumulado Excel,21,19,2026-09-01,2026-09-22,Ficep Rapid 20T -2,1347,3945
+DLS,True,forte_padrao_e_varias_of,MES validado + acumulado Excel,27,22,2026-09-19,2026-09-26,Ficep Rapid 20T -2,492,1490
+DLT,True,forte_padrao_e_varias_of,MES validado + acumulado Excel,131,122,2026-08-26,2026-09-28,Ficep Rapid 20T -2 | Ficep Rapid 25T | Peddi 6 | Peddi 8,884,5031
+DLTN,True,forte_padrao_e_uma_of,Acumulado Excel,0,0,,,,176,224
+DS,True,forte_padrao_e_varias_of,Acumulado Excel,0,0,,,,88,91
+E,False,prefixo_demasiado_generico,MES validado + acumulado Excel,9,8,2026-09-21,2026-09-22,Ficep Rapid 25T,373,432
+E1818,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,2,2
+E2,False,candidata_por_confirmar,MES validado + acumulado Excel,95,43,2026-08-26,2026-08-28,Ficep XP T4,84,471
+E3,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,2,2
+E4,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,4,4
+E41512,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,2,4
+E41518,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,2,2
+E42024,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,2,2
+EA,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,5,5
+EA10,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,89,341
+EA12,False,candidata_por_confirmar,MES validado + acumulado Excel,1,1,2026-09-24,2026-09-24,Ficep XP T6,150,531
+EA18,False,candidata_por_confirmar,MES validado + acumulado Excel,22,19,2026-08-27,2026-09-21,Ficep XP T6 | Peddi 8,73,181
+EA21,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,68,68
+EA4,False,candidata_por_confirmar,MES validado + acumulado Excel,10,10,2026-08-28,2026-09-18,Ficep XP T4 | Ficep XP T6,150,991
+EA6,False,candidata_por_confirmar,MES validado + acumulado Excel,23,21,2026-09-21,2026-09-24,Ficep XP T4 | Ficep XP T6,352,1450
+EA8,False,candidata_por_confirmar,MES validado + acumulado Excel,13,11,2026-08-26,2026-09-28,Ficep Rapid 20T -1 | Ficep Rapid 25T | Ficep XP T4 | Ficep XP T6,133,714
+EC,False,candidata_por_confirmar,MES validado + acumulado Excel,3,3,2026-08-26,2026-08-28,Ficep XP T4,11,77
+ED,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,1,1
+ED10,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,61,120
+ED13,False,candidata_por_confirmar,MES validado + acumulado Excel,207,77,2026-09-18,2026-09-29,Ficep XP T4 | Ficep XP T6 | Peddi 8,164,672
+ED25,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,1,1
+ED32,False,candidata_por_confirmar,MES validado + acumulado Excel,1,1,2026-09-24,2026-09-24,Ficep XP T6,84,148
+ED4,False,candidata_por_confirmar,MES validado + acumulado Excel,114,99,2026-09-25,2026-09-30,Ficep XP T4 | Ficep XP T6,201,1212
+ED6,False,candidata_por_confirmar,MES validado + acumulado Excel,7,6,2026-09-24,2026-09-24,Ficep XP T6,113,246
+ED8,False,candidata_por_confirmar,MES validado + acumulado Excel,51,45,2026-09-16,2026-09-29,Ficep XP T4,117,242
+EE2,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,2,18
+EEB,False,candidata_por_confirmar,MES validado + acumulado Excel,8,5,2026-08-26,2026-08-28,Ficep XP T4,13,91
+EEC,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,6,42
+EH,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,1,2
+EH92,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,1,1
+ELA,True,forte_padrao_e_varias_of,Acumulado Excel,0,0,,,,308,320
+ELS,True,forte_padrao_e_uma_of,Acumulado Excel,0,0,,,,310,324
+ELT,True,forte_padrao_e_varias_of,MES validado + acumulado Excel,8,8,2026-08-28,2026-09-28,Ficep Rapid 20T -2 | Peddi 8,348,398
+EP,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,2,2
+EP4,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,2,2
+EPH,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,2,4
+EPH92,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,1,1
+ES03,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,4,4
+ES04,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,2,2
+ET40,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,2,2
+ETC,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,21,28
+G,False,prefixo_demasiado_generico,MES validado + acumulado Excel,56,55,2026-09-18,2026-09-19,Peddi 8,217,217
+G4,True,forte_padrao_e_varias_of,MES validado + acumulado Excel,9,9,2026-08-26,2026-09-30,Ficep Rapid 20T -1,878,1080
+G6,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,2,2
+H2,True,forte_padrao_e_varias_of,Acumulado Excel,0,0,,,,138,141
+H92,True,forte_padrao_e_varias_of,MES validado + acumulado Excel,44,39,2026-08-26,2026-09-23,Ficep Rapid 20T -1 | Ficep Rapid 25T | Ficep XP T6 | Rapid 20T - 1,1225,2989
+HG,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,269,501
+HG01,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,4,4
+HV,False,candidata_por_confirmar,MES validado + acumulado Excel,43,34,2026-09-16,2026-09-27,Ficep Rapid 20T -1 | Ficep Rapid 20T -2 | Ficep Rapid 25T,47,47
+IR,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,3,3
+IR02,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,3,3
+IS,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,43,43
+IT,False,candidata_por_confirmar,MES validado + acumulado Excel,7,6,2026-09-29,2026-09-30,Peddi 6,28,28
+IT01,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,2,2
+IT03,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,3,3
+J,False,prefixo_demasiado_generico,Acumulado Excel,0,0,,,,211,211
+J2,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,2,2
+M,False,prefixo_demasiado_generico,Acumulado Excel,0,0,,,,5,5
+M1,True,confirmada_pelo_utilizador,Acumulado Excel,0,0,,,,181,181
+M8,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,74,80
+MDA,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,6,6
+MDA191,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,2,2
+MDA241,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,9,9
+MDA251,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,5,5
+MDA274,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,2,2
+MDB,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,1,1
+MDB270,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,1,1
+MDB274,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,10,10
+MDC,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,5,5
+MDC130,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,2,2
+MDC20,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,2,2
+ME,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,58,58
+MG,False,candidata_por_confirmar,MES validado + acumulado Excel,23,22,2026-09-18,2026-09-19,Peddi 8,58,58
+N,False,prefixo_demasiado_generico,Acumulado Excel,0,0,,,,382,768
+N43,True,forte_padrao_e_uma_of,Acumulado Excel,0,0,,,,372,372
+P040,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,66,66
+P4,True,forte_padrao_e_varias_of,Acumulado Excel,0,0,,,,724,1366
+PA01,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,6,6
+PA23,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,1,1
+PENAS,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,1,1
+PTJ,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,1,1
+QA,True,forte_padrao_e_varias_of,MES validado + acumulado Excel,14,14,2026-08-28,2026-09-28,Ficep Rapid 20T -2 | Ficep XP T4 | Peddi 8,362,540
+QR,True,forte_padrao_e_varias_of,Acumulado Excel,0,0,,,,375,474
+QS,True,forte_padrao_e_varias_of,MES validado + acumulado Excel,39,30,2026-09-24,2026-09-30,Ficep Rapid 20T -2,295,395
+QT,True,forte_padrao_e_varias_of,MES validado + acumulado Excel,58,56,2026-08-28,2026-09-30,Ficep Rapid 20T -2 | Ficep Rapid 25T | Ficep XP T6,359,1375
+QTD,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,9,45
+RD,True,forte_padrao_e_uma_of,Acumulado Excel,0,0,,,,49,49
+S,False,prefixo_demasiado_generico,MES validado + acumulado Excel,1,1,2026-09-24,2026-09-24,Ficep Rapid 20T -2,28,28
+S1,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,12,12
+S10,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,7,7
+S2,False,candidata_por_confirmar,MES validado + acumulado Excel,1,1,2026-08-26,2026-08-26,Ficep Rapid 20T -1,154,155
+S3,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,139,139
+S4,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,11,11
+S5,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,9,9
+S6,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,11,11
+S7,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,9,9
+S8,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,11,11
+S9,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,8,8
+SD,True,forte_padrao_e_uma_of,Acumulado Excel,0,0,,,,53,55
+T,False,prefixo_demasiado_generico,MES validado + acumulado Excel,11,11,2026-09-01,2026-09-01,Ficep Rapid 25T,1021,1354
+T2883,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,49,49
+T364,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,1,1
+T40,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,1,1
+T57,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,15,15
+TC104,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,4,4
+TC154,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,18,18
+TC254,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,7,7
+TC354,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,1,1
+TL,False,candidata_por_confirmar,MES validado + acumulado Excel,1,1,2026-09-24,2026-09-24,Ficep Rapid 20T -1,7,7
+TTZ,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,2,2
+TZ,False,candidata_por_confirmar,MES validado + acumulado Excel,24,22,2026-09-22,2026-09-24,Ficep Rapid 20T -1,25,25
+V,False,prefixo_demasiado_generico,Acumulado Excel,0,0,,,,61,61
+VZ,False,candidata_por_confirmar,MES validado + acumulado Excel,31,27,2026-09-22,2026-09-24,Ficep Rapid 20T -1,28,29
+W,False,prefixo_demasiado_generico,MES validado + acumulado Excel,7,6,2026-09-23,2026-09-25,Ficep Rapid 20T -1 | Peddi 8,646,1100
+W2132,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,1,1
+W2192,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,3,3
+WA,True,forte_padrao_e_varias_of,Acumulado Excel,0,0,,,,98,98
+X,False,prefixo_demasiado_generico,MES validado + acumulado Excel,8,7,2026-09-19,2026-09-21,Ficep Rapid 20T -1 | Ficep Rapid 25T,22,22
+XS,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,126,129
+XZ,False,candidata_por_confirmar,MES validado + acumulado Excel,8,8,2026-08-26,2026-08-26,Ficep Rapid 25T,622,623
+XZ41,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,3,3
+XZ72,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,3,3
+Z,False,prefixo_demasiado_generico,MES validado + acumulado Excel,48,45,2026-09-01,2026-09-24,Ficep Rapid 20T -1 | Ficep Rapid 25T,360,362
+Z2893,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,63,63
+Z346,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,4,4
+Z359,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,1,1
+ZA,False,candidata_por_confirmar,MES validado + acumulado Excel,2,2,2026-09-24,2026-09-24,Ficep Rapid 20T -1 | Ficep Rapid 20T -2,414,687
+ZD,False,candidata_por_confirmar,MES validado + acumulado Excel,203,192,2026-09-23,2026-09-26,Ficep Rapid 20T -1 | Ficep Rapid 25T,418,418
+ZE,False,candidata_por_confirmar,Acumulado Excel,0,0,,,,608,1087
+ZF,False,candidata_por_confirmar,MES validado + acumulado Excel,4,4,2026-09-25,2026-09-26,Ficep Rapid 25T,74,104
+ZG,False,candidata_por_confirmar,MES validado + acumulado Excel,103,98,2026-09-22,2026-09-30,Ficep Rapid 25T,331,519

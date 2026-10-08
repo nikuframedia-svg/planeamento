@@ -1,0 +1,44 @@
+Subject: Bedrock GPT-6.1 Sol — agreement AVAILABLE but inference denied for the account
+
+Hello,
+
+Please investigate access to openai.gpt-6.1-sol in our AWS account.
+
+On 30 September 2026 we successfully executed CreateFoundationModelAgreement
+for openai.gpt-6.1-sol in us-east-1 from CloudShell. GetFoundationModelAvailability
+subsequently reports:
+  agreementAvailability: AVAILABLE
+  authorizationStatus: AUTHORIZED
+  entitlementAvailability: AVAILABLE
+  regionAvailability: AVAILABLE
+
+However, inference still fails both from CloudShell (AWS CLI Converse) and
+from the application using its Bedrock API key. No credentials are attached.
+
+Latest reproduction, 2026-09-30 13:11:01 UTC, more than 15 minutes after activation:
+  Region: us-east-1
+  API: Bedrock Runtime Converse
+  Model/inference profile: us.openai.gpt-6.1-sol
+  HTTP status: 403
+  Request ID: fad5534d-1aa3-4bcd-ba36-11758defc486
+  Error: openai.gpt-6.1-sol is not available for this account. You can explore
+  other available models on Amazon Bedrock. For additional access options,
+  contact AWS Sales at https://aws.amazon.com/contact-us/sales-support/
+
+Other post-activation reproductions:
+  Mantle us-east-1, /openai/v1/chat/completions, openai.gpt-6.1-sol: HTTP 401.
+  Request ID: req_ceby4ah6awt7w4irbarwn5jzcl2iu3uvpxgzzfm6ta6dscndlx5q
+  Runtime us-east-1, /openai/v1/responses, us.openai.gpt-6.1-sol: HTTP 403.
+  Request ID: f818204b-b95f-4c88-9a72-ece4de991051
+
+Additional observations: the US inference profile reports ACTIVE, while
+Mantle model metadata returned 404. GetFoundationModel returned lifecycle
+ACTIVE with startOfLifeTime 2026-10-15T10:00:00Z, despite the public launch
+announcement dated 29 September. We do not know whether this discrepancy
+explains the access failure.
+
+Please confirm which account eligibility or model activation condition remains
+unfulfilled, and whether the model rollout/catalogue status needs correction.
+Our existing Grok integration works with the same new API key.
+
+This is a draft; it has not been sent.

@@ -1,0 +1,243 @@
+{
+  "base": "dataresearchmtg_planeamento_20260930",
+  "familia": {
+    "area": "cantoneiras",
+    "familia": "M2",
+    "setor_contexto": "MTG3",
+    "estado_classificacao": "confirmada_pelo_utilizador",
+    "skus_catalogados": 395,
+    "versao_regras": "9e1e4071de345765b4921fef8fe6d0e3b9030744934b807f41db6ddb6c5d1d87",
+    "evidencia_classificacao": {
+      "ambito": "lista_explicita_de_skus",
+      "estado": "confirmada_pelo_utilizador",
+      "familia": "M2",
+      "evidencia": {
+        "area": "cantoneiras",
+        "scope": "Apenas estes 395 SKUs. Nao classifica todos os codigos iniciados por M2.",
+        "family": "M2",
+        "orders": [
+          "OF264186",
+          "OF264198",
+          "OF264293"
+        ],
+        "source": "Confirmacao do utilizador nesta conversa, apos a identificacao dos 395 SKUs TENNET A225; pedido de catalogacao e integracao na ontologia.",
+        "project": "TENNET A225 / LH-14-338",
+        "snapshot": {
+          "loaded_at": "2026-09-30 12:23:48.098979+00:00",
+          "snapshot_id": "mtg_ef26928918339ece",
+          "source_filename": "Met3_Plan_Cantoneiras.xlsm"
+        },
+        "confirmed_on": "2026-10-01",
+        "sector_context": "MTG3"
+      },
+      "skus_confirmados": 395
+    },
+    "familia_no": "kgf:familia:cantoneiras:M2",
+    "registos_mes": 0,
+    "skus_com_mes": 0,
+    "primeira_data_mes": null,
+    "ultima_data_mes": null,
+    "skus_com_acumulado_excel": 0,
+    "skus_planeados_mtg3": 395,
+    "associacoes_indiretas_mes": 1,
+    "ultima_data_indireta_mes": "2026-09-30",
+    "estado_evidencia_producao": "associacao_indireta_por_confirmar"
+  },
+  "skus": [
+    {
+      "sku": "M202-801",
+      "estado": "confirmada_pelo_utilizador",
+      "regra": "sku_confirmado_pelo_utilizador",
+      "versao_regras": "9e1e4071de345765b4921fef8fe6d0e3b9030744934b807f41db6ddb6c5d1d87",
+      "revisao": 2
+    },
+    {
+      "sku": "M202-802",
+      "estado": "confirmada_pelo_utilizador",
+      "regra": "sku_confirmado_pelo_utilizador",
+      "versao_regras": "9e1e4071de345765b4921fef8fe6d0e3b9030744934b807f41db6ddb6c5d1d87",
+      "revisao": 2
+    },
+    {
+      "sku": "M202-803",
+      "estado": "confirmada_pelo_utilizador",
+      "regra": "sku_confirmado_pelo_utilizador",
+      "versao_regras": "9e1e4071de345765b4921fef8fe6d0e3b9030744934b807f41db6ddb6c5d1d87",
+      "revisao": 2
+    },
+    {
+      "sku": "M202-804",
+      "estado": "confirmada_pelo_utilizador",
+      "regra": "sku_confirmado_pelo_utilizador",
+      "versao_regras": "9e1e4071de345765b4921fef8fe6d0e3b9030744934b807f41db6ddb6c5d1d87",
+      "revisao": 2
+    },
+    {
+      "sku": "M202-805",
+      "estado": "confirmada_pelo_utilizador",
+      "regra": "sku_confirmado_pelo_utilizador",
+      "versao_regras": "9e1e4071de345765b4921fef8fe6d0e3b9030744934b807f41db6ddb6c5d1d87",
+      "revisao": 2
+    }
+  ],
+  "skus_truncados": true,
+  "evidencias": [
+    {
+      "id": "kgf:evidencia:mes:4075",
+      "area": "cantoneiras",
+      "setor": "MTG3",
+      "sku": "M204-209",
+      "familia": "M2",
+      "sku_no": "kgf:sku:cantoneiras:M204-209",
+      "familia_no": "kgf:familia:cantoneiras:M2",
+      "tipo": "associacao_indireta_mes",
+      "ordem_original": "264186",
+      "data_producao": "2026-09-30",
+      "maquina_original": "Ficep Rapid 25T",
+      "versao_fonte": "1f2cbaf2dbca9259e5a9d1a6dc7197c535a3ccbcdb06c6776d25f6deb6a3e80a",
+      "versao_regras": "9e1e4071de345765b4921fef8fe6d0e3b9030744934b807f41db6ddb6c5d1d87",
+      "evidencia": {
+        "limite": "Associacao indireta de perfil completo; nao confirma producao deste SKU ou de todos os membros da familia.",
+        "record_id": 4075,
+        "row_index": 4,
+        "sheet_uid": "d388c87584fd",
+        "source_app": "kanban-mes",
+        "tipo_evidencia": "documentary_association",
+        "perfil_completo": true,
+        "quantidade_reportada": 36.0,
+        "referencia_associada": "M204-209",
+        "referencia_registada": null,
+        "estado_classificacao_sku": "confirmada_pelo_utilizador"
+      },
+      "ordem_codigo": "OF264186",
+      "recurso_codigo": "RAPID25"
+    },
+    {
+      "id": "kgf:evidencia:excel:mtg_ef26928918339ece:plan:54753",
+      "area": "cantoneiras",
+      "setor": "MTG3",
+      "sku": "M230-850",
+      "familia": "M2",
+      "sku_no": "kgf:sku:cantoneiras:M230-850",
+      "familia_no": "kgf:familia:cantoneiras:M2",
+      "tipo": "planeamento_excel",
+      "ordem_original": "OF264198",
+      "data_producao": null,
+      "maquina_original": "Ficep Rapid 25T",
+      "versao_fonte": "bee504e5f3287800e2afb556ad2dea75915d60d77fb6b07b8a6dbaa69c26c693",
+      "versao_regras": "9e1e4071de345765b4921fef8fe6d0e3b9030744934b807f41db6ddb6c5d1d87",
+      "evidencia": {
+        "limite": "Contador ou atribuicao documental; nao confirma evento nem data real de producao. Nao somar com MES.",
+        "excel_row": 54753,
+        "snapshot_id": "mtg_ef26928918339ece",
+        "source_line_id": "mtg_ef26928918339ece:plan:54753",
+        "tipo_evidencia": "documentary_counter",
+        "metros_acumulados": 0.0,
+        "pavilhao_original": "MTG3",
+        "data_corte_prevista": "2026-08-14T00:00:00",
+        "quantidade_planeada": 4.0,
+        "quantidade_acumulada": null,
+        "estado_classificacao_sku": "confirmada_pelo_utilizador"
+      },
+      "ordem_codigo": "OF264198",
+      "recurso_codigo": "RAPID25"
+    },
+    {
+      "id": "kgf:evidencia:excel:mtg_ef26928918339ece:plan:54754",
+      "area": "cantoneiras",
+      "setor": "MTG3",
+      "sku": "M230-844",
+      "familia": "M2",
+      "sku_no": "kgf:sku:cantoneiras:M230-844",
+      "familia_no": "kgf:familia:cantoneiras:M2",
+      "tipo": "planeamento_excel",
+      "ordem_original": "OF264198",
+      "data_producao": null,
+      "maquina_original": "Ficep Rapid 25T",
+      "versao_fonte": "bee504e5f3287800e2afb556ad2dea75915d60d77fb6b07b8a6dbaa69c26c693",
+      "versao_regras": "9e1e4071de345765b4921fef8fe6d0e3b9030744934b807f41db6ddb6c5d1d87",
+      "evidencia": {
+        "limite": "Contador ou atribuicao documental; nao confirma evento nem data real de producao. Nao somar com MES.",
+        "excel_row": 54754,
+        "snapshot_id": "mtg_ef26928918339ece",
+        "source_line_id": "mtg_ef26928918339ece:plan:54754",
+        "tipo_evidencia": "documentary_counter",
+        "metros_acumulados": 0.0,
+        "pavilhao_original": "MTG3",
+        "data_corte_prevista": "2026-08-14T00:00:00",
+        "quantidade_planeada": 4.0,
+        "quantidade_acumulada": null,
+        "estado_classificacao_sku": "confirmada_pelo_utilizador"
+      },
+      "ordem_codigo": "OF264198",
+      "recurso_codigo": "RAPID25"
+    },
+    {
+      "id": "kgf:evidencia:excel:mtg_ef26928918339ece:plan:54755",
+      "area": "cantoneiras",
+      "setor": "MTG3",
+      "sku": "M230-845",
+      "familia": "M2",
+      "sku_no": "kgf:sku:cantoneiras:M230-845",
+      "familia_no": "kgf:familia:cantoneiras:M2",
+      "tipo": "planeamento_excel",
+      "ordem_original": "OF264198",
+      "data_producao": null,
+      "maquina_original": "Ficep Rapid 25T",
+      "versao_fonte": "bee504e5f3287800e2afb556ad2dea75915d60d77fb6b07b8a6dbaa69c26c693",
+      "versao_regras": "9e1e4071de345765b4921fef8fe6d0e3b9030744934b807f41db6ddb6c5d1d87",
+      "evidencia": {
+        "limite": "Contador ou atribuicao documental; nao confirma evento nem data real de producao. Nao somar com MES.",
+        "excel_row": 54755,
+        "snapshot_id": "mtg_ef26928918339ece",
+        "source_line_id": "mtg_ef26928918339ece:plan:54755",
+        "tipo_evidencia": "documentary_counter",
+        "metros_acumulados": 0.0,
+        "pavilhao_original": "MTG3",
+        "data_corte_prevista": "2026-08-14T00:00:00",
+        "quantidade_planeada": 4.0,
+        "quantidade_acumulada": null,
+        "estado_classificacao_sku": "confirmada_pelo_utilizador"
+      },
+      "ordem_codigo": "OF264198",
+      "recurso_codigo": "RAPID25"
+    },
+    {
+      "id": "kgf:evidencia:excel:mtg_ef26928918339ece:plan:54756",
+      "area": "cantoneiras",
+      "setor": "MTG3",
+      "sku": "M230-846",
+      "familia": "M2",
+      "sku_no": "kgf:sku:cantoneiras:M230-846",
+      "familia_no": "kgf:familia:cantoneiras:M2",
+      "tipo": "planeamento_excel",
+      "ordem_original": "OF264198",
+      "data_producao": null,
+      "maquina_original": "Ficep Rapid 25T",
+      "versao_fonte": "bee504e5f3287800e2afb556ad2dea75915d60d77fb6b07b8a6dbaa69c26c693",
+      "versao_regras": "9e1e4071de345765b4921fef8fe6d0e3b9030744934b807f41db6ddb6c5d1d87",
+      "evidencia": {
+        "limite": "Contador ou atribuicao documental; nao confirma evento nem data real de producao. Nao somar com MES.",
+        "excel_row": 54756,
+        "snapshot_id": "mtg_ef26928918339ece",
+        "source_line_id": "mtg_ef26928918339ece:plan:54756",
+        "tipo_evidencia": "documentary_counter",
+        "metros_acumulados": 0.0,
+        "pavilhao_original": "MTG3",
+        "data_corte_prevista": "2026-08-14T00:00:00",
+        "quantidade_planeada": 8.0,
+        "quantidade_acumulada": null,
+        "estado_classificacao_sku": "confirmada_pelo_utilizador"
+      },
+      "ordem_codigo": "OF264198",
+      "recurso_codigo": "RAPID25"
+    }
+  ],
+  "evidencias_encontradas": 396,
+  "evidencias_truncadas": true,
+  "limites": [
+    "Familia confirmada nao implica producao confirmada de todos os seus SKUs.",
+    "MES, contadores Excel, planeamento e associacoes indiretas permanecem distintos.",
+    "As fontes atuais sao publicadas atomicamente; versoes e identificadores acompanham a evidencia."
+  ]
+}

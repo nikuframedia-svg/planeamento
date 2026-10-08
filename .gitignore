@@ -2,10 +2,19 @@
 __pycache__/
 *.pyc
 .env
+.env.*
+!.env.example
 data/
 *.log
 .pytest_cache/
+.ruff_cache/
 *.egg-info/
+
+# Ambientes de agentes e resultados temporários locais
+.claude/
+.run-logs/
+/*.pkl
+/mine.json
 
 # Evidência pesada das validações de 23/09 (reproduzível; fica só no disco)
 docs/validacao-planeamento-integral/**/*.gz

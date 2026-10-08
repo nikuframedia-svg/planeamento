@@ -1,0 +1,50 @@
+{
+  "gerado_em_utc": "2026-10-01T16:15:44.298916+00:00",
+  "setor": "MTG2",
+  "escopo": "Fotografia atual completa do planeamento MTG2 na aplicação: inclui OF históricas e fechadas.",
+  "fontes_planeamento": [
+    {
+      "conjunto": "planning:perfis",
+      "geracao": 3595,
+      "publicada_em": "2026-10-01 11:35:04.483363+00:00",
+      "snapshot": {
+        "loaded_at": "2026-09-29T12:20:49.367422+00:00",
+        "snapshot_id": "mtg2_3da468582f1d59b6",
+        "source_filename": "Met2_Plan_Perfis.xlsm"
+      }
+    }
+  ],
+  "versoes_cpis": [
+    {
+      "origem": "CPIS importado do Excel (raw_mtg.cpis_rows)",
+      "snapshot": "mtg2_3da468582f1d59b6"
+    }
+  ],
+  "linhas": 7653,
+  "skus_distintos": 3853,
+  "familias_candidatas": 816,
+  "familias_com_evidencia": 6,
+  "estados": {
+    "prefixo_demasiado_generico": 11,
+    "codigo_de_projeto_por_confirmar": 461,
+    "candidata_por_confirmar": 338,
+    "forte_padrao_e_varias_of": 6
+  },
+  "skus_sem_padrao": 251,
+  "raizes_corroboradas": [
+    "H92",
+    "PA3",
+    "PA30",
+    "PA31",
+    "PA5",
+    "PA51"
+  ],
+  "classificacoes_na_base_alteradas": false,
+  "limites": [
+    "Nenhuma família MTG2 confirmada pelo utilizador; as famílias da MTG3 não foram copiadas.",
+    "Designações corroboram agrupamentos; não estabelecem intercambiabilidade das peças.",
+    "Não une variantes, não elimina SKUs e não soma quantidades.",
+    "Códigos numéricos (modelo/projeto) e prefixos de uma letra exigem confirmação do planeador.",
+    "Grupos de perfis (tipo de material + perfil) continuam disponíveis como dimensão independente."
+  ]
+}

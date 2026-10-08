@@ -1,0 +1,817 @@
+﻿familia,estado,skus_distintos,linhas,ofs,skus_em_linhas_ativas,ofs_com_familia_na_designacao,tipos_material,familias_encomenda_cpis,exemplos_sku,evidencia_designacoes,regra
+M,prefixo_demasiado_generico,168,168,18,26,0,Cantoneira | Perfil U | Varão quadrado,1,M003-103 | M003-104 | M003-105,,prefixo_alfabetico
+2,codigo_de_projeto_por_confirmar,126,126,2,66,2,Barra | Perfil H | Perfil I,5.1,2C1 | 2CH1 | 2CH10,ALSTOM | MONORAIL | MODELO 2 | VARANDINS ESQ / DIR = 648X | ALSTOM | MONORAIL | MODELO 2 | SUP. TIPO 4 | IPE330 (1178X) + HEA240 (65X) = 1243X,codigo_numerico_candidato_a_projeto
+XZ,candidata_por_confirmar,109,109,4,53,0,Cantoneira,1,XZ211501 | XZ211502 | XZ251007,,prefixo_alfabetico
+3,codigo_de_projeto_por_confirmar,103,103,1,103,1,Perfil H | Perfil I,5.1,3CH1 | 3CH10 | 3CH11,ALSTOM | MONORAIL | MODELO 3 | SUP. TIPO 4 | IPE330 (767X) + HEA240 (31X) = 798X,codigo_numerico_candidato_a_projeto
+1,codigo_de_projeto_por_confirmar,94,94,3,5,2,Perfil H | Tubo quadrado,5.1,1P1 | 1P100 | 1P102,ALSTOM | MONORAIL | EMERGENCY WALKWAY | LOT#1 = PROTÓTIPO | ALSTOM | MONORAIL | MODELO 1 | VARANDINS ESQ / DIR = 374X,codigo_numerico_candidato_a_projeto
+Z,prefixo_demasiado_generico,64,70,10,2,0,Cantoneira | Perfil U,1,Z103621 | Z103622 | Z103623,,prefixo_alfabetico
+5877,codigo_de_projeto_por_confirmar,60,305,35,54,4,Calha | Perfil U | Tubo redondo | Tubo retangular | Varão quadrado | Varão redondo,- | 6.2,5877T1103 | 5877T1104 | 5877T1105,1UN - 5877T14 - DQ54-125_x000D_ 2UN - 5877T180 - DQ54-110 | 3UN. 5877T8 // 1UN. 5877T55_x000D_ DQ-54-092_x000D_ | 5877T15 - DQ54-160,codigo_numerico_candidato_a_projeto
+5826,codigo_de_projeto_por_confirmar,56,65,6,0,0,Perfil U | Tubo redondo | Varão quadrado | Varão redondo,1.1,5826PP105 | 5826PP111 | 5826PP112,,codigo_numerico_candidato_a_projeto
+PA3,forte_padrao_e_varias_of,54,107,10,52,4,Calha | Perfil U | Tubo redondo | Varão redondo,6.1,PA3A19A4001 | PA3A19A4002 | PA3SV1,DIAGONAIS P/TORRE PA3SV - 24M(X2)/30M(X3)/36M(X11)/42M(X12) | MONTANTES P/TORRE PA3SV - 24M(X2)/30M(X3)/36M(X11)/42M(X12) | ACESSÓRIOS P/TORRE PA3SV - 24M(X2)/30M(X3)/36M(X11)/42M(X12) E PA5SV - 48M(X2),familia_mae_corrobora_designacao
+PA5,forte_padrao_e_varias_of,53,53,4,53,4,Perfil U | Tubo redondo | Varão redondo,6.1,PA5SV1 | PA5SV10 | PA5SV11,MONTANTES P/TORRE PA5SV - 48M(X2) | DIAGONAIS P/TORRE PA5SV - 48M(X2) | ACESSÓRIOS P/TORRE PA3SV - 24M(X2)/30M(X3)/36M(X11)/42M(X12) E PA5SV - 48M(X2),familia_mae_corrobora_designacao
+T,prefixo_demasiado_generico,53,63,8,4,0,Cantoneira | Perfil H | Perfil U,1,T012101 | T012102 | T012167,,prefixo_alfabetico
+CI7712,candidata_por_confirmar,49,552,451,12,0,Perfil U | Tubo redondo,- | 3 | 3.1,CI7712A4001 | CI7712A4002 | CI7712A4006,,letras_numero_letras_numero
+8788,codigo_de_projeto_por_confirmar,46,46,4,0,0,Tubo quadrado | Tubo retangular,1.1,8788V001 | 8788V003 | 8788V004,,codigo_numerico_candidato_a_projeto
+4799,codigo_de_projeto_por_confirmar,44,44,1,0,0,Perfil H | Perfil I,5.1,4799V1CH1 | 4799V1CH2 | 4799V1CH3,,codigo_numerico_candidato_a_projeto
+W,prefixo_demasiado_generico,43,57,9,2,1,Cantoneira | Chapa | Perfil H | Perfil U,1 | 2,W061631 | W061632 | W061633,CALHAS H2 W1B JUNTAS DILATAÇÃO,prefixo_alfabetico
+PA30,forte_padrao_e_varias_of,42,79,7,0,5,Perfil U | Tubo redondo,6.1,PA30M1 | PA30M19 | PA30M2,2UN PA30MV10 - DQ54-118 | MONTANTES P/ TORRE PA30M-25M | MONTANTES PARA TORRES TRIANGULARES PA30M 30M/25M/15M (4UN),familia_mae_corrobora_designacao
+CA6319,candidata_por_confirmar,37,161,24,10,0,Perfil U | Tubo redondo | Varão redondo,6,CA6319A4019 | CA6319A4036 | CA6319A4037,,letras_numero_letras_numero
+CR1213,candidata_por_confirmar,37,71,13,1,0,Perfil U | Tubo quadrado | Tubo redondo | Tubo retangular | Varão redondo,- | 3.1,CR1213A4002 | CR1213A4003 | CR1213A4004,,letras_numero_letras_numero
+CA2219,candidata_por_confirmar,35,254,36,14,0,Barra | Perfil U | Tubo redondo | Varão redondo | Varão roscado,- | 6,CA2219A4002 | CA2219A4003 | CA2219A4005,,letras_numero_letras_numero
+5829,codigo_de_projeto_por_confirmar,34,38,5,0,0,Perfil U | Tubo redondo | Varão quadrado | Varão redondo,1.1,5829PP102 | 5829PP103 | 5829PP159,,codigo_numerico_candidato_a_projeto
+24,codigo_de_projeto_por_confirmar,32,32,4,4,0,Cantoneira,1,24M1401 | 24M1402 | 24M1403,,codigo_numerico_candidato_a_projeto
+E,prefixo_demasiado_generico,28,42,7,4,0,Cantoneira | Tubo redondo,1 | 5,E124721 | E124722 | E124723,,prefixo_alfabetico
+PA31,forte_padrao_e_varias_of,28,48,8,5,5,Perfil U | Tubo redondo | Varão redondo | Varão roscado,6.1,PA31M1 | PA31M1034 | PA31M1043,MONTANTES TORRE PA31M 15M + 18M - 2UN | TRAVESSAS E DIAGONAIS TORRE PA31M 15M + 18M - 2UN | MONTANTES TORRE PA31M 15M (1 UN)+ 18M (2 UN),familia_mae_corrobora_designacao
+1283,codigo_de_projeto_por_confirmar,26,52,9,0,0,Barra | Tubo retangular | Varão roscado,2,1283V001 | 1283V004 | 1283V006,,codigo_numerico_candidato_a_projeto
+ZE,candidata_por_confirmar,25,41,5,17,0,Cantoneira | Perfil U,1,ZE-1501 | ZE-1502 | ZE-1810,,prefixo_alfabetico
+9864,codigo_de_projeto_por_confirmar,24,25,3,0,0,Tubo quadrado | Tubo redondo,2.1,9864U001 | 9864U002 | 9864U004,,codigo_numerico_candidato_a_projeto
+5828,codigo_de_projeto_por_confirmar,23,24,3,0,0,Tubo redondo | Varão quadrado | Varão redondo,1.1,5828PP102 | 5828PP103 | 5828PP104,,codigo_numerico_candidato_a_projeto
+PR,candidata_por_confirmar,20,31,6,7,0,Perfil H | Tubo quadrado | Tubo redondo | Tubo retangular | Varão redondo,4 | 5.1,PR-701 | PR-706 | PR13,,prefixo_alfabetico
+CA2413,candidata_por_confirmar,19,40,9,11,0,Tubo redondo,6,CA2413A4004 | CA2413A4005 | CA2413A4006,,letras_numero_letras_numero
+CE0102,candidata_por_confirmar,19,31,4,0,0,Barra | Perfil U | Tubo redondo | Tubo retangular | Varão redondo,3.1,CE0102A4008 | CE0102A4009 | CE0102A4010,,letras_numero_letras_numero
+H92,forte_padrao_e_varias_of,19,32,8,1,8,Perfil U,1,H92HA1B18BT | H92HN1BBT | H92HN22BBT,RTE | POSTE H92HT-T4H18 | RTE | H92HN-T4 | H24 / H24-PD / H26 | EP2583 | RTE | H92HA-T4 | H18 / H18-PD / H19 / H19-PD / H20 | EP2580,familia_mae_corrobora_designacao
+AFNTD,candidata_por_confirmar,18,26,2,18,0,Perfil H | Varão redondo,5.1,AFNTD001.1 | AFNTD002.1 | AFNTD003.1,,prefixo_alfabetico
+B823,candidata_por_confirmar,18,19,2,0,0,Tubo quadrado,2.1,B823U007 | B823U012 | B823U013,,letras_numero_letras_numero
+B703,candidata_por_confirmar,17,17,1,0,0,Tubo quadrado,2.1,B703U009 | B703U015 | B703U016,,letras_numero_letras_numero
+CI7812,candidata_por_confirmar,17,83,69,7,0,Perfil U | Tubo redondo,- | 3 | 3.1,CI7812A4002 | CI7812A4005 | CI7812A4010,,letras_numero_letras_numero
+9138,codigo_de_projeto_por_confirmar,16,16,2,0,0,Perfil U | Tubo quadrado | Tubo redondo,2.1,9138U001 | 9138U002 | 9138U004,,codigo_numerico_candidato_a_projeto
+A35,candidata_por_confirmar,16,16,1,0,0,Cantoneira | Perfil H | Perfil U,1,A35TT112 | A35TT113 | A35TT126,,letras_numero_letras_numero
+CA1012,candidata_por_confirmar,16,101,27,4,0,Perfil U | Tubo redondo | Varão quadrado | Varão redondo,- | 6,CA1012A4001 | CA1012A4003 | CA1012A4028,,letras_numero_letras_numero
+TAU,candidata_por_confirmar,16,16,1,0,0,Perfil U,1,TAU14001 | TAU14002 | TAU14201,,prefixo_alfabetico
+4891,codigo_de_projeto_por_confirmar,15,20,8,0,0,Perfil U | Tubo quadrado | Tubo redondo | Varão quadrado,5.2 | 6,4891K003 | 4891S005 | 4891S012,,codigo_numerico_candidato_a_projeto
+ZD,candidata_por_confirmar,15,22,2,12,0,Cantoneira | Perfil U,- | 1,ZD-0401 | ZD-0402 | ZD-0501,,prefixo_alfabetico
+2778,codigo_de_projeto_por_confirmar,14,15,3,3,0,Tubo redondo | Varão redondo | Varão roscado,2,2778V001 | 2778V003 | 2778V006,,codigo_numerico_candidato_a_projeto
+CS0103,candidata_por_confirmar,14,108,23,6,0,Perfil U | Tubo quadrado | Tubo redondo | Varão redondo,3.1,CS0103A4003 | CS0103A4005 | CS0103A4006,,letras_numero_letras_numero
+EXPOS,candidata_por_confirmar,14,14,2,0,0,Perfil U | Tubo quadrado | Tubo retangular | Varão redondo,4,EXPOS1.1 | EXPOS1.9 | EXPOS2.1,,prefixo_alfabetico
+2644,codigo_de_projeto_por_confirmar,13,13,1,0,0,Tubo quadrado | Varão roscado,1.1,2644V030 | 2644V031 | 2644V061,,codigo_numerico_candidato_a_projeto
+A902,candidata_por_confirmar,13,13,1,0,0,Perfil U | Tubo redondo | Varão redondo,6,A902U002 | A902U003 | A902U004,,letras_numero_letras_numero
+AT1,candidata_por_confirmar,13,74,7,2,0,Perfil H | Perfil U,1,AT1A134 | AT1T110 | AT1T111,,letras_numero_letras_numero
+CC0111,candidata_por_confirmar,13,58,58,7,0,Calha | Chapa | Tubo redondo,3 | 3.1,CC0111A4602 | CC0111A4606 | CC0111A4610,,letras_numero_letras_numero
+CI1106,candidata_por_confirmar,13,31,21,3,0,Tubo redondo,3,CI1106A4007 | CI1106A4008 | CI1106A4009,,letras_numero_letras_numero
+MGL,candidata_por_confirmar,13,13,1,0,0,Perfil H | Perfil I | Perfil U,5,MGL111001 | MGL111002 | MGL131001,,prefixo_alfabetico
+1987,codigo_de_projeto_por_confirmar,12,12,1,0,0,Perfil I | Tubo redondo,6.1,1987U1 | 1987U11 | 1987U12,,codigo_numerico_candidato_a_projeto
+CD04,candidata_por_confirmar,12,109,26,8,0,Chapa | Perfil U | Tubo quadrado | Tubo redondo | Varão quadrado | Varão redondo,1.1 | 1.2,CD04J001 | CD04T001 | CD04T002,,letras_numero_letras_numero
+EI16,candidata_por_confirmar,12,12,3,0,0,Perfil U | Tubo quadrado | Varão redondo,16,EI16V001 | EI16V002 | EI16V003,,letras_numero_letras_numero
+1107,codigo_de_projeto_por_confirmar,11,21,6,0,0,Perfil T | Tubo redondo | Varão redondo,1.1,1107V200 | 1107V201 | 1107V202,,codigo_numerico_candidato_a_projeto
+1538,codigo_de_projeto_por_confirmar,11,13,2,2,0,Tubo quadrado,2.1,1538V015 | 1538V016 | 1538V017,,codigo_numerico_candidato_a_projeto
+2003,codigo_de_projeto_por_confirmar,11,11,1,0,0,Tubo redondo,6.1,2003V1 | 2003V107 | 2003V114,,codigo_numerico_candidato_a_projeto
+2035,codigo_de_projeto_por_confirmar,11,12,4,0,0,Tubo redondo | Tubo retangular | Varão redondo,1.1,2035V100 | 2035V102 | 2035V103,,codigo_numerico_candidato_a_projeto
+3159,codigo_de_projeto_por_confirmar,11,11,1,0,0,Perfil I,2.1,3159V001 | 3159V003 | 3159V005,,codigo_numerico_candidato_a_projeto
+6133,codigo_de_projeto_por_confirmar,11,11,1,11,0,Tubo quadrado,2.1,6133V015 | 6133V016 | 6133V017,,codigo_numerico_candidato_a_projeto
+6708,codigo_de_projeto_por_confirmar,11,11,2,11,0,Perfil U | Tubo redondo,6,6708V001 | 6708V015 | 6708V016,,codigo_numerico_candidato_a_projeto
+C195,candidata_por_confirmar,11,16,5,0,0,Tubo redondo,6.1,C195U001 | C195U002 | C195U003,,letras_numero_letras_numero
+CI1107,candidata_por_confirmar,11,24,16,0,0,Tubo redondo,3,CI1107A4002 | CI1107A4004 | CI1107A4006,,letras_numero_letras_numero
+N,prefixo_demasiado_generico,11,41,4,0,0,Cantoneira | Perfil U,1,N25101 | N25102 | N25309,,prefixo_alfabetico
+3823,codigo_de_projeto_por_confirmar,10,10,1,0,0,Perfil U,1.1,3823U300 | 3823U301 | 3823U310,,codigo_numerico_candidato_a_projeto
+9422,codigo_de_projeto_por_confirmar,10,19,6,6,0,Perfil U | Tubo redondo | Varão redondo,6.1,9422N10 | 9422N20 | 9422N30,,codigo_numerico_candidato_a_projeto
+A25,candidata_por_confirmar,10,10,2,0,0,Cantoneira,1,A25S301 | A25S302 | A25S401,,letras_numero_letras_numero
+CIB125,candidata_por_confirmar,10,15,6,0,0,Tubo redondo,1.1 | 3,CIB125A4001 | CIB125A4002 | CIB125A4003,,letras_numero_letras_numero
+ET0107,candidata_por_confirmar,10,36,10,0,0,Perfil T | Tubo redondo | Varão nervurado | Varão redondo,1.1,ET0107A4001 | ET0107A4002 | ET0107A4003,,letras_numero_letras_numero
+PA51,forte_padrao_e_varias_of,10,10,3,0,2,Tubo redondo,6.1,PA51P10 | PA51P203 | PA51P204,2UN PA51PD2 (VERMELHO) | RECLAMAÇÃO - DQ54-161 - VARANDIM - REF. PA51PVAR4,familia_mae_corrobora_designacao
+ZG,candidata_por_confirmar,10,22,4,8,0,Cantoneira,1,ZG-4001 | ZG-4002 | ZG-401,,prefixo_alfabetico
+1234,codigo_de_projeto_por_confirmar,9,37,12,3,0,Perfil U | Varão roscado,1.2,1234T052 | 1234T120 | 1234T121,,codigo_numerico_candidato_a_projeto
+CCAB24,candidata_por_confirmar,9,18,8,0,0,Tubo redondo,3,CCAB24A4100 | CCAB24A4101 | CCAB24A4102,,letras_numero_letras_numero
+CS0310,candidata_por_confirmar,9,10,4,0,0,Tubo redondo | Varão redondo,- | 3.1,CS0310A4004 | CS0310A4005 | CS0310A4006,,letras_numero_letras_numero
+M048,candidata_por_confirmar,9,9,1,0,0,Perfil U | Varão roscado,5,M048UP1 | M048UP10 | M048UP11,,letras_numero_letras_numero
+POS,candidata_por_confirmar,9,9,2,0,0,Tubo quadrado | Tubo retangular | Varão redondo,4,POS1.1 | POS10 | POS19.3,,prefixo_alfabetico
+1115,codigo_de_projeto_por_confirmar,8,8,2,0,0,Perfil T | Tubo redondo,1.1,1115V100 | 1115V101 | 1115V103,,codigo_numerico_candidato_a_projeto
+1513,codigo_de_projeto_por_confirmar,8,8,1,0,0,Tubo quadrado | Varão roscado,1.1,1513V001 | 1513V002 | 1513V003,,codigo_numerico_candidato_a_projeto
+2244,codigo_de_projeto_por_confirmar,8,15,4,3,0,Tubo redondo | Tubo retangular | Varão redondo | Varão roscado,- | 1.1,2244U100 | 2244U101 | 2244U102,,codigo_numerico_candidato_a_projeto
+2998,codigo_de_projeto_por_confirmar,8,8,4,0,0,Cantoneira | Perfil I | Tubo quadrado | Varão roscado,2,2998U001 | 2998U005 | 2998U006,,codigo_numerico_candidato_a_projeto
+3940,codigo_de_projeto_por_confirmar,8,9,5,0,0,Tubo quadrado | Tubo redondo,2.1,3940U001 | 3940U002 | 3940U003,,codigo_numerico_candidato_a_projeto
+5504,codigo_de_projeto_por_confirmar,8,22,14,3,0,Barra | Tubo redondo | Varão quadrado | Varão retangular,5.2,5504T065 | 5504T602 | 5504T603,,codigo_numerico_candidato_a_projeto
+6138,codigo_de_projeto_por_confirmar,8,8,1,0,0,Tubo quadrado,2.1,6138V013 | 6138V014 | 6138V015,,codigo_numerico_candidato_a_projeto
+8951,codigo_de_projeto_por_confirmar,8,21,8,0,0,Tubo redondo | Varão redondo,6,8951M003 | 8951M026 | 8951M030,,codigo_numerico_candidato_a_projeto
+9271,codigo_de_projeto_por_confirmar,8,15,3,7,0,Tubo quadrado | Tubo redondo | Tubo retangular,3.1,9271U000 | 9271U001 | 9271U002,,codigo_numerico_candidato_a_projeto
+A31,candidata_por_confirmar,8,22,5,1,0,Cantoneira,1,A31S401 | A31S402 | A31S501,,letras_numero_letras_numero
+BM,candidata_por_confirmar,8,11,3,0,1,Tubo redondo | Varão redondo | Varão roscado,1,BM-609 | BM-619 | BM22-308,"ENERGINET - BM30 (1UN) - LETRA P/ REFERENCIAR ""CQ""",prefixo_alfabetico
+CA4317,candidata_por_confirmar,8,51,11,8,0,Perfil U | Tubo redondo | Varão redondo,3.1 | 6,CA4317A4007 | CA4317A4008 | CA4317A4009,,letras_numero_letras_numero
+CCAB21,candidata_por_confirmar,8,18,2,8,0,Perfil U | Tubo redondo,3,CCAB21A4041 | CCAB21A4101 | CCAB21A4102,,letras_numero_letras_numero
+CE0108,candidata_por_confirmar,8,9,3,0,0,Perfil U | Tubo quadrado | Tubo redondo | Tubo retangular,3.1,CE0108A4007 | CE0108A4008 | CE0108A4012,,letras_numero_letras_numero
+D212,candidata_por_confirmar,8,17,3,5,0,Perfil U | Tubo quadrado,2.1,D212T004 | D212T018 | D212T025,,letras_numero_letras_numero
+3125,codigo_de_projeto_por_confirmar,7,26,4,0,0,Tubo quadrado | Varão redondo,2.1,3125P004 | 3125P012 | 3125P015,,codigo_numerico_candidato_a_projeto
+5542,codigo_de_projeto_por_confirmar,7,7,1,0,0,Tubo redondo,2,5542V001 | 5542V002 | 5542V007,,codigo_numerico_candidato_a_projeto
+8083,codigo_de_projeto_por_confirmar,7,7,1,0,0,Tubo redondo,6,8083S004 | 8083S005 | 8083S006,,codigo_numerico_candidato_a_projeto
+A114,candidata_por_confirmar,7,12,3,0,0,Tubo redondo,6,A114U003 | A114U004 | A114U005,,letras_numero_letras_numero
+CA13,candidata_por_confirmar,7,7,1,0,1,Tubo redondo,6,CA13I005 | CA13I006 | CA13I008,TORRE PINHEIRO 16M - MOD. CA13I,letras_numero_letras_numero
+CI8106,candidata_por_confirmar,7,10,8,1,0,Perfil U | Tubo redondo,3,CI8106A4003 | CI8106A4004 | CI8106A4005,,letras_numero_letras_numero
+SC,candidata_por_confirmar,7,7,1,0,0,Tubo redondo,4,SC211 | SC271 | SC272,,prefixo_alfabetico
+V,prefixo_demasiado_generico,7,7,3,0,0,Cantoneira | Varão redondo,1 | 5,V078601 | V078602 | V079701,,prefixo_alfabetico
+0591,codigo_de_projeto_por_confirmar,6,6,1,0,0,Tubo redondo,6,0591V002 | 0591V003 | 0591V004,,codigo_numerico_candidato_a_projeto
+2112,codigo_de_projeto_por_confirmar,6,6,1,0,0,Varão redondo,16,2112P01 | 2112P02 | 2112P03,,codigo_numerico_candidato_a_projeto
+2263,codigo_de_projeto_por_confirmar,6,7,3,0,0,Perfil I | Varão redondo,2.1,2263V002 | 2263V004 | 2263V008,,codigo_numerico_candidato_a_projeto
+2563,codigo_de_projeto_por_confirmar,6,6,1,0,0,Tubo redondo,6,2563V001 | 2563V002 | 2563V003,,codigo_numerico_candidato_a_projeto
+2625,codigo_de_projeto_por_confirmar,6,11,2,0,0,Perfil T | Varão redondo,2.1,2625P012 | 2625P014 | 2625P017,,codigo_numerico_candidato_a_projeto
+3356,codigo_de_projeto_por_confirmar,6,6,3,0,0,Perfil U | Tubo quadrado,3.1,3356V001 | 3356V002 | 3356V003,,codigo_numerico_candidato_a_projeto
+5100,codigo_de_projeto_por_confirmar,6,19,9,0,0,Barra | Tubo redondo | Varão redondo,5.2,5100T002 | 5100T004 | 5100T505,,codigo_numerico_candidato_a_projeto
+6273,codigo_de_projeto_por_confirmar,6,36,25,1,0,Chapa | Perfil U | Tubo quadrado,1.1,6273U100 | 6273U101 | 6273U102,,codigo_numerico_candidato_a_projeto
+8102,codigo_de_projeto_por_confirmar,6,6,1,0,0,Perfil U,1.1,8102V100 | 8102V101 | 8102V102,,codigo_numerico_candidato_a_projeto
+9735,codigo_de_projeto_por_confirmar,6,6,1,0,0,Tubo redondo | Varão redondo,5,9735P002 | 9735P01 | 9735P03,,codigo_numerico_candidato_a_projeto
+A30,candidata_por_confirmar,6,6,2,0,0,Cantoneira,1,A30S401 | A30S402 | A30S501,,letras_numero_letras_numero
+A9,candidata_por_confirmar,6,8,3,0,0,Cantoneira,1,A9S401 | A9S402 | A9S501,,letras_numero_letras_numero
+AT2,candidata_por_confirmar,6,36,6,1,0,Perfil U,1,AT2T513 | AT2T514 | AT2T524,,letras_numero_letras_numero
+C139,candidata_por_confirmar,6,8,3,0,0,Perfil U | Tubo quadrado | Tubo redondo | Varão redondo,3.1,C139U000 | C139U001 | C139U002,,letras_numero_letras_numero
+CC0,candidata_por_confirmar,6,27,7,0,0,Tubo redondo | Varão roscado,3.1,CC0P17A4005 | CC0P17A4700 | CC0P17A4701,,letras_numero_letras_numero
+CI2105,candidata_por_confirmar,6,13,10,2,0,Tubo redondo,3,CI2105A4003 | CI2105A4004 | CI2105A4007,,letras_numero_letras_numero
+CT3115,candidata_por_confirmar,6,25,14,2,0,Tubo redondo | Varão redondo,3.1,CT3115A4001 | CT3115A4003 | CT3115A4052,,letras_numero_letras_numero
+D444,candidata_por_confirmar,6,17,13,2,0,Barra | Tubo redondo | Varão redondo,5.2,D444S004 | D444S008 | D444S573,,letras_numero_letras_numero
+EXT31,candidata_por_confirmar,6,12,4,0,0,Tubo quadrado | Varão redondo,12,EXT31C16 | EXT31C19 | EXT31C25,,letras_numero_letras_numero
+GGR,candidata_por_confirmar,6,14,3,1,0,Tubo quadrado | Tubo retangular,4,GGR40-1 | GGR40-2 | GGR40-3,,prefixo_alfabetico
+P040,candidata_por_confirmar,6,6,1,0,0,Perfil U,1,P040G31D | P040G31E | P040G32D,,letras_numero_letras_numero
+TL,candidata_por_confirmar,6,6,1,3,0,Chapa | Perfil U,1,TL322-203 | TL322-212 | TL323-203,,prefixo_alfabetico
+ZF,candidata_por_confirmar,6,11,4,4,0,Cantoneira,1,ZF-1501 | ZF-1901 | ZF-2223,,prefixo_alfabetico
+0453,codigo_de_projeto_por_confirmar,5,5,1,0,0,Tubo redondo,6,0453N003 | 0453O002 | 0453O004,,codigo_numerico_candidato_a_projeto
+0641,codigo_de_projeto_por_confirmar,5,27,19,4,0,Calha | Tubo redondo,3,0641S001 | 0641S008 | 0641S010,,codigo_numerico_candidato_a_projeto
+0979,codigo_de_projeto_por_confirmar,5,15,12,5,0,Barra | Tubo redondo | Varão redondo,5.1 | 5.2,0979T002 | 0979T003 | 0979T005,,codigo_numerico_candidato_a_projeto
+1015,codigo_de_projeto_por_confirmar,5,6,2,0,0,Calha | Perfil U | Tubo redondo | Varão redondo,3.1,1015V000 | 1015V001 | 1015V002,,codigo_numerico_candidato_a_projeto
+1675,codigo_de_projeto_por_confirmar,5,6,2,0,0,Varão redondo,2.1,1675V008 | 1675V010 | 1675V011,,codigo_numerico_candidato_a_projeto
+2070,codigo_de_projeto_por_confirmar,5,10,6,0,0,Tubo quadrado | Tubo redondo | Varão redondo,2.1,2070Q009 | 2070Q012 | 2070Q015,,codigo_numerico_candidato_a_projeto
+2657,codigo_de_projeto_por_confirmar,5,5,3,0,0,Perfil U,3.1,2657V000 | 2657V002 | 2657V003,,codigo_numerico_candidato_a_projeto
+2793,codigo_de_projeto_por_confirmar,5,5,2,0,0,Tubo redondo,6,2793V001 | 2793V003 | 2793V005,,codigo_numerico_candidato_a_projeto
+4788,codigo_de_projeto_por_confirmar,5,5,4,0,0,Barra | Tubo quadrado | Varão roscado,2,4788V001 | 4788V002 | 4788V003,,codigo_numerico_candidato_a_projeto
+6121,codigo_de_projeto_por_confirmar,5,5,1,5,0,Tubo redondo,3,6121V001 | 6121V002 | 6121V003,,codigo_numerico_candidato_a_projeto
+6647,codigo_de_projeto_por_confirmar,5,10,2,5,0,Perfil U | Tubo redondo,6,6647V009 | 6647V010 | 6647V011,,codigo_numerico_candidato_a_projeto
+7012,codigo_de_projeto_por_confirmar,5,8,2,4,0,Tubo redondo | Varão redondo,3,7012V001 | 7012V002 | 7012V003,,codigo_numerico_candidato_a_projeto
+8726,codigo_de_projeto_por_confirmar,5,5,1,0,0,Tubo redondo,6,8726U001 | 8726U002 | 8726U003,,codigo_numerico_candidato_a_projeto
+A131,candidata_por_confirmar,5,5,2,0,0,Perfil I | Varão redondo,2.1,A131T028 | A131T060 | A131T061,,letras_numero_letras_numero
+CC0117,candidata_por_confirmar,5,25,23,2,0,Varão redondo,3 | 3.1,CC0117A4014 | CC0117A4015 | CC0117A4016,,letras_numero_letras_numero
+CI7912,candidata_por_confirmar,5,28,15,4,0,Perfil U | Tubo redondo,3 | 3.1,CI7912A4002 | CI7912A4009 | CI7912A4010,,letras_numero_letras_numero
+CIB418,candidata_por_confirmar,5,10,4,1,0,Perfil U,3,CIB418A4002 | CIB418A4003 | CIB418A4004,,letras_numero_letras_numero
+CR1012,candidata_por_confirmar,5,24,19,0,0,Perfil U | Varão redondo | Varão roscado,3.1,CR1012A4000 | CR1012A4001 | CR1012A4004,,letras_numero_letras_numero
+CR1516,candidata_por_confirmar,5,12,11,1,0,Calha,3.1,CR1516A3520 | CR1516A3536 | CR1516A4503,,letras_numero_letras_numero
+CT2715,candidata_por_confirmar,5,16,7,3,0,Perfil U | Varão redondo,3.1,CT2715A4001 | CT2715A4052 | CT2715A4053,,letras_numero_letras_numero
+TAR,candidata_por_confirmar,5,5,1,0,0,Tubo redondo | Varão redondo,1,TAR16114 | TAR20103 | TAR28101,,prefixo_alfabetico
+0105,codigo_de_projeto_por_confirmar,4,5,3,0,0,Tubo redondo,3,0105VJ01 | 0105VJ02 | 0105VJ03,,codigo_numerico_candidato_a_projeto
+1396,codigo_de_projeto_por_confirmar,4,4,1,0,0,Tubo quadrado | Tubo redondo,3,1396V001 | 1396V002 | 1396V003,,codigo_numerico_candidato_a_projeto
+1598,codigo_de_projeto_por_confirmar,4,4,1,0,0,Tubo quadrado | Tubo retangular,3.1,1598V000 | 1598V001 | 1598V002,,codigo_numerico_candidato_a_projeto
+2587,codigo_de_projeto_por_confirmar,4,8,7,0,0,Perfil U | Tubo redondo | Varão roscado,6,2587M001 | 2587M002 | 2587M019,,codigo_numerico_candidato_a_projeto
+3077,codigo_de_projeto_por_confirmar,4,4,1,0,0,Perfil I,2.1,3077V002 | 3077V003 | 3077V004,,codigo_numerico_candidato_a_projeto
+3378,codigo_de_projeto_por_confirmar,4,5,1,4,0,Tubo redondo | Varão redondo,3,3378V001 | 3378V002 | 3378V003,,codigo_numerico_candidato_a_projeto
+4192,codigo_de_projeto_por_confirmar,4,6,5,0,0,Tubo redondo | Varão roscado,6,4192O00 | 4192O001 | 4192O003,,codigo_numerico_candidato_a_projeto
+4716,codigo_de_projeto_por_confirmar,4,10,3,4,0,Tubo quadrado | Varão redondo,2.1,4716S013 | 4716S016 | 4716S020,,codigo_numerico_candidato_a_projeto
+4836,codigo_de_projeto_por_confirmar,4,9,1,1,0,Tubo redondo,3,4836V001 | 4836V002 | 4836V003,,codigo_numerico_candidato_a_projeto
+5055,codigo_de_projeto_por_confirmar,4,5,2,0,0,Tubo redondo,3,5055O001 | 5055O002 | 5055O033,,codigo_numerico_candidato_a_projeto
+5942,codigo_de_projeto_por_confirmar,4,4,2,0,0,Tubo redondo | Varão roscado,6,5942V001 | 5942V002 | 5942V003,,codigo_numerico_candidato_a_projeto
+6607,codigo_de_projeto_por_confirmar,4,4,1,0,0,Tubo redondo,3,6607V001 | 6607V002 | 6607V003,,codigo_numerico_candidato_a_projeto
+7853,codigo_de_projeto_por_confirmar,4,4,1,4,0,Tubo redondo,6,7853V001 | 7853V002 | 7853VTU1,,codigo_numerico_candidato_a_projeto
+7897,codigo_de_projeto_por_confirmar,4,4,1,4,0,Tubo quadrado,2.1,7897V002 | 7897V003 | 7897V004,,codigo_numerico_candidato_a_projeto
+9355,codigo_de_projeto_por_confirmar,4,4,1,0,0,Perfil U | Tubo quadrado | Tubo retangular | Varão redondo,3,9355O001 | 9355O002 | 9355O003,,codigo_numerico_candidato_a_projeto
+9659,codigo_de_projeto_por_confirmar,4,4,2,0,0,Tubo redondo,3.1,9659U000 | 9659U001 | 9659U002,,codigo_numerico_candidato_a_projeto
+A929,candidata_por_confirmar,4,14,4,0,0,Tubo redondo,3,A929U001 | A929U005 | A929U006,,letras_numero_letras_numero
+BS0822,candidata_por_confirmar,4,11,9,0,0,Varão redondo | Varão roscado,2,BS0822A4004 | BS0822A4005 | BS0822A4007,,letras_numero_letras_numero
+CA17,candidata_por_confirmar,4,15,8,0,0,Varão quadrado | Varão redondo,6,CA17H011 | CA17H021 | CA17H064,,letras_numero_letras_numero
+CA6119,candidata_por_confirmar,4,5,2,0,0,Perfil U,6,CA6119A4003 | CA6119A4006 | CA6119A4007,,letras_numero_letras_numero
+CI1920,candidata_por_confirmar,4,14,10,2,0,Tubo redondo,3,CI1920A4002 | CI1920A4004 | CI1920A4005,,letras_numero_letras_numero
+CR0507,candidata_por_confirmar,4,7,7,0,0,Perfil U | Varão roscado,3.1,CR0507A4024 | CR0507A4037 | CR0507A4038,,letras_numero_letras_numero
+CR0813,candidata_por_confirmar,4,46,23,3,0,Perfil U | Varão redondo,3.1,CR0813A4001 | CR0813A4006 | CR0813A4007,,letras_numero_letras_numero
+CT0601,candidata_por_confirmar,4,14,11,1,0,Tubo redondo | Varão redondo,3.1,CT0601A4002 | CT0601A4004 | CT0601S4002,,letras_numero_letras_numero
+D,prefixo_demasiado_generico,4,4,2,0,0,Tubo redondo,6.1 | 6.2,D1101103 | D1101301 | D1101503,,prefixo_alfabetico
+DC,candidata_por_confirmar,4,4,1,0,0,Chapa,2,DC04 | DC09 | DC1,,prefixo_alfabetico
+DLS,candidata_por_confirmar,4,4,3,1,3,Cantoneira | Perfil I,- | 1,DLS125 | DLS300 | DLS410,= SILVA & VINHA = 10 POSTES DLS5 = | =C.M.E.=7 POSTES DLS5= | = PROEF = POSTES DLS= 2 UN =,prefixo_alfabetico
+EI14,candidata_por_confirmar,4,14,1,0,0,Tubo redondo | Varão redondo,16,EI14V001 | EI14V002 | EI14V003,,letras_numero_letras_numero
+EI32,candidata_por_confirmar,4,11,9,0,0,Calha | Varão quadrado | Varão redondo,5.2,EI32S001 | EI32S507 | EI32SC01,,letras_numero_letras_numero
+MBF,candidata_por_confirmar,4,4,2,0,0,Perfil H,5,MBF610001 | MBF610004 | MBF710001,,prefixo_alfabetico
+ME24,candidata_por_confirmar,4,4,1,0,0,Tubo redondo | Varão redondo,5,ME24UP14 | ME24UP19 | ME24UP20,,letras_numero_letras_numero
+ME4023,candidata_por_confirmar,4,4,1,0,0,Tubo quadrado,5,ME4023P3 | ME4023P4 | ME4023P5,,letras_numero_letras_numero
+PA2312,candidata_por_confirmar,4,13,7,1,0,Tubo redondo | Varão redondo,3.1 | 6 | 6.1,PA2312A4001 | PA2312A4010 | PA2312A4011,,letras_numero_letras_numero
+PA54,candidata_por_confirmar,4,4,2,0,1,Perfil U | Tubo redondo,6.1,PA54R57 | PA54R97 | PA54R98,CÉRCEAS E GABARIT PARA TORRE TRIANGULAR 40M MOD.PA54R - (1UN),letras_numero_letras_numero
+S,prefixo_demasiado_generico,4,4,1,0,0,Cantoneira,1,S113631 | S113632 | S113633,,prefixo_alfabetico
+SNU,candidata_por_confirmar,4,4,1,0,0,Perfil U,1.1,SNU16000 | SNU20000 | SNU20001,,prefixo_alfabetico
+0055,codigo_de_projeto_por_confirmar,3,3,1,0,0,Perfil I,2,0055V001 | 0055V002 | 0055V003,,codigo_numerico_candidato_a_projeto
+1066,codigo_de_projeto_por_confirmar,3,4,2,0,0,Tubo redondo,6,1066V003 | 1066V004 | 1066VTU1,,codigo_numerico_candidato_a_projeto
+1182,codigo_de_projeto_por_confirmar,3,4,3,0,0,Tubo quadrado,6,1182U001 | 1182U004 | 1182U007,,codigo_numerico_candidato_a_projeto
+1186,codigo_de_projeto_por_confirmar,3,5,3,2,0,Perfil U | Tubo redondo,6,1186U002 | 1186U005 | 1186U012,,codigo_numerico_candidato_a_projeto
+1476,codigo_de_projeto_por_confirmar,3,3,1,0,0,Tubo quadrado | Varão redondo,2,1476V008 | 1476V010 | 1476V015,,codigo_numerico_candidato_a_projeto
+1493,codigo_de_projeto_por_confirmar,3,7,2,0,0,Tubo redondo,3,1493V001 | 1493V002 | 1493V003,,codigo_numerico_candidato_a_projeto
+2084,codigo_de_projeto_por_confirmar,3,3,1,2,0,Tubo redondo,3,2084S001 | 2084S002 | 2084S003,,codigo_numerico_candidato_a_projeto
+2182,codigo_de_projeto_por_confirmar,3,3,1,0,0,Tubo redondo,3,2182V001 | 2182V002 | 2182V010,,codigo_numerico_candidato_a_projeto
+2812,codigo_de_projeto_por_confirmar,3,3,1,0,0,Tubo redondo,3,2812O001 | 2812O002 | 2812O003,,codigo_numerico_candidato_a_projeto
+3059,codigo_de_projeto_por_confirmar,3,3,1,0,0,Tubo quadrado | Tubo redondo,3,3059V001 | 3059V002 | 3059V003,,codigo_numerico_candidato_a_projeto
+3197,codigo_de_projeto_por_confirmar,3,4,3,1,0,Tubo redondo,3,3197S005 | 3197S020 | 3197S021,,codigo_numerico_candidato_a_projeto
+32685,codigo_de_projeto_por_confirmar,3,3,1,0,0,Tubo redondo,2,32685P14 | 32685P17 | 32685P22,,codigo_numerico_candidato_a_projeto
+3567,codigo_de_projeto_por_confirmar,3,16,2,0,0,Tubo redondo,3,3567V001 | 3567V002 | 3567V003,,codigo_numerico_candidato_a_projeto
+3936,codigo_de_projeto_por_confirmar,3,3,1,0,0,Tubo quadrado,2.1,3936U027 | 3936U029 | 3936U031,,codigo_numerico_candidato_a_projeto
+4236,codigo_de_projeto_por_confirmar,3,5,4,3,0,Tubo redondo | Varão roscado,3 | 5.1,4236V012 | 4236V013 | 4236V015,,codigo_numerico_candidato_a_projeto
+4253,codigo_de_projeto_por_confirmar,3,4,2,0,0,Tubo redondo,3,4253U001 | 4253U002 | 4253U003,,codigo_numerico_candidato_a_projeto
+4291,codigo_de_projeto_por_confirmar,3,3,1,0,0,Perfil I,2.1,4291V001 | 4291V002 | 4291V005,,codigo_numerico_candidato_a_projeto
+4368,codigo_de_projeto_por_confirmar,3,3,1,0,0,Tubo redondo,3,4368T002 | 4368T003 | 4368T004,,codigo_numerico_candidato_a_projeto
+4763,codigo_de_projeto_por_confirmar,3,3,3,0,0,Perfil U | Tubo redondo,6.1,4763U1 | 4763U2 | 4763U3,,codigo_numerico_candidato_a_projeto
+4957,codigo_de_projeto_por_confirmar,3,10,4,0,0,Calha | Tubo redondo,3,4957M002 | 4957M004 | 4957M501,,codigo_numerico_candidato_a_projeto
+5096,codigo_de_projeto_por_confirmar,3,6,2,0,0,Tubo redondo | Varão redondo,3,5096V001 | 5096V002 | 5096V003,,codigo_numerico_candidato_a_projeto
+5158,codigo_de_projeto_por_confirmar,3,3,2,0,0,Tubo retangular | Varão redondo | Varão roscado,1.1,5158V102 | 5158V300 | 5158V402,,codigo_numerico_candidato_a_projeto
+5295,codigo_de_projeto_por_confirmar,3,3,1,0,0,Perfil U | Tubo retangular,3.1,5295V001 | 5295V002 | 5295V010,,codigo_numerico_candidato_a_projeto
+5375,codigo_de_projeto_por_confirmar,3,3,1,0,0,Tubo redondo,6,5375VTU1 | 5375VTU2 | 5375VTU3,,codigo_numerico_candidato_a_projeto
+5416,codigo_de_projeto_por_confirmar,3,11,6,2,0,Tubo redondo,3,5416TJ01 | 5416TJ02 | 5416TJ03,,codigo_numerico_candidato_a_projeto
+5495,codigo_de_projeto_por_confirmar,3,3,1,3,0,Tubo redondo,3,5495V001 | 5495V002 | 5495V003,,codigo_numerico_candidato_a_projeto
+6068,codigo_de_projeto_por_confirmar,3,3,1,0,0,Tubo redondo,3,6068V002 | 6068V003 | 6068V004,,codigo_numerico_candidato_a_projeto
+6109,codigo_de_projeto_por_confirmar,3,5,3,2,0,Tubo redondo,3,6109T001 | 6109T002 | 6109T003,,codigo_numerico_candidato_a_projeto
+7151,codigo_de_projeto_por_confirmar,3,3,2,3,0,Tubo redondo,3,7151VJ01 | 7151VJ02 | 7151VJ03,,codigo_numerico_candidato_a_projeto
+7258,codigo_de_projeto_por_confirmar,3,3,1,2,0,Tubo retangular,2,7258V001 | 7258V002 | 7258V003,,codigo_numerico_candidato_a_projeto
+7275,codigo_de_projeto_por_confirmar,3,3,1,3,0,Perfil U,3,7275V001 | 7275V002 | 7275V003,,codigo_numerico_candidato_a_projeto
+7276,codigo_de_projeto_por_confirmar,3,3,1,3,0,Tubo redondo,3,7276V001 | 7276V002 | 7276V003,,codigo_numerico_candidato_a_projeto
+7541,codigo_de_projeto_por_confirmar,3,3,1,0,0,Tubo redondo | Varão redondo,6,7541T005 | 7541T009 | 7541T010,,codigo_numerico_candidato_a_projeto
+7556,codigo_de_projeto_por_confirmar,3,3,1,3,0,Tubo quadrado | Tubo redondo,6,7556V001 | 7556V002 | 7556V003,,codigo_numerico_candidato_a_projeto
+7711,codigo_de_projeto_por_confirmar,3,3,1,3,0,Tubo redondo,3,7711V001 | 7711V002 | 7711V003,,codigo_numerico_candidato_a_projeto
+7745,codigo_de_projeto_por_confirmar,3,3,1,3,0,Tubo redondo,3,7745T001 | 7745T002 | 7745T003,,codigo_numerico_candidato_a_projeto
+8691,codigo_de_projeto_por_confirmar,3,3,1,0,0,Tubo redondo,3,8691O001 | 8691O002 | 8691O003,,codigo_numerico_candidato_a_projeto
+8901,codigo_de_projeto_por_confirmar,3,3,1,0,0,Perfil H | Perfil I,2,8901P01 | 8901P02 | 8901P03,,codigo_numerico_candidato_a_projeto
+9432,codigo_de_projeto_por_confirmar,3,3,1,0,0,Perfil U | Tubo quadrado | Tubo retangular,3.1,9432U003 | 9432U004 | 9432U005,,codigo_numerico_candidato_a_projeto
+9637,codigo_de_projeto_por_confirmar,3,3,1,0,0,Tubo retangular,3,9637T001 | 9637T002 | 9637T003,,codigo_numerico_candidato_a_projeto
+9955,codigo_de_projeto_por_confirmar,3,15,8,0,0,Tubo redondo,3,9955T010 | 9955T011 | 9955T012,,codigo_numerico_candidato_a_projeto
+A101,candidata_por_confirmar,3,3,1,2,0,Tubo redondo,3,A101Q001 | A101Q002 | A101Q003,,letras_numero_letras_numero
+B093,candidata_por_confirmar,3,3,1,0,0,Tubo redondo | Varão redondo,3,B093U002 | B093U004 | B093U005,,letras_numero_letras_numero
+C006,candidata_por_confirmar,3,3,2,0,0,Perfil H | Varão roscado,2,C006U001 | C006U002 | C006U003,,letras_numero_letras_numero
+C057,candidata_por_confirmar,3,5,3,3,0,Tubo redondo | Varão redondo,3,C057Q001 | C057Q002 | C057Q003,,letras_numero_letras_numero
+C091,candidata_por_confirmar,3,3,1,0,0,Tubo redondo,6,C091U001 | C091UTU1 | C091UTU2,,letras_numero_letras_numero
+C230,candidata_por_confirmar,3,3,1,0,0,Tubo redondo,6,C230U001 | C230U002 | C230UTU1,,letras_numero_letras_numero
+CA0408,candidata_por_confirmar,3,3,1,0,0,Varão redondo,6,CA0408A4020 | CA0408A4021 | CA0408A4025,,letras_numero_letras_numero
+CI2314,candidata_por_confirmar,3,20,10,2,0,Tubo redondo,3,CI2314A4J01 | CI2314A4J02 | CI2314S4J01,,letras_numero_letras_numero
+CI3215,candidata_por_confirmar,3,14,8,0,0,Tubo redondo,3,CI3215A3J01 | CI3215A3J02 | CI3215A3J03,,letras_numero_letras_numero
+CI5118,candidata_por_confirmar,3,28,14,1,0,Tubo redondo,3,CI5118A04001 | CI5118A4001 | CI5118A4002,,letras_numero_letras_numero
+CIB718,candidata_por_confirmar,3,3,2,0,0,Tubo redondo,3,CIB718A4001 | CIB718A4003 | CIB718A4004,,letras_numero_letras_numero
+CIC115,candidata_por_confirmar,3,10,8,0,0,Tubo redondo,3,CIC115A4001 | CIC115A4002 | CIC115A4007,,letras_numero_letras_numero
+CR0310,candidata_por_confirmar,3,9,5,0,0,Tubo redondo | Varão redondo,2.1 | 3.1,CR0310A4008 | CR0310A4009 | CR0310A4010,,letras_numero_letras_numero
+CR1413,candidata_por_confirmar,3,3,3,0,0,Perfil U,3.1,CR1413A4001 | CR1413A4006 | CR1413A4033,,letras_numero_letras_numero
+CS0203,candidata_por_confirmar,3,16,6,0,0,Tubo redondo,3.1,CS0203A4005 | CS0203A4006 | CS0203A4007,,letras_numero_letras_numero
+CT0101,candidata_por_confirmar,3,3,2,0,0,Tubo redondo | Varão redondo,3.1,CT0101A4302 | CT0101A4305 | CT0101A4306,,letras_numero_letras_numero
+DM0816,candidata_por_confirmar,3,5,2,0,0,Tubo redondo | Tubo retangular | Varão redondo,3.1,DM0816A4051 | DM0816A4052 | DM0816A4053,,letras_numero_letras_numero
+GGH,candidata_por_confirmar,3,7,3,2,0,Perfil H,4,GGH30-1 | GGH30-2 | GGH30-3,,prefixo_alfabetico
+M0552,candidata_por_confirmar,3,5,1,0,0,Varão redondo,16,M0552P03 | M0552P04 | M0552P06,,letras_numero_letras_numero
+MBI,candidata_por_confirmar,3,3,1,0,0,Perfil H,5,MBI512001 | MBI512002 | MBI512003,,prefixo_alfabetico
+MGM,candidata_por_confirmar,3,3,1,0,0,Perfil H,5,MGM310001 | MGM410001 | MGM420001,,prefixo_alfabetico
+OM0525,candidata_por_confirmar,3,3,1,0,0,Barra | Tubo redondo | Varão redondo,3.1,OM0525A4000 | OM0525A4002 | OM0525A4513,,letras_numero_letras_numero
+PA1008,candidata_por_confirmar,3,3,1,0,0,Tubo redondo,6,PA1008A4001 | PA1008A4020 | PA1008A4030,,letras_numero_letras_numero
+WC,candidata_por_confirmar,3,3,1,0,0,Chapa,2,WC1 | WC2 | WC3,,prefixo_alfabetico
+0020,codigo_de_projeto_por_confirmar,2,10,5,0,0,Tubo redondo,3,0020UJ01 | 0020UJ02,,codigo_numerico_candidato_a_projeto
+0134,codigo_de_projeto_por_confirmar,2,5,3,0,0,Tubo quadrado | Tubo redondo,3,0134V001 | 0134V003,,codigo_numerico_candidato_a_projeto
+0168,codigo_de_projeto_por_confirmar,2,2,1,0,0,Tubo redondo,3,0168V001 | 0168V002,,codigo_numerico_candidato_a_projeto
+0172,codigo_de_projeto_por_confirmar,2,4,3,1,0,Tubo redondo,6,0172V001 | 0172V002,,codigo_numerico_candidato_a_projeto
+0273,codigo_de_projeto_por_confirmar,2,4,1,0,0,Tubo redondo,3,0273U001 | 0273U002,,codigo_numerico_candidato_a_projeto
+0386,codigo_de_projeto_por_confirmar,2,2,1,0,0,Tubo retangular | Varão redondo,3,0386V001 | 0386V003,,codigo_numerico_candidato_a_projeto
+0528,codigo_de_projeto_por_confirmar,2,5,2,0,0,Tubo redondo,3,0528P001 | 0528P002,,codigo_numerico_candidato_a_projeto
+0684,codigo_de_projeto_por_confirmar,2,3,2,0,0,Tubo redondo | Varão redondo,3,0684O001 | 0684O002,,codigo_numerico_candidato_a_projeto
+0793,codigo_de_projeto_por_confirmar,2,2,1,0,0,Perfil U | Varão redondo,3,0793V002 | 0793V004,,codigo_numerico_candidato_a_projeto
+0949,codigo_de_projeto_por_confirmar,2,11,2,0,0,Tubo redondo,3,0949V000 | 0949V001,,codigo_numerico_candidato_a_projeto
+1009,codigo_de_projeto_por_confirmar,2,3,2,0,0,Tubo redondo | Tubo retangular | Varão retangular,3,1009V001 | 1009V003,,codigo_numerico_candidato_a_projeto
+1090,codigo_de_projeto_por_confirmar,2,2,1,0,0,Tubo redondo,3,1090V001 | 1090V014,,codigo_numerico_candidato_a_projeto
+1460,codigo_de_projeto_por_confirmar,2,4,3,0,0,Tubo redondo,3,1460P001 | 1460P002,,codigo_numerico_candidato_a_projeto
+1527,codigo_de_projeto_por_confirmar,2,2,1,0,0,Tubo redondo,3,1527M003 | 1527M004,,codigo_numerico_candidato_a_projeto
+1585,codigo_de_projeto_por_confirmar,2,2,1,0,0,Tubo redondo,5,1585V001 | 1585V002,,codigo_numerico_candidato_a_projeto
+1805,codigo_de_projeto_por_confirmar,2,6,3,0,0,Perfil U | Tubo quadrado,3,1805M001 | 1805M002,,codigo_numerico_candidato_a_projeto
+1931,codigo_de_projeto_por_confirmar,2,4,1,2,0,Tubo redondo | Tubo retangular,3,1931S001 | 1931S010,,codigo_numerico_candidato_a_projeto
+2161,codigo_de_projeto_por_confirmar,2,2,2,0,0,Perfil U | Tubo redondo,3.1,2161V000 | 2161V010,,codigo_numerico_candidato_a_projeto
+2164,codigo_de_projeto_por_confirmar,2,3,3,0,0,Perfil U | Tubo redondo,3 | 3.1,2164N001 | 2164V000,,codigo_numerico_candidato_a_projeto
+2268,codigo_de_projeto_por_confirmar,2,8,2,0,0,Tubo redondo,3,2268V001 | 2268V002,,codigo_numerico_candidato_a_projeto
+2337,codigo_de_projeto_por_confirmar,2,2,1,0,0,Tubo redondo,3.1,2337V000 | 2337V001,,codigo_numerico_candidato_a_projeto
+25,codigo_de_projeto_por_confirmar,2,2,1,0,0,Cantoneira,1,25M5502 | 25M6602,,codigo_numerico_candidato_a_projeto
+2539,codigo_de_projeto_por_confirmar,2,10,5,0,0,Tubo redondo,3,2539N001 | 2539N002,,codigo_numerico_candidato_a_projeto
+2615,codigo_de_projeto_por_confirmar,2,2,1,0,0,Perfil H,2,2615V001 | 2615V002,,codigo_numerico_candidato_a_projeto
+2730,codigo_de_projeto_por_confirmar,2,3,2,1,0,Tubo redondo,3,2730N001 | 2730N003,,codigo_numerico_candidato_a_projeto
+2740,codigo_de_projeto_por_confirmar,2,2,1,0,0,Tubo redondo,3,2740V001 | 2740V002,,codigo_numerico_candidato_a_projeto
+2810,codigo_de_projeto_por_confirmar,2,6,6,1,0,Tubo redondo,3,2810S001 | 2810S002,,codigo_numerico_candidato_a_projeto
+2949,codigo_de_projeto_por_confirmar,2,3,2,0,0,Tubo redondo,3,2949T001 | 2949T002,,codigo_numerico_candidato_a_projeto
+2986,codigo_de_projeto_por_confirmar,2,2,1,0,0,Tubo redondo | Varão redondo,5.2,2986V003 | 2986V004,,codigo_numerico_candidato_a_projeto
+3158,codigo_de_projeto_por_confirmar,2,2,1,0,0,Perfil U,6,3158V030 | 3158V031,,codigo_numerico_candidato_a_projeto
+3161,codigo_de_projeto_por_confirmar,2,2,2,0,0,Varão redondo | Varão roscado,6,3161V005 | 3161V007,,codigo_numerico_candidato_a_projeto
+3565,codigo_de_projeto_por_confirmar,2,6,3,0,0,Tubo redondo | Varão redondo,3,3565S001 | 3565S002,,codigo_numerico_candidato_a_projeto
+36,codigo_de_projeto_por_confirmar,2,4,2,0,0,Cantoneira,1,36S3301 | 36S3302,,codigo_numerico_candidato_a_projeto
+3750,codigo_de_projeto_por_confirmar,2,2,2,0,0,Perfil U | Tubo redondo,3,3750V005 | 3750V010,,codigo_numerico_candidato_a_projeto
+3826,codigo_de_projeto_por_confirmar,2,4,2,2,0,Tubo redondo,3,3826K001 | 3826K002,,codigo_numerico_candidato_a_projeto
+3957,codigo_de_projeto_por_confirmar,2,2,1,0,0,Tubo redondo,3,3957V004 | 3957V006,,codigo_numerico_candidato_a_projeto
+4030,codigo_de_projeto_por_confirmar,2,2,1,0,0,Tubo redondo,3,4030V001 | 4030VA00,,codigo_numerico_candidato_a_projeto
+4087,codigo_de_projeto_por_confirmar,2,2,2,0,0,Tubo redondo,2.1,4087M004 | 4087M005,,codigo_numerico_candidato_a_projeto
+4165,codigo_de_projeto_por_confirmar,2,2,1,0,0,Varão redondo,5.2,4165R128 | 4165R132,,codigo_numerico_candidato_a_projeto
+4728,codigo_de_projeto_por_confirmar,2,2,2,0,0,Tubo redondo | Varão redondo,3 | 3.1,4728N001 | 4728VA00,,codigo_numerico_candidato_a_projeto
+4901,codigo_de_projeto_por_confirmar,2,2,1,0,0,Tubo redondo,3,4901K002 | 4901K020,,codigo_numerico_candidato_a_projeto
+5004,codigo_de_projeto_por_confirmar,2,2,1,0,0,Tubo redondo | Varão redondo,6,5004V001 | 5004V005,,codigo_numerico_candidato_a_projeto
+5185,codigo_de_projeto_por_confirmar,2,2,1,0,0,Tubo quadrado | Varão redondo,6,5185V001 | 5185V002,,codigo_numerico_candidato_a_projeto
+5189,codigo_de_projeto_por_confirmar,2,6,4,0,0,Tubo redondo | Varão roscado,6,5189K001 | 5189K008,,codigo_numerico_candidato_a_projeto
+5265,codigo_de_projeto_por_confirmar,2,2,1,0,0,Tubo redondo,3,5265V001 | 5265V002,,codigo_numerico_candidato_a_projeto
+5306,codigo_de_projeto_por_confirmar,2,2,1,0,0,Tubo redondo,3,5306T002 | 5306T003,,codigo_numerico_candidato_a_projeto
+5340,codigo_de_projeto_por_confirmar,2,2,2,0,0,Tubo redondo,6,5340L001 | 5340N002,,codigo_numerico_candidato_a_projeto
+5438,codigo_de_projeto_por_confirmar,2,3,2,0,0,Tubo quadrado,3,5438R001 | 5438R002,,codigo_numerico_candidato_a_projeto
+5440,codigo_de_projeto_por_confirmar,2,2,2,2,0,Calha | Perfil U,3.1,5440V002 | 5440V003,,codigo_numerico_candidato_a_projeto
+5492,codigo_de_projeto_por_confirmar,2,3,2,0,0,Tubo redondo,3,5492V001 | 5492V003,,codigo_numerico_candidato_a_projeto
+5564,codigo_de_projeto_por_confirmar,2,2,1,0,0,Tubo redondo,3,5564V001 | 5564V002,,codigo_numerico_candidato_a_projeto
+5594,codigo_de_projeto_por_confirmar,2,2,1,0,0,Tubo redondo,3,5594V001 | 5594V002,,codigo_numerico_candidato_a_projeto
+5852,codigo_de_projeto_por_confirmar,2,6,3,1,0,Tubo redondo | Tubo retangular,3,5852UJ01 | 5852UJ02,,codigo_numerico_candidato_a_projeto
+5862,codigo_de_projeto_por_confirmar,2,2,1,0,0,Tubo redondo,3,5862Q005 | 5862Q006,,codigo_numerico_candidato_a_projeto
+5937,codigo_de_projeto_por_confirmar,2,2,1,0,0,Perfil H,5,5937R001 | 5937R002,,codigo_numerico_candidato_a_projeto
+6053,codigo_de_projeto_por_confirmar,2,3,1,0,0,Tubo redondo,3,6053V001 | 6053V002,,codigo_numerico_candidato_a_projeto
+6231,codigo_de_projeto_por_confirmar,2,2,1,2,0,Tubo redondo,-,6231V001 | 6231V002,,codigo_numerico_candidato_a_projeto
+6265,codigo_de_projeto_por_confirmar,2,3,3,0,0,Perfil U | Tubo redondo,6,6265N004 | 6265N014,,codigo_numerico_candidato_a_projeto
+6309,codigo_de_projeto_por_confirmar,2,18,6,2,0,Tubo redondo,3,6309U001 | 6309U002,,codigo_numerico_candidato_a_projeto
+6377,codigo_de_projeto_por_confirmar,2,2,1,0,0,Varão redondo,3,6377V012 | 6377V013,,codigo_numerico_candidato_a_projeto
+6442,codigo_de_projeto_por_confirmar,2,2,2,0,0,Tubo redondo,3.1 | 6,6442N001 | 6442V001,,codigo_numerico_candidato_a_projeto
+6579,codigo_de_projeto_por_confirmar,2,2,1,0,0,Tubo quadrado,3,6579T001 | 6579T002,,codigo_numerico_candidato_a_projeto
+6926,codigo_de_projeto_por_confirmar,2,4,3,0,0,Perfil H | Tubo redondo,5,6926Q001 | 6926Q002,,codigo_numerico_candidato_a_projeto
+7067,codigo_de_projeto_por_confirmar,2,2,1,0,0,Tubo redondo,3,7067V001 | 7067V002,,codigo_numerico_candidato_a_projeto
+7283,codigo_de_projeto_por_confirmar,2,2,1,1,0,Tubo redondo,3,7283V001 | 7283V002,,codigo_numerico_candidato_a_projeto
+7391,codigo_de_projeto_por_confirmar,2,2,1,2,0,Tubo quadrado | Tubo redondo,3,7391V001 | 7391V020,,codigo_numerico_candidato_a_projeto
+7406,codigo_de_projeto_por_confirmar,2,3,3,0,0,Perfil U | Tubo redondo,6,7406S004 | 7406S012,,codigo_numerico_candidato_a_projeto
+7502,codigo_de_projeto_por_confirmar,2,2,1,1,0,Tubo redondo,3,7502H005 | 7502H020,,codigo_numerico_candidato_a_projeto
+7590,codigo_de_projeto_por_confirmar,2,4,3,0,0,Tubo redondo,3,7590M005 | 7590M007,,codigo_numerico_candidato_a_projeto
+7771,codigo_de_projeto_por_confirmar,2,2,1,0,0,Perfil I,2,7771V001 | 7771V002,,codigo_numerico_candidato_a_projeto
+7892,codigo_de_projeto_por_confirmar,2,2,1,2,0,Tubo redondo,3,7892V001 | 7892V002,,codigo_numerico_candidato_a_projeto
+7935,codigo_de_projeto_por_confirmar,2,4,1,0,0,Tubo quadrado,3,7935Q001 | 7935Q005,,codigo_numerico_candidato_a_projeto
+8072,codigo_de_projeto_por_confirmar,2,2,1,2,0,Perfil U,6.1,8072V1 | 8072V2,,codigo_numerico_candidato_a_projeto
+8136,codigo_de_projeto_por_confirmar,2,6,3,2,0,Tubo redondo,6,8136R001 | 8136RTU2,,codigo_numerico_candidato_a_projeto
+8210,codigo_de_projeto_por_confirmar,2,2,1,0,0,Perfil I,2.1,8210U006 | 8210U007,,codigo_numerico_candidato_a_projeto
+8717,codigo_de_projeto_por_confirmar,2,2,1,0,0,Tubo redondo,6,8717U001 | 8717UTU1,,codigo_numerico_candidato_a_projeto
+8741,codigo_de_projeto_por_confirmar,2,2,1,0,0,Perfil U,6,8741U004 | 8741U004A,,codigo_numerico_candidato_a_projeto
+9001,codigo_de_projeto_por_confirmar,2,2,1,0,0,Tubo redondo,6,9001UTU1 | 9001UTU2,,codigo_numerico_candidato_a_projeto
+9529,codigo_de_projeto_por_confirmar,2,5,3,0,0,Tubo redondo,3,9529U001 | 9529U002,,codigo_numerico_candidato_a_projeto
+9565,codigo_de_projeto_por_confirmar,2,2,1,0,0,Tubo redondo,3,9565UJ01 | 9565UJ02,,codigo_numerico_candidato_a_projeto
+9598,codigo_de_projeto_por_confirmar,2,4,3,0,0,Tubo redondo | Varão redondo,3,9598M001 | 9598M600,,codigo_numerico_candidato_a_projeto
+9697,codigo_de_projeto_por_confirmar,2,2,2,0,0,Tubo redondo,5.1 | 5.2,9697T010 | 9697T012,,codigo_numerico_candidato_a_projeto
+9731,codigo_de_projeto_por_confirmar,2,5,3,2,0,Tubo redondo,3.1,9731Q001 | 9731Q003,,codigo_numerico_candidato_a_projeto
+9756,codigo_de_projeto_por_confirmar,2,5,3,0,0,Tubo redondo,3,9756U001 | 9756U002,,codigo_numerico_candidato_a_projeto
+9814,codigo_de_projeto_por_confirmar,2,2,1,0,0,Tubo redondo,3,9814U001 | 9814U002,,codigo_numerico_candidato_a_projeto
+9935,codigo_de_projeto_por_confirmar,2,6,3,0,0,Tubo redondo,3,9935S001 | 9935S002,,codigo_numerico_candidato_a_projeto
+A017,candidata_por_confirmar,2,5,2,0,0,Tubo redondo,3,A017U001 | A017U002,,letras_numero_letras_numero
+A264,candidata_por_confirmar,2,2,1,0,0,Varão roscado,-,A264U001 | A264U002,,letras_numero_letras_numero
+A457,candidata_por_confirmar,2,2,1,0,0,Perfil I,8.1,A457U001 | A457U002,,letras_numero_letras_numero
+A475,candidata_por_confirmar,2,6,3,0,0,Tubo redondo,6 | 6.1,A475P001 | A475P002,,letras_numero_letras_numero
+A515,candidata_por_confirmar,2,2,2,0,0,Tubo redondo,3,A515U002 | A515U005,,letras_numero_letras_numero
+A620,candidata_por_confirmar,2,3,2,0,0,Tubo redondo,6,A620S005 | A620S006,,letras_numero_letras_numero
+AB,candidata_por_confirmar,2,3,2,2,0,Perfil U,1,AB28-202 | AB31-202,,prefixo_alfabetico
+B046,candidata_por_confirmar,2,3,2,1,0,Tubo redondo,3,B046T002 | B046T003,,letras_numero_letras_numero
+B357,candidata_por_confirmar,2,2,1,0,0,Tubo redondo,3,B357T001 | B357T002,,letras_numero_letras_numero
+B390,candidata_por_confirmar,2,3,2,0,0,Tubo redondo | Tubo retangular,3,B390S001 | B390S003,,letras_numero_letras_numero
+B481,candidata_por_confirmar,2,2,1,0,0,Tubo redondo,3,B481U001 | B481U003,,letras_numero_letras_numero
+B583,candidata_por_confirmar,2,3,2,0,0,Tubo redondo,3,B583U001 | B583U002,,letras_numero_letras_numero
+B655,candidata_por_confirmar,2,6,2,0,0,Tubo redondo,3,B655U001 | B655U002,,letras_numero_letras_numero
+B681,candidata_por_confirmar,2,2,2,0,0,Tubo redondo,3,B681U510 | B681U511,,letras_numero_letras_numero
+B708,candidata_por_confirmar,2,8,3,0,0,Tubo redondo,3,B708S001 | B708S500,,letras_numero_letras_numero
+B775,candidata_por_confirmar,2,2,1,0,0,Tubo redondo | Varão redondo,3,B775U000 | B775UJ00,,letras_numero_letras_numero
+B872,candidata_por_confirmar,2,2,1,0,0,Tubo redondo,6,B872U001 | B872UTU1,,letras_numero_letras_numero
+B931,candidata_por_confirmar,2,4,1,0,0,Tubo redondo,3,B931S001 | B931S002,,letras_numero_letras_numero
+B994,candidata_por_confirmar,2,2,1,0,0,Tubo redondo,3,B994U001 | B994U002,,letras_numero_letras_numero
+BA1225,candidata_por_confirmar,2,3,3,0,0,Tubo retangular,2,BA1225A3019 | BA1225A4001,,letras_numero_letras_numero
+BSBPR,candidata_por_confirmar,2,2,1,0,1,Perfil U,2,BSBPR129G | BSBPR130G,PRUMO BSBPR129G + PRUMO BSBPR130G - 200UN,prefixo_alfabetico
+C073,candidata_por_confirmar,2,2,1,0,0,Tubo redondo,3,C073U001 | C073U005,,letras_numero_letras_numero
+C184,candidata_por_confirmar,2,2,1,2,0,Barra,5.2,C184T602 | C184T606,,letras_numero_letras_numero
+C774,candidata_por_confirmar,2,2,1,0,0,Perfil U | Varão redondo,3.1,C774T000 | C774T001,,letras_numero_letras_numero
+CA2098,candidata_por_confirmar,2,11,8,1,0,Tubo redondo | Varão redondo,6,CA2098A4006 | CA2098A4500,,letras_numero_letras_numero
+CA6,candidata_por_confirmar,2,2,2,1,0,Varão redondo,6,CA6A19A4019 | CA6AO019,,letras_numero_letras_numero
+CA63,candidata_por_confirmar,2,2,1,0,0,Tubo redondo | Varão redondo,6,CA63O131 | CA63O132,,letras_numero_letras_numero
+CB0207,candidata_por_confirmar,2,2,1,0,0,Tubo redondo,3,CB0207A4J01 | CB0207A4J02,,letras_numero_letras_numero
+CB3314,candidata_por_confirmar,2,19,13,0,0,Tubo redondo,3,CB3314A4J01 | CB3314A4J02,,letras_numero_letras_numero
+CCAB17,candidata_por_confirmar,2,2,2,0,0,Perfil U,3.1,CCAB17A4050 | CCAB17A4053,,letras_numero_letras_numero
+CCAB23,candidata_por_confirmar,2,2,2,0,0,Tubo redondo,3,CCAB23A4605 | CCAB23S4605,,letras_numero_letras_numero
+CD44,candidata_por_confirmar,2,4,4,0,0,Tubo quadrado,1.2,CD44I001 | CD44O001,,letras_numero_letras_numero
+CDPTO,candidata_por_confirmar,2,8,4,0,0,Varão redondo,1.2,CDPTO001 | CDPTO002,,prefixo_alfabetico
+CI0118,candidata_por_confirmar,2,12,8,0,0,Tubo redondo,3,CI0118A4J01 | CI0118A4J02,,letras_numero_letras_numero
+CI1822,candidata_por_confirmar,2,14,7,2,0,Tubo redondo,3,CI1822A4001 | CI1822A4002,,letras_numero_letras_numero
+CI3425,candidata_por_confirmar,2,20,10,0,0,Tubo redondo,3,CI3425A4J01 | CI3425A4J02,,letras_numero_letras_numero
+CI3525,candidata_por_confirmar,2,14,7,0,0,Tubo redondo,3,CI3525A4J01 | CI3525A4J02,,letras_numero_letras_numero
+CI3725,candidata_por_confirmar,2,4,2,0,0,Tubo redondo,3,CI3725A4J01 | CI3725A4J02,,letras_numero_letras_numero
+CI3920,candidata_por_confirmar,2,10,5,2,0,Tubo redondo,3,CI3920A4001 | CI3920A4002,,letras_numero_letras_numero
+CI4125,candidata_por_confirmar,2,4,2,0,0,Tubo redondo,3,CI4125A4J01 | CI4125A4J02,,letras_numero_letras_numero
+CI4225,candidata_por_confirmar,2,21,7,0,0,Tubo redondo,3,CI4225A4001 | CI4225A4002,,letras_numero_letras_numero
+CI4414,candidata_por_confirmar,2,2,1,0,0,Tubo redondo,3,CI4414A4J01 | CI4414A4J02,,letras_numero_letras_numero
+CI4419,candidata_por_confirmar,2,2,1,2,0,Tubo redondo,3,CI4419A4001 | CI4419A4002,,letras_numero_letras_numero
+CI4721,candidata_por_confirmar,2,4,3,0,0,Tubo redondo,3,CI4721A4001 | CI4721A4003,,letras_numero_letras_numero
+CI5121,candidata_por_confirmar,2,6,2,0,0,Tubo redondo,3,CI5121A4000 | CI5121A4030,,letras_numero_letras_numero
+CI5619,candidata_por_confirmar,2,5,5,0,0,Tubo redondo,3,CI5619A4530 | CI5619S4530,,letras_numero_letras_numero
+CI6518,candidata_por_confirmar,2,49,18,1,0,Tubo redondo,3,CI6518A4001 | CI6518A4010,,letras_numero_letras_numero
+CI7716,candidata_por_confirmar,2,6,4,1,0,Tubo redondo,3,CI7716A4001 | CI7716A4005,,letras_numero_letras_numero
+CI7818,candidata_por_confirmar,2,3,2,0,0,Tubo redondo,3,CI7818A4001 | CI7818A4200,,letras_numero_letras_numero
+CIA217,candidata_por_confirmar,2,16,15,0,0,Tubo redondo,3,CIA217A4002 | CIA217A4003,,letras_numero_letras_numero
+CIB318,candidata_por_confirmar,2,2,1,2,0,Tubo redondo,3,CIB318A4020 | CIB318A4021,,letras_numero_letras_numero
+CR0106,candidata_por_confirmar,2,12,12,1,0,Perfil U | Varão redondo,3.1,CR0106A4005 | CR0106A4017,,letras_numero_letras_numero
+CR0405,candidata_por_confirmar,2,3,2,0,0,Tubo quadrado | Tubo retangular,- | 3,CR0405A4010 | CR0405A4011,,letras_numero_letras_numero
+CS0512,candidata_por_confirmar,2,6,6,0,0,Tubo redondo | Varão redondo,3.1,CS0512A4006 | CS0512A4018,,letras_numero_letras_numero
+CT0218,candidata_por_confirmar,2,3,3,0,0,Perfil U | Varão redondo,3.1,CT0218A4001 | CT0218A4002,,letras_numero_letras_numero
+CT0501,candidata_por_confirmar,2,14,13,2,0,Tubo redondo | Varão redondo,3.1,CT0501A4002 | CT0501A4513,,letras_numero_letras_numero
+EI25,candidata_por_confirmar,2,7,6,2,0,Tubo redondo,3,EI25J001 | EI25J002,,letras_numero_letras_numero
+EI43,candidata_por_confirmar,2,2,2,0,0,Tubo redondo,3,EI43M001 | EI43M005,,letras_numero_letras_numero
+M2011,candidata_por_confirmar,2,2,1,0,0,Varão redondo,16,M2011P3 | M2011P5,,letras_numero_letras_numero
+MFA,candidata_por_confirmar,2,2,1,0,0,Perfil UB,5,MFA911101 | MFA911105,,prefixo_alfabetico
+OCH,candidata_por_confirmar,2,2,1,0,0,Perfil H,5.1,OCH2 | OCH3,,prefixo_alfabetico
+OV,candidata_por_confirmar,2,2,1,0,0,Perfil H,5.1,OV1 | OV2,,prefixo_alfabetico
+PA0107,candidata_por_confirmar,2,39,21,2,0,Tubo redondo | Varão redondo,6 | 6.1,PA0107A4300 | PA0107A4301,,letras_numero_letras_numero
+PA3117,candidata_por_confirmar,2,5,5,1,0,Varão redondo,6.1,PA3117A4814 | PA3117A4836,,letras_numero_letras_numero
+PLTVR,candidata_por_confirmar,2,3,3,1,0,Varão redondo,6.1,PLTVR1 | PLTVR2,,prefixo_alfabetico
+PRTU,candidata_por_confirmar,2,2,1,0,0,Tubo redondo,6.1,PRTU1 | PRTU2,,prefixo_alfabetico
+SU,candidata_por_confirmar,2,2,1,0,0,Perfil U,4,SU201 | SU202,,prefixo_alfabetico
+T57,candidata_por_confirmar,2,2,1,0,0,Cantoneira,1,T57S601 | T57S602,,letras_numero_letras_numero
+ZA,candidata_por_confirmar,2,2,1,0,0,Cantoneira,1,ZA-4001 | ZA-4002,,prefixo_alfabetico
+ZG4001,candidata_por_confirmar,2,2,1,1,0,Cantoneira,1,ZG4001S1 | ZG4001S2,,letras_numero_letras_numero
+0,codigo_de_projeto_por_confirmar,1,1,1,0,0,Perfil H,5.1,0CH1,,codigo_numerico_candidato_a_projeto
+0128,codigo_de_projeto_por_confirmar,1,2,2,0,0,Tubo redondo,3,0128V001,,codigo_numerico_candidato_a_projeto
+0153,codigo_de_projeto_por_confirmar,1,4,1,0,0,Tubo redondo,3,0153V000,,codigo_numerico_candidato_a_projeto
+0323,codigo_de_projeto_por_confirmar,1,1,1,0,0,Calha,3.1,0323V001,,codigo_numerico_candidato_a_projeto
+0388,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,0388V005,,codigo_numerico_candidato_a_projeto
+0462,codigo_de_projeto_por_confirmar,1,1,1,1,0,Tubo redondo,3,0462TJ01,,codigo_numerico_candidato_a_projeto
+0502,codigo_de_projeto_por_confirmar,1,1,1,0,0,Varão redondo,3,0502Q001,,codigo_numerico_candidato_a_projeto
+0510,codigo_de_projeto_por_confirmar,1,2,1,0,0,Tubo redondo,3,0510K001,,codigo_numerico_candidato_a_projeto
+0547,codigo_de_projeto_por_confirmar,1,2,2,0,0,Tubo retangular,3,0547VJ01,,codigo_numerico_candidato_a_projeto
+0559,codigo_de_projeto_por_confirmar,1,1,1,0,0,Varão redondo,3.1,0559F001,,codigo_numerico_candidato_a_projeto
+0618,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,0618V002,,codigo_numerico_candidato_a_projeto
+0667,codigo_de_projeto_por_confirmar,1,1,1,0,0,Varão redondo,3,0667R001,,codigo_numerico_candidato_a_projeto
+0687,codigo_de_projeto_por_confirmar,1,1,1,0,0,Varão quadrado,5,0687U001,,codigo_numerico_candidato_a_projeto
+0731,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,0731V001,,codigo_numerico_candidato_a_projeto
+0746,codigo_de_projeto_por_confirmar,1,2,2,0,0,Tubo redondo,3,0746U002,,codigo_numerico_candidato_a_projeto
+0771,codigo_de_projeto_por_confirmar,1,1,1,0,0,Varão redondo,3.1,0771N003,,codigo_numerico_candidato_a_projeto
+0825,codigo_de_projeto_por_confirmar,1,2,2,0,0,Tubo redondo,3,0825SJ02,,codigo_numerico_candidato_a_projeto
+0847,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,0847U001,,codigo_numerico_candidato_a_projeto
+0853,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,0853P002,,codigo_numerico_candidato_a_projeto
+0876,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3.1,0876V000,,codigo_numerico_candidato_a_projeto
+0932,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3.1,0932K006,,codigo_numerico_candidato_a_projeto
+1028,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,6,1028N001,,codigo_numerico_candidato_a_projeto
+1030,codigo_de_projeto_por_confirmar,1,2,2,0,0,Tubo redondo,3,1030J001,,codigo_numerico_candidato_a_projeto
+1078,codigo_de_projeto_por_confirmar,1,1,1,1,0,Tubo redondo,3,1078U002,,codigo_numerico_candidato_a_projeto
+108,codigo_de_projeto_por_confirmar,1,1,1,1,0,Perfil U,1,108H4AS,,codigo_numerico_candidato_a_projeto
+109,codigo_de_projeto_por_confirmar,1,1,1,1,0,Perfil U,1,109H4AS,,codigo_numerico_candidato_a_projeto
+1104,codigo_de_projeto_por_confirmar,1,9,2,0,0,Tubo redondo,3,1104V001,,codigo_numerico_candidato_a_projeto
+115,codigo_de_projeto_por_confirmar,1,1,1,1,0,Perfil U,1,115H4AS,,codigo_numerico_candidato_a_projeto
+116,codigo_de_projeto_por_confirmar,1,1,1,1,0,Perfil U,1,116H4AS,,codigo_numerico_candidato_a_projeto
+12,codigo_de_projeto_por_confirmar,1,1,1,0,0,Perfil UC,1,12F917,,codigo_numerico_candidato_a_projeto
+1221,codigo_de_projeto_por_confirmar,1,5,5,1,0,Perfil U,3 | 3.1,1221L001,,codigo_numerico_candidato_a_projeto
+126,codigo_de_projeto_por_confirmar,1,1,1,1,0,Tubo quadrado,1,126H4AS,,codigo_numerico_candidato_a_projeto
+127,codigo_de_projeto_por_confirmar,1,1,1,1,0,Varão redondo,1,127H4AS,,codigo_numerico_candidato_a_projeto
+1271,codigo_de_projeto_por_confirmar,1,2,2,0,0,Tubo redondo,3,1271V001,,codigo_numerico_candidato_a_projeto
+1273,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,1273N002,,codigo_numerico_candidato_a_projeto
+1304,codigo_de_projeto_por_confirmar,1,1,1,0,0,Varão roscado,3.1,1304U001,,codigo_numerico_candidato_a_projeto
+1317,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,1317S001,,codigo_numerico_candidato_a_projeto
+1374,codigo_de_projeto_por_confirmar,1,2,1,0,0,Tubo redondo,3,1374V001,,codigo_numerico_candidato_a_projeto
+1378,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,1378P001,,codigo_numerico_candidato_a_projeto
+1386,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,1386S002,,codigo_numerico_candidato_a_projeto
+1521,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,1521PJ01,,codigo_numerico_candidato_a_projeto
+1530,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,1530L003,,codigo_numerico_candidato_a_projeto
+1596,codigo_de_projeto_por_confirmar,1,9,3,0,0,Tubo redondo,3,1596T001,,codigo_numerico_candidato_a_projeto
+1694,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,1694V001,,codigo_numerico_candidato_a_projeto
+1741,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,1741V003,,codigo_numerico_candidato_a_projeto
+1747,codigo_de_projeto_por_confirmar,1,1,1,0,0,Perfil U,3,1747L001,,codigo_numerico_candidato_a_projeto
+1798,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,1798V001,,codigo_numerico_candidato_a_projeto
+1803,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,1803V001,,codigo_numerico_candidato_a_projeto
+1867,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,1867R600,,codigo_numerico_candidato_a_projeto
+1882,codigo_de_projeto_por_confirmar,1,1,1,0,0,Perfil U,3,1882U001,,codigo_numerico_candidato_a_projeto
+1899,codigo_de_projeto_por_confirmar,1,1,1,0,0,Varão redondo,6,1899K016,,codigo_numerico_candidato_a_projeto
+1900,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,2.1,1900T034,,codigo_numerico_candidato_a_projeto
+1961,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo retangular,3,1961V011,,codigo_numerico_candidato_a_projeto
+2023,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,2023V001,,codigo_numerico_candidato_a_projeto
+2034,codigo_de_projeto_por_confirmar,1,1,1,0,0,Varão redondo,3.1,2034M001,,codigo_numerico_candidato_a_projeto
+2107,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,2107J001,,codigo_numerico_candidato_a_projeto
+2183,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo quadrado,3,2183N010,,codigo_numerico_candidato_a_projeto
+2265,codigo_de_projeto_por_confirmar,1,6,2,0,0,Tubo redondo,3,2265V001,,codigo_numerico_candidato_a_projeto
+2321,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo quadrado,2.1,2321T003,,codigo_numerico_candidato_a_projeto
+2412,codigo_de_projeto_por_confirmar,1,1,1,0,0,Perfil U,3.1,2412V000,,codigo_numerico_candidato_a_projeto
+2434,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,2434M001,,codigo_numerico_candidato_a_projeto
+2548,codigo_de_projeto_por_confirmar,1,1,1,0,0,Perfil U,3.1,2548VT00,,codigo_numerico_candidato_a_projeto
+2586,codigo_de_projeto_por_confirmar,1,2,2,0,0,Tubo redondo,3,2586T010,,codigo_numerico_candidato_a_projeto
+2646,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,2.1,2646U007,,codigo_numerico_candidato_a_projeto
+2650,codigo_de_projeto_por_confirmar,1,1,1,0,0,Varão redondo,3,2650V003,,codigo_numerico_candidato_a_projeto
+2660,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,2660Q001,,codigo_numerico_candidato_a_projeto
+2663,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,2663V001,,codigo_numerico_candidato_a_projeto
+2666,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3.1,2666V000,,codigo_numerico_candidato_a_projeto
+2759,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,2759N001,,codigo_numerico_candidato_a_projeto
+2761,codigo_de_projeto_por_confirmar,1,4,4,1,0,Tubo redondo,3,2761N001,,codigo_numerico_candidato_a_projeto
+2765,codigo_de_projeto_por_confirmar,1,1,1,0,0,Perfil U,3.1,2765V001,,codigo_numerico_candidato_a_projeto
+278,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,2,278V038,,codigo_numerico_candidato_a_projeto
+2832,codigo_de_projeto_por_confirmar,1,1,1,0,0,Perfil U,3.1,2832V000,,codigo_numerico_candidato_a_projeto
+2856,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,2856V001,,codigo_numerico_candidato_a_projeto
+2858,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,6,2858VTU1,,codigo_numerico_candidato_a_projeto
+2936,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,6,2936UP69,,codigo_numerico_candidato_a_projeto
+2951,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,2951G001,,codigo_numerico_candidato_a_projeto
+2958,codigo_de_projeto_por_confirmar,1,2,2,0,0,Tubo redondo,3,2958O002,,codigo_numerico_candidato_a_projeto
+2966,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,2966V001,,codigo_numerico_candidato_a_projeto
+2970,codigo_de_projeto_por_confirmar,1,4,4,0,0,Tubo redondo,6,2970Q002,,codigo_numerico_candidato_a_projeto
+2993,codigo_de_projeto_por_confirmar,1,3,3,0,0,Tubo redondo,6.1,2993Q001,,codigo_numerico_candidato_a_projeto
+3021,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,6,3021T001,,codigo_numerico_candidato_a_projeto
+3054,codigo_de_projeto_por_confirmar,1,2,2,0,0,Tubo redondo,3,3054T002,,codigo_numerico_candidato_a_projeto
+3165,codigo_de_projeto_por_confirmar,1,1,1,0,0,Perfil I,2.1,3165V001,,codigo_numerico_candidato_a_projeto
+3174,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,3174N001,,codigo_numerico_candidato_a_projeto
+3268,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,2,3268UP1,,codigo_numerico_candidato_a_projeto
+3298,codigo_de_projeto_por_confirmar,1,2,1,0,0,Tubo redondo,3,3298V001,,codigo_numerico_candidato_a_projeto
+3304,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,3304V001,,codigo_numerico_candidato_a_projeto
+3319,codigo_de_projeto_por_confirmar,1,2,2,1,0,Tubo redondo,3.1,3319I001,,codigo_numerico_candidato_a_projeto
+3326,codigo_de_projeto_por_confirmar,1,1,1,0,0,Perfil I,2.1,3326V002,,codigo_numerico_candidato_a_projeto
+3337,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,3337V001,,codigo_numerico_candidato_a_projeto
+3338,codigo_de_projeto_por_confirmar,1,1,1,0,0,Perfil U,3.1,3338V000,,codigo_numerico_candidato_a_projeto
+3344,codigo_de_projeto_por_confirmar,1,2,2,1,0,Tubo redondo,3,3344V001,,codigo_numerico_candidato_a_projeto
+3349,codigo_de_projeto_por_confirmar,1,2,2,1,0,Perfil U,3.1,3349V000,,codigo_numerico_candidato_a_projeto
+3366,codigo_de_projeto_por_confirmar,1,1,1,0,0,Perfil U,3.1,3366V000,,codigo_numerico_candidato_a_projeto
+3424,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,3424V001,,codigo_numerico_candidato_a_projeto
+3491,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,3491N006,,codigo_numerico_candidato_a_projeto
+3517,codigo_de_projeto_por_confirmar,1,2,2,0,0,Tubo redondo,3,3517O001,,codigo_numerico_candidato_a_projeto
+3548,codigo_de_projeto_por_confirmar,1,1,1,0,0,Varão quadrado,5.2,3548U046,,codigo_numerico_candidato_a_projeto
+3564,codigo_de_projeto_por_confirmar,1,1,1,0,0,Varão redondo,3,3564V003,,codigo_numerico_candidato_a_projeto
+3568,codigo_de_projeto_por_confirmar,1,2,2,0,0,Tubo redondo,3.1,3568U002,,codigo_numerico_candidato_a_projeto
+3573,codigo_de_projeto_por_confirmar,1,4,2,0,0,Tubo redondo,3,3573V001,,codigo_numerico_candidato_a_projeto
+3581,codigo_de_projeto_por_confirmar,1,1,1,0,0,Perfil U,6,3581U004,,codigo_numerico_candidato_a_projeto
+3614,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,3614TJ01,,codigo_numerico_candidato_a_projeto
+3677,codigo_de_projeto_por_confirmar,1,2,2,0,0,Varão roscado,6,3677V002,,codigo_numerico_candidato_a_projeto
+3684,codigo_de_projeto_por_confirmar,1,2,2,0,0,Tubo redondo,3,3684P001,,codigo_numerico_candidato_a_projeto
+3767,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,3767V001,,codigo_numerico_candidato_a_projeto
+3783,codigo_de_projeto_por_confirmar,1,1,1,0,0,Varão redondo,3,3783V001,,codigo_numerico_candidato_a_projeto
+3796,codigo_de_projeto_por_confirmar,1,1,1,0,0,Varão redondo,3,3796U001,,codigo_numerico_candidato_a_projeto
+3834,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,3834U001,,codigo_numerico_candidato_a_projeto
+3926,codigo_de_projeto_por_confirmar,1,4,2,0,0,Tubo redondo,3,3926P001,,codigo_numerico_candidato_a_projeto
+3939,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo quadrado,2.1,3939U019,,codigo_numerico_candidato_a_projeto
+3955,codigo_de_projeto_por_confirmar,1,3,3,0,0,Tubo redondo,3,3955T001,,codigo_numerico_candidato_a_projeto
+3978,codigo_de_projeto_por_confirmar,1,1,1,0,0,Perfil U,3.1,3978V001,,codigo_numerico_candidato_a_projeto
+3982,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,3982V001,,codigo_numerico_candidato_a_projeto
+4011,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,4011V001,,codigo_numerico_candidato_a_projeto
+4027,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,4027S001,,codigo_numerico_candidato_a_projeto
+4044,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,4044V003,,codigo_numerico_candidato_a_projeto
+4051,codigo_de_projeto_por_confirmar,1,2,1,1,0,Tubo redondo,3,4051N002,,codigo_numerico_candidato_a_projeto
+4058,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,4058N001,,codigo_numerico_candidato_a_projeto
+4083,codigo_de_projeto_por_confirmar,1,2,2,0,0,Tubo redondo,3,4083U001,,codigo_numerico_candidato_a_projeto
+4159,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,6,4159UTU1,,codigo_numerico_candidato_a_projeto
+4181,codigo_de_projeto_por_confirmar,1,2,2,0,0,Tubo quadrado,3,4181VJ01,,codigo_numerico_candidato_a_projeto
+4182,codigo_de_projeto_por_confirmar,1,1,1,0,0,Varão redondo,3,4182M010,,codigo_numerico_candidato_a_projeto
+4237,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,4237VJ01,,codigo_numerico_candidato_a_projeto
+4260,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,4260R002,,codigo_numerico_candidato_a_projeto
+4279,codigo_de_projeto_por_confirmar,1,2,2,1,0,Tubo redondo,3,4279U002,,codigo_numerico_candidato_a_projeto
+4339,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,4339N004,,codigo_numerico_candidato_a_projeto
+4365,codigo_de_projeto_por_confirmar,1,1,1,0,0,Perfil U,3.1,4365V000,,codigo_numerico_candidato_a_projeto
+4377,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,4377V530,,codigo_numerico_candidato_a_projeto
+4432,codigo_de_projeto_por_confirmar,1,2,1,0,0,Tubo redondo,3,4432V001,,codigo_numerico_candidato_a_projeto
+4436,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,4436U020,,codigo_numerico_candidato_a_projeto
+4487,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,6,4487V001,,codigo_numerico_candidato_a_projeto
+4510,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,4510V001,,codigo_numerico_candidato_a_projeto
+4553,codigo_de_projeto_por_confirmar,1,1,1,1,0,Calha,3.1,4553V001,,codigo_numerico_candidato_a_projeto
+4577,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,4577P001,,codigo_numerico_candidato_a_projeto
+4614,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,4614V500,,codigo_numerico_candidato_a_projeto
+4627,codigo_de_projeto_por_confirmar,1,1,1,0,0,Perfil H,2,4627V01,,codigo_numerico_candidato_a_projeto
+4633,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,6,4633VTU1,,codigo_numerico_candidato_a_projeto
+4668,codigo_de_projeto_por_confirmar,1,1,1,0,0,Perfil U,3.1,4668V001,,codigo_numerico_candidato_a_projeto
+4695,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo retangular,3,4695V001,,codigo_numerico_candidato_a_projeto
+4708,codigo_de_projeto_por_confirmar,1,3,3,1,0,Varão redondo,3,4708N101,,codigo_numerico_candidato_a_projeto
+4732,codigo_de_projeto_por_confirmar,1,1,1,0,0,Varão redondo,3,4732N001,,codigo_numerico_candidato_a_projeto
+4737,codigo_de_projeto_por_confirmar,1,1,1,1,0,Tubo retangular,3,4737N001,,codigo_numerico_candidato_a_projeto
+4771,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,4771U001,,codigo_numerico_candidato_a_projeto
+4886,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,4886M001,,codigo_numerico_candidato_a_projeto
+4932,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,4932V001,,codigo_numerico_candidato_a_projeto
+4994,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,6.1,4994O016,,codigo_numerico_candidato_a_projeto
+5050,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,5050U002,,codigo_numerico_candidato_a_projeto
+5060,codigo_de_projeto_por_confirmar,1,2,2,0,0,Tubo redondo,3,5060L001,,codigo_numerico_candidato_a_projeto
+5098,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,5098V001,,codigo_numerico_candidato_a_projeto
+5120,codigo_de_projeto_por_confirmar,1,4,4,0,0,Calha,3.1,5120U005,,codigo_numerico_candidato_a_projeto
+5121,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,5121V001,,codigo_numerico_candidato_a_projeto
+5122,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,5122R001,,codigo_numerico_candidato_a_projeto
+5125,codigo_de_projeto_por_confirmar,1,1,1,0,0,Calha,3.1,5125V003,,codigo_numerico_candidato_a_projeto
+5136,codigo_de_projeto_por_confirmar,1,2,2,1,0,Tubo redondo,3 | 5.1,5136V002,,codigo_numerico_candidato_a_projeto
+5176,codigo_de_projeto_por_confirmar,1,6,4,0,0,Tubo redondo,6.1,5176N001,,codigo_numerico_candidato_a_projeto
+5286,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,5286U003,,codigo_numerico_candidato_a_projeto
+5302,codigo_de_projeto_por_confirmar,1,1,1,0,0,Varão redondo,6.1,5302T001,,codigo_numerico_candidato_a_projeto
+5370,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,5370R001,,codigo_numerico_candidato_a_projeto
+5379,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,5379V001,,codigo_numerico_candidato_a_projeto
+5414,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,5414U003,,codigo_numerico_candidato_a_projeto
+5474,codigo_de_projeto_por_confirmar,1,2,2,0,0,Tubo redondo,6,5474T004,,codigo_numerico_candidato_a_projeto
+5484,codigo_de_projeto_por_confirmar,1,2,1,0,0,Tubo redondo,3,5484N001,,codigo_numerico_candidato_a_projeto
+5536,codigo_de_projeto_por_confirmar,1,2,1,0,0,Tubo redondo,3,5536V001,,codigo_numerico_candidato_a_projeto
+5611,codigo_de_projeto_por_confirmar,1,1,1,1,0,Tubo redondo,3,5611V006,,codigo_numerico_candidato_a_projeto
+562025,codigo_de_projeto_por_confirmar,1,1,1,1,0,Varão roscado,2,562025A4CB01,,codigo_numerico_candidato_a_projeto
+5622,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,6,5622V001,,codigo_numerico_candidato_a_projeto
+5725,codigo_de_projeto_por_confirmar,1,1,1,0,0,Perfil U,3,5725V001,,codigo_numerico_candidato_a_projeto
+5732,codigo_de_projeto_por_confirmar,1,1,1,0,0,Varão redondo,3.1,5732O001,,codigo_numerico_candidato_a_projeto
+5761,codigo_de_projeto_por_confirmar,1,1,1,0,0,Perfil U,6,5761V001,,codigo_numerico_candidato_a_projeto
+5776,codigo_de_projeto_por_confirmar,1,2,2,0,0,Tubo redondo,3,5776P001,,codigo_numerico_candidato_a_projeto
+5815,codigo_de_projeto_por_confirmar,1,3,3,1,0,Tubo redondo,6,5815O015,,codigo_numerico_candidato_a_projeto
+5822,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,6,5822V003,,codigo_numerico_candidato_a_projeto
+5827,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,1.1,5827PP4,,codigo_numerico_candidato_a_projeto
+5848,codigo_de_projeto_por_confirmar,1,1,1,1,0,Tubo redondo,3.1,5848V001,,codigo_numerico_candidato_a_projeto
+5858,codigo_de_projeto_por_confirmar,1,3,3,0,0,Varão redondo,6,5858P001,,codigo_numerico_candidato_a_projeto
+587,codigo_de_projeto_por_confirmar,1,1,1,1,0,Perfil U,6.2,587T5102,,codigo_numerico_candidato_a_projeto
+5997,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,5997T002,,codigo_numerico_candidato_a_projeto
+6003,codigo_de_projeto_por_confirmar,1,2,2,0,0,Tubo redondo,6,6003K004,,codigo_numerico_candidato_a_projeto
+6009,codigo_de_projeto_por_confirmar,1,3,3,1,0,Tubo redondo,3,6009T002,,codigo_numerico_candidato_a_projeto
+6052,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,6,6052VTU1,,codigo_numerico_candidato_a_projeto
+6067,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,6067V001,,codigo_numerico_candidato_a_projeto
+6085,codigo_de_projeto_por_confirmar,1,2,2,0,0,Tubo redondo,3,6085U001,,codigo_numerico_candidato_a_projeto
+6105,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,6105V002,,codigo_numerico_candidato_a_projeto
+6130,codigo_de_projeto_por_confirmar,1,1,1,0,0,Varão redondo,3.1,6130V000,,codigo_numerico_candidato_a_projeto
+6131,codigo_de_projeto_por_confirmar,1,2,2,0,0,Tubo quadrado,3.1,6131V000,,codigo_numerico_candidato_a_projeto
+6240,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,6,6240N023,,codigo_numerico_candidato_a_projeto
+6243,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,6243M001,,codigo_numerico_candidato_a_projeto
+6297,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,6297L001,,codigo_numerico_candidato_a_projeto
+6299,codigo_de_projeto_por_confirmar,1,2,1,0,0,Tubo redondo,3,6299V001,,codigo_numerico_candidato_a_projeto
+6343,codigo_de_projeto_por_confirmar,1,2,2,0,0,Tubo redondo,3,6343Q013,,codigo_numerico_candidato_a_projeto
+6370,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,6370U001,,codigo_numerico_candidato_a_projeto
+6388,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,6388V001,,codigo_numerico_candidato_a_projeto
+6393,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,6393T003,,codigo_numerico_candidato_a_projeto
+6413,codigo_de_projeto_por_confirmar,1,3,1,1,0,Tubo redondo,3,6413V001,,codigo_numerico_candidato_a_projeto
+6429,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo quadrado,2.1,6429V001,,codigo_numerico_candidato_a_projeto
+6440,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,6440S001,,codigo_numerico_candidato_a_projeto
+6454,codigo_de_projeto_por_confirmar,1,3,1,0,0,Tubo redondo,3,6454U001,,codigo_numerico_candidato_a_projeto
+6457,codigo_de_projeto_por_confirmar,1,1,1,0,0,Perfil I,2,6457V001,,codigo_numerico_candidato_a_projeto
+6462,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,6462U001,,codigo_numerico_candidato_a_projeto
+6468,codigo_de_projeto_por_confirmar,1,1,1,0,0,Perfil U,3.1,6468U004,,codigo_numerico_candidato_a_projeto
+6481,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,6481V001,,codigo_numerico_candidato_a_projeto
+6501,codigo_de_projeto_por_confirmar,1,6,2,0,0,Tubo redondo,3,6501V001,,codigo_numerico_candidato_a_projeto
+6564,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo quadrado,3,6564U001,,codigo_numerico_candidato_a_projeto
+6568,codigo_de_projeto_por_confirmar,1,6,2,1,0,Tubo redondo,3,6568J004,,codigo_numerico_candidato_a_projeto
+6586,codigo_de_projeto_por_confirmar,1,1,1,0,0,Varão redondo,3,6586V003,,codigo_numerico_candidato_a_projeto
+660,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,660V005,,codigo_numerico_candidato_a_projeto
+6655,codigo_de_projeto_por_confirmar,1,2,2,0,0,Tubo redondo,3,6655S002,,codigo_numerico_candidato_a_projeto
+6690,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,6,6690V005,,codigo_numerico_candidato_a_projeto
+6795,codigo_de_projeto_por_confirmar,1,2,2,0,0,Tubo redondo,3,6795Q001,,codigo_numerico_candidato_a_projeto
+6832,codigo_de_projeto_por_confirmar,1,1,1,0,0,Varão redondo,3,6832O002,,codigo_numerico_candidato_a_projeto
+6836,codigo_de_projeto_por_confirmar,1,1,1,1,0,Tubo quadrado,3.1,6836V000,,codigo_numerico_candidato_a_projeto
+6872,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3.1,6872U000,,codigo_numerico_candidato_a_projeto
+6970,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,6970U002,,codigo_numerico_candidato_a_projeto
+6996,codigo_de_projeto_por_confirmar,1,2,1,1,0,Tubo redondo,3.1,6996V001,,codigo_numerico_candidato_a_projeto
+7033,codigo_de_projeto_por_confirmar,1,1,1,1,0,Tubo quadrado,3.1,7033V001,,codigo_numerico_candidato_a_projeto
+7063,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,7063VJ01,,codigo_numerico_candidato_a_projeto
+7115,codigo_de_projeto_por_confirmar,1,2,1,0,0,Perfil I,2,7115V001,,codigo_numerico_candidato_a_projeto
+7182,codigo_de_projeto_por_confirmar,1,1,1,1,0,Tubo redondo,3,7182V001,,codigo_numerico_candidato_a_projeto
+7312,codigo_de_projeto_por_confirmar,1,2,1,0,0,Tubo redondo,3,7312U001,,codigo_numerico_candidato_a_projeto
+7336,codigo_de_projeto_por_confirmar,1,2,2,1,0,Tubo retangular,3,7336VJ01,,codigo_numerico_candidato_a_projeto
+7355,codigo_de_projeto_por_confirmar,1,1,1,1,0,Tubo redondo,6,7355VTU1,,codigo_numerico_candidato_a_projeto
+7429,codigo_de_projeto_por_confirmar,1,1,1,0,0,Varão roscado,2,7429V001,,codigo_numerico_candidato_a_projeto
+7448,codigo_de_projeto_por_confirmar,1,7,1,0,0,Tubo redondo,6.1,7448U001,,codigo_numerico_candidato_a_projeto
+7450,codigo_de_projeto_por_confirmar,1,10,2,1,0,Tubo redondo,3,7450V001,,codigo_numerico_candidato_a_projeto
+751,codigo_de_projeto_por_confirmar,1,1,1,1,0,Tubo redondo,3,751VJ04,,codigo_numerico_candidato_a_projeto
+7545,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,7545K001,,codigo_numerico_candidato_a_projeto
+7709,codigo_de_projeto_por_confirmar,1,1,1,1,0,Tubo redondo,3,7709VJ01,,codigo_numerico_candidato_a_projeto
+7761,codigo_de_projeto_por_confirmar,1,1,1,1,0,Tubo redondo,3,7761O001,,codigo_numerico_candidato_a_projeto
+7882,codigo_de_projeto_por_confirmar,1,1,1,1,0,Perfil U,3.1,7882V000,,codigo_numerico_candidato_a_projeto
+7893,codigo_de_projeto_por_confirmar,1,3,3,0,0,Perfil U,2.1,7893S001,,codigo_numerico_candidato_a_projeto
+8168,codigo_de_projeto_por_confirmar,1,1,1,1,0,Tubo redondo,3,8168V001,,codigo_numerico_candidato_a_projeto
+8344,codigo_de_projeto_por_confirmar,1,4,4,0,0,Tubo redondo,3,8344R002,,codigo_numerico_candidato_a_projeto
+8357,codigo_de_projeto_por_confirmar,1,1,1,1,0,Perfil U,6,8357U006,,codigo_numerico_candidato_a_projeto
+8363,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,8363T001,,codigo_numerico_candidato_a_projeto
+8371,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,8371T002,,codigo_numerico_candidato_a_projeto
+8446,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,8446R001,,codigo_numerico_candidato_a_projeto
+8693,codigo_de_projeto_por_confirmar,1,1,1,0,0,Varão redondo,3,8693R003,,codigo_numerico_candidato_a_projeto
+8742,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,8742Q002,,codigo_numerico_candidato_a_projeto
+8874,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,8874T002,,codigo_numerico_candidato_a_projeto
+8990,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,8990P001,,codigo_numerico_candidato_a_projeto
+9042,codigo_de_projeto_por_confirmar,1,3,1,0,0,Tubo redondo,3,9042U001,,codigo_numerico_candidato_a_projeto
+9088,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,9088U001,,codigo_numerico_candidato_a_projeto
+9191,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,6,9191U019,,codigo_numerico_candidato_a_projeto
+9253,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,9253U001,,codigo_numerico_candidato_a_projeto
+9286,codigo_de_projeto_por_confirmar,1,1,1,1,0,Tubo redondo,3,9286U001,,codigo_numerico_candidato_a_projeto
+9299,codigo_de_projeto_por_confirmar,1,3,3,0,0,Tubo redondo,3,9299U001,,codigo_numerico_candidato_a_projeto
+9369,codigo_de_projeto_por_confirmar,1,3,1,0,0,Tubo redondo,3,9369U001,,codigo_numerico_candidato_a_projeto
+9382,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,9382R002,,codigo_numerico_candidato_a_projeto
+9492,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo quadrado,3,9492UJ01,,codigo_numerico_candidato_a_projeto
+9499,codigo_de_projeto_por_confirmar,1,2,2,0,0,Tubo redondo,6,9499R001,,codigo_numerico_candidato_a_projeto
+9579,codigo_de_projeto_por_confirmar,1,2,2,0,0,Tubo redondo,6,9579U009,,codigo_numerico_candidato_a_projeto
+9634,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,9634U001,,codigo_numerico_candidato_a_projeto
+9778,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,9778UJ01,,codigo_numerico_candidato_a_projeto
+9987,codigo_de_projeto_por_confirmar,1,1,1,0,0,Tubo redondo,3,9987UJ01,,codigo_numerico_candidato_a_projeto
+A139,candidata_por_confirmar,1,1,1,0,0,Varão redondo,3.1,A139U002,,letras_numero_letras_numero
+A251,candidata_por_confirmar,1,3,1,0,0,Tubo redondo,3,A251U001,,letras_numero_letras_numero
+A348,candidata_por_confirmar,1,2,2,0,0,Tubo redondo,3,A348Q003,,letras_numero_letras_numero
+A364,candidata_por_confirmar,1,1,1,0,0,Tubo redondo,6,A364U001,,letras_numero_letras_numero
+A393,candidata_por_confirmar,1,1,1,1,0,Tubo redondo,3,A393S001,,letras_numero_letras_numero
+A424,candidata_por_confirmar,1,1,1,0,0,Tubo redondo,3,A424U001,,letras_numero_letras_numero
+A570,candidata_por_confirmar,1,1,1,0,0,Tubo redondo,3,A570R008,,letras_numero_letras_numero
+A587,candidata_por_confirmar,1,2,2,0,0,Tubo redondo,3,A587UJ02,,letras_numero_letras_numero
+A661,candidata_por_confirmar,1,1,1,0,0,Tubo redondo,3,A661S001,,letras_numero_letras_numero
+A670,candidata_por_confirmar,1,2,2,0,0,Varão redondo,3,A670T001,,letras_numero_letras_numero
+A709,candidata_por_confirmar,1,1,1,0,0,Calha,3.1,A709U001,,letras_numero_letras_numero
+A750,candidata_por_confirmar,1,1,1,0,0,Tubo redondo,3,A750U001,,letras_numero_letras_numero
+A920,candidata_por_confirmar,1,1,1,0,0,Tubo redondo,6.1,A920T002,,letras_numero_letras_numero
+A975,candidata_por_confirmar,1,1,1,0,0,Calha,3,A975U001,,letras_numero_letras_numero
+AKM,candidata_por_confirmar,1,1,1,0,0,Varão redondo,1,AKM-607,,prefixo_alfabetico
+B057,candidata_por_confirmar,1,2,2,0,0,Varão redondo,3,B057Q510,,letras_numero_letras_numero
+B179,candidata_por_confirmar,1,2,2,0,0,Tubo redondo,3,B179UJ01,,letras_numero_letras_numero
+B317,candidata_por_confirmar,1,2,1,0,0,Tubo redondo,3,B317S001,,letras_numero_letras_numero
+B505,candidata_por_confirmar,1,1,1,0,0,Varão redondo,3.1,B505U00,,letras_numero_letras_numero
+B506,candidata_por_confirmar,1,1,1,0,0,Perfil U,3.1,B506U000,,letras_numero_letras_numero
+B567,candidata_por_confirmar,1,1,1,0,0,Tubo redondo,3,B567U002,,letras_numero_letras_numero
+B617,candidata_por_confirmar,1,1,1,0,0,Perfil U,3,B617U001,,letras_numero_letras_numero
+B653,candidata_por_confirmar,1,2,1,0,0,Varão roscado,2,B653U001,,letras_numero_letras_numero
+B704,candidata_por_confirmar,1,3,1,0,0,Tubo redondo,3,B704T001,,letras_numero_letras_numero
+B713,candidata_por_confirmar,1,1,1,0,0,Calha,3.1,B713U003,,letras_numero_letras_numero
+B714,candidata_por_confirmar,1,1,1,0,0,Tubo redondo,3,B714T001,,letras_numero_letras_numero
+B830,candidata_por_confirmar,1,1,1,0,0,Tubo retangular,3,B830U001,,letras_numero_letras_numero
+B838,candidata_por_confirmar,1,1,1,0,0,Tubo redondo,3,B838U022,,letras_numero_letras_numero
+B893,candidata_por_confirmar,1,1,1,0,0,Tubo redondo,3,B893S001,,letras_numero_letras_numero
+BA0125,candidata_por_confirmar,1,1,1,0,0,Tubo quadrado,2,BA0125A4002,,letras_numero_letras_numero
+BS0922,candidata_por_confirmar,1,1,1,0,0,Tubo retangular,2,BS0922A4003,,letras_numero_letras_numero
+C029,candidata_por_confirmar,1,3,1,0,0,Tubo redondo,3,C029U001,,letras_numero_letras_numero
+C054,candidata_por_confirmar,1,1,1,0,0,Tubo redondo,3,C054T001,,letras_numero_letras_numero
+C097,candidata_por_confirmar,1,1,1,0,0,Tubo redondo,6,C097R004,,letras_numero_letras_numero
+C114,candidata_por_confirmar,1,1,1,0,0,Tubo redondo,3,C114T001,,letras_numero_letras_numero
+C120,candidata_por_confirmar,1,1,1,0,0,Tubo redondo,3,C120U001,,letras_numero_letras_numero
+C131,candidata_por_confirmar,1,1,1,0,0,Perfil I,2,C131U001,,letras_numero_letras_numero
+C245,candidata_por_confirmar,1,1,1,0,0,Perfil U,3.1,C245U000,,letras_numero_letras_numero
+C272,candidata_por_confirmar,1,1,1,0,0,Varão redondo,3.1,C272U001,,letras_numero_letras_numero
+C364,candidata_por_confirmar,1,2,2,0,0,Tubo redondo,3,C364RB00,,letras_numero_letras_numero
+CA0709,candidata_por_confirmar,1,1,1,0,0,Varão redondo,6,CA0709A4009,,letras_numero_letras_numero
+CA0797,candidata_por_confirmar,1,4,4,0,0,Varão redondo,6 | 6.1,CA0797A4005,,letras_numero_letras_numero
+CA1,candidata_por_confirmar,1,26,26,1,2,Varão redondo,6 | 6.1,CA1AO19,1UN - CA63OJ16 + 1UN. CA1AOJ18 | RECLAMAÇÃO DQ63-147_x000D_ ESCADA CA1AOJ20,letras_numero_letras_numero
+CA1396,candidata_por_confirmar,1,8,8,1,0,Varão redondo,6,CA1396A4500,,letras_numero_letras_numero
+CA1497,candidata_por_confirmar,1,18,18,1,0,Varão redondo,- | 6,CA1497A4502,,letras_numero_letras_numero
+CA2023,candidata_por_confirmar,1,6,6,1,0,Varão redondo,3.1 | 6,CA2023A4010,,letras_numero_letras_numero
+CA22,candidata_por_confirmar,1,3,3,0,0,Tubo redondo,6,CA22O121,,letras_numero_letras_numero
+CA2397,candidata_por_confirmar,1,30,29,1,0,Varão redondo,3.1 | 6 | 6.1,CA2397A4001,,letras_numero_letras_numero
+CA4,candidata_por_confirmar,1,5,5,1,0,Varão roscado,6,CA4A19A4001,,letras_numero_letras_numero
+CA4117,candidata_por_confirmar,1,28,28,1,0,Perfil U,- | 3.1 | 6,CA4117A4001,,letras_numero_letras_numero
+CAIAO,candidata_por_confirmar,1,1,1,0,0,Varão redondo,6,CAIAO19,,prefixo_alfabetico
+CC011,candidata_por_confirmar,1,1,1,0,0,Calha,3.1,CC011A4627,,letras_numero_letras_numero
+CC0118,candidata_por_confirmar,1,1,1,0,0,Tubo redondo,3,CC0118A4100,,letras_numero_letras_numero
+CC0119,candidata_por_confirmar,1,1,1,0,0,Tubo redondo,3,CC0119A4530,,letras_numero_letras_numero
+CC7712,candidata_por_confirmar,1,1,1,0,0,Tubo redondo,3,CC7712A4011,,letras_numero_letras_numero
+CCAB18,candidata_por_confirmar,1,1,1,1,0,Tubo redondo,3,CCAB18A4105,,letras_numero_letras_numero
+CCAB20,candidata_por_confirmar,1,2,2,0,0,Perfil U,3.1,CCAB20A4022,,letras_numero_letras_numero
+CD01,candidata_por_confirmar,1,1,1,0,1,Varão redondo,1.2,CD01O002,LIGHTNING POLES 30M E 45M (MOD. CD01O) - (15UN),letras_numero_letras_numero
+CD0412,candidata_por_confirmar,1,2,2,0,0,Varão redondo,3.1,CD0412A4001,,letras_numero_letras_numero
+CD06,candidata_por_confirmar,1,2,2,0,0,Varão roscado,1.1,CD06T001,,letras_numero_letras_numero
+CDBRO,candidata_por_confirmar,1,1,1,0,0,Varão redondo,1.2,CDBRO002,,prefixo_alfabetico
+CE0107,candidata_por_confirmar,1,1,1,0,0,Varão redondo,3.1,CE0107A4018,,letras_numero_letras_numero
+CG22,candidata_por_confirmar,1,1,1,0,0,Tubo quadrado,16,CG22P03,,letras_numero_letras_numero
+CI,candidata_por_confirmar,1,2,2,1,0,Varão redondo | Varão roscado,3.1,CI7982001,,prefixo_alfabetico
+CI0114,candidata_por_confirmar,1,13,13,1,0,Tubo redondo,3,CI0114A4J01,,letras_numero_letras_numero
+CI0123,candidata_por_confirmar,1,1,1,0,0,Tubo redondo,3,CI0123A4002,,letras_numero_letras_numero
+CI014,candidata_por_confirmar,1,1,1,0,0,Tubo redondo,3,CI014A4J01,,letras_numero_letras_numero
+CI0221,candidata_por_confirmar,1,1,1,0,0,Varão redondo,3,CI0221A4002,,letras_numero_letras_numero
+CI0421,candidata_por_confirmar,1,1,1,0,0,Tubo redondo,3,CI0421A4001,,letras_numero_letras_numero
+CI0714,candidata_por_confirmar,1,21,21,1,0,Tubo redondo,3,CI0714A4J01,,letras_numero_letras_numero
+CI0799,candidata_por_confirmar,1,10,10,1,0,Varão redondo,3,CI0799A4001,,letras_numero_letras_numero
+CI1119,candidata_por_confirmar,1,11,11,1,0,Perfil U | Varão redondo,3.1,CI1119A4001,,letras_numero_letras_numero
+CI1506,candidata_por_confirmar,1,4,4,0,0,Tubo redondo,3,CI1506A4J01,,letras_numero_letras_numero
+CI1514,candidata_por_confirmar,1,18,18,1,0,Tubo redondo,3,CI1514A4J01,,letras_numero_letras_numero
+CI2125,candidata_por_confirmar,1,2,2,1,0,Tubo redondo,3,CI2125A4001,,letras_numero_letras_numero
+CI2306,candidata_por_confirmar,1,3,3,0,0,Tubo redondo,3,CI2306A4J01,,letras_numero_letras_numero
+CI2625,candidata_por_confirmar,1,1,1,1,0,Tubo redondo,3,CI2625A4002,,letras_numero_letras_numero
+CI2825,candidata_por_confirmar,1,1,1,0,0,Tubo redondo,3,CI2825A4002,,letras_numero_letras_numero
+CI3408,candidata_por_confirmar,1,2,2,0,0,Tubo redondo,3,CI3408A4004,,letras_numero_letras_numero
+CI3422,candidata_por_confirmar,1,9,3,1,0,Tubo redondo,3,CI3422A4005,,letras_numero_letras_numero
+CI3507,candidata_por_confirmar,1,1,1,0,0,Tubo redondo,3,CI3507A4J01,,letras_numero_letras_numero
+CI4423,candidata_por_confirmar,1,1,1,0,0,Tubo redondo,3,CI4423A4004,,letras_numero_letras_numero
+CI4625,candidata_por_confirmar,1,6,2,0,0,Tubo redondo,3,CI4625A4001,,letras_numero_letras_numero
+CI5021,candidata_por_confirmar,1,10,5,1,0,Tubo redondo,3,CI5021A4000,,letras_numero_letras_numero
+CI5221,candidata_por_confirmar,1,8,4,1,0,Tubo redondo,3,CI5221A4006,,letras_numero_letras_numero
+CI5421,candidata_por_confirmar,1,3,1,0,0,Tubo redondo,3,CI5421A3004,,letras_numero_letras_numero
+CI5422,candidata_por_confirmar,1,15,15,1,0,Calha,3,CI5422A4001,,letras_numero_letras_numero
+CI5618,candidata_por_confirmar,1,44,22,1,0,Tubo redondo,- | 3,CI5618A4001,,letras_numero_letras_numero
+CI5621,candidata_por_confirmar,1,3,1,1,0,Tubo redondo,3,CI5621A3005,,letras_numero_letras_numero
+CI5825,candidata_por_confirmar,1,4,4,0,0,Tubo redondo,3,CI5825A4001,,letras_numero_letras_numero
+CI6009,candidata_por_confirmar,1,1,1,0,0,Varão redondo,3.1,CI6009A2001,,letras_numero_letras_numero
+CI6105,candidata_por_confirmar,1,1,1,0,0,Tubo redondo,3,CI6105A4008,,letras_numero_letras_numero
+CI6218,candidata_por_confirmar,1,1,1,0,0,Tubo redondo,3,CI6218A4530,,letras_numero_letras_numero
+CI7018,candidata_por_confirmar,1,21,7,1,0,Tubo redondo,3,CI7018A4001,,letras_numero_letras_numero
+CI7115,candidata_por_confirmar,1,5,5,1,0,Tubo redondo,3,CI7115A4001,,letras_numero_letras_numero
+CI7122,candidata_por_confirmar,1,6,6,1,0,Tubo redondo,3,CI7122A4001,,letras_numero_letras_numero
+CI7222,candidata_por_confirmar,1,1,1,0,0,Tubo redondo,3,CI7222A4002,,letras_numero_letras_numero
+CI7615,candidata_por_confirmar,1,25,23,1,0,Tubo redondo,- | 3,CI7615A4001,,letras_numero_letras_numero
+CI7816,candidata_por_confirmar,1,4,4,0,0,Tubo redondo,3,CI7816A4001,,letras_numero_letras_numero
+CI7822,candidata_por_confirmar,1,1,1,0,0,Tubo redondo,3,CI7822A4001,,letras_numero_letras_numero
+CI8007,candidata_por_confirmar,1,3,3,0,0,Tubo quadrado,3,CI8007A4J01,,letras_numero_letras_numero
+CI8607,candidata_por_confirmar,1,2,2,0,0,Tubo quadrado,3,CI8607A4J01,,letras_numero_letras_numero
+CI9317,candidata_por_confirmar,1,1,1,0,0,Tubo redondo,3,CI9317A4001,,letras_numero_letras_numero
+CI9498,candidata_por_confirmar,1,1,1,0,0,Varão redondo,3,CI9498A4012,,letras_numero_letras_numero
+CI9507,candidata_por_confirmar,1,1,1,0,0,Tubo quadrado,3,CI9507A4J01,,letras_numero_letras_numero
+CIB124,candidata_por_confirmar,1,1,1,0,0,Tubo redondo,3,CIB124A5004,,letras_numero_letras_numero
+CIB218,candidata_por_confirmar,1,2,2,0,0,Tubo redondo,3,CIB218A4EK2,,letras_numero_letras_numero
+CIC15,candidata_por_confirmar,1,1,1,0,0,Tubo redondo,3,CIC15A4001,,letras_numero_letras_numero
+CIC415,candidata_por_confirmar,1,9,9,0,0,Perfil U,3,CIC415A4001,,letras_numero_letras_numero
+CR0013,candidata_por_confirmar,1,9,9,0,0,Tubo redondo,3.1,CR0013A4001,,letras_numero_letras_numero
+CR0107,candidata_por_confirmar,1,1,1,0,0,Varão redondo,3.1,CR0107A4018,,letras_numero_letras_numero
+CR0206,candidata_por_confirmar,1,2,2,0,0,Varão redondo,3.1,CR0206A4003,,letras_numero_letras_numero
+CR0306,candidata_por_confirmar,1,1,1,0,0,Perfil U,3.1,CR0306A4019,,letras_numero_letras_numero
+CR0412,candidata_por_confirmar,1,1,1,0,0,Varão redondo,3.1,CR0412A4001,,letras_numero_letras_numero
+CR0517,candidata_por_confirmar,1,1,1,0,0,Perfil U,3.1,CR0517A4037,,letras_numero_letras_numero
+CR0713,candidata_por_confirmar,1,3,3,0,0,Varão redondo,3.1,CR0713A4001,,letras_numero_letras_numero
+CR0912,candidata_por_confirmar,1,5,5,1,0,Perfil U,3.1,CR0912A4004,,letras_numero_letras_numero
+CR10,candidata_por_confirmar,1,1,1,0,0,Perfil U,3.1,CR10A12A4005,,letras_numero_letras_numero
+CR1206,candidata_por_confirmar,1,3,3,0,0,Perfil U,3.1,CR1206A4025,,letras_numero_letras_numero
+CR1212,candidata_por_confirmar,1,5,5,0,0,Varão redondo | Varão roscado,3.1,CR1212A4001,,letras_numero_letras_numero
+CS,candidata_por_confirmar,1,1,1,0,0,Varão redondo,1,CS58,,prefixo_alfabetico
+CS0104,candidata_por_confirmar,1,8,8,0,0,Tubo redondo,3.1,CS0104A4001,,letras_numero_letras_numero
+CS0106,candidata_por_confirmar,1,7,7,0,0,Tubo redondo,3.1,CS0106A4023,,letras_numero_letras_numero
+CS0111,candidata_por_confirmar,1,1,1,0,0,Tubo redondo,3.1,CS0111A4002,,letras_numero_letras_numero
+CS014,candidata_por_confirmar,1,1,1,0,0,Tubo redondo,3.1,CS014A4001,,letras_numero_letras_numero
+CS04,candidata_por_confirmar,1,1,1,0,0,Varão redondo,3.1,CS04H001,,letras_numero_letras_numero
+CS0412,candidata_por_confirmar,1,15,15,1,0,Varão redondo,- | 3 | 3.1,CS0412A4001,,letras_numero_letras_numero
+CT0115,candidata_por_confirmar,1,3,3,1,0,Varão redondo,3.1,CT0115A4001,,letras_numero_letras_numero
+CT0117,candidata_por_confirmar,1,2,2,0,0,Varão redondo,3.1,CT0117A4001,,letras_numero_letras_numero
+CT0201,candidata_por_confirmar,1,2,2,0,0,Varão redondo,3.1,CT0201A4304,,letras_numero_letras_numero
+CT0401,candidata_por_confirmar,1,1,1,0,0,Varão roscado,3,CT0401A4006,,letras_numero_letras_numero
+CT0418,candidata_por_confirmar,1,1,1,0,0,Varão redondo,3.1,CT0418A4001,,letras_numero_letras_numero
+CT0515,candidata_por_confirmar,1,2,2,1,0,Varão redondo,3.1,CT0515A4001,,letras_numero_letras_numero
+CT1015,candidata_por_confirmar,1,1,1,0,0,Varão redondo,3.1,CT1015A4001,,letras_numero_letras_numero
+CT2517,candidata_por_confirmar,1,1,1,0,0,Varão redondo,3.1,CT2517A4056,,letras_numero_letras_numero
+CT7712,candidata_por_confirmar,1,1,1,0,0,Tubo redondo,3.1,CT7712A4002,,letras_numero_letras_numero
+D04,candidata_por_confirmar,1,1,1,1,0,Perfil U,1.1,D04T001,,letras_numero_letras_numero
+DS,candidata_por_confirmar,1,2,2,0,1,Varão redondo,1,DS37,= POSTE DS SEM BASE =_x000D_ = URGENTE =,prefixo_alfabetico
+EI24,candidata_por_confirmar,1,1,1,0,0,Tubo quadrado,3,EI24TJ01,,letras_numero_letras_numero
+ET0114,candidata_por_confirmar,1,2,2,0,0,Perfil T,1.1,ET0114A4013,,letras_numero_letras_numero
+EXT30,candidata_por_confirmar,1,1,1,0,0,Tubo retangular,12,EXT30C60,,letras_numero_letras_numero
+GKM,candidata_por_confirmar,1,2,2,0,0,Varão redondo,1,GKM-615,,prefixo_alfabetico
+IC,candidata_por_confirmar,1,1,1,0,0,Barra,5.1,IC6,,prefixo_alfabetico
+M8,candidata_por_confirmar,1,1,1,0,0,Cantoneira,1,M8C510,,letras_numero_letras_numero
+PA0106,candidata_por_confirmar,1,6,6,0,0,Varão redondo,3.1 | 6 | 6.1,PA0106A4167,,letras_numero_letras_numero
+PA0211,candidata_por_confirmar,1,6,6,0,0,Tubo retangular,3.1 | 6 | 6.1,PA0211A4011,,letras_numero_letras_numero
+PA1,candidata_por_confirmar,1,8,8,1,0,Varão redondo,3 | 3.1 | 6.1,PA1A21A4001,,letras_numero_letras_numero
+PA2314,candidata_por_confirmar,1,1,1,0,0,Varão redondo,6.1,PA2314A4009,,letras_numero_letras_numero
+PA35,candidata_por_confirmar,1,1,1,1,0,Tubo redondo,6.1,PA35SV35,,letras_numero_letras_numero
+PA6319,candidata_por_confirmar,1,1,1,1,0,Tubo redondo,6,PA6319A4127,,letras_numero_letras_numero
+PENAS,candidata_por_confirmar,1,1,1,0,0,Varão redondo,1,PENAS4,,prefixo_alfabetico
+PRR,candidata_por_confirmar,1,1,1,0,0,Varão roscado,6.1,PRR2,,prefixo_alfabetico
+R,prefixo_demasiado_generico,1,1,1,0,0,Varão redondo,16,R6,,prefixo_alfabetico
+RENP,candidata_por_confirmar,1,1,1,0,0,Varão redondo,1,RENP5B,,prefixo_alfabetico
+SBUM27,candidata_por_confirmar,1,1,1,1,0,Varão redondo,4,SBUM27X9539,,letras_numero_letras_numero
+TA0418,candidata_por_confirmar,1,13,13,0,0,Tubo redondo,6,TA0418A4001,,letras_numero_letras_numero
+TU,candidata_por_confirmar,1,1,1,0,0,Tubo redondo,16,TU2,,prefixo_alfabetico
+TZ,candidata_por_confirmar,1,1,1,1,0,Perfil U,1,TZ429801,,prefixo_alfabetico
+WA,candidata_por_confirmar,1,1,1,0,1,Varão redondo,1,WA502,= POSTE WA =,prefixo_alfabetico
+WZ,candidata_por_confirmar,1,1,1,1,0,Perfil U,1,WZ05-202,,prefixo_alfabetico
+X,prefixo_demasiado_generico,1,1,1,0,1,Cantoneira,1,X351103,= TENNET A390 = TROÇOS POSTE 54 = _x000D_ = EP2661 =,prefixo_alfabetico

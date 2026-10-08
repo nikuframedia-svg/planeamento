@@ -1,0 +1,36 @@
+﻿familia,estado,skus_distintos,linhas,ofs,skus_em_linhas_ativas,skus_encontrados_cpis,ofs_com_familia_na_designacao,codfam_cpis,exemplos_sku,evidencia_designacoes,regra
+DLA,forte_padrao_e_varias_of,1363,5587,121,705,1362,80,-,DLA1 | DLA10 | DLA11,= BASES DLA / DLR =  = URGENTE = | = BASES DLA = | = BASES DLA / DLR / DLS / DLT =,familia_mae_corrobora_designacao
+DLR,forte_padrao_e_varias_of,1347,4383,118,404,1346,56,-,DLR1 | DLR10 | DLR11,= PROEF=ADITAMENTO OF246198= PROLONGAMENTO POSTE Nº287 DLR9= | = ALTERAÇÃO BASES DLR / DLT = | = BASES DLA / DLR =  = URGENTE =,familia_mae_corrobora_designacao
+H92,forte_padrao_e_varias_of,1225,2989,45,0,1219,22,-,H92H-S-1503T | H92H-S-1504T | H92H-S-1505T,"RTE | POSTES H92HS1-T4H26 + H92HS1-H4H22 | EP2508 | RTE | POSTE H92HT-T4 | H30, H27, H17 = FABRICAR APÓS ENSAIO EP2503 (OF250466) | RTE | POSTE H92HT-T4 | H23, H21 | POSTE H92HT-H4 | H23, H20, H17 = FABRICAR APÓS ENSAIO EP2503 (OF250466)",familia_mae_corrobora_designacao
+G4,forte_padrao_e_varias_of,992,1231,7,151,991,6,-,G4HA1000DT | G4HA1000GT | G4HA1001DT,RTE | G4S0-B3-R1 AVEC 9 CONSOLES | EP2641 | RTE | G4HA-B3-X | EP2669 | RTE | G4T-B3-X+3 E W+3 = EP2679 ,familia_mae_corrobora_designacao
+DLT,forte_padrao_e_varias_of,913,6831,152,584,913,96,-,DLT1 | DLT10 | DLT11,= PROLONGAMENTOS DLT = | = CME= 4 POSTES DLT10 = | = ALTERAÇÃO BASES DLR / DLT =,familia_mae_corrobora_designacao
+P4,forte_padrao_e_varias_of,724,1366,22,0,722,7,-,P4HS111000T | P4HS111001T | P4HS111002DT,"RTE | P4HS11-N401 - H16 /  H22 / H34  + P4HS11-N400 - H18 / H24 / H33 | EP2602 | RTE | P4HT-N400 - HAUTEURS 15M / 17M / 18M / 21M / 22M / 23M / 24M | EP2608 | RTE | P4HS11-N400 H21 + H14 | P4HS11-N410 H20 + H16, H17, H19 | EP2512",familia_mae_corrobora_designacao
+DLS,forte_padrao_e_varias_of,699,1809,45,275,699,32,-,DLS1 | DLS10 | DLS101D,= BASES DLA / DLR / DLS / DLT = | = CANTONEIRAS CABEÇA TROÇO 2 - DLS = | = BASES DLA / DLS =,familia_mae_corrobora_designacao
+QR,forte_padrao_e_varias_of,403,752,15,252,403,6,-,QR013473 | QR013875 | QR01A,= PERNAS QR = | = BASES DLT / MTR2G / QR / QT = | = BASES DLA / DLR / DLS / DLT / QA / QR / QT =,familia_mae_corrobora_designacao
+ELT,forte_padrao_e_varias_of,384,646,15,248,384,7,-,ELT1 | ELT10 | ELT11,= POSTE ELT2 = 1 PRIORIDADE = | = PERNAS ELT = | = FALTAS MATERIAL POSTES ELT = DQ52-039 =,familia_mae_corrobora_designacao
+N43,forte_padrao_e_uma_of,372,372,1,0,372,1,-,N43HA1000T | N43HA1001T | N43HA1002T,RTE | N43HA-N-Z1 | EP2611,familia_mae_corrobora_designacao
+QA,forte_padrao_e_varias_of,363,763,19,222,363,14,-,QA013907 | QA014307 | QA014309,= PERNAS QA = | =CME=POSTES QA=10 UN= | = BASES DLA / DLT / QA / QS / QT =,familia_mae_corrobora_designacao
+QT,forte_padrao_e_varias_of,359,2111,30,252,359,24,-,QT014178 | QT014578 | QT014581,= PERNAS QT = | = PROLONGAMENTO QT = | =PROEF=POSTE QT2=1 UN=,familia_mae_corrobora_designacao
+CWA,forte_padrao_e_varias_of,354,1402,7,284,354,5,-,CWA01AD | CWA01AE | CWA01BD,= PERNAS CWA = | = POSTES CWA = 7UN = 1 PRIORIDADE = | = POSTES CWA = 7UN = 2 PRIORIDADE =,familia_mae_corrobora_designacao
+CWR,forte_padrao_e_varias_of,340,1241,6,321,339,4,-,CWR01AD | CWR01AE | CWR01BD,= POSTES CWR = 7UN = 1 PRIORIDADE = | = POSTES CWR = 7UN = 2 PRIORIDADE = | = BASES CWR =,familia_mae_corrobora_designacao
+ELS,forte_padrao_e_uma_of,310,324,5,0,310,1,-,ELS1 | ELS10 | ELS11,= POSTE ELS6 = 1 PRIORIDADE =,familia_mae_corrobora_designacao
+ELA,forte_padrao_e_varias_of,308,320,5,0,301,2,-,ELA1 | ELA10 | ELA11,= POSTE ELA6 = 1 PRIORIDADE = | = BASES ELA =,familia_mae_corrobora_designacao
+QS,forte_padrao_e_varias_of,296,396,8,1,296,8,-,QS012954 | QS013354 | QS013356,= MATERIAL QT/QS = | =CME=POSTES QS=4 UN= | = BASES DLA / DLT / QA / QS / QT =,familia_mae_corrobora_designacao
+CWS,forte_padrao_e_varias_of,288,790,4,232,288,2,-,CWS01AD | CWS01AE | CWS01BD,= POSTES CWS =13UN = 1 PRIORIDADE = | = POSTES CWS = 9UN = 2 PRIORIDADE =,familia_mae_corrobora_designacao
+C4,forte_padrao_e_varias_of,252,697,4,0,252,4,-,C4HN1000HT | C4HN1001HT | C4HN1002HT,RTE | POSTES C4HN-C-W | FABRICAR APÓS VALIDAÇÃO DO ENSAIO EP2609 | RTE | POSTES C4HN-C-W | EP2609 | RTE | POSTES C4HN-C-W | PERNAS DESNIVELADAS | EP2620,familia_mae_corrobora_designacao
+D10,forte_padrao_e_uma_of,247,377,7,0,247,1,-,D10A2 | D10A3 | D10A6,METALSEC | ABADIA - POSTES DUERO 10K-T4323832C 15M + D10K-F441CE+1D 18M,familia_mae_corrobora_designacao
+CWT,forte_padrao_e_varias_of,230,845,9,208,230,6,-,CWT01AD | CWT01AE | CWT01BD,= BASES CWT / DLA / DLR / DLT / MTR2G / QT = | = POSTES CWT = 6UN = 1 PRIORIDADE = | = PROLONGAMENTO CWT =,familia_mae_corrobora_designacao
+M1,confirmada_pelo_utilizador,181,181,1,0,181,1,-,M1ES11000M4DT | M1ES11000M4GT | M1ES11001M4DT,RTE | M1ES1-M4-R1 | EP2654,familia_mae_corrobora_designacao
+DLTN,forte_padrao_e_uma_of,176,224,2,0,176,1,-,DLTN1 | DLTN10 | DLTN11,= TRANSF. DLT9 PARA DLTN9 =,familia_mae_corrobora_designacao
+H2,forte_padrao_e_varias_of,138,141,6,0,138,2,-,H2HA1004T | H2HA1005T | H2HA1006T,RTE | H2HS2-H2Y | EP2519 | RTE | H2HA-T1-R1 + H2HA-T1-R2 | EP2588,familia_mae_corrobora_designacao
+CS,forte_padrao_e_uma_of,116,172,5,0,114,1,-,CS04H004 | CS05H007 | CS10,= POSTE CS =,familia_mae_corrobora_designacao
+A12,forte_padrao_e_uma_of,101,444,19,0,101,1,-,A12A1 | A12A2 | A12A3,TECPOLES | MCA - BASES PARA ENSAIOS A_10K - EP2504 / A12K - EP2505 / A6KS - EP2506,familia_mae_corrobora_designacao
+WA,forte_padrao_e_varias_of,98,98,2,0,98,2,-,WA03D4734 | WA03E4734 | WA190D,= BASES WA = | = PROLONGAMENTO WA =  = EP2619 =,familia_mae_corrobora_designacao
+A18,forte_padrao_e_uma_of,97,284,8,0,97,1,-,A18A2 | A18A3 | A18A6,"MCA | POSTE A18K-27M / D320/T420+BC - CABEÇA D320, T420+BC - EP2656",familia_mae_corrobora_designacao
+DS,forte_padrao_e_varias_of,88,91,3,0,88,3,-,DS-D | DS-E | DS-N,= POSTE DS SEM BASE =  = URGENTE = | = MATERIAL DS = | = C.M.E. = MONTANTES P/ POSTE DS4 =,familia_mae_corrobora_designacao
+CA22,forte_padrao_e_varias_of,53,158,14,4,0,12,,CA22O107 | CA22O125 | CA22O126,TORRE PINHEIRO 16M - MOD. CA22O | TORRE PINHEIRO 30M - MOD. CA22O | TORRE PINHEIRO 24M - MOD.CA22O,familia_mae_corrobora_designacao
+SD,forte_padrao_e_uma_of,53,55,2,0,53,1,-,SD1 | SD10 | SD11,= POSTES SD SEM BASE =  = URGENTE =,familia_mae_corrobora_designacao
+RD,forte_padrao_e_uma_of,49,49,1,0,49,1,-,RD1 | RD10 | RD10A,= POSTE RD SEM BASE =  = URGENTE =,familia_mae_corrobora_designacao
+CA63,forte_padrao_e_varias_of,26,206,14,21,0,2,,CA63O065 | CA63O076 | CA63O077,1UN - CA63OJ16 + 1UN. CA1AOJ18 | CA63OJ19 - DA61-153,familia_mae_corrobora_designacao
+PA3,forte_padrao_e_uma_of,17,28,4,15,0,1,,PA3H004 | PA3H005 | PA3SV101,ACESSÓRIOS P/TORRE PA3SV - 24M(X2)/30M(X3)/36M(X11)/42M(X12) E PA5SV - 48M(X2),familia_mae_corrobora_designacao
+CA1,forte_padrao_e_varias_of,12,145,28,0,0,2,,CA1AO1 | CA1AO10 | CA1AO11,1UN - CA63OJ16 + 1UN. CA1AOJ18 | RECLAMAÇÃO DQ63-147  ESCADA CA1AOJ20,familia_mae_corrobora_designacao

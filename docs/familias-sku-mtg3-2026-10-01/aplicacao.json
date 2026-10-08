@@ -1,0 +1,68 @@
+{
+  "verificado_em_utc": "2026-10-01T08:41:21.733361+00:00",
+  "base": "dataresearchmtg_planeamento_20260930",
+  "setor": "MTG3",
+  "mapeamento_aplicado": true,
+  "skus_registados": 31413,
+  "familias_registadas": 317,
+  "familias_com_evidencia": 35,
+  "skus_por_estado": {
+    "codigo_de_projeto_por_confirmar": 1313,
+    "sem_familia": 141,
+    "prefixo_demasiado_generico": 5054,
+    "candidata_por_confirmar": 11931,
+    "forte_padrao_e_uma_of": 1538,
+    "forte_padrao_e_varias_of": 11255,
+    "confirmada_pelo_utilizador": 181
+  },
+  "versao_regras": "0db80088b98ccea7d23c57e2a6b20c3f8bb2bf24d0de4bc5bb8c049b03b5a20c",
+  "historico_linhas": 31413,
+  "primeira_aplicacao_alteracoes": 31413,
+  "reaplicacao_alteracoes": 0,
+  "planeamento_antes_da_juncao": {
+    "linhas": 77635,
+    "skus": 31413
+  },
+  "planeamento_com_familias": {
+    "linhas": 77635,
+    "skus": 31413,
+    "sem_mapeamento": 0
+  },
+  "m1": {
+    "area": "cantoneiras",
+    "familia_sku": "M1",
+    "familia_sku_estado": "confirmada_pelo_utilizador",
+    "skus_distintos": 181,
+    "ofs": 1,
+    "linhas_planeamento": 181
+  },
+  "consulta_m1_segundos": 14.014,
+  "publicacoes_planeamento": [
+    {
+      "versao": "41e90f2c2738e91e2c63eeec386f8b0f175ebc5d2f0e4075c3cadf14896acdd9",
+      "metadata": {
+        "contract": "planning-live-v1",
+        "database": "dataresearchmtg",
+        "snapshot": {
+          "loaded_at": "2026-09-30T12:23:48.098979+00:00",
+          "snapshot_id": "mtg_ef26928918339ece",
+          "source_filename": "Met3_Plan_Cantoneiras.xlsm"
+        },
+        "generation": 3232,
+        "published_at": "2026-10-01 08:36:47.483217+00:00",
+        "source_refresh_pending": false
+      }
+    }
+  ],
+  "testes": {
+    "automáticos": 34,
+    "browser": "RAW MTG3: colunas de família/estado visíveis; seleção exata M1 devolveu 181 linhas e 181 SKUs; sem erros JavaScript."
+  },
+  "consulta": "consulta_v2.planeamento_com_familias_sku",
+  "catalogo": "cadastro_v2.mapeamento_familias_sku",
+  "limites": [
+    "317 agrupamentos incluem 282 por confirmar; M1 confirmada pelo utilizador e 34 inferidas com evidência.",
+    "141 SKUs sem família identificada têm registo explícito; não lhes foi inventada uma família.",
+    "Classificação não define intercambiabilidade de peças; referências, variantes e quantidades preservadas."
+  ]
+}

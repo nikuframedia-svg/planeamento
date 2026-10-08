@@ -1,0 +1,109 @@
+Catálogo e ontologia de famílias de SKU — 01/10/2026
+
+O catálogo está na aplicação e na base dataresearchmtg_planeamento_20260930.
+A ontologia existente foi ampliada nas vistas kg_nos, kg_relacoes e kg_evidencias.
+As relações anteriores, as variantes técnicas, as OF, as rotas e as máquinas
+conservam a sua identidade. Família não certifica intercambiabilidade de peças
+nem compatibilidade de uma máquina para os restantes membros.
+
+Catálogo após auditoria de cobertura:
+- 31 603 referências literais, incluindo 251 sem família identificada;
+- 329 agrupamentos: M1 e M2 confirmadas pelo utilizador, 34 famílias inferidas
+  com evidência e 293 agrupamentos cujo significado continua por confirmar;
+- as 190 referências acrescentadas vêm do MES, incluindo grafias diferentes e
+  texto que pode não ser um SKU válido; a catalogação conserva a fonte e não
+  valida a identidade física nem funde grafias parecidas;
+- M2: 395 SKUs TENNET A225 / LH-14-338, nas OF264186, OF264198 e OF264293;
+- M1: 181 SKUs, conservados;
+- M2011 continua separado, com a sua classificação anterior.
+
+A confirmação M2 tem uma lista explícita em m2-confirmacao.json. Não se estende
+automaticamente a todos os códigos iniciados por M2. Novas referências que
+apenas se pareçam com M2 mantêm uma associação candidata por confirmar.
+A mudança de versão conservou as 31 413 classificações anteriores no histórico;
+apenas 395 SKUs mudaram de família. Reaplicar a versão produziu zero alterações.
+
+Classificação e evidência de produção são campos independentes:
+- registo_mes: quantidade positiva, data até hoje e referência exata de uma
+  folha da aplicação MTG3; sem somar ao Excel ou afirmar uma operação;
+- acumulado_excel: contador positivo e pavilhão explicitamente MTG3;
+- planeamento_excel: presença no planeamento MTG3, sem contador positivo;
+- associacao_indireta_mes: perfil completo associado a uma referência; não
+  comprova produção individual desse SKU ou da família inteira;
+- planeamento_manual: versão atual de um registo manual ou editado pela RAW,
+  incluindo rascunhos e texto livre; conserva valores, revisão e avisos sem
+  promover esses valores a produção comprovada nem somá-los a Excel/MES.
+
+M2 tem 395 SKUs planeados e uma associação indireta MES, datada de 30/09/2026,
+para M204-209, na Ficep Rapid 25T. A família está confirmada, mas essa associação
+não foi promovida a produção individual comprovada. Data Corte não se torna
+data real de produção. A exportação OCR sem setor MTG3 inequívoco não é usada
+para inventar uma associação ao setor.
+
+Consultas da ontologia:
+- consulta_v2.kg_familias_catalogo: famílias e estado de classificação;
+- consulta_v2.kg_familias_mapa: uma classificação por área/SKU, revisão e prova;
+- consulta_v2.kg_familias_evidencias: observações por fonte, com OF e recurso;
+- consulta_v2.kg_familias_resumo: contagens por fonte e estado da evidência;
+- consulta_v2.kg_familias_cobertura: uma explicação por linha Excel/MES/manual,
+  incluindo falta de referência, família desconhecida, data ou conflito;
+- consulta_v2.kg_familias_ordens: OF observadas nas fontes atuais que ainda
+  não existem na carga arquivada; são nós documentais, sem criar OF operacionais.
+  Códigos com grafia não reconhecida usam nós referencia_of_por_confirmar;
+- consulta_v2.kg_familias_nos e kg_familias_relacoes: extensão do grafo;
+- consulta_v2.kg_nos, kg_relacoes e kg_evidencias: ontologia completa.
+
+As famílias ligam-se aos SKUs e estes aos artigos existentes por referência
+exata e setor. As observações ligam família, SKU, OF, setor, máquina e versão
+de origem. Máquinas indicadas no Excel e registadas no MES têm relações distintas.
+As referências sem família continuam como nós do catálogo, com estado
+explícito. As suas observações elegíveis ligam SKU, OF, setor e fonte, mantendo
+vazia a relação de família. A falta de classificação não apaga a observação.
+Uma família aparecer no catálogo de cantoneiras não prova que seja produzida
+na MTG3: essa conclusão depende da evidência e do pavilhão de origem.
+
+A ontologia lê apenas as versões atuais publicadas atomicamente pela
+sincronização existente. Atualizações de Excel, MES e registos manuais chegam às vistas sem
+acumular versões antigas. Cada observação tem um identificador estável dentro
+da sua fonte. As quantidades de MES, Excel, operações e versões não são somadas.
+
+Ficheiros de consulta:
+- catalogo-familias.csv: catálogo completo, estado e evidência de produção;
+- sku-familia.csv: mapa de todos os SKUs com versão e revisão;
+- contexto-m2.json: exemplo de consulta da M2, com truncatura assinalada;
+- validacao.json: auditoria do catálogo, cobertura das fontes e relações reais;
+- cobertura-fontes.csv: motivo de integração/exclusão de cada observação;
+- auditoria.txt: falhas encontradas, correções e limitações ainda existentes;
+- browser.json e raw-m2.png: verificação do filtro M2 na RAW.
+
+Exemplo SQL:
+SELECT * FROM consulta_v2.kg_familias_resumo
+WHERE setor_contexto='MTG3' AND familia='M2';
+
+O gerador de contexto existente aceita agora --familia M2 --setor MTG3 --limite 5:
+/home/luis/projects/planeamento/.venv/bin/python \
+ /home/luis/projects/kanban-mes-mtg2/docs/reestruturacao-dataresearchmtg-2026-09-30/ligacao-logica-dados/contexto.py \
+ --familia M2 --setor MTG3 --limite 5
+
+Instalação reproduzível:
+1. Código app/raw/sku_families.py atualizado, SQL 044 e integração research já instalados.
+2. Na raiz de planeamento:
+   .venv/bin/python -m app.raw.sku_families --analysis docs/familias-sku-mtg3-2026-10-01 --confirmation docs/familias-sku-mtg3-2026-10-01/ontologia/m2-confirmacao.json
+3. O proprietário da ontologia deve poder ler origem_v2.aplicacao_fontes e
+   origem_v2.aplicacao_versoes, além das quatro vistas de integração de famílias.
+4. Aplicar sql/integration/research_sku_ontology.sql numa transação na nova base.
+   Repetir a instalação não duplica a extensão. O construtor do grafo anterior
+   reaplica esta extensão quando ela já estiver instalada.
+5. Carregar o código atualizado nos serviços e executar ontologia/validar.py.
+
+O worker descobre referências tanto no Excel e registos manuais como no MES
+(model_ref e plan_identity), respeitando o source_app do setor. A sincronização
+é periódica; a consulta de cobertura torna visível uma referência que ainda
+aguarda catalogação. Reinstalar uma análise conserva confirmações humanas e
+reclassifica todas as referências já conhecidas na mesma versão de regras.
+A auditoria compara as referências atuais das fontes com o catálogo; não usa
+uma contagem fixa como prova de completude.
+
+O leitor SQL de observações usa junções por hash/ordenação localmente para
+evitar releituras por SKU causadas pelas estimativas de chaves JSON. Esta opção
+não altera a configuração global do PostgreSQL.
