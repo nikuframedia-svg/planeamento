@@ -189,3 +189,29 @@ body .pq-alert .pq-sec,body .pq-alert .pq-of span,body .pq-alert .pq-of small,bo
 }
 /* Excel do setor no Drive por importar (08/10): uma linha discreta por baixo do título. */
 .pq-source-notice { margin: 0 0 .5rem; color: #8a5a00; }
+
+/* Edição manual do Gantt (Etapa 4, 08/10/2026): faixa das alterações, caixas fixadas, arrastar e o diálogo. */
+.pq-manual{margin:0 0 14px;padding:6px 12px;border:1px solid #a9d0d7;border-radius:10px;background:#e8f4f6}
+.pq-manual-line{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pq .pq-manual button{min-height:26px;padding:1px 10px}
+.pq-manual ul{list-style:none;margin:4px 0 0;padding:0}
+.pq-manual li{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:3px 0;border-top:1px solid #cfe3e8}
+.pq-manual li small{color:var(--q-muted)}
+.pq-edit-rule{margin:0 0 10px}
+.pq-box-sample.fixed{background:#fff;border:2px dashed var(--q-blue)}
+.pq .pq-box.fixed{outline:2px dashed #fff;outline-offset:-4px}
+.pq .pq-box.fixed:hover,.pq .pq-box.fixed:focus-visible{outline:3px solid #0b2f3d;outline-offset:1px}
+.pq-box .pq-fixed{font-weight:700}
+.pq .pq-box.draggable{cursor:grab}
+.pq-dragging .pq-box:not(.dragging){opacity:.35}
+.pq .pq-box.dragging{cursor:grabbing;z-index:5;opacity:.9;box-shadow:0 6px 18px #0005}
+.pq-dragging .pq-row.drop-no{opacity:.45}
+.pq-dragging .pq-row.drop-ok .pq-machine{background:#e8f4f6}
+.pq-cell.drop-target{background:#cde7ee!important;box-shadow:inset 0 0 0 2px var(--q-blue)}
+.pq-move{margin:16px 0 0;padding:10px 12px;border:1px solid var(--q-line);border-radius:10px;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px 12px}
+.pq-move legend{font-weight:700;padding:0 4px}
+.pq-move label{display:flex;flex-direction:column;gap:2px;color:var(--q-muted)}
+.pq-move input,.pq-move select{font:inherit;min-height:32px;padding:2px 6px;border:1px solid #b9c9ce;border-radius:8px;color:var(--q-ink);background:#fff;min-width:0}
+.pq-move p{grid-column:1 / -1;margin:0}
+.pq .pq-primary{background:var(--q-blue);border-color:var(--q-blue);color:#fff;font-weight:700}
+.pq .pq-primary:hover{background:var(--q-blue-dark)}

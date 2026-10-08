@@ -26,6 +26,9 @@ linhas da Carteira, decisões Planear (com a parte planeada, contrato 3A/3B) e o
   acabam depois do prazo), com a parte das horas que vem de máquinas sugeridas.
 - Pessoas por dia e turno = pico de máquinas a trabalhar × pessoas por máquina (defeito 1) contra as pessoas
   disponíveis por turno (vazio = sem défice).
+- Ajustes do Gantt (Etapa 4, anchors.py): todas as operações Planeado abertas da OF nessa máquina ficam seguidas a
+  partir do dia (primeira abertura) ou da hora; o resto da fila arruma-se à volta. Uma OF mudada de máquina no Gantt
+  usa as horas da máquina anterior até as ocorrências se refazerem («horas a recalcular»).
 Invariante: Σ horas previstas por máquina (colocáveis + não colocáveis com horas) = totais da Carga.
 """
 from __future__ import annotations
@@ -410,16 +413,19 @@ def _key_inputs(sector: str, now: datetime | None = None) -> dict:
     now = now or datetime.now(timezone.utc)
     today = lisbon_today(now)
     data, planned, occ = load._context(sector, today)
+    from . import anchors as anchor_store
     with planning.connect(readonly=True) as c:
         settings = sector_settings.read(c, sector)
         calendars = load._calendar_stamp(c)
+        anchor_rows, anchor_event = anchor_store.snapshot(c, sector)  # ajustes do Gantt (Etapa 4); sem a 053: ([], None)
     origin = origin_at(now, settings["template"])
     planned_map = _planned_map(planned)
+    # O dia de Lisboa fica sempre em último (cache.py: `stale_if` compara old[-1]); o último evento de âncora antes dele.
     key = (occ.get("stamp"), data.get("generation"), occ.get("decisions"),
            needs.digest(needs.serial(sorted(planned_map.items(), key=lambda x: str(x[0])))), calendars,
-           settings.get("revision"), origin.isoformat(), today)
+           settings.get("revision"), origin.isoformat(), anchor_event, today)
     return {"data": data, "planned": planned_map, "occ": occ, "settings": settings, "origin": origin, "today": today,
-            "now": now, "key": key, "stale": bool(occ.get("stale") or data.get("stale"))}
+            "now": now, "key": key, "stale": bool(occ.get("stale") or data.get("stale")), "anchors": anchor_rows}
 
 
 def _sources(c, sector: str) -> dict:
@@ -444,8 +450,12 @@ def _sources(c, sector: str) -> dict:
     return {"machines": machines, "calendars": calendars, "posts": posts, "names": names, "v2_at": v2}
 
 
-def compute(sector: str, ki: dict, src: dict) -> dict:
-    """A previsão inteira de um setor (puro: recebe as entradas já lidas)."""
+def compute(sector: str, ki: dict, src: dict, *, anchors: list[dict] | None = None) -> dict:
+    """A previsão inteira de um setor (puro: recebe as entradas já lidas).
+
+    `anchors` (Etapa 4): os ajustes do Gantt a usar em vez dos de `ki` (o impacto de um ajuste calcula-se antes e
+    depois com as mesmas entradas). Cada ajuste fixa todas as operações Planeado abertas da OF nessa máquina."""
+    from . import anchors as anchor_store
     started = clock.monotonic()
     settings, origin, today = ki["settings"], ki["origin"], ki["today"]
     data, occ = ki["data"], ki["occ"]
@@ -458,11 +468,16 @@ def compute(sector: str, ki: dict, src: dict) -> dict:
     ops, meta = operations_from(occ["facts"], sector=sector, planned=ki["planned"], own=own, pools=src["posts"],
                                 clients=clients)
     windows = label_windows([d for d in src["calendars"] if str(d.get("resource_id")) in own], template, origin)
+    anchor_rows = (ki.get("anchors") or []) if anchors is None else anchors
+    anchor_info = anchor_store.mark(ops, meta, anchor_rows, origin, pools=src["posts"], occ_stamp=(ki.get("occ") or {}).get("stamp"))
     result = dispatch.dispatch(ops, windows, origin)
     problems = dispatch.check(result, ops, windows)
     if problems:
         log.error("Previsão %s: o verificador encontrou %d problemas (ex.: %s)", sector, len(problems), problems[:3])
     placed = result["operations"]
+    for key in anchor_info["moved"]:  # mudou de máquina no Gantt: horas da máquina anterior até as ocorrências se refazerem
+        if key in placed:
+            placed[key]["warnings"] = [*placed[key]["warnings"], "horas_a_recalcular"]
     gone = {u["key"]: u for u in result["unschedulable"]}
     fallback = Rule(settings.get("workdays") or [], settings.get("holidays") or ())
     calendars = {rid: Calendar(w, fallback) for rid, w in windows.items()}
@@ -663,6 +678,7 @@ def compute(sector: str, ki: dict, src: dict) -> dict:
             "lines": lines, "orders": orders, "machines": by_machine, "slots": slots, "limiting": limiting(slots),
             "cells": dict(cells), "people": people, "counts": counts, "reliability": reliability,
             "machine_hours": machine_hours, "check": problems, "names": names, "elapsed": round(elapsed, 2),
+            "anchors": anchor_store.evaluate(anchor_rows, ops, meta, anchor_info, placed, names),
             "imported_at": data.get("imported_at"), "stale": ki["stale"], "stamp": needs.digest(needs.serial(ki["key"]))}
 
 
@@ -696,6 +712,15 @@ def current(sector: str, *, allow_stale: bool = False, now: datetime | None = No
     today = ki["today"]
     return _cache.get(sector, ki["key"], build, allow_stale=allow_stale, stale_if=lambda old: old[-1] == today,
                       refresh=lambda: current(sector))
+
+
+def inputs(sector: str) -> tuple[dict, dict]:
+    """(entradas, fontes) atuais da previsão, para calcular com `compute` fora da cache (impacto de um ajuste)."""
+    planning.check_area(sector)
+    ki = _key_inputs(sector)
+    with planning.connect(readonly=True) as c:
+        src = _sources(c, sector)
+    return ki, src
 
 
 def stamp(sector: str) -> str:

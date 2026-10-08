@@ -3,7 +3,10 @@
   const $ = id => document.getElementById(id);
   const DAYS = 7, FIRST_ROWS = 10;  // uma semana (seg–dom) por máquina, com os dias (pedido de 06/10/2026)
   const WEEKDAYS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
-  const state = {sector: "cantoneiras", data: null, offset: 0, showAll: false, showIdle: false, loading: 0, day: null, dayMachine: null, dayData: null, dayLoading: 0};
+  const state = {sector: "cantoneiras", data: null, offset: 0, showAll: false, showIdle: false, loading: 0, day: null, dayMachine: null, dayData: null, dayLoading: 0,
+    drag: null, justDragged: false, saving: false, manualOpen: false};
+  // Edição manual (Etapa 4, 08/10): só quando o servidor a anuncia (Python antigo ou utilizador de consulta = só leitura).
+  const canEdit = () => Boolean(state.data?.capabilities?.ajustes);
 
   const el = (tag, text, cls) => {const n = document.createElement(tag); if (text != null) n.textContent = text; if (cls) n.className = cls; return n};
   const day = iso => new Date(iso.slice(0, 10) + "T12:00:00Z");
@@ -62,7 +65,7 @@
       : d.source.kind === "automatica"
         ? `${d.sector_label} · proposta automática (não aceite; o Excel é o plano oficial) · ${number(d.source.placed)} de ${number(d.source.operations)} operações com hora · as restantes no dia da Tabela · dados de ${imported}`
         : `${d.sector_label} · máquina e dia tirados do planeamento (Excel) · dados de ${imported}`;
-    renderAlert(); renderBoard();
+    renderAlert(); renderBoard(); renderManual();
   }
 
   // Excel do setor no Drive mais recente do que o importado (08/10): uma linha, só quando a API a manda.
@@ -259,8 +262,13 @@
       button.append(el("b", box.of), el("span", box.customer || box.designation || ""),
         el("span", box.hours ? `${hours(box.hours)} h · ${pieces(box.pieces, box.pieces_unknown)}` : pieces(box.pieces, box.pieces_unknown)));
       if (box.forecast) button.classList.add("approximate");
-      button.setAttribute("aria-label", `${box.of}, ${box.customer || ""}, ${machine.name}, de ${short(box.start)} a ${short(lastDay(box))}${late ? ", atrasada" : ""}`);
-      button.addEventListener("click", () => openBox(box, machine));
+      if (box.anchor) {button.classList.add("fixed"); button.append(el("span", fixedLabel(box.anchor), "pq-fixed"))}
+      button.setAttribute("aria-label", `${box.of}, ${box.customer || ""}, ${machine.name}, de ${short(box.start)} a ${short(lastDay(box))}${late ? ", atrasada" : ""}${box.anchor ? ", fixada" : ""}`);
+      button.addEventListener("click", () => {if (state.justDragged) {state.justDragged = false; return} openBox(box, machine)});
+      if (canEdit() && box.keys?.length) {
+        button.classList.add("draggable");
+        button.addEventListener("pointerdown", event => dragStart(event, box, machine, button));
+      }
       row.append(button);
     }
     return row;
@@ -308,13 +316,17 @@
       ...(box.start_at ? [["Nesta máquina", `${moment(box.start_at)} a ${box.end_at ? moment(box.end_at) : "depois do fim dos calendários"}`]] : []),
       ...(box.conclusion ? [["Conclusão prevista", moment(box.conclusion)]] : []),
       ...(box.margin_days != null ? [["Margem", margin(box.margin_days), box.margin_days < 0 ? "late" : ""]] : []),
-      ...(box.conflicts?.length ? [["Avisos", box.conflicts.join(" · ")]] : [])];
+      ...(box.conflicts?.length ? [["Avisos", box.conflicts.join(" · ")]] : []),
+      ...(box.anchor ? [["Alteração", `${fixedLabel(box.anchor)} · ${box.anchor.autor || "—"}`]] : [])];
     for (const [label, value, cls] of rows) body.append(el("dt", label), el("dd", value, cls));
     const actions = $("dialog-actions"); actions.replaceChildren();
+    const move = canEdit() && box.keys?.length ? moveForm(box, machine) : null;
+    if (move) body.after(move.section); else $("dialog").querySelector(".pq-move")?.remove();
     const open = el("a", "Ver na Carteira");
     open.href = `/planeamento/carteira?setor=${encodeURIComponent(state.sector)}&vista=of&q=${encodeURIComponent(box.of)}`;
     const close = el("button", "Fechar"); close.value = "close";
     actions.append(open);
+    if (move) actions.append(...move.buttons);
     if (state.data?.day_view && !box.approximate && !state.day) {
       const see = el("button", `Ver o dia ${short(box.start < todayIso() && lastDay(box) >= todayIso() ? todayIso() : box.start)}`); see.type = "button";
       see.addEventListener("click", () => {$("dialog").close(); openDay(box.start < todayIso() && lastDay(box) >= todayIso() ? todayIso() : box.start, machine.id)});
@@ -471,6 +483,7 @@
   }
 
   function openSegment(g, m, d) {
+    $("dialog").querySelector(".pq-move")?.remove();
     const title = $("dialog-title"); title.textContent = g.of; title.classList.toggle("late", g.late);
     const body = $("dialog-body"); body.replaceChildren();
     const rows = [["Cliente", g.customer || "—"], ["Máquina", m.name], ["Turno", g.shift ? shiftName(g, d.day) : "Fora do horário dos turnos"],
@@ -482,6 +495,172 @@
     const close = el("button", "Fechar"); close.value = "close";
     actions.append(open, close);
     $("dialog").showModal();
+  }
+
+  // --- Edição manual do Gantt (Etapa 4, 08/10/2026): arrastar na semana (encaixe ao dia), «Mudar dia/máquina» no
+  // diálogo (também por teclado), faixa com as alterações ativas, Desfazer e Retirar. Grava logo; os avisos e o
+  // impacto vêm do servidor numa só nota.
+
+  const fixedLabel = a => `Fixada ${short(a.dia)}${a.hora ? ` ${a.hora}` : ""}${a.ja_passou ? " (já passou)" : ""}`;
+  const machineName = id => state.data?.machines.find(m => m.id === id)?.name || id;
+
+  function renderManual() {
+    const box = $("manual"), info = state.data?.manual, rule = $("edit-rule");
+    if (rule) {
+      rule.hidden = !canEdit();
+      rule.textContent = canEdit() ? `Arrasta uma caixa para outro dia ou para outra máquina, ou carrega nela e usa «Mudar dia/máquina». ${state.data.capabilities.regra_ajustes || ""}` : "";
+    }
+    const legend = $("legend-fixed");
+    if (legend) legend.hidden = !info?.count;
+    if (!box) return;
+    box.hidden = !info?.count;
+    if (!info?.count) return;
+    const last = info.last;
+    $("manual-text").textContent = `Edição manual ativa · ${last.of} → ${short(last.day)}${last.hour ? ` ${last.hour}` : ""} (${last.machine})`;
+    const undo = $("manual-undo"); undo.hidden = !canEdit(); undo.disabled = state.saving;
+    undo.onclick = () => adjust({acao: "desfazer", ajuste_id: last.id}, `Desfeita a alteração de ${last.of}`);
+    const toggle = $("manual-toggle");
+    toggle.textContent = `${plural(info.count, "alteração", "alterações")} ${state.manualOpen ? "▾" : "▸"}`;
+    toggle.setAttribute("aria-expanded", String(state.manualOpen));
+    toggle.onclick = () => {state.manualOpen = !state.manualOpen; renderManual()};
+    const list = $("manual-list"); list.hidden = !state.manualOpen;
+    const ul = list.querySelector("ul"); ul.replaceChildren();
+    for (const item of info.items) {
+      const li = el("li");
+      const when = item.created_at ? moment(item.created_at) : "";
+      li.append(el("span", `${item.of} → ${short(item.day)}${item.hour ? ` ${item.hour}` : ""} (${item.machine}) · ${item.author || "—"}${when ? `, ${when}` : ""}`));
+      if (item.avisos?.length) li.append(el("small", item.avisos.join(" · ")));
+      if (canEdit()) {
+        const out = el("button", "Retirar"); out.type = "button"; out.disabled = state.saving;
+        out.addEventListener("click", () => adjust({acao: "retirar", ajuste_id: item.id}, `Retirada a alteração de ${item.of}`));
+        li.append(out);
+      }
+      ul.append(li);
+    }
+  }
+
+  // Impacto (calculado pelo servidor antes e depois): só as partes com alguma coisa, numa só nota.
+  function impactText(result) {
+    const i = result.impacto || {}, parts = [];
+    if (i.later_count) parts.push(`${plural(i.later_count, "OF acaba", "OF acabam")} mais tarde: ${i.later.map(x => `${x.of} +${plural(x.days, "dia útil", "dias úteis")}`).join(", ")}${i.later_count > i.later.length ? "…" : ""}`);
+    if (i.new_late_count) parts.push(`${plural(i.new_late_count, "OF passa", "OF passam")} a atrasar: ${i.new_late.map(x => `${x.of}${x.due_day ? ` (prazo ${short(x.due_day)})` : ""}`).join(", ")}`);
+    if (i.complete_count) parts.push(`${plural(i.complete_count, "turno fica completo", "turnos ficam completos")}: ${i.complete.map(x => `${x.machine} ${short(x.date)}${x.shift ? ` ${x.shift}.º` : ""}`).join(", ")}`);
+    return parts;
+  }
+
+  async function adjust(body, label) {
+    if (state.saving) return;
+    state.saving = true; notice("A gravar a alteração…"); renderManual();
+    try {
+      const response = await fetch("/planeamento/api/setor/quadro/ajustes", {
+        method: "POST", headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({setor: state.sector, request_id: crypto.randomUUID(), ...body}),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (response.status === 404 && !result.error) throw Error("A edição do Gantt precisa que o serviço do planeamento seja reiniciado.");
+      if (!response.ok) throw Error(result.error || result.detail || `Erro ${response.status}`);
+      state.saving = false;
+      if (result.quadro) {state.data = result.quadro; render(); sourceNotice()} else await load(true);
+      notice([label, ...(result.avisos || []), ...impactText(result)].filter(Boolean).join(". ") + ".");
+    } catch (error) {
+      state.saving = false; renderManual();
+      notice(`Não foi possível gravar: ${error.message}`, true);
+    }
+  }
+
+  function moveForm(box, machine) {
+    $("dialog").querySelector(".pq-move")?.remove();
+    const section = el("fieldset", null, "pq-move");
+    section.append(el("legend", "Mudar dia/máquina"));
+    const field = (label, input) => {const l = el("label"); l.append(el("span", label), input); section.append(l); return input};
+    const date = document.createElement("input"); date.type = "date"; date.required = true; date.id = "move-day";
+    date.value = box.anchor?.dia || (box.start < todayIso() ? todayIso() : box.start);
+    field("Dia", date);
+    const shift = document.createElement("select"); shift.id = "move-shift";
+    shift.append(new Option("Dia todo (a partir da 1.ª abertura)", ""));
+    (state.data.template || []).forEach((t, i) => shift.append(new Option(`${i + 1}.º turno (${t[0]}–${t[1]})`, String(i + 1))));
+    field("Turno", shift);
+    const hour = document.createElement("input"); hour.type = "time"; hour.step = 900; hour.id = "move-hour"; hour.value = box.anchor?.hora || "";
+    field("Hora (opcional)", hour);
+    const target = document.createElement("select"); target.id = "move-machine";
+    target.append(new Option(machine.name, machine.id));
+    for (const c of box.candidates || []) target.append(new Option(`${c.name}${c.in_spec ? "" : " (fora da ficha técnica)"}`, c.id));
+    field("Máquina", target);
+    section.append(el("p", state.data.capabilities?.regra_ajustes || "", "pq-sub"));
+    const fix = el("button", "Fixar aqui", "pq-primary"); fix.type = "button";
+    fix.addEventListener("click", () => {
+      if (!date.value) {date.reportValidity(); return}
+      $("dialog").close();
+      const body = {acao: "mover", of: box.of, de: machine.id, maquina: target.value, dia: date.value};
+      if (hour.value) body.hora = hour.value; else if (shift.value) body.turno = Number(shift.value);
+      const at = hour.value ? ` ${hour.value}` : shift.value ? ` ${shift.value}.º turno` : "";
+      adjust(body, `${box.of} → ${short(date.value)}${at} (${machineName(target.value)}) fixada`);
+    });
+    const buttons = [fix];
+    if (box.anchor) {
+      const out = el("button", "Retirar"); out.type = "button";
+      out.addEventListener("click", () => {$("dialog").close(); adjust({acao: "retirar", ajuste_id: box.anchor.id}, `Retirada a alteração de ${box.of}`)});
+      buttons.push(out);
+    }
+    return {section, buttons};
+  }
+
+  // Arrastar (rato ou caneta; no ecrã tátil usa-se o diálogo): encaixe ao dia e à linha de uma máquina candidata.
+  function dragStart(event, box, machine, button) {
+    if (event.button !== 0 || event.pointerType === "touch" || state.saving || state.day) return;
+    const cols = [...$("gantt").querySelectorAll(".pq-head > :not(.corner)")].map(c => c.getBoundingClientRect());
+    const grab = cols.findIndex(r => event.clientX >= r.left && event.clientX < r.right);
+    state.drag = {box, machine, button, x: event.clientX, y: event.clientY, moved: false, grab: Math.max(0, grab), cols, target: null};
+    button.setPointerCapture?.(event.pointerId);
+    button.addEventListener("pointermove", dragMove);
+    button.addEventListener("pointerup", dragEnd, {once: true});
+    button.addEventListener("pointercancel", dragClean, {once: true});
+  }
+
+  function dragMove(event) {
+    const d = state.drag;
+    if (!d) return;
+    const dx = event.clientX - d.x, dy = event.clientY - d.y;
+    if (!d.moved) {
+      if (Math.hypot(dx, dy) < 6) return;
+      d.moved = true;
+      const ok = new Set([d.machine.id, ...(d.box.candidates || []).map(c => c.id)]);
+      $("gantt").classList.add("pq-dragging"); d.button.classList.add("dragging");
+      for (const row of $("gantt").querySelectorAll(".pq-row")) row.classList.add(ok.has(row.dataset.id) ? "drop-ok" : "drop-no");
+    }
+    d.button.style.transform = `translate(${dx}px, ${dy}px)`;
+    for (const c of $("gantt").querySelectorAll(".drop-target")) c.classList.remove("drop-target");
+    const row = [...$("gantt").querySelectorAll(".pq-row.drop-ok")].find(r => {const b = r.getBoundingClientRect(); return event.clientY >= b.top && event.clientY < b.bottom});
+    const col = d.cols.findIndex(r => event.clientX >= r.left && event.clientX < r.right);
+    if (!row || col < 0) {d.target = null; return}
+    // O início da caixa anda tantos dias quantos o ponteiro andou (também quando começa antes desta semana).
+    const startDay = iso(addDays(day(d.box.start), col - d.grab));
+    d.target = {machine: row.dataset.id, day: startDay < todayIso() ? todayIso() : startDay};
+    const cell = row.querySelectorAll(".pq-cell")[between(windowStart(), day(d.target.day))];
+    if (cell) cell.classList.add("drop-target");
+  }
+
+  function dragClean() {
+    const d = state.drag;
+    state.drag = null;
+    if (!d) return null;
+    d.button.removeEventListener("pointermove", dragMove);
+    d.button.style.transform = "";
+    d.button.classList.remove("dragging");
+    $("gantt").classList.remove("pq-dragging");
+    for (const c of $("gantt").querySelectorAll(".drop-target")) c.classList.remove("drop-target");
+    for (const r of $("gantt").querySelectorAll(".pq-row")) r.classList.remove("drop-ok", "drop-no");
+    return d;
+  }
+
+  function dragEnd() {
+    const d = dragClean();
+    if (!d || !d.moved) return;
+    state.justDragged = true; setTimeout(() => {state.justDragged = false}, 0);
+    const t = d.target;
+    if (!t || (t.machine === d.machine.id && t.day === d.box.start && !d.box.anchor)) return;
+    adjust({acao: "mover", of: d.box.of, de: d.machine.id, maquina: t.machine, dia: t.day},
+      `${d.box.of} → ${short(t.day)} (${machineName(t.machine)}) fixada`);
   }
 
   // --- Arranque

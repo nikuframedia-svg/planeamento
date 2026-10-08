@@ -12,8 +12,9 @@ Regras:
 - posto partilhado (`pool`, ex.: Fita pav.1 com o Doall e a Thomas): é UM recurso. Em cada momento corre, no posto,
   a operação de maior prioridade cuja máquina está aberta; uma operação começada continua até acabar ou até a sua
   máquina fechar (sem preempção a meio de uma janela);
-- âncoras (Etapa 4, `anchor: {start, id?, order?}`): colocadas primeiro, pela ordem de criação (`order`). Nunca
-  começam em hora fechada: passam para a abertura seguinte, com o aviso «fora_de_horario». Duas âncoras sobrepostas:
+- âncoras (Etapa 4, `anchor: {start, id?, order?, until?}`): colocadas primeiro, pela ordem de criação (`order`). Nunca
+  começam em hora fechada: passam para a abertura seguinte, com o aviso «fora_de_horario» (numa âncora de dia,
+  `until` = fim desse dia, só quando a abertura já fica depois do dia). Duas âncoras sobrepostas:
   a mais recente fica logo a seguir, com o aviso «sobreposta:<chave>». No passado: começa na origem, aviso
   «ja_passou». As operações da mesma âncora (`id`) ficam seguidas, sem aviso entre elas;
 - não programáveis, com o motivo: o que vem em `reason` (estacionada, saldo_desconhecido, outro_setor,
@@ -117,7 +118,7 @@ def dispatch(operations: list[dict], windows: dict, origin: datetime) -> dict:
     """Despacha as operações. `windows` = {resource_id: [(início UTC, fim UTC, (dia, turno))]}.
 
     Cada operação: {key, resource_id, seconds (int), priority_key (tupla), scope (0|1), of, line_key, due, due_field,
-    pool (posto partilhado ou None), anchor ({start, id?, order?} ou None), reason (não programável, opcional)}.
+    pool (posto partilhado ou None), anchor ({start, id?, order?, until?} ou None), reason (não programável, opcional)}.
     """
     ops = sorted(operations, key=_order)
     result_ops: dict[str, dict] = {}
@@ -178,9 +179,18 @@ def dispatch(operations: list[dict], windows: dict, origin: datetime) -> dict:
         i = bisect_right([iv[1] for iv in free], wanted)
         first = max(free[i][0], wanted) if i < len(free) else None
         if group not in group_end and first is not None and first > wanted:
-            # Porque não começou à hora: outra âncora ocupa esse momento, ou a máquina está fechada.
-            other = next((o for o in sorted(occupants[slot]) if o[1] <= wanted < o[0]), None)
-            warnings.append(f"sobreposta:{other[2]}" if other else "fora_de_horario")
+            # Porque não começou à hora: outra âncora ocupa a primeira abertura da máquina, ou a máquina está fechada.
+            # `until` (âncora de dia, Etapa 4): começar mais tarde dentro desse dia não é aviso.
+            base = free_base[rid]
+            j = bisect_right([iv[1] for iv in base], wanted)
+            opening = max(base[j][0], wanted) if j < len(base) else None
+            until = a.get("until")
+            until = int((until - origin).total_seconds()) if until is not None else None
+            if opening is not None and first > opening:
+                other = next((o for o in sorted(occupants[slot]) if o[1] <= opening < o[0]), None)
+                warnings.append(f"sobreposta:{other[2]}" if other else "fora_de_horario")
+            elif until is None or first >= until:
+                warnings.append("fora_de_horario")
         segments, remaining = _consume(free, wanted, int(op["seconds"]))
         record(op, segments, remaining, anchored=True, warnings=warnings,
                at=(first if first is not None else wanted) if int(op["seconds"]) == 0 else None)

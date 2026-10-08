@@ -17,6 +17,9 @@ Só leitura. Duas partes:
   que não aparecem no quadro (`source.missing`) e ficam só contadas em `source.second_operation`.
 - Turnos e dia (06/10/2026): cada caixa diz as horas por dia e turno; `day()` dá o Gantt de um dia com
   eixo de horas, faixas dos turnos e totais por turno, dos segmentos da previsão.
+- Edição manual (Etapa 4, anchors.py): as caixas fixadas trazem `anchor` {id, dia, hora, estado, autor} e cada
+  caixa `candidates` (outras máquinas do setor com calendário e horas para a operação principal); no topo, `manual`
+  {count, last, items} com os ajustes ativos e `capabilities.ajustes` (gravar só com a 053 e utilizador que grava).
 """
 from __future__ import annotations
 
@@ -221,16 +224,17 @@ def _due_day(value) -> date | None:
         return None
 
 
-def _conflicts(meta: dict, rid: str, names: dict, warnings=()) -> list[str]:
-    """Avisos de uma operação no plano em uso (nunca bloqueiam): iniciada noutra máquina e os das âncoras."""
+def _conflicts(meta: dict, rid: str, names: dict, warnings=(), operations: dict | None = None, start=None) -> list[str]:
+    """Avisos de uma operação no plano em uso (nunca bloqueiam): iniciada noutra máquina e os dos ajustes do Gantt."""
+    from .anchors import warning_text
     out = []
     other = meta.get("documentary_resource_id")
     if meta.get("started") and other and other != rid:
         out.append(f"Iniciada na {names.get(other) or meta.get('hours_machine') or 'outra máquina'}")
     for w in warnings or ():
-        out.append({"fora_de_horario": "Fixada em hora fechada: passou para a abertura seguinte",
-                    "ja_passou": "Ajuste já passou: o resto vai à frente da fila"}.get(w)
-                   or (f"Sobrepõe outra âncora ({w.split(':', 1)[1]})" if w.startswith("sobreposta:") else w))
+        text = warning_text(w, operations, start=start)
+        if text not in out:
+            out.append(text)
     return out
 
 
@@ -271,7 +275,7 @@ def boxes_from_forecast(fc: dict, *, today: date | None = None, names: dict | No
                       "estimated": m.get("load_basis") == "estimada", "days": dict(days), "timed": timed, "keys": [key],
                       "start_at": first, "end_at": last if r["status"] == "colocada" else None,
                       "late_exact": bool(r.get("due") and (r["end"] is None or r["end"] > r["due"])),
-                      "conflicts": _conflicts(m, r["resource_id"], names, r.get("warnings"))})
+                      "conflicts": _conflicts(m, r["resource_id"], names, r.get("warnings"), fc["operations"], r["start"])})
     second, elsewhere = 0, defaultdict(lambda: {"orders": set(), "hours": 0.0, "operations": 0, "items": []})
     for u in fc["unschedulable"]:
         if u["scope"] != 0:
@@ -289,10 +293,15 @@ def boxes_from_forecast(fc: dict, *, today: date | None = None, names: dict | No
             missing.append({"of": u["of"], "reference": m.get("reference"), "operation": m.get("operation"),
                             "reasons": [REASON_TEXT.get(u["reason"], u["reason"])]})
     boxes = _merge(items, today)
+    fixed = {(a["of"], a["resource_id"]): a for a in fc.get("anchors") or () if a["state"] == "ativa"}
     for box in boxes:
         o = orders.get(box["of"]) or {}
+        a = fixed.get((box["of"], box["resource_id"]))
         box.update(conclusion=o.get("end"), margin_days=o.get("margin_days"), risk=o.get("state"),
-                   already_late=bool(o.get("already_late")))
+                   already_late=bool(o.get("already_late")),
+                   # Ajuste do Gantt (Etapa 4): a caixa está fixada nesse dia (ou dia e hora) por uma pessoa.
+                   anchor={"id": a["id"], "dia": a["day"], "hora": a["hour"], "estado": a["state"], "autor": a["author"],
+                           "ja_passou": "ja_passou" in a["warnings"]} if a else None)
     machines = [{"id": rid, "name": names.get(rid) or rid, "orders": len(e["orders"]), "hours": round(e["hours"], 1),
                  "operations": e["operations"], "items": e["items"][:50]} for rid, e in sorted(elsewhere.items(), key=lambda x: -x[1]["hours"])]
     note = {"operations": sum(m["operations"] for m in machines), "orders": len({o for e in elsewhere.values() for o in e["orders"]}),
@@ -370,9 +379,17 @@ def _build(sector: str) -> tuple[dict, dict]:
               "operations": sum(1 for r in fc["operations"].values() if r["scope"] == 0)
               + sum(1 for u in fc["unschedulable"] if u["scope"] == 0 and u["reason"] != "segunda_operacao"),
               "selected_orders": len({m["of"] for m in fc["meta"].values() if m.get("plan")})}
+    try:  # máquinas para onde a caixa se pode arrastar (Etapa 4); sem elas, só muda o dia
+        from .anchors import candidates
+        targets = candidates(sector, boxes, fc)
+    except Exception:
+        import logging
+        logging.getLogger(__name__).exception("Máquinas candidatas do Gantt indisponíveis")
+        targets = {}
     for box in boxes:
         box.update(customers.get(box["of"], {"customer": "", "designation": ""}))
         box["shifts"] = _shift_hours(box["timed"], template)
+        box["candidates"] = targets.get((box["of"], box["resource_id"]), [])
     private = {"timed": defaultdict(list), "boxes": defaultdict(list), "template": template}
     machines = []
     for rid, m in fc["machines"].items():
@@ -388,27 +405,56 @@ def _build(sector: str) -> tuple[dict, dict]:
     for m in machines:
         m["days"] = days.get(m["id"], {})
     machines.sort(key=lambda m: (not m["boxes"], m["name"]))
+    active = sorted((a for a in fc.get("anchors") or () if a["state"] == "ativa"), key=lambda a: str(a["created_at"]), reverse=True)
+    items = [{k: a[k] for k in ("id", "of", "resource_id", "machine", "day", "hour", "author", "created_at")}
+             | {"avisos": [_warning(w, fc, a) for w in a["warnings"]]} for a in active]
     result = {"sector": sector, "sector_label": portfolio.SECTORS[sector], "today": fc["today"],
+              "manual": {"count": len(items), "last": items[0] if items else None, "items": items},
               "imported_at": data["imported_at"], "source": source, "machines": machines, "template": template, "day_view": True,
               "elsewhere": extra["elsewhere"], "not_in_plans": not_in_plans(today=fc["today"]), "stale": bool(fc.get("stale"))}
     return result, private
 
 
-def board(sector: str, *, allow_stale: bool = False) -> dict:
+def board(sector: str, *, allow_stale: bool = False, fresh_plan: bool = False) -> dict:
     """Gantt simples: o plano em uso (as linhas Planeado na previsão com capacidade finita).
 
     `allow_stale` (a rota GET): o Gantt e as linhas podem ser os anteriores enquanto se refazem; a lista
-    vermelha usa sempre as decisões atuais. `stale` diz se alguma parte é a anterior.
+    vermelha usa sempre as decisões atuais. `stale` diz se alguma parte é a anterior. `fresh_plan` (depois de um
+    ajuste): o Gantt é sempre o atual, mesmo com `allow_stale` nas linhas.
+    `capabilities.ajustes`: o ecrã só deixa arrastar e fixar quando a migração 053 existe e o utilizador grava.
     """
     portfolio.check_sector(sector)
     data = portfolio.current(sector, allow_stale=allow_stale)
     decisions = selection.current(sector)
-    result, _ = _built(sector, data, allow_stale=allow_stale)
+    result, _ = _built(sector, data, allow_stale=allow_stale and not fresh_plan)
     from . import drive_notice
     return {**result, "unplanned": unplanned(sector, data=data, decisions=decisions),
             # Excel do setor no Drive mais recente do que o importado (F16, 08/10): uma linha de aviso.
             "source_notice": drive_notice.text(sector),
+            "capabilities": _capabilities(),
             "stale": bool(result.get("stale") or data.get("stale"))}
+
+
+def _capabilities() -> dict:
+    """Edição manual do Gantt: instalada (053) e o utilizador não é só de consulta."""
+    from . import anchors
+    from .auth import readonly_users
+    from .. import planning_registration as registration
+    try:
+        with planning.connect(readonly=True) as c:
+            installed = anchors.installed(c)
+    except Exception:
+        installed = False
+    readonly = (registration.ACTOR.get() or "") in readonly_users()
+    return {"ajustes": installed and not readonly,
+            "ajustes_motivo": None if installed and not readonly else anchors.NOT_INSTALLED if not installed
+            else "Este utilizador só pode consultar.",
+            "regra_ajustes": anchors.RULE}
+
+
+def _warning(code: str, fc: dict, anchor: dict) -> str:
+    from .anchors import warning_text
+    return warning_text(code, fc["operations"], start=anchor.get("start"))
 
 
 def _merge_pieces(pieces: list[dict]) -> list[dict]:
