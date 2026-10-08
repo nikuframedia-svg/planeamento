@@ -188,9 +188,12 @@ function quadro({anchored = false, capabilities = true} = {}) {
               withCandidates: boxes.filter((b) => b.candidates?.length).length, anchors: boxes.filter((b) => b.anchor).length};
     });
     console.log('real:', JSON.stringify(info));
-    assert.equal(info.capabilities?.ajustes, false, 'sem a 053 na base: só leitura');
-    assert.match(info.capabilities?.ajustes_motivo || '', /migração 053/);
-    assert.equal(await page.locator('.pq-box.draggable').count(), 0);
+    if (info.capabilities?.ajustes) {  // com a 053 instalada: a edição está ligada (sem gravar nada aqui)
+      assert.ok(info.boxes === 0 || info.withCandidates > 0, 'caixas com máquinas candidatas');
+    } else {  // sem a 053 na base: só leitura
+      assert.match(info.capabilities?.ajustes_motivo || '', /migração 053/);
+      assert.equal(await page.locator('.pq-box.draggable').count(), 0);
+    }
     await page.close();
   }
 
