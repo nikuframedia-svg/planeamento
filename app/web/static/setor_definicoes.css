@@ -100,3 +100,11 @@ ol.policy-list li { white-space: nowrap; }
 ol.policy-list li.off { color: #5d737a; }
 ol.policy-list button.linklike { text-decoration: none; padding: 0 .3rem; }
 #second-op { margin: .4rem 0 0; }
+/* Etapa 3 (ponto 9): clientes prioritários por ordem e sugestão dos grupos de operadores. */
+ol.client-list { margin: 0 0 .3rem; padding-left: 1.4rem; }
+ol.client-list li { white-space: nowrap; }
+ol.client-list button.linklike { text-decoration: none; padding: 0 .3rem; }
+.client-add { display: flex; gap: .4rem; flex-wrap: wrap; align-items: center; }
+.client-add input { border: 1px solid #c9d4d7; padding: .1rem .3rem; width: 14rem; max-width: 100%; }
+.suggest { margin-top: .3rem; }
+table.plan-table .rule { white-space: normal; }

@@ -17,10 +17,19 @@ Secção «Planeamento» (P9, Etapa 2, 08/10): um só dicionário, `PLANNING`, d
 limites, a origem (pressuposto, declarado, regra ou medido), onde se aplicam e o que recalculam. O ecrã desenha-se a
 partir dele (`planning_view`) e a gravação `tipo='planeamento'` valida por ele. As máquinas da 2.ª operação das
 cantoneiras saem da lista das Definições (`second_operation.machine`), mas não de `machine_rows` (calendários e turnos).
+
+Etapa 3 (ponto 9, 08/10): a mesma secção mostra e grava o que só a previsão (forecast.py) lê — folga_dias (int),
+clientes_prioritarios ([str], escolhidos dos clientes da Carteira), pessoas_por_maquina ({máquina: int}; um int vale
+para todas) e pessoas_por_turno ([int|None] × 3) — e, só como texto, a ordem do plano. Gravá-las não marca agregados
+(FORECAST_ONLY): só a previsão se refaz. «Medido» das pessoas: operadores distintos por dia útil nas folhas MES
+validadas dos últimos 28 dias (indicativo; o turno vem quase sempre vazio). Os grupos de operadores do catálogo
+(ex.: OPERADORES_PAV1) só se sugerem.
 """
 from __future__ import annotations
 
 import re
+import statistics
+import time
 import uuid
 from contextlib import nullcontext
 from datetime import date, datetime, timedelta, timezone
@@ -37,10 +46,11 @@ METHODS = {"metres_hour": "m/h", "area_hour": "mm²/h", "units_hour": "peças/h"
 
 # Parâmetros do planeamento (P9, 08/10). A chave é a da definição do setor (sector_settings.definition) quando
 # `stored`; a política de prazo tem a sua tabela (priority) e os postos vêm do catálogo (só leitura).
-# `kind` diz ao ecrã como desenhar: por_maquina, numero, lista, por_turno, politica, postos.
-# Só os `active` aparecem e se gravam; os da Etapa 3 ficam aqui prontos (basta ativá-los, o ecrã já os desenha).
+# `kind` diz ao ecrã como desenhar: por_maquina, numero, lista, por_turno, politica, postos, regra (só texto).
+# Só os `active` aparecem e se gravam.
 ORIGINS = {"pressuposto": "Pressuposto", "declarado": "Declarado", "regra": "Regra", "medido": "Medido"}
 RECALC_HOURS = "Vai recalcular as horas (2–3 min)."
+RECALC_FORECAST = "Recalcula só a previsão."
 PLANNING = {
     "efficiency": {
         "label": "Eficiência", "kind": "por_maquina", "unit": "%", "default": 100, "limits": (10, 200),
@@ -61,24 +71,32 @@ PLANNING = {
         "label": "Posto e máquinas", "kind": "postos", "unit": None, "default": None, "limits": None,
         "origin": "declarado", "stored": False, "active": True,
         "applies_in": "Capacidade na Carga e nos totais do setor: conta uma vez.", "recalcula": None},
-    # Etapa 3 (motor de previsão): ainda não se mostram nem se gravam.
+    # Etapa 3 (motor de previsão, 08/10): só a previsão os lê. Gravá-los não recalcula horas, ocorrências nem a Carga.
     "folga_dias": {
         "label": "Folga antes do prazo", "kind": "numero", "unit": "dias úteis", "default": 2, "limits": (0, 20),
-        "origin": "pressuposto", "stored": True, "active": False,
-        "applies_in": "Estado «Em risco» da previsão; as datas mostradas não mudam.", "recalcula": "Só a previsão."},
+        "origin": "pressuposto", "stored": True, "active": True,
+        "applies_in": "Só muda o estado «Em risco» da previsão; as datas mostradas não mudam.", "recalcula": RECALC_FORECAST},
     "clientes_prioritarios": {
         "label": "Clientes prioritários", "kind": "lista", "unit": None, "default": [], "limits": (0, 50),
-        "origin": "declarado", "stored": True, "active": False,
-        "applies_in": "Ordem da previsão, depois da prioridade escrita.", "recalcula": "Só a previsão."},
+        "origin": "declarado", "stored": True, "active": True,
+        "applies_in": "Ordem da previsão: desempata depois da prioridade escrita. Opcional; o primeiro da lista passa à frente.",
+        "recalcula": RECALC_FORECAST},
+    "ordem_plano": {
+        "label": "Ordem do plano", "kind": "regra", "unit": None, "default": None, "limits": None,
+        "origin": "regra", "stored": False, "active": True,
+        "text": "Planeado (com ajustes) → prioridade escrita → clientes prioritários → prazo → OF",
+        "applies_in": "Ordem do trabalho em cada máquina, no plano e na previsão.", "recalcula": None},
     "pessoas_por_maquina": {
-        "label": "Pessoas por máquina a trabalhar", "kind": "numero", "unit": "pessoas", "default": 1, "limits": (0, 10),
-        "origin": "pressuposto", "stored": True, "active": False,
-        "applies_in": "Pessoas necessárias no Calendário e em Capacidade e prazos.", "recalcula": None},
+        "label": "Pessoas por máquina a trabalhar", "kind": "por_maquina", "unit": "pessoas", "default": 1, "limits": (0, 10),
+        "origin": "pressuposto", "stored": True, "active": True,
+        "applies_in": "Pessoas necessárias por turno no Calendário e em Capacidade e prazos.", "recalcula": RECALC_FORECAST},
     "pessoas_por_turno": {
         "label": "Pessoas disponíveis por turno", "kind": "por_turno", "unit": "pessoas", "default": None, "limits": (0, 200),
-        "origin": "declarado", "stored": True, "active": False,
-        "applies_in": "Falta de pessoas por turno (vazio = não se calcula).", "recalcula": None},
+        "origin": "declarado", "stored": True, "active": True,
+        "applies_in": "Falta de pessoas por turno (vazio = não se calcula a falta).", "recalcula": RECALC_FORECAST},
 }
+# Chaves que só a previsão lê (forecast.py): gravá-las não marca agregados nem refaz a Carga (08/10).
+FORECAST_ONLY = frozenset({"folga_dias", "clientes_prioritarios", "pessoas_por_maquina", "pessoas_por_turno"})
 TIMING = {"margin_pct": ("Margem (substituída pela eficiência de cada máquina)", 0, 300),
           "piece_minutes": ("Tempo fixo por peça (min)", *PLANNING["piece_minutes"]["limits"])}
 EFFICIENCY_LABEL = "Eficiência da máquina (% da velocidade do Excel)"
@@ -108,6 +126,12 @@ def read(c, sector: str) -> dict:
                     stored["holidays"] = sorted(set(stored["holidays"]) | set(shifts.national_holidays(y)))
             return stored
     return default()
+
+
+def load_stamp(settings: dict) -> str:
+    """Carimbo das Definições para a memória da Carga: tudo menos a revisão e as chaves só da previsão
+    (FORECAST_ONLY), para mudar a folga, os clientes ou as pessoas não refazer as células da Carga (08/10)."""
+    return needs.digest(needs.serial({k: v for k, v in settings.items() if k != "revision" and k not in FORECAST_ONLY}))
 
 
 def _current_week(today: date | None = None) -> tuple[int, int]:
@@ -335,13 +359,27 @@ def posts_view(by_id: dict, package, own: set) -> list[dict]:
     return out
 
 
-def planning_view(settings: dict, machines: list[dict], policy: dict | None, posts: list[dict]) -> list[dict]:
+def per_machine_values(setting, ids, default) -> dict:
+    """{máquina: valor} de um parâmetro por máquina gravado como número (todas) ou {máquina: n}; falta = defeito.
+
+    A mesma leitura que forecast.persons_of (pessoas por máquina): um número vale para todas as máquinas."""
+    if isinstance(setting, dict):
+        return {rid: setting.get(str(rid), default) for rid in ids}
+    return {rid: (default if setting in (None, "") else setting) for rid in ids}
+
+
+def planning_view(settings: dict, machines: list[dict], policy: dict | None, posts: list[dict],
+                  extra: dict | None = None) -> list[dict]:
     """Linhas da secção «Planeamento» pela ordem de `PLANNING`, só os parâmetros ativos (P9, 08/10).
 
     Cada linha leva o rótulo, a unidade, os limites, a origem, onde se aplica, o que recalcula e o valor atual. A
     eficiência é por máquina (as de `machines`, já sem a 2.ª operação), com o medido em `machines[].measured`.
+    `extra` (Etapa 3): `clients` = nomes de cliente da Carteira (escolhas dos clientes prioritários),
+    `people` = pessoas medidas nas folhas MES (coluna «Medido» das pessoas por turno), `groups` = grupos de
+    operadores do catálogo (sugestão das pessoas por turno, nunca gravada sozinha).
     """
     from . import priority
+    extra = extra or {}
     out = []
     for key, p in PLANNING.items():
         if not p["active"]:
@@ -349,9 +387,11 @@ def planning_view(settings: dict, machines: list[dict], policy: dict | None, pos
         row = {"key": key, "label": p["label"], "kind": p["kind"], "unit": p["unit"], "default": p["default"],
                "min": p["limits"][0] if p["limits"] else None, "max": p["limits"][1] if p["limits"] else None,
                "origin": p["origin"], "origin_label": ORIGINS[p["origin"]], "applies_in": p["applies_in"],
-               "recalcula": p["recalcula"], "editable": p["kind"] != "postos"}
-        if p["kind"] == "por_maquina":
+               "recalcula": p["recalcula"], "editable": p["kind"] not in ("postos", "regra")}
+        if p["kind"] == "por_maquina" and key == "efficiency":
             row["value"] = {m["id"]: m.get("efficiency_pct", p["default"]) for m in machines}
+        elif p["kind"] == "por_maquina":
+            row["value"] = per_machine_values(settings.get(key), [m["id"] for m in machines], p["default"])
         elif p["kind"] == "politica":
             policy = policy or {}
             row["value"] = {k: policy.get(k) for k in ("principal", "following", "milestone", "assume_picking_year", "origin")}
@@ -361,10 +401,97 @@ def planning_view(settings: dict, machines: list[dict], policy: dict | None, pos
             if not posts:
                 continue  # setor sem postos compostos: nada a mostrar
             row["value"] = posts
+        elif p["kind"] == "regra":
+            row["value"] = p["text"]
         else:
             row["value"] = settings.get(key, p["default"])
+        if key == "clientes_prioritarios":
+            row["choices"] = list(extra.get("clients") or [])
+        if key == "pessoas_por_turno":
+            row["measured"] = extra.get("people")
+            row["suggestions"] = list(extra.get("groups") or [])
         out.append(row)
     return out
+
+
+PEOPLE_DAYS = 28
+PEOPLE_TTL = 6 * 3600  # as folhas validadas mudam devagar; uma leitura por setor e por 6 h chega
+SOURCE_APP = {"cantoneiras": "kanban-mes", "perfis": "kanban-mes-mtg2"}
+_people_cache: dict = {}
+
+
+def people_measured(c, sector: str, settings: dict, today: date | None = None) -> dict | None:
+    """Operadores distintos por dia útil nas folhas MES validadas dos últimos 28 dias (só leitura, indicativo).
+
+    Dia útil = dia de trabalho do setor que não é feriado (Definições). O turno vem vazio na maioria das folhas, por
+    isso conta-se por dia e não por turno; o texto diz a parte das folhas sem turno. None sem folhas ou sem a tabela.
+    """
+    today = today or lisbon_today()
+    workdays = set(settings.get("workdays") or [])
+    holidays = set(settings.get("holidays") or [])
+    key = (sector, today, tuple(sorted(workdays)), len(holidays))
+    found = _people_cache.get(sector)
+    if found and found[0] == key and found[1] > time.monotonic() - PEOPLE_TTL:
+        return found[2]
+    result = None
+    if c.execute("SELECT to_regclass('mes_kanban.validated_sheets') t").fetchone()["t"]:
+        rows = c.execute(
+            """SELECT sheet_date,
+                      count(DISTINCT coalesce(nullif(trim(operator_pernr), ''), nullif(trim(operator_no), ''),
+                                              nullif(lower(trim(operator_name)), ''))) AS people,
+                      count(*) AS sheets, count(*) FILTER (WHERE coalesce(trim(shift), '') = '') AS no_shift
+                 FROM mes_kanban.validated_sheets
+                WHERE source_app = %s AND sheet_date > %s AND sheet_date <= %s
+                GROUP BY sheet_date""",
+            (SOURCE_APP[sector], today - timedelta(days=PEOPLE_DAYS), today)).fetchall()
+        days = [r for r in rows if r["sheet_date"].isoweekday() in workdays
+                and r["sheet_date"].isoformat() not in holidays and r["people"]]
+        if days:
+            people = [r["people"] for r in days]
+            sheets = sum(r["sheets"] for r in rows)
+            no_shift = sum(r["no_shift"] for r in rows)
+            result = {"median": statistics.median(people), "min": min(people), "max": max(people), "days": len(days),
+                      "window_days": PEOPLE_DAYS, "sheets": sheets,
+                      "no_shift_pct": round(100 * no_shift / sheets) if sheets else None}
+            median = f"{result['median']:g}".replace(".", ",")
+            result["text"] = (f"{median} por dia útil (mediana de {len(days)} dias, {min(people)}–{max(people)}; "
+                              f"folhas MES dos últimos {PEOPLE_DAYS} dias)")
+            result["note"] = ("Indicativo: conta operadores por dia, não por turno"
+                              + (f" (o turno vem vazio em {result['no_shift_pct']} % das folhas)." if result["no_shift_pct"] else "."))
+    _people_cache[sector] = (key, time.monotonic(), result)
+    return result
+
+
+def operator_groups(package, sector: str) -> list[dict]:
+    """Grupos de operadores do catálogo do setor (ex.: OPERADORES_PAV1 = 2 pessoas nos serrotes do pav.1).
+
+    Só para sugerir as pessoas por turno: o ecrã mostra e o utilizador decide (nunca se grava sozinho)."""
+    if not package:
+        return []
+    metadata = package.get("metadata") or {}
+    resources = {r.get("codigo"): r for r in metadata.get("resources") or []}
+    out = []
+    for code, r in sorted(resources.items(), key=lambda kv: str(kv[0])):
+        if r.get("tipo") != "grupo_operadores" or r.get("setor") != UNIT[sector] or not r.get("quantidade_operadores"):
+            continue
+        members = [str((resources.get(rel.get("filho")) or {}).get("designacao") or rel.get("filho"))
+                   for rel in metadata.get("relations") or []
+                   if rel.get("relacao") == "partilha_operadores" and rel.get("pai") == code]
+        out.append({"code": code, "name": r.get("designacao") or code, "people": int(r["quantidade_operadores"]),
+                    "members": members})
+    return out
+
+
+def carteira_clients(sector: str) -> list[str]:
+    """Nomes de cliente das linhas abertas da Carteira, só se a Carteira já estiver em memória (nunca a calcula: as
+    Definições abrem logo). Sem ela, lista vazia: os clientes prioritários escrevem-se à mão."""
+    try:
+        from . import portfolio
+        lines = (portfolio._cache.peek(sector) or {}).get("lines") or []
+    except Exception:  # a lista é só ajuda; as Definições abrem sempre
+        return []
+    names = {str(x.get("customer") or "").strip() for x in lines}
+    return sorted((n for n in names if n and n != "Sem cliente"), key=str.casefold)
 
 
 def _rate_view(r: dict, today: str) -> dict:
@@ -394,6 +521,8 @@ def overview(sector: str) -> dict:
         excel_area = _excel_area(c, machines) if sector == "perfis" else {}
         timing = sector_timing(c)[sector]
         measured = _measured(c, sector)
+        people = people_measured(c, sector, settings)
+        groups = operator_groups(context[4], sector)
         policy = priority.policies(c)[sector]
         y, w = _current_week()
         weeks = []
@@ -442,6 +571,7 @@ def overview(sector: str) -> dict:
         all_rates = [r for m in machines for r in m["rates"]]
         tabs = operation_tabs(machines, all_rates)
         seed = excel_seed(sector, machines, study, excel_area)
+    clients = carteira_clients(sector)  # fora da ligação: a Carteira usa a sua (e a sua cache)
     chain = " → ".join(priority.FIELDS.get(f, f) for f in policy.get("principal") or [])
     rules = [
         # O prazo segue a política em uso (08/10): o primeiro campo que a linha tiver.
@@ -471,7 +601,8 @@ def overview(sector: str) -> dict:
                          "policy": policy, "methods": METHODS, "shift_hours": shifts.shift_hours(settings["template"]),
                          "speed_table": speed_table,
                          # P9 e P3-A (08/10): o ecrã só mostra a secção e a linha quando estes campos vêm.
-                         "planning": planning_view(settings, machines, policy, posts),
+                         "planning": planning_view(settings, machines, policy, posts,
+                                                   {"clients": clients, "people": people, "groups": groups}),
                          "second_operation": [{"id": m["id"], "name": m["name"], "process": m.get("process")} for m in second]})
 
 
@@ -678,6 +809,30 @@ def _planning_number(p: dict, value, *, empty=None):
     return int(number) if number.is_integer() else round(number, 3)
 
 
+def _per_machine_store(p: dict, stored, changes: dict, machines: dict) -> dict:
+    """{máquina: n} de um parâmetro por máquina depois das alterações; só os diferentes do defeito ficam.
+
+    Um número gravado para todas (formato que forecast.persons_of também lê) passa a valer em cada máquina do setor
+    antes de aplicar a alteração, para as outras não mudarem. Vazio = volta ao defeito."""
+    if isinstance(stored, dict):
+        out = {str(k): v for k, v in stored.items()}
+    elif stored not in (None, "") and stored != p["default"]:
+        out = {rid: stored for rid in machines}
+    else:
+        out = {}
+    for rid, value in changes.items():
+        if str(rid) not in machines:
+            raise planning.PlanningError("Máquina desconhecida neste setor.")
+        number = _planning_number(p, value, empty=p["default"])
+        if not float(number).is_integer():
+            raise planning.PlanningError(f"{p['label']}: indica um número inteiro.")
+        if int(number) == p["default"]:
+            out.pop(str(rid), None)
+        else:
+            out[str(rid)] = int(number)
+    return out
+
+
 def _validate_planning(values, current: dict, machines: dict) -> dict:
     """Valores da secção «Planeamento» ({chave: valor}) validados por `PLANNING` → chaves a gravar na definição.
 
@@ -694,20 +849,29 @@ def _validate_planning(values, current: dict, machines: dict) -> dict:
         if p["kind"] == "por_maquina":
             if not isinstance(value, dict) or not value or len(value) > 200:
                 raise planning.PlanningError(f"{p['label']}: indica o valor de pelo menos uma máquina.")
-            out[key] = _efficiency_store(current, value, machines)
-            out["margin_pct"] = 0
+            if key == "efficiency":
+                out[key] = _efficiency_store(current, value, machines)
+                out["margin_pct"] = 0
+            else:
+                out[key] = _per_machine_store(p, current.get(key), value, machines)
         elif p["kind"] == "numero":
             out[key] = _planning_number(p, value)
+            if key == "folga_dias" and not float(out[key]).is_integer():
+                raise planning.PlanningError(f"{p['label']}: indica um número inteiro de dias úteis.")
         elif p["kind"] == "lista":
             items = value if isinstance(value, list) else str(value or "").splitlines()
-            clean = list(dict.fromkeys(str(x).strip() for x in items if str(x).strip()))
+            clean = list(dict.fromkeys(" ".join(str(x).split()) for x in items if str(x).strip()))
             if len(clean) > p["limits"][1] or any(len(x) > 120 for x in clean):
                 raise planning.PlanningError(f"{p['label']}: no máximo {p['limits'][1]} nomes, até 120 caracteres cada.")
             out[key] = clean
         elif p["kind"] == "por_turno":
             if not isinstance(value, list) or len(value) > shifts.MAX_SHIFTS:
                 raise planning.PlanningError(f"{p['label']}: um valor por turno (até {shifts.MAX_SHIFTS}).")
-            out[key] = [None if x in (None, "") else _planning_number(p, x) for x in value]
+            turns = [None if x in (None, "") else _planning_number(p, x) for x in value]
+            if any(x is not None and not float(x).is_integer() for x in turns):
+                raise planning.PlanningError(f"{p['label']}: indica números inteiros de pessoas.")
+            # Sempre um valor por turno (1.º, 2.º, 3.º): a posição é o turno (forecast lê pessoas_por_turno[turno-1]).
+            out[key] = [None if x is None else int(x) for x in turns] + [None] * (shifts.MAX_SHIFTS - len(turns))
         else:
             raise planning.PlanningError(f"Parâmetro desconhecido nas Definições: {key}.")
     return out
@@ -835,6 +999,7 @@ def save(payload: dict, *, conn=None) -> dict:
     except ValueError:
         raise planning.PlanningError("Pedido sem identificador; recarrega a página.") from None
     actor = registration.human_actor(payload)
+    signal = True
     with (planning.connect() if conn is None else nullcontext(conn)) as c:
         planning.check_area(sector)
         c.execute("SELECT pg_advisory_xact_lock(hashtext('sector_settings:' || %s))", (sector,))
@@ -871,6 +1036,9 @@ def save(payload: dict, *, conn=None) -> dict:
             machines = {m["id"]: m for m in machine_rows(c, sector)} if per_machine else {}
             _store(c, sector, {**_first_store(c, sector, current), **_validate_planning(values, current, machines)}, actor)
             changed = 1
+            # Só chaves da previsão: a previsão segue a revisão das Definições; nada de marcar agregados (horas,
+            # ocorrências, Carga), que seria um recálculo completo para nada.
+            signal = not set(values).issubset(FORECAST_ONLY)
         elif kind == "maquina":
             machines = {m["id"]: m for m in machine_rows(c, sector)}
             m = machines.get(str(payload.get("id")))
@@ -910,7 +1078,7 @@ def save(payload: dict, *, conn=None) -> dict:
                 changed += 1
         else:
             raise planning.PlanningError("Tipo de definição desconhecido.")
-        if changed:
+        if changed and signal:
             shifts.finish_batch(c, request_id)
     return {"changed": changed, "tipo": kind}
 

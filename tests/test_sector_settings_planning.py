@@ -3,7 +3,10 @@
 - Um só dicionário, settings.PLANNING, diz que parâmetros há, a unidade, os limites, a origem, onde se aplicam e o
   que recalculam; o ecrã desenha-se a partir dele e a gravação `tipo='planeamento'` valida por ele.
 - Nenhuma gravação das Definições apaga chaves que não enviou (S01): setor, tempos, eficiência, máquina e planeamento.
-- Limites, parâmetros desconhecidos ou ainda inativos (Etapa 3) e revisão desatualizada (409).
+- Limites, parâmetros desconhecidos e revisão desatualizada (409).
+- Etapa 3 (ponto 9): folga_dias, clientes_prioritarios, pessoas_por_maquina e pessoas_por_turno ativos, nos formatos
+  que forecast.py lê; gravá-los não marca agregados (só a previsão); «Medido» das pessoas nas folhas MES; sugestão
+  dos grupos de operadores do catálogo; a ordem do plano só como texto.
 - A política de prazo deixa de estar atrás do interruptor das vistas por família.
 - As máquinas da 2.ª operação saem da lista das Definições (second_operation.machine), não de machine_rows.
 Sem base de dados: ligação falsa só com sector_settings.
@@ -75,14 +78,23 @@ def save(c, **payload):
 
 
 def test_planning_dictionary_is_the_single_description_of_the_parameters():
-    kinds = {"por_maquina", "numero", "lista", "por_turno", "politica", "postos"}
+    kinds = {"por_maquina", "numero", "lista", "por_turno", "politica", "postos", "regra"}
     for key, p in settings.PLANNING.items():
         assert {"label", "kind", "unit", "default", "limits", "origin", "stored", "active", "applies_in", "recalcula"} <= set(p), key
         assert p["kind"] in kinds and p["origin"] in settings.ORIGINS and p["applies_in"], key
     active = [k for k, p in settings.PLANNING.items() if p["active"]]
-    assert active == ["efficiency", "piece_minutes", "deadline_policy", "posts"]
-    # Etapa 3: já descritos, ainda escondidos (basta ativá-los).
-    assert {"folga_dias", "clientes_prioritarios", "pessoas_por_maquina", "pessoas_por_turno"} <= set(settings.PLANNING)
+    assert active == ["efficiency", "piece_minutes", "deadline_policy", "posts", "folga_dias", "clientes_prioritarios",
+                      "ordem_plano", "pessoas_por_maquina", "pessoas_por_turno"]
+    # Etapa 3: só a previsão os lê.
+    assert settings.FORECAST_ONLY == {"folga_dias", "clientes_prioritarios", "pessoas_por_maquina", "pessoas_por_turno"}
+    for key in settings.FORECAST_ONLY:
+        assert settings.PLANNING[key]["recalcula"] == settings.RECALC_FORECAST, key
+    assert settings.PLANNING["folga_dias"]["default"] == 2 and settings.PLANNING["folga_dias"]["origin"] == "pressuposto"
+    assert "as datas mostradas não mudam" in settings.PLANNING["folga_dias"]["applies_in"]
+    assert "depois da prioridade escrita" in settings.PLANNING["clientes_prioritarios"]["applies_in"]
+    assert settings.PLANNING["pessoas_por_maquina"]["kind"] == "por_maquina" and settings.PLANNING["pessoas_por_maquina"]["default"] == 1
+    assert settings.PLANNING["ordem_plano"]["text"] == "Planeado (com ajustes) → prioridade escrita → clientes prioritários → prazo → OF"
+    assert settings.PLANNING["ordem_plano"]["stored"] is False
     # Os mesmos limites que o motor e a gravação antiga usam: uma só fonte.
     assert tuple(settings.PLANNING["efficiency"]["limits"]) == tuple(int(x) for x in productivity.EFFICIENCY_RANGE)
     assert settings.TIMING["piece_minutes"][1:] == tuple(settings.PLANNING["piece_minutes"]["limits"])
@@ -96,8 +108,9 @@ def test_planning_view_lists_only_active_parameters_with_their_values():
               "milestone": "disponibilidade_picking", "assume_picking_year": None, "origin": "Política por defeito"}
     posts = [{"post": "fita", "name": "Serrote Fita pav.1", "members": ["Serrote Doall Pav.1"], "text": "…"}]
     rows = settings.planning_view({"piece_minutes": 0.5}, machines, policy, posts)
-    assert [r["key"] for r in rows] == ["efficiency", "piece_minutes", "deadline_policy", "posts"]
-    eff, fixed, deadline, post = rows
+    assert [r["key"] for r in rows] == ["efficiency", "piece_minutes", "deadline_policy", "posts", "folga_dias",
+                                        "clientes_prioritarios", "ordem_plano", "pessoas_por_maquina", "pessoas_por_turno"]
+    eff, fixed, deadline, post = rows[:4]
     assert eff["value"] == {P8: 85, XP4: 100} and (eff["min"], eff["max"], eff["unit"]) == (10, 200, "%")
     assert eff["origin_label"] == "Pressuposto" and eff["editable"] and eff["recalcula"] == settings.RECALC_HOURS
     assert fixed["value"] == 0.5 and fixed["unit"] == "min"
@@ -159,7 +172,7 @@ def test_planning_save_validates_by_the_dictionary(conn):
     refused({"efficiency": {P8: 5}}, "entre 10 e 200")
     refused({"efficiency": {"outra": 90}}, "Máquina desconhecida")
     refused({"efficiency": {}}, "pelo menos uma máquina")
-    refused({"folga_dias": 2}, "desconhecido")  # Etapa 3: ainda inativo
+    refused({"ordem_plano": "x"}, "desconhecido")  # só texto
     refused({"deadline_policy": ["cut_date"]}, "desconhecido")  # tem a sua gravação
     refused({"posts": []}, "desconhecido")  # só leitura
     refused({"margin_pct": 10}, "desconhecido")
@@ -244,7 +257,7 @@ def _fake_second_operation(monkeypatch):
     monkeypatch.setattr(app.sector, "second_operation", module, raising=False)
 
 
-def _overview(monkeypatch, sector="cantoneiras"):
+def _overview(monkeypatch, sector="cantoneiras", clients=()):
     from app.gantt import research
     from app.sector import priority
     every = [dict(m) for m in MACHINES]
@@ -269,6 +282,7 @@ def _overview(monkeypatch, sector="cantoneiras"):
     monkeypatch.setattr(productivity, "sector_timing", lambda c: {a: {"piece_minutes": 0.0, "efficiency": {P8: 85.0}} for a in planning.AREAS})
     monkeypatch.setattr(priority, "policies", lambda c: {a: priority.default(a) for a in planning.AREAS})
     monkeypatch.setattr(shifts, "calendar_row", lambda c, rid, y, w: None)
+    monkeypatch.setattr(settings, "carteira_clients", lambda s: list(clients))  # sem Carteira nos testes
     result = settings.overview(sector)
     return result, every, calls
 
@@ -299,3 +313,181 @@ def test_the_second_operation_rule_never_touches_the_profiles(monkeypatch):
     _fake_second_operation(monkeypatch)
     keep, out = settings.split_second_operation("perfis", [{"id": "a", "process": "Abocardar"}, {"id": "b", "process": None}])
     assert [m["id"] for m in keep] == ["a", "b"] and out == []
+
+
+# ---------------------------------------------------------------- Etapa 3 (ponto 9): parâmetros da previsão
+
+
+def test_planning_view_shows_the_forecast_parameters_in_the_formats_forecast_reads():
+    machines = [{"id": P8, "name": "Peddi 8", "efficiency_pct": 100}, {"id": XP4, "name": "Ficep XP T4", "efficiency_pct": 100}]
+    stored = {"folga_dias": 3, "clientes_prioritarios": ["Cliente B", "Cliente A"], "pessoas_por_maquina": {XP4: 2},
+              "pessoas_por_turno": [3, None, None]}
+    people = {"median": 15, "text": "15 por dia útil", "note": "Indicativo"}
+    groups = [{"code": "OPERADORES_PAV1", "name": "Operadores dos quatro serrotes pav.1", "people": 2, "members": ["Posto Disco"]}]
+    rows = {r["key"]: r for r in settings.planning_view(stored, machines, {}, [], {"clients": ["Cliente A", "Cliente B", "Cliente C"],
+                                                                                  "people": people, "groups": groups})}
+    assert rows["folga_dias"]["value"] == 3 and rows["folga_dias"]["unit"] == "dias úteis"
+    assert rows["clientes_prioritarios"]["value"] == ["Cliente B", "Cliente A"]
+    assert rows["clientes_prioritarios"]["choices"] == ["Cliente A", "Cliente B", "Cliente C"]
+    assert rows["pessoas_por_maquina"]["value"] == {P8: 1, XP4: 2}
+    assert rows["pessoas_por_turno"]["value"] == [3, None, None]
+    assert rows["pessoas_por_turno"]["measured"] == people and rows["pessoas_por_turno"]["suggestions"] == groups
+    assert rows["ordem_plano"]["value"].startswith("Planeado (com ajustes)") and rows["ordem_plano"]["editable"] is False
+    # Sem nada gravado: os defeitos (folga 2, 1 pessoa por máquina, sem pessoas por turno).
+    empty = {r["key"]: r for r in settings.planning_view({}, machines, {}, [])}
+    assert empty["folga_dias"]["value"] == 2 and empty["clientes_prioritarios"]["value"] == []
+    assert empty["pessoas_por_maquina"]["value"] == {P8: 1, XP4: 1} and empty["pessoas_por_turno"]["value"] is None
+    assert empty["clientes_prioritarios"]["choices"] == [] and empty["pessoas_por_turno"]["measured"] is None
+    # Um número para todas as máquinas (o outro formato que forecast.persons_of lê).
+    both = {r["key"]: r for r in settings.planning_view({"pessoas_por_maquina": 2}, machines, {}, [])}
+    assert both["pessoas_por_maquina"]["value"] == {P8: 2, XP4: 2}
+
+
+def test_forecast_parameters_are_saved_in_the_formats_forecast_reads_without_marking_aggregates(conn, monkeypatch):
+    from app.sector import forecast
+    signals = []
+    monkeypatch.setattr(shifts, "finish_batch", lambda c, request_id: signals.append(request_id))
+    save(conn, tipo="planeamento", expected_revision=5, valores={
+        "folga_dias": "4", "clientes_prioritarios": ["  Cliente   B ", "Cliente A", "Cliente B", ""],
+        "pessoas_por_maquina": {XP4: 2, P8: ""}, "pessoas_por_turno": [2, "", None]})
+    d = conn.definition
+    assert d["folga_dias"] == 4 and isinstance(d["folga_dias"], int)
+    assert d["clientes_prioritarios"] == ["Cliente B", "Cliente A"]
+    assert d["pessoas_por_maquina"] == {XP4: 2}
+    assert d["pessoas_por_turno"] == [2, None, None]
+    assert signals == [], "só a previsão: nada de agregados nem calendários"
+    assert conn.revision == 6, "a revisão sobe: a previsão segue-a"
+    # forecast lê exatamente estes nomes e formatos.
+    assert forecast._count(d["folga_dias"], forecast.FOLGA_DEFAULT) == 4
+    assert forecast.persons_of(d["pessoas_por_maquina"], [P8, XP4]) == {P8: 1, XP4: 2}
+    assert forecast.client_position("CLIENTE A, LDA", d["clientes_prioritarios"]) == 1
+    # A pessoa por máquina de volta ao defeito sai; um número antigo para todas passa a valer em cada uma.
+    save(conn, tipo="planeamento", expected_revision=6, valores={"pessoas_por_maquina": {XP4: 1}})
+    assert conn.definition["pessoas_por_maquina"] == {}
+    conn.definition["pessoas_por_maquina"] = 3
+    save(conn, tipo="planeamento", expected_revision=7, valores={"pessoas_por_maquina": {P8: 0}})
+    assert conn.definition["pessoas_por_maquina"] == {P8: 0, XP4: 3, PRENSA: 3, PLASMA: 3}
+    # Com a eficiência no mesmo pedido, marca os agregados (as horas mudam).
+    save(conn, tipo="planeamento", expected_revision=8, valores={"folga_dias": 1, "efficiency": {P8: 90}})
+    assert len(signals) == 1
+    assert conn.definition["chave_futura"] == {"a": 1}, "chaves que não se enviaram ficam (S01)"
+
+
+def test_forecast_parameters_are_validated(conn):
+    def refused(valores, match):
+        with pytest.raises(planning.PlanningError, match=match):
+            save(conn, tipo="planeamento", expected_revision=5, valores=valores)
+    refused({"folga_dias": 21}, "entre 0 e 20 dias úteis")
+    refused({"folga_dias": -1}, "entre 0 e 20")
+    refused({"folga_dias": "1,5"}, "inteiro")
+    refused({"folga_dias": ""}, "indica um número")
+    refused({"clientes_prioritarios": [f"C{i}" for i in range(51)]}, "no máximo 50")
+    refused({"clientes_prioritarios": ["x" * 121]}, "120 caracteres")
+    refused({"pessoas_por_maquina": {P8: 11}}, "entre 0 e 10")
+    refused({"pessoas_por_maquina": {P8: 1.5}}, "inteiro")
+    refused({"pessoas_por_maquina": {"outra": 1}}, "Máquina desconhecida")
+    refused({"pessoas_por_maquina": {}}, "pelo menos uma máquina")
+    refused({"pessoas_por_turno": [1, 2, 3, 4]}, "um valor por turno")
+    refused({"pessoas_por_turno": 3}, "um valor por turno")
+    refused({"pessoas_por_turno": [201]}, "entre 0 e 200")
+    refused({"pessoas_por_turno": [1.5]}, "inteiros")
+    assert conn.revision == 5, "nada gravado"
+    save(conn, tipo="planeamento", expected_revision=5, valores={"pessoas_por_turno": [4], "clientes_prioritarios": []})
+    assert conn.definition["pessoas_por_turno"] == [4, None, None] and conn.definition["clientes_prioritarios"] == []
+
+
+@pytest.mark.parametrize("valores", [{"folga_dias": 1}, {"clientes_prioritarios": ["A"]}, {"pessoas_por_maquina": {P8: 2}},
+                                     {"pessoas_por_turno": [1, 1, 1]}])
+def test_forecast_parameters_with_a_stale_revision_are_refused_with_409(conn, valores):
+    with pytest.raises(planning.PlanningError) as stale:
+        save(conn, tipo="planeamento", expected_revision=4, valores=valores)
+    assert stale.value.status == 409 and conn.revision == 5 and conn.definition["folga_dias"] == 2
+
+
+def test_load_memory_ignores_the_forecast_only_keys():
+    base = {"template": [["06:00", "14:00"]], "workdays": [1, 2, 3, 4, 5], "piece_minutes": 0, "revision": 3}
+    stamp = settings.load_stamp(base)
+    assert settings.load_stamp({**base, "revision": 4, "folga_dias": 5, "clientes_prioritarios": ["A"],
+                                "pessoas_por_maquina": {P8: 2}, "pessoas_por_turno": [1, None, None]}) == stamp
+    assert settings.load_stamp({**base, "piece_minutes": 1}) != stamp
+
+
+class SheetsConn:
+    """Só leitura: to_regclass e a contagem por dia das folhas validadas."""
+
+    def __init__(self, rows, present=True):
+        self.rows, self.present, self.queries = rows, present, []
+
+    def execute(self, sql, params=None):
+        self.queries.append((sql, params))
+        conn = self
+
+        class Result:
+            def fetchone(self):
+                return {"t": "mes_kanban.validated_sheets" if conn.present else None}
+
+            def fetchall(self):
+                return conn.rows
+        return Result()
+
+
+def test_people_measured_counts_distinct_operators_per_workday_with_a_long_cache():
+    from datetime import date
+    settings._people_cache.clear()
+    rows = [{"sheet_date": date(2026, 10, 5), "people": 14, "sheets": 20, "no_shift": 19},   # segunda
+            {"sheet_date": date(2026, 10, 6), "people": 16, "sheets": 22, "no_shift": 20},   # terça
+            {"sheet_date": date(2026, 10, 7), "people": 15, "sheets": 18, "no_shift": 18},   # quarta
+            {"sheet_date": date(2026, 10, 3), "people": 5, "sheets": 5, "no_shift": 5},      # sábado: fora
+            {"sheet_date": date(2026, 10, 8), "people": 2, "sheets": 2, "no_shift": 2}]      # feriado gravado: fora
+    c = SheetsConn(rows)
+    st = {"workdays": [1, 2, 3, 4, 5], "holidays": ["2026-10-08"]}
+    got = settings.people_measured(c, "perfis", st, today=date(2026, 10, 8))
+    assert (got["median"], got["min"], got["max"], got["days"]) == (15, 14, 16, 3)
+    assert got["no_shift_pct"] == round(100 * 64 / 67)
+    assert got["text"] == "15 por dia útil (mediana de 3 dias, 14–16; folhas MES dos últimos 28 dias)"
+    assert "turno vem vazio em 96 %" in got["note"]
+    sql, params = c.queries[-1]
+    assert sql.lstrip().startswith("SELECT") and "mes_kanban.validated_sheets" in sql and params[0] == "kanban-mes-mtg2"
+    # Cache longa: a segunda leitura não vai à base.
+    count = len(c.queries)
+    assert settings.people_measured(c, "perfis", st, today=date(2026, 10, 8)) == got and len(c.queries) == count
+    # Sem a tabela (base de ensaio) ou sem folhas: nada medido.
+    settings._people_cache.clear()
+    assert settings.people_measured(SheetsConn([], present=False), "cantoneiras", st, today=date(2026, 10, 8)) is None
+    assert settings.people_measured(SheetsConn([]), "perfis", st, today=date(2026, 10, 8)) is None
+    settings._people_cache.clear()
+
+
+def test_operator_groups_of_the_catalogue_are_only_a_suggestion():
+    package = {"metadata": {
+        "resources": [{"codigo": "OPERADORES_PAV1", "designacao": "Operadores dos quatro serrotes pav.1", "setor": "MTG2",
+                       "tipo": "grupo_operadores", "quantidade_operadores": 2},
+                      {"codigo": "POSTO_DISCO", "designacao": "Serrote Disco pav.1 (posto)", "tipo": "posto", "setor": "MTG2"},
+                      {"codigo": "POSTO_FITA", "designacao": "Serrote Fita pav.1 (posto)", "tipo": "posto", "setor": "MTG2"}],
+        "relations": [{"relacao": "partilha_operadores", "pai": "OPERADORES_PAV1", "filho": "POSTO_DISCO"},
+                      {"relacao": "partilha_operadores", "pai": "OPERADORES_PAV1", "filho": "POSTO_FITA"}]}}
+    [group] = settings.operator_groups(package, "perfis")
+    assert group == {"code": "OPERADORES_PAV1", "name": "Operadores dos quatro serrotes pav.1", "people": 2,
+                     "members": ["Serrote Disco pav.1 (posto)", "Serrote Fita pav.1 (posto)"]}
+    assert settings.operator_groups(package, "cantoneiras") == []
+    assert settings.operator_groups(None, "perfis") == []
+
+
+def test_overview_brings_the_clients_of_the_carteira_and_the_people(monkeypatch):
+    monkeypatch.setattr(settings, "people_measured", lambda c, sector, st: {"median": 7, "text": "7 por dia útil"})
+    result, _, _ = _overview(monkeypatch, "perfis", clients=["Cliente A", "Cliente B"])
+    rows = {r["key"]: r for r in result["planning"]}
+    assert rows["clientes_prioritarios"]["choices"] == ["Cliente A", "Cliente B"]
+    assert rows["pessoas_por_turno"]["measured"]["median"] == 7 and rows["pessoas_por_turno"]["suggestions"] == []
+
+
+def test_carteira_clients_are_the_distinct_names_of_the_carteira_in_memory_and_never_compute_it(monkeypatch):
+    from app.sector import cache, portfolio
+    memory = cache.Cache("teste")
+    monkeypatch.setattr(portfolio, "_cache", memory)
+    monkeypatch.setattr(portfolio, "load", lambda *a, **k: pytest.fail("as Definições nunca calculam a Carteira"))
+    assert settings.carteira_clients("perfis") == [], "Carteira ainda não calculada: escreve-se à mão"
+    memory.get("perfis", ("g1", None), lambda: {"lines": [
+        {"customer": "beta"}, {"customer": "Alfa"}, {"customer": "Sem cliente"}, {"customer": "Alfa"}, {"customer": ""}]})
+    assert settings.carteira_clients("perfis") == ["Alfa", "beta"]
+    assert settings.carteira_clients("cantoneiras") == []

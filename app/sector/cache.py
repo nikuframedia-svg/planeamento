@@ -172,6 +172,12 @@ class Cache:
             flight.done.set()
         return flight.value
 
+    def peek(self, slot):
+        """O último valor guardado na posição (de qualquer chave), sem calcular nada; None se não há."""
+        with self._lock:
+            entry = self._entries.get(slot)
+            return entry.value if entry is not None else None
+
     def clear(self) -> None:
         with self._lock:
             self._entries.clear()

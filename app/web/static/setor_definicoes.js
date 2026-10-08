@@ -499,6 +499,67 @@
     return el('details', {class: 'policy', id: 'policy'}, summary, list, el('div', {class: 'plan-actions'}, save, hint));
   }
 
+  // Clientes prioritários (Etapa 3): lista ordenada, escolhida dos clientes da Carteira (`p.choices`); o primeiro passa
+  // à frente. O valor vive num campo escondido (nomes separados por linha), como a antiga caixa de texto.
+  function clientsCell(p, input) {
+    const chosen = () => input.value.split('\n').map((x) => x.trim()).filter(Boolean);
+    const list = el('ol', {class: 'client-list', id: 'clients-list'});
+    const pick = el('input', {list: 'clients-choices', placeholder: 'Cliente da Carteira', 'aria-label': 'Acrescentar cliente prioritário',
+      id: 'clients-pick', maxlength: 120});
+    const options = el('datalist', {id: 'clients-choices'});
+    const add = el('button', {type: 'button', class: 'small', id: 'clients-add'}, 'Acrescentar');
+    const set = (names) => { input.value = names.join('\n'); input.dispatchEvent(new Event('input')); draw(); };
+    function draw() {
+      const names = chosen();
+      const taken = new Set(names.map((x) => x.toLocaleLowerCase('pt-PT')));
+      options.replaceChildren(...(p.choices || []).filter((x) => !taken.has(String(x).toLocaleLowerCase('pt-PT'))).map((x) => el('option', {value: x})));
+      list.replaceChildren(...names.map((name, i) => {
+        const move = (d) => { const next = [...names]; [next[i], next[i + d]] = [next[i + d], next[i]]; set(next); };
+        const up = el('button', {type: 'button', class: 'linklike', 'aria-label': `Subir ${name}`, disabled: i === 0}, '↑');
+        const down = el('button', {type: 'button', class: 'linklike', 'aria-label': `Descer ${name}`, disabled: i === names.length - 1}, '↓');
+        const out = el('button', {type: 'button', class: 'del', 'aria-label': `Tirar ${name}`, title: 'Tirar da lista'}, '✕');
+        up.addEventListener('click', () => move(-1));
+        down.addEventListener('click', () => move(1));
+        out.addEventListener('click', () => set(names.filter((_, j) => j !== i)));
+        return el('li', {'data-client': name}, el('span', {}, name), up, down, out);
+      }));
+      list.hidden = !names.length;
+      empty.hidden = Boolean(names.length);
+    }
+    const empty = el('span', {class: 'muted'}, 'Nenhum (opcional).');
+    const take = () => {
+      const name = pick.value.split(/\s+/).join(' ').trim();
+      if (!name) return;
+      const names = chosen();
+      if (!names.some((x) => x.toLocaleLowerCase('pt-PT') === name.toLocaleLowerCase('pt-PT'))) set([...names, name]);
+      pick.value = '';
+    };
+    add.addEventListener('click', take);
+    pick.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); take(); } });
+    draw();
+    return el('div', {class: 'clients'}, list, empty, el('div', {class: 'client-add'}, pick, options, add), input);
+  }
+
+  // Pessoas disponíveis por turno: o «medido» (operadores distintos por dia útil nas folhas MES) e as sugestões do
+  // catálogo (grupos de operadores, ex.: 2 nos serrotes do pav.1). Usar só preenche os campos; grava-se no Gravar.
+  function peopleMeasured(p) {
+    const m = p.measured;
+    if (!m || !m.text) return null;
+    return {text: m.note ? `${m.text}. ${m.note}` : m.text};
+  }
+  function suggestionsLine(p, inputs) {
+    const list = Array.isArray(p.suggestions) ? p.suggestions : [];
+    if (!list.length) return null;
+    const turns = Math.max(1, ((data.settings || {}).template || []).length);
+    return el('div', {class: 'suggest'}, list.map((g) => {
+      const use = el('button', {type: 'button', class: 'linklike', 'data-suggest': g.code}, `Usar ${g.people} por turno`);
+      use.addEventListener('click', () => {
+        inputs.slice(0, turns).forEach((input) => { input.value = String(g.people); input.dispatchEvent(new Event('input')); });
+      });
+      return el('div', {}, `Catálogo: ${g.name} = ${g.people} pessoas${g.members && g.members.length ? ` (${g.members.join(', ')})` : ''}. `, use);
+    }));
+  }
+
   function renderPlanning() {
     const section = $('planeamento'), box = $('planning');
     if (!section || !box) return;
@@ -509,28 +570,39 @@
     for (const p of data.planning) {
       if (p.kind === 'por_maquina') {
         const values = p.value || {};
+        const efficiency = p.key === 'efficiency';  // só a eficiência tem «medido» por máquina
         data.machines.forEach((m, i) => {
-          const value = values[m.id] ?? m.efficiency_pct ?? p.default;
+          const value = efficiency ? (values[m.id] ?? m.efficiency_pct ?? p.default) : (values[m.id] ?? p.default);
           const input = planNumber(p, value, `${p.label} ${short(m.name)}`, {'data-machine': m.id});
           fields.push({p, input, machine: m.id, initial: input.value});
-          body.append(planRow(p, `${p.label} · ${short(m.name)}`, input, measuredText(m), {span: data.machines.length, first: i === 0, key: m.id}));
+          body.append(planRow(p, `${p.label} · ${short(m.name)}`, input, efficiency ? measuredText(m) : null,
+            {span: data.machines.length, first: i === 0, key: m.id}));
         });
       } else if (p.kind === 'numero') {
         const input = planNumber(p, p.value ?? p.default, p.label);
         fields.push({p, input, initial: input.value});
         body.append(planRow(p, p.label, input));
+      } else if (p.kind === 'lista' && Array.isArray(p.choices)) {
+        const input = el('input', {type: 'hidden', 'data-param': p.key});
+        input.value = (p.value || []).join('\n');
+        fields.push({p, input, initial: input.value});
+        body.append(planRow(p, p.label, clientsCell(p, input)));
       } else if (p.kind === 'lista') {
         const input = el('textarea', {rows: 3, 'aria-label': p.label, 'data-param': p.key});
         input.value = (p.value || []).join('\n');
         fields.push({p, input, initial: input.value});
         body.append(planRow(p, p.label, input));
       } else if (p.kind === 'por_turno') {
+        const inputs = [];
         const parts = [0, 1, 2].map((i) => {
           const input = planNumber(p, (p.value || [])[i] ?? '', `${p.label} ${i + 1}.º turno`, {placeholder: DASH});
           fields.push({p, input, part: i, initial: input.value});
+          inputs.push(input);
           return el('label', {class: 'turn'}, `${i + 1}.º `, input);
         });
-        body.append(planRow(p, p.label, el('div', {class: 'turns'}, parts)));
+        body.append(planRow(p, p.label, el('div', {}, el('div', {class: 'turns'}, parts), suggestionsLine(p, inputs)), peopleMeasured(p)));
+      } else if (p.kind === 'regra') {
+        body.append(planRow(p, p.label, el('span', {class: 'rule'}, p.value || DASH)));
       } else if (p.kind === 'politica') {
         body.append(planRow(p, p.label, policyCell(p)));
       } else if (p.kind === 'postos') {

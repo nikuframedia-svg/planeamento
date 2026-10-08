@@ -627,7 +627,8 @@ def compute(sector: str, ki: dict, src: dict) -> dict:
         cells[rid].append({"date": day, "shift": shift, "capacity": round(cap / 3600, 2), "load": round(used / 3600, 2),
                            "pct": round(100 * used / cap) if cap else None, "state": cell_state(cap, used)})
     persons = persons_of(settings.get("pessoas_por_maquina"), own)
-    available = [x for x in (settings.get("pessoas_por_turno") or []) if x not in (None, "")]
+    # Uma posição por turno (Definições: [1.º, 2.º, 3.º], vazio = None): a posição é o turno, os vazios não se tiram.
+    available = list(settings.get("pessoas_por_turno") or [])
     people = []
     for (day, shift), by_rid in sorted(running.items(), key=lambda x: (x[0][0], x[0][1] or 9)):
         need = people_needed(by_rid, persons)
