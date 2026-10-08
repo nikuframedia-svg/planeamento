@@ -1,0 +1,43 @@
+/* Cenários (Etapa 5, 08/10/2026): vista «Cenários» da Carga e turnos. Letra 11 (herdada), nada grande. */
+.cen{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;max-width:1200px;min-width:0}
+.cen [hidden]{display:none!important}
+.cen h2,.cen h3{margin:6px 0 2px}
+.cen-banner{margin:0;padding:8px 12px;border-radius:8px;background:#eef6f7;border:1px solid #c7dfe3;color:var(--pl-action-dark,#15525c);font-weight:700}
+.cen-msg{margin:0;color:var(--pl-ok,#2f7d5b)}
+.cen-error{margin:0;color:var(--pl-error,#b23b3b)}
+.cen .muted{color:var(--pl-muted,#5d737a);margin:2px 0}
+.cen-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.cen-items{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
+.cen-pick{border:1px solid #c7d5d8;background:#fff;border-radius:8px;padding:5px 10px;text-align:left;color:var(--pl-ink,#20343b)}
+.cen-pick[aria-pressed=true]{border-color:var(--pl-action,#216d7a);box-shadow:inset 0 0 0 1px var(--pl-action,#216d7a)}
+.cen-new,.cen-add,.cen-swap,.cen-actions{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px}
+.cen-fields{display:contents}
+.cen input,.cen select{max-width:100%;min-height:30px;border:1px solid #c7d5d8;padding:3px 6px;font:inherit}
+.cen button{min-height:30px;border:1px solid #c7d5d8;background:#fff;border-radius:8px;padding:4px 10px;font:inherit;color:var(--pl-ink,#20343b)}
+.cen button.primary{background:var(--pl-action,#216d7a);border-color:var(--pl-action,#216d7a);color:#fff}
+.cen button:disabled{opacity:.55;cursor:not-allowed}
+.cen-changes{margin:0;padding-left:22px;display:grid;gap:4px}
+.cen-changes li span{margin-right:6px}
+.cen-x{padding:0 8px!important;min-height:24px!important;line-height:1}
+.cen-counters{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.cen-count{border:1px solid var(--pl-line,#dce6e8);border-radius:8px;background:#fff;padding:6px 10px;display:grid;gap:2px}
+.cen-count span{color:var(--pl-muted,#5d737a)}
+.cen-wrap{overflow-x:auto;max-width:100%;border:1px solid var(--pl-line,#dce6e8);border-radius:8px;background:#fff}
+.cen-table{border-collapse:collapse;width:100%}
+.cen-table th,.cen-table td{padding:4px 8px;border-bottom:1px solid #edf2f3;text-align:left;vertical-align:top}
+.cen-table th{background:#f4f6f8;white-space:nowrap}
+.cen-table td.num{text-align:right;white-space:nowrap}
+.cen-table td:last-child{min-width:200px}
+.cen-table tr.cen-late td:first-child{box-shadow:inset 3px 0 0 var(--pl-error,#b23b3b)}
+.cen-tag{margin-left:6px;padding:0 6px;border-radius:999px;border:1px solid currentColor;white-space:nowrap}
+.cen-atrasa{color:var(--pl-error,#b23b3b)}.cen-em_risco{color:var(--pl-warn,#b66b20)}.cen-sem_previsao,.cen-ok{color:var(--pl-muted,#5d737a)}
+.cen-confirm{flex-basis:100%;border:1px solid #e3c79c;background:#fff8ee;border-radius:8px;padding:8px 12px}
+.cen-confirm ul{margin:4px 0;padding-left:20px}
+.cen-confirm button{margin-right:6px}
+.cen-applied{margin:0;padding-left:20px;display:grid;gap:4px}
+.cen-applied button{margin-left:8px}
+@media(max-width:760px){
+  .cen-counters{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .cen-add label,.cen-new input{flex:1 1 100%}
+  .cen-add input,.cen-add select{width:100%}
+}

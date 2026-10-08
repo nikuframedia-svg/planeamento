@@ -346,6 +346,33 @@ def forecast_orders(setor: str = "cantoneiras", estado: str = "todas"):
     return _call(lambda: forecast.orders(portfolio.check_sector(setor), estado))
 
 
+@router.get("/planeamento/api/setor/cenarios")
+def scenarios_list(setor: str = "cantoneiras"):
+    """Cenários do setor (Etapa 5, 08/10): abertos e aplicados, com as alterações e o que «Aplicar» grava. Sem a
+    migração 054: lista vazia (`installed` falso)."""
+    _guard()
+    from . import scenarios
+    return _call(lambda: scenarios.listing(portfolio.check_sector(setor)))
+
+
+@router.post("/planeamento/api/setor/cenarios")
+async def scenarios_save(request: Request):
+    """{acao: criar|alterar|retirar_alteracao|aplicar|desfazer_aplicada|descartar, setor, request_id,
+    expected_revision, …}. Sem a migração 054: 503."""
+    _guard()
+    from . import scenarios
+    return await _post(request, scenarios.save)
+
+
+@router.get("/planeamento/api/setor/cenarios/{cenario}/comparacao")
+def scenarios_comparison(cenario: str, setor: str | None = None):
+    """Plano em uso contra o cenário, calculados em segundo plano com as mesmas entradas: `pending` enquanto
+    calcula (o ecrã volta a pedir). Num cenário aplicado: a previsão nova contra a simulada. Só leitura."""
+    _guard()
+    from . import scenarios
+    return _call(lambda: scenarios.comparison(portfolio.check_sector(setor) if setor else None, cenario))
+
+
 @router.get("/planeamento/api/setor/quadro/dia")
 def board_day(setor: str = "cantoneiras", dia: str = "", maquina: str | None = None):
     """Gantt de um dia por máquina do setor: horas, turnos e o que não tem hora (pedido de 06/10/2026)."""
