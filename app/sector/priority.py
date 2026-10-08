@@ -220,6 +220,10 @@ def resolve(area: str, phase: str, milestones: dict, *, policy: dict | None = No
               "override_id": None, "precision": None, "provisional": False, "missing_reason": None,
               "urgent": bool(urgent)}
     definition = (override or {}).get("definition") or override or {}
+    if override and definition.get("urgent"):
+        # «Urgente» (cenários, 08/10/2026): em todas as operações da OF; a previsão põe-na como 0.ª PRIORIDADE.
+        # A chave só aparece quando a substituição a tem: o resultado das outras linhas não muda.
+        result.update(urgent=True, urgent_override=True)
     if override and (principal or definition.get("applies_to") == "all"):
         result["override_id"] = str(override.get("id")) if override.get("id") else None
         if definition.get("due_date"):
@@ -381,9 +385,10 @@ def save_override(payload: dict, conn=None) -> dict:
     definition = None
     if len(reason) > 1000:
         raise planning.PlanningError("O motivo tem no máximo 1000 caracteres.")
+    urgent = payload.get("urgente") is True  # cenários (08/10): «urgente» com ou sem prazo próprio
     if not clear:
         due, field = payload.get("due_date"), payload.get("field")
-        if bool(due) == bool(field):
+        if (due and field) or (not due and not field and not urgent):
             raise planning.PlanningError("Escolhe uma data ou um campo de prazo, não ambos.")
         if due and _day(due) is None:
             raise planning.PlanningError("Data de prazo inválida.")
@@ -393,6 +398,8 @@ def save_override(payload: dict, conn=None) -> dict:
         if applies not in ("principal", "all"):
             raise planning.PlanningError("Indica se a substituição vale para a operação principal ou para todas.")
         definition = {"due_date": _day(due).isoformat() if due else None, "field": field, "applies_to": applies}
+        if urgent:
+            definition["urgent"] = True
     with (planning.connect() if conn is None else nullcontext(conn)) as c:
         c.execute("SELECT pg_advisory_xact_lock(hashtext('sector-priority-override'))")
         subject = f"{of}|{reference}"

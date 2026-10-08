@@ -219,6 +219,57 @@ def finish_batch(c, request_id) -> None:
     projection.mark_aggregates_pending(c, str(request_id))
 
 
+def parse_changes(changes, machines: dict, settings: dict, lookup) -> dict:
+    """{(máquina, ano, semana): [turnos por dia da semana, exceções por dia]} das mudanças pedidas.
+
+    `lookup(máquina, ano, semana)` = a definição atual do calendário dessa semana (None sem calendário). Usado por
+    `apply` (gravação) e por `simulate` (cenários, só em memória): as duas leem as mudanças da mesma maneira."""
+    if not isinstance(changes, list) or not changes or len(changes) > 2000:
+        raise planning.PlanningError("Indica as mudanças de turnos.")
+    weeks = {}
+    for item in changes:
+        if not isinstance(item, dict) or item.get("maquina") not in machines:
+            raise planning.PlanningError("Máquina inválida.")
+        try:
+            n = int(item.get("turnos"))
+        except (TypeError, ValueError):
+            raise planning.PlanningError("Número de turnos inválido.") from None
+        if not 0 <= n <= MAX_SHIFTS:
+            raise planning.PlanningError(f"Os turnos vão de 0 a {MAX_SHIFTS}.")
+        if item.get("dia"):
+            try:
+                day = date.fromisoformat(str(item["dia"]))
+            except ValueError:
+                raise planning.PlanningError("Dia inválido.") from None
+            year, week, _ = day.isocalendar()
+        else:
+            try:
+                year, week, day = int(item.get("ano")), int(item.get("semana")), None
+                date.fromisocalendar(year, week, 1)
+            except (TypeError, ValueError):
+                raise planning.PlanningError("Semana inválida.") from None
+        key = (item["maquina"], year, week)
+        if key not in weeks:
+            definition = lookup(item["maquina"], year, week)
+            base, days = decode(definition, settings["template"]) if definition is not None else (
+                {str(d): (machines[item["maquina"]]["default_shifts"] if d in settings["workdays"] else 0) for d in range(1, 8)}, {})
+            weeks[key] = [base, days]
+        base, days = weeks[key]
+        if day:
+            days[day.isoformat()] = n
+        else:
+            for d in range(1, 8):
+                base[str(d)] = n if d in settings["workdays"] else 0
+            for iso in [k for k in days if date.fromisoformat(k).isocalendar()[:2] == (year, week)]:
+                del days[iso]  # a semana inteira manda: as exceções de dias dessa semana saem
+    return weeks
+
+
+def _following(year: int, week: int) -> tuple[int, int]:
+    ny, nw, _ = (date.fromisocalendar(year, week, 1) + timedelta(days=7)).isocalendar()
+    return ny, nw
+
+
 def apply(payload: dict, *, conn=None) -> dict:
     """Mudanças de turnos: [{maquina, ano, semana, turnos} | {maquina, dia: 'AAAA-MM-DD', turnos}]."""
     from . import settings as sector_settings
@@ -234,45 +285,17 @@ def apply(payload: dict, *, conn=None) -> dict:
         planning.check_area(sector)
         settings = sector_settings.read(c, sector)
         machines = {m["id"]: m for m in sector_settings.machine_rows(c, sector)}
-        weeks = {}
-        for item in changes:
-            if not isinstance(item, dict) or item.get("maquina") not in machines:
-                raise planning.PlanningError("Máquina inválida.")
-            try:
-                n = int(item.get("turnos"))
-            except (TypeError, ValueError):
-                raise planning.PlanningError("Número de turnos inválido.") from None
-            if not 0 <= n <= MAX_SHIFTS:
-                raise planning.PlanningError(f"Os turnos vão de 0 a {MAX_SHIFTS}.")
-            if item.get("dia"):
-                try:
-                    day = date.fromisoformat(str(item["dia"]))
-                except ValueError:
-                    raise planning.PlanningError("Dia inválido.") from None
-                year, week, _ = day.isocalendar()
-            else:
-                year, week, day = int(item.get("ano")), int(item.get("semana")), None
-                date.fromisocalendar(year, week, 1)
-            key = (item["maquina"], year, week)
-            if key not in weeks:
-                row = calendar_row(c, item["maquina"], year, week)
-                base, days = decode((row or {}).get("definition") or {}, settings["template"]) if row else (
-                    {str(d): (machines[item["maquina"]]["default_shifts"] if d in settings["workdays"] else 0) for d in range(1, 8)}, {})
-                weeks[key] = [base, days]
-            base, days = weeks[key]
-            if day:
-                days[day.isoformat()] = n
-            else:
-                for d in range(1, 8):
-                    base[str(d)] = n if d in settings["workdays"] else 0
-                for iso in [k for k in days if date.fromisoformat(k).isocalendar()[:2] == (year, week)]:
-                    del days[iso]  # a semana inteira manda: as exceções de dias dessa semana saem
+
+        def lookup(rid, year, week):
+            row = calendar_row(c, rid, year, week)
+            return ((row or {}).get("definition") or {}) if row else None
+        weeks = parse_changes(changes, machines, settings, lookup)
         changed = 0
         for (rid, year, week), (base, days) in sorted(weeks.items(), key=lambda x: (x[0][0], x[0][1], x[0][2])):
             changed += write(c, machines[rid], sector, year, week, base, days, settings, manual=True,
                              request_id=request_id, actor_payload={})
             # A segunda-feira seguinte recebe a madrugada do turno da noite deste domingo.
-            ny, nw, _ = (date.fromisocalendar(year, week, 1) + timedelta(days=7)).isocalendar()
+            ny, nw = _following(year, week)
             following = calendar_row(c, rid, ny, nw) if (rid, ny, nw) not in weeks else None
             if following and not is_legacy(following["definition"]):
                 fb, fd = decode(following["definition"], settings["template"])
@@ -281,3 +304,103 @@ def apply(payload: dict, *, conn=None) -> dict:
         if changed:
             finish_batch(c, request_id)
     return {"changed": changed, "weeks": len(weeks)}
+
+
+def simulate(definitions: dict, machines: dict, settings: dict, changes: list) -> dict:
+    """As mudanças de turnos de `apply`, só em memória (cenários, 08/10/2026).
+
+    `definitions` = {(máquina, ano, semana): definição}; devolve uma cópia com as semanas mudadas (e a semana
+    seguinte, que recebe a madrugada do turno da noite de domingo), pela mesma regra de `apply`/`write`. As
+    reservas horárias e as outras chaves da semana mantêm-se (definition_for copia-as)."""
+    out = dict(definitions)
+    weeks = parse_changes(changes, machines, settings, lambda rid, y, w: out.get((rid, y, w)))
+    for (rid, year, week), (base, days) in sorted(weeks.items(), key=lambda x: (x[0][0], x[0][1], x[0][2])):
+        py, pw, _ = (date.fromisocalendar(year, week, 1) - timedelta(days=7)).isocalendar()
+        out[(rid, year, week)] = definition_for(rid, year, week, base, days, settings, manual=True,
+                                                previous=out.get((rid, year, week)) or {},
+                                                previous_sunday=sunday_shifts(out.get((rid, py, pw)), settings))
+        ny, nw = _following(year, week)
+        following = out.get((rid, ny, nw)) if (rid, ny, nw) not in weeks else None
+        if following and not is_legacy(following):
+            fb, fd = decode(following, settings["template"])
+            out[(rid, ny, nw)] = definition_for(rid, ny, nw, fb, fd, settings, manual=bool(following.get("manual")),
+                                                previous=following, previous_sunday=sunday_shifts(out[(rid, year, week)], settings))
+    return out
+
+
+# ---------------------------------------------------------------- paragens (reservas horárias), 08/10/2026
+
+def week_pieces(start: datetime, end: datetime) -> list[tuple[int, int, datetime, datetime]]:
+    """[(ano, semana, início, fim)] de um intervalo [início, fim) partido nas semanas ISO de Lisboa (segunda 00:00).
+
+    O 3.º turno de domingo, que acaba na segunda de madrugada, fica com a parte de segunda na semana seguinte:
+    planning_calendars.validate exige cada reserva dentro da sua semana."""
+    from zoneinfo import ZoneInfo
+    lisbon = ZoneInfo("Europe/Lisbon")
+    start, end = start.astimezone(timezone.utc), end.astimezone(timezone.utc)
+    out, cursor = [], start
+    while cursor < end:
+        local = cursor.astimezone(lisbon).date()
+        monday = local - timedelta(days=local.weekday())
+        week_end = datetime.combine(monday + timedelta(days=7), datetime.min.time(), lisbon).astimezone(timezone.utc)
+        stop = min(end, week_end)
+        y, w, _ = monday.isocalendar()
+        out.append((y, w, cursor, stop))
+        cursor = stop
+    return out
+
+
+def merge_reserved(existing, start: datetime, end: datetime, label: str) -> list[dict]:
+    """As reservas de uma semana com [início, fim) acrescentado: ordenadas e sem sobreposições (as que se tocam
+    ou sobrepõem juntam-se numa só, com os rótulos de ambas)."""
+    items = [(datetime.fromisoformat(r["start"]).astimezone(timezone.utc), datetime.fromisoformat(r["end"]).astimezone(timezone.utc),
+              str(r.get("area") or "").strip()) for r in existing or ()]
+    items.append((start.astimezone(timezone.utc), end.astimezone(timezone.utc), str(label or "").strip()))
+    items.sort(key=lambda x: (x[0], x[1]))
+    merged = []
+    for a, b, text in items:
+        if merged and a <= merged[-1][1]:
+            pa, pb, labels = merged[-1]
+            merged[-1] = (pa, max(pb, b), labels + ([text] if text and text not in labels else []))
+        else:
+            merged.append((a, b, [text] if text else []))
+    return [{"start": a.isoformat(), "end": b.isoformat(), "area": " + ".join(labels)[:300]} for a, b, labels in merged]
+
+
+def with_reservation(definition: dict, start: datetime, end: datetime, label: str) -> dict:
+    """A definição da semana com a reserva acrescentada, validada (planning_calendars.validate)."""
+    d = dict(definition)
+    d["reserved_windows"] = merge_reserved(definition.get("reserved_windows"), start, end, label)
+    return planning_calendars.validate(d)
+
+
+def save_definition(c, resource: dict, area: str, row: dict, definition: dict, request_id: uuid.UUID, tag: str) -> None:
+    """Grava (sem sinal de agregados) uma definição de calendário já validada, sobre a revisão lida em `row`."""
+    from ..raw import objects
+    year, week = int(definition["year"]), int(definition["week"])
+    objects.save({"request_id": str(uuid.uuid5(request_id, f"{tag}:{resource['id']}:{year}:{week}")), "id": str(row["id"]),
+                  "expected_revision": row["revision"], "area": resource.get("area") or area,
+                  "name": f"{resource['name']} · {year}-W{week:02}", "definition": definition}, "calendar", conn=c, signal=False)
+
+
+def reserve(c, resource: dict, area: str, start: datetime, end: datetime, reason: str, *, request_id: uuid.UUID) -> dict:
+    """Máquina parada [início, fim) (cenários, 08/10/2026): acrescenta reservas horárias (reserved_windows) aos
+    calendários das semanas afetadas, partidas por semana e juntas às que se sobrepõem. As semanas sem calendário
+    (ou antigas, sem horários) ficam de fora, ditas em `skipped`. Devolve, por semana, as reservas antes e depois
+    (para o Desfazer). Não sinaliza os agregados: quem chama faz `finish_batch` no fim do lote."""
+    if not (isinstance(start, datetime) and isinstance(end, datetime) and start.tzinfo and end.tzinfo and start < end):
+        raise planning.PlanningError("Indica o início e o fim da paragem.")
+    weeks, skipped = [], []
+    for year, week, a, b in week_pieces(start, end):
+        row = calendar_row(c, resource["id"], year, week)
+        if not row or is_legacy(row["definition"]):
+            skipped.append({"year": year, "week": week, "reason": "sem calendário com horários"})
+            continue
+        before = list(row["definition"].get("reserved_windows") or [])
+        try:
+            d = with_reservation(row["definition"], a, b, reason)
+        except ValueError as exc:
+            raise planning.PlanningError(f"Paragem inválida na semana {year}-W{week:02}: {exc}") from None
+        save_definition(c, resource, area, row, d, request_id, "reserva")
+        weeks.append({"year": year, "week": week, "before": before, "after": d["reserved_windows"]})
+    return {"weeks": weeks, "skipped": skipped}

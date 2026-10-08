@@ -9,7 +9,7 @@ linhas da Carteira, decisões Planear (com a parte planeada, contrato 3A/3B) e o
 - Âmbito 0 = a parte planeada das linhas Planeado (Planear + máquina atribuída, como na Carga): min(parte, saldo)
   na operação principal; nas seguintes, as peças já cortadas que faltam mais a parte planeada. O resto da linha
   entra no âmbito 1, com o resto das horas (a soma dos segundos não muda).
-- Ordem em cada máquina: âmbito → «N.ª PRIORIDADE» escrita → clientes prioritários (Definições, lista) → com prazo
+- Ordem em cada máquina: âmbito → «N.ª PRIORIDADE» escrita (urgente nas substituições de prazo = 0.ª) → clientes prioritários (Definições, lista) → com prazo
   antes de sem prazo → prazo → OF → perfil → comprimento → chave.
 - Fora da previsão, com o motivo: 2.ª operação das cantoneiras, estacionadas, saldo por confirmar, sem máquina,
   máquina de outro setor, sem horas e máquina sem calendário. A 2.ª operação e as operações sem calendário ficam
@@ -108,6 +108,8 @@ def priority_key(fact: dict, clients=()) -> tuple:
     signals = fact.get("signals") or {}
     written = signals.get("prioridade")
     priority = fact.get("priority") or {}
+    if priority.get("urgent_override"):  # «urgente» nas substituições de prazo (cenários, 08/10): 0.ª PRIORIDADE
+        written = 0
     due = priority.get("priority_date")
     length = fact.get("length_mm")
     return ((0, int(written)) if written is not None else (1, 0),
