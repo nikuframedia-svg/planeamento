@@ -2,6 +2,33 @@
 
 Plano: [PLANO.md](PLANO.md). Estado: **ativo em produção desde 02/10/2026 ~19:17** (autorizado pelo Luís): migração 046 aplicada, `kanban-planning` e `kanban-research-sync` reiniciados, vistas da base de pesquisa aplicadas, ecrã antigo removido (cópia em `~/.local/state/planning-carteira-membros/antes-20261002/`, com as definições anteriores das vistas `consulta_v2`). Teste de browser aprovado contra a produção.
 
+## 08/10/2026: plano de 12 pontos (dados certos, Carteira, Carga, Gantt manual, cenários, Definições)
+
+Plano aprovado: `~/.claude/plans/pasted-content-id-c833-quero-melhorar-humble-finch.md`. Relatório para o Luís: `docs/auditoria-fluxo-2026-10-08/RELATORIO-FINAL.md`; auditorias «antes» e «depois» na mesma pasta.
+
+- **Ativação 1:** 08/10, 09:35–09:39, `scripts/ativar_2026-10-08.sh`. Etapas 1–2, commit 252b9c0; DATARESEARCHMTG no 4cda4cb.
+  - Recálculo completo; a geração 6855/6856 já usa o Excel MTG3 de 07/10 (`SAIDA/`).
+- **Ativação 2:** 08/10, 11:05. Etapas 3–5, commit d1e1ed0 e seguintes.
+  - Migrações 052 (quantidade parcial), 053 (ajustes do Gantt) e 054 (cenários) aplicadas com `scripts/migrate.py`.
+  - Sem recálculo completo; aquecimento de 72 s nas cantoneiras.
+  - Reversão: `sql/reverter_05{2,3,4}.sql` e voltar ao commit 252b9c0.
+- **Decisões do Luís:**
+  - 2.ª operação das cantoneiras só sai das listas;
+  - o OCR substitui o Excel mesmo quando é menor;
+  - horas pela velocidade do Excel em todas as páginas, com ×3 da Thomas e a coluna E/F na MTG2; eficiência por máquina como único fator;
+  - Excel MTG3: o mais recente entre a raiz e `SAIDA/`.
+- **Código novo em `app/sector`:**
+  - `dispatch.py` e `forecast.py` (motor: fila por máquina);
+  - `forecast_views.py`, `anchors.py`, `scenarios.py`, `load_views.py`, `second_operation.py`, `drive_notice.py`.
+- **Ecrãs:** `tabela_fixa.js`, `carga_previsao.js` e `cenarios.js`.
+- **Testes:**
+  - suíte completa com 1 393 a passar; as 9 falhas são as conhecidas (cohort ×5, macro_revisions ×2, sku_families ×2);
+  - browser contra a produção com as gravações intercetadas: `carteira_browser`, `carteira_semana_browser`, `setor_browser`, `carga_previsao_browser`, `definicoes_browser`, `plano_ajustes_browser`, `plano_em_uso_browser`, `cenarios_browser`, `gantt_areas_browser`.
+- **Pendente:**
+  - limpeza do disco de 07/10 falhou: TEMP sem permissão e `/dev/shm` de 64 MB no Postgres;
+  - `SAIDA/Met2_Plan_Perfis.xlsm` antigo no Drive;
+  - timer do `extend_horizon`.
+
 ## 07/10/2026 (noite): velocidade
 
 O Luís pediu: «foca-te na velocidade do sistema, está muito lento». Fizeram-se quatro trabalhos em worktrees, cada um com um revisor (correção e produção/MES) e uma ronda de correções quando foi preciso. **Ativo desde as 21:00**: os três serviços foram parados e arrancados com o merge `422f296`.
