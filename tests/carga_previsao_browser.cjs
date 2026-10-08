@@ -10,7 +10,7 @@ const shots = process.env.CARGA_SHOTS;
   const browser = await chromium.launch({executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE, headless: true, args: ['--no-sandbox']});
   const page = await browser.newPage({viewport: {width: 1440, height: 1000}});
   const errors = [], writes = [];
-  page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
+  page.on('console', (m) => { if (m.type() === 'error' && !/fingido/.test((m.location() || {}).url || '')) errors.push(m.text()); });  // o 404 do cenário inventado é esperado
   page.on('pageerror', (e) => errors.push(String(e)));
   page.on('response', (r) => { if (r.status() >= 400 && !/fingido/.test(r.url())) errors.push(`${r.status()} ${r.url()}`); });
   await page.route('**/planeamento/api/**', (route) => {
