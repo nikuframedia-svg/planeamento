@@ -1,4 +1,6 @@
 // Definições do setor: secção «Planeamento» (P9, 08/10/2026) e 2.ª operação fora da lista (P3-A).
+// Etapa 3 (ponto 9): folga, clientes prioritários (lista ordenada da Carteira), ordem do plano (texto), pessoas por
+// máquina e por turno (com o «medido» das folhas MES e a sugestão do catálogo, que só preenche).
 // Nada é gravado: as gravações são intercetadas e respondidas com uma confirmação simulada; o teste confirma o que a
 // página pediria ao servidor. O «medido» e a 2.ª operação são acrescentados à resposta quando a base ainda não os tem.
 // Uso: DEFS_BASE=http://127.0.0.1:8194 [DEFS_SHOTS=/tmp/defs] node tests/definicoes_browser.cjs
@@ -22,13 +24,16 @@ const SECOND = ['Saca bocados', 'Plasma manual', 'Fresadora', 'Prensa'];
     writes.push({url: req.url(), body: req.postDataJSON()});
     return route.fulfill({status: 200, contentType: 'application/json', body: JSON.stringify({changed: 1, repeated: false})});
   });
-  // Resposta das Definições: `mode` = 'novo' (acrescenta medido e 2.ª operação se faltarem) ou 'antigo' (sem os campos novos).
-  let mode = 'novo', machines = null, thomasSimulated = false;
+  // Resposta das Definições: `mode` = 'novo' (acrescenta medido e 2.ª operação se faltarem), 'etapa2' (o Python da Etapa 2:
+// planning sem os parâmetros da previsão) ou 'antigo' (sem os campos novos).
+const FORECAST_KEYS = ['folga_dias', 'clientes_prioritarios', 'ordem_plano', 'pessoas_por_maquina', 'pessoas_por_turno'];
+  let mode = 'novo', machines = null, choices = [], template = [], thomasSimulated = false;
   await page.route(/\/planeamento\/api\/setor\/definicoes\?/, async (route) => {
     const setor = new URL(route.request().url()).searchParams.get('setor');
     let body;
     try { body = await (await route.fetch()).json(); } catch { return route.abort().catch(() => {}); }  // página fechada a meio
     if (mode === 'antigo') { delete body.planning; delete body.second_operation; body.speed_table.margin_editable = false; }
+    else if (mode === 'etapa2') { body.planning = body.planning.filter((r) => !FORECAST_KEYS.includes(r.key)); }
     else {
       assert.ok(Array.isArray(body.planning), 'API nova: campo planning');
       if (setor === 'cantoneiras' && !(body.second_operation || []).length) {
@@ -50,6 +55,17 @@ const SECOND = ['Saca bocados', 'Plasma manual', 'Fresadora', 'Prensa'];
         c.measured = [{operation: '112', value: 150, unit: 'm/h', hours: 30, sheets: 9, enough: true, ratio_pct: null, plausible: true,
                        note: 'O × 3 da Thomas (QTD > 50) já está nas horas: este medido não se compara com a taxa base nem deve ir para a eficiência.'}];
       }
+      for (const key of FORECAST_KEYS) assert.ok(body.planning.some((r) => r.key === key), `API nova: ${key}`);
+      const clients = body.planning.find((r) => r.key === 'clientes_prioritarios');
+      if ((clients.choices || []).length < 2) clients.choices = ['Cliente Teste A', 'Cliente Teste B'];  // Carteira vazia
+      const turns = body.planning.find((r) => r.key === 'pessoas_por_turno');
+      if (!turns.measured) turns.measured = {median: 7, text: '7 por dia útil (mediana de 16 dias, 5–11; folhas MES dos últimos 28 dias)',
+        note: 'Indicativo: conta operadores por dia, não por turno (o turno vem vazio em 89 % das folhas).'};
+      if (setor === 'perfis' && !(turns.suggestions || []).length) {
+        turns.suggestions = [{code: 'OPERADORES_PAV1', name: 'Operadores dos quatro serrotes pav.1', people: 2, members: ['Serrote Disco pav 1', 'Serrote Fita pav.1']}];
+      }
+      choices = clients.choices;
+      template = body.settings.template;
     }
     machines = body.machines;
     return route.fulfill({status: 200, contentType: 'application/json', body: JSON.stringify(body)});
@@ -122,6 +138,54 @@ const SECOND = ['Saca bocados', 'Plasma manual', 'Fresadora', 'Prensa'];
     ['cantoneiras', 0, ['picking', 'cut_date'], ['galvanizing']]);
   if (shots) await page.screenshot({path: `${shots}/definicoes-planeamento.png`, fullPage: true});
 
+  // Etapa 3 (ponto 9): parâmetros da previsão na mesma secção.
+  await page.goto(`${base}/planeamento/setor/definicoes?setor=cantoneiras`);
+  await page.waitForSelector('#planning-rows tr[data-param="folga_dias"]', {timeout: 120000});
+  const rowText = (key) => page.locator(`#planning-rows tr[data-param="${key}"]`).first().innerText();
+  assert.match(await rowText('folga_dias'), /Folga antes do prazo\s+2?\s*dias úteis\s+Só muda o estado «Em risco» da previsão; as datas mostradas não mudam\.\s+Pressuposto/);
+  assert.equal(await page.locator('#planning-rows tr[data-param="ordem_plano"] .rule').innerText(),
+    'Planeado (com ajustes) → prioridade escrita → clientes prioritários → prazo → OF');
+  assert.equal(await page.locator('#planning-rows tr[data-param="ordem_plano"] input').count(), 0, 'a ordem do plano é só texto');
+  assert.equal(await page.locator('#planning-rows tr[data-param="pessoas_por_maquina"]').count(), machines.length, 'pessoas: uma linha por máquina');
+  assert.deepEqual(await page.locator('#planning-rows tr[data-param="pessoas_por_maquina"] td.measured').allInnerTexts(), machines.map(() => '—'));
+  assert.equal(await page.locator('#planning-rows tr[data-param="pessoas_por_turno"] input').count(), 3);
+  assert.match(await page.locator('#planning-rows tr[data-param="pessoas_por_turno"] td.measured').innerText(),
+    /^[\d,]+ por dia útil \(mediana de \d+ dias, \d+–\d+; folhas MES dos últimos 28 dias\)\. Indicativo: conta operadores por dia, não por turno/);
+  assert.equal(await page.locator('#clients-list').isVisible(), false, 'sem clientes: lista escondida');
+  assert.match(await rowText('clientes_prioritarios'), /Nenhum \(opcional\)\./);
+  assert.ok(await page.locator('#clients-choices option').count() >= 2, 'clientes da Carteira para escolher');
+  // Folga fora dos limites: recusada no ecrã.
+  const folga = page.locator('#planning-rows tr[data-param="folga_dias"] input');
+  await folga.fill('25');
+  assert.equal(await page.locator('#planning-recalc').innerText(), 'Recalcula só a previsão.');
+  n = writes.length;
+  await page.click('#planning-save');
+  await page.waitForFunction(() => /entre 0 e 20/.test(document.getElementById('error').textContent));
+  assert.equal(writes.length, n);
+  // Folga 3, dois clientes (o segundo sobe), 2 pessoas na primeira máquina, 4 pessoas no 1.º turno: uma gravação.
+  await folga.fill('3');
+  const [ca, cb] = choices;
+  for (const name of [ca, cb]) { await page.fill('#clients-pick', name); await page.click('#clients-add'); }
+  assert.deepEqual(await page.locator('#clients-list li span').allInnerTexts(), [ca, cb]);
+  await page.locator(`#clients-list li[data-client="${cb}"] button[aria-label^="Subir"]`).click();
+  assert.deepEqual(await page.locator('#clients-list li span').allInnerTexts(), [cb, ca]);
+  assert.equal(await page.locator(`#clients-choices option[value="${cb}"]`).count(), 0, 'o já escolhido sai das escolhas');
+  const person = page.locator('#planning-rows tr[data-param="pessoas_por_maquina"] input').first();
+  const personId = await person.getAttribute('data-machine');
+  await person.fill('2');
+  await page.locator('#planning-rows tr[data-param="pessoas_por_turno"] input').first().fill('4');
+  await page.click('#planning-save');
+  await page.waitForFunction(() => /Gravado: /.test(document.getElementById('notice').textContent));
+  assert.equal(writes.length, n + 1);
+  sent = writes.at(-1).body;
+  assert.deepEqual([sent.tipo, typeof sent.expected_revision], ['planeamento', 'number']);
+  assert.deepEqual(sent.valores, {folga_dias: 3, clientes_prioritarios: [cb, ca], pessoas_por_maquina: {[personId]: 2},
+    pessoas_por_turno: [4, null, null]});
+  assert.match(await page.locator('#notice').innerText(),
+    /^Gravado: Folga antes do prazo e Clientes prioritários e Pessoas por máquina a trabalhar e Pessoas disponíveis por turno\. Recalcula só a previsão\.$/);
+  // Tirar um cliente da lista também se grava (lista vazia = sem clientes prioritários).
+  if (shots) await page.screenshot({path: `${shots}/definicoes-previsao.png`, fullPage: true});
+
   // MTG2: postos (uma só capacidade) e a política por defeito.
   await page.goto(`${base}/planeamento/setor/definicoes?setor=perfis`);
   await page.waitForSelector('#planning-rows tr', {timeout: 120000});
@@ -129,6 +193,15 @@ const SECOND = ['Saca bocados', 'Plasma manual', 'Fresadora', 'Prensa'];
   const posts = await page.locator('#planning-rows tr[data-param="posts"] .post').allInnerTexts();
   assert.ok(posts.some((t) => /^Serrote Fita pav\.1 \(posto\) = Serrote Fita pav\.1 \+ .+: uma só capacidade$/.test(t)), `postos: ${posts}`);
   assert.equal(await page.locator('#second-op').isVisible(), false, 'MTG2 sem 2.ª operação');
+  // Sugestão do catálogo (OPERADORES_PAV1): só preenche os turnos do horário; nada é gravado sem o Gravar.
+  const suggest = page.locator('#planning-rows tr[data-param="pessoas_por_turno"] .suggest');
+  assert.match(await suggest.innerText(), /^Catálogo: Operadores dos quatro serrotes pav\.1 = 2 pessoas \(.+\)\. Usar 2 por turno$/);
+  n = writes.length;
+  await suggest.locator('button[data-suggest="OPERADORES_PAV1"]').click();
+  const filled = await page.locator('#planning-rows tr[data-param="pessoas_por_turno"] input').evaluateAll((xs) => xs.map((x) => x.value));
+  assert.deepEqual(filled, [0, 1, 2].map((i) => (i < template.length ? '2' : filled[i])));
+  assert.equal(writes.length, n, 'a sugestão não grava');
+  assert.ok(await page.locator('#planning-save').isVisible(), 'grava-se no Gravar');
 
   // 390 px: a página não desliza na horizontal; a tabela desliza dentro da caixa.
   await page.setViewportSize({width: 390, height: 900});
@@ -140,6 +213,12 @@ const SECOND = ['Saca bocados', 'Plasma manual', 'Fresadora', 'Prensa'];
     if (shots) await page.screenshot({path: `${shots}/definicoes-planeamento-390-${setor}.png`, fullPage: true});
   }
   await page.setViewportSize({width: 1440, height: 1000});
+
+  // Serviço com o Python da Etapa 2: a secção aparece sem os parâmetros da previsão e sem erros.
+  mode = 'etapa2';
+  await page.goto(`${base}/planeamento/setor/definicoes?setor=cantoneiras`);
+  await page.waitForSelector('#planning-rows tr[data-param="efficiency"]', {timeout: 120000});
+  for (const key of FORECAST_KEYS) assert.equal(await page.locator(`#planning-rows tr[data-param="${key}"]`).count(), 0, `${key} ausente`);
 
   // Serviço ainda com o Python antigo: sem secção nova, o tempo fixo continua nas Velocidades (sem margem).
   mode = 'antigo';

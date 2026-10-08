@@ -361,7 +361,7 @@ def _aggregate(sector: str, today: date | None = None, *, memo: bool = False) ->
         key = None
         if memo:
             key = (sector, today, occ.get("stamp"), data.get("generation"), occ.get("decisions"), _calendar_stamp(c),
-                   settings.get("revision"), bool(occ.get("stale") or data.get("stale")))
+                   sector_settings.load_stamp(settings), bool(occ.get("stale") or data.get("stale")))
             found = _remembered(key)
             if found is not None:
                 return found
