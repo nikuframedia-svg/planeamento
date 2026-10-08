@@ -249,7 +249,8 @@ async def settings_save(request: Request):
 @router.get("/planeamento/setor/carga", response_class=HTMLResponse)
 def load_page(request: Request):
     _guard()
-    return _page(request, "setor_carga.html", ("static/setor_carga.js", "static/setor_carga.css", "static/tabela_fixa.js"))
+    return _page(request, "setor_carga.html", ("static/setor_carga.js", "static/setor_carga.css", "static/tabela_fixa.js",
+                                                "static/carga_previsao.js"))
 
 
 @router.get("/planeamento/api/setor/carga")
@@ -344,6 +345,33 @@ def forecast_orders(setor: str = "cantoneiras", estado: str = "todas"):
     _guard()
     from . import forecast
     return _call(lambda: forecast.orders(portfolio.check_sector(setor), estado))
+
+
+@router.get("/planeamento/api/setor/capacidade-prazos")
+def forecast_capacity(setor: str = "cantoneiras", grao: str = "dia", cenario: str | None = None):
+    """Capacidade e prazos (Etapa 3, ponto 11): contadores de risco, máquinas que limitam, mapa máquina × dia (15 dias
+    úteis) ou × semana (13), riscos principais e previsão com dados em falta. `cenario` = simulação. Só leitura."""
+    _guard()
+    from . import forecast_views
+    return _call(lambda: forecast_views.capacity_deadlines(portfolio.check_sector(setor), grao, cenario))
+
+
+@router.get("/planeamento/api/setor/calendario")
+def forecast_calendar(setor: str = "cantoneiras", de: str | None = None, ate: str | None = None, cenario: str | None = None):
+    """Calendário (Etapa 3, ponto 12): por dia a previsão (capacidade, horas, OF, conclusões, prazos, entregas, risco)
+    e, nos dias passados e hoje, o realizado (MES), à parte. Só leitura."""
+    _guard()
+    from . import forecast_views
+    return _call(lambda: forecast_views.calendar(portfolio.check_sector(setor), de, ate, cenario))
+
+
+@router.get("/planeamento/api/setor/calendario/dia")
+def forecast_calendar_day(setor: str = "cantoneiras", dia: str = "", cenario: str | None = None):
+    """Detalhe de um dia do Calendário: por máquina os turnos, a previsão e as OF; pessoas (se definidas); e, à
+    parte, o realizado por máquina (MES, pela data de produção). Só leitura."""
+    _guard()
+    from . import forecast_views
+    return _call(lambda: forecast_views.calendar_day(portfolio.check_sector(setor), dia, cenario))
 
 
 @router.get("/planeamento/api/setor/quadro/dia")

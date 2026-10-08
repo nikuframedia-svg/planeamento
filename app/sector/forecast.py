@@ -181,7 +181,8 @@ def operations_from(facts: list[dict], *, sector: str, planned, own: set, pools:
                 "provisional": bool(priority.get("provisional")), "due_day": priority.get("priority_day"),
                 "resource_id": rid, "machine": f.get("planning_machine"), "fact_key": f.get("key"),
                 "started": bool(f.get("started")), "documentary_resource_id": f.get("documentary_resource_id"),
-                "hours_machine": f.get("hours_machine"), "parked": bool(priority.get("parked"))}
+                "hours_machine": f.get("hours_machine"), "parked": bool(priority.get("parked")),
+                "length_mm": f.get("length_mm")}
         if reason:  # fora da previsão; uma linha Planeado guarda o âmbito 0 (o Gantt diz porque não aparece)
             ops.append({**base, "key": f["key"], "seconds": seconds, "scope": 0 if in_plan else 1, "reason": reason})
             meta[f["key"]] = {**info, "pieces": f.get("pieces"), "hours": hours, "scope": 0 if in_plan else 1, "plan": in_plan}
@@ -663,7 +664,10 @@ def compute(sector: str, ki: dict, src: dict) -> dict:
             "lines": lines, "orders": orders, "machines": by_machine, "slots": slots, "limiting": limiting(slots),
             "cells": dict(cells), "people": people, "counts": counts, "reliability": reliability,
             "machine_hours": machine_hours, "check": problems, "names": names, "elapsed": round(elapsed, 2),
-            "imported_at": data.get("imported_at"), "stale": ki["stale"], "stamp": needs.digest(needs.serial(ki["key"]))}
+            "imported_at": data.get("imported_at"), "stale": ki["stale"], "stamp": needs.digest(needs.serial(ki["key"])),
+            # Para as vistas da Carga (forecast_views): quando foi calculada e os dias de trabalho do setor.
+            "computed_at": datetime.now(timezone.utc), "workdays": list(settings.get("workdays") or []),
+            "holidays": sorted({str(h)[:10] for h in settings.get("holidays") or ()})}
 
 
 def _evaluate(x: dict, cal: Calendar, folga: int, horizon_end, today_iso: str) -> None:

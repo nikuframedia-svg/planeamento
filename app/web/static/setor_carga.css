@@ -77,6 +77,43 @@ table.groups td.g:empty { cursor: default; }
 table.groups td.dim { white-space: nowrap; color: #5d737a; }
 table.groups tr.total th, table.groups tr.total td { font-weight: 700; border-top: 2px solid #dce6e8; cursor: default; }
 .second-op { margin: .5rem 0 0; }
+/* Vistas da previsão (Etapa 3, 08/10): Calendário e Capacidade e prazos. Completa = laranja claro (normal, não erro);
+   Fechado = tracejado; o risco é uma marca à parte (ponto vermelho / âmbar). */
+.fc-banner { padding: .3rem .6rem; background: #eef4ff; border: 1px solid #b9cbea; border-radius: 8px; color: #1f3f74; margin: .2rem 0 .5rem; }
+.fc-nav { display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; margin: .2rem 0 .4rem; }
+.fc-nav button { width: auto; padding: .1rem .6rem; border: 1px solid #a9bbc4; background: #fff; color: #10384b; border-radius: 6px; }
+.fc-nav button:disabled { opacity: .35; }
+#fc-range { font-weight: 700; }
+.sw.fc-closed { background: repeating-linear-gradient(45deg, #fff, #fff 3px, #e3e8ea 3px, #e3e8ea 6px); border-style: dashed; }
+.sw.fc-lt85 { background: #e7f3f5; } .sw.fc-p85 { background: #cfe6ea; } .sw.fc-full { background: #fde3c4; }
+table.calgrid { border-collapse: collapse; width: 100%; table-layout: fixed; min-width: 56rem; }
+table.calgrid th { background: #f4f6f8; font-weight: 700; padding: .25rem .35rem; text-align: left; text-transform: none; letter-spacing: normal; color: inherit; }
+table.calgrid td { border: 1px solid #eef0f3; padding: .3rem .4rem; vertical-align: top; cursor: pointer; height: 5.6rem; }
+table.calgrid td.past { background: #f8f9fa; color: #5d737a; }
+table.calgrid td.today { outline: 2px solid #10384b; outline-offset: -2px; }
+table.calgrid td.open { outline: 2px solid #216d7a; outline-offset: -2px; }
+td.fc-closed { border: 1px dashed #a9b5ba !important; background: repeating-linear-gradient(45deg, #fff, #fff 4px, #f1f4f5 4px, #f1f4f5 8px); color: #5d737a; }
+td.fc-lt85 { background: #f3f9fa; } td.fc-p85 { background: #dcecef; } td.fc-full { background: #fde9d2; } td.fc-none { background: #f6f7f8; color: #5d737a; }
+.fc-date { font-weight: 700; }
+.fc-load { font-variant-numeric: tabular-nums; } .fc-pct { display: block; }
+table.orders td.at { color: #9a6200; font-weight: 700; }
+.fc-bar { height: 3px; background: #e3e8ea; border-radius: 2px; margin: .15rem 0; } .fc-bar span { display: block; height: 100%; background: #216d7a; border-radius: 2px; }
+td.fc-full .fc-bar span { background: #d98a2b; }
+.fc-meta { color: #33474e; }
+.risk.late, .dot.late, td.late { color: #9d2a26; font-weight: 700; } .risk.at, .dot.risk, td.at { color: #9a6200; font-weight: 700; }
+.fc-risks { display: flex; gap: .5rem; }
+.fc-real { color: #6b7b80; }
+.fc-links a { white-space: nowrap; }
+.fc-forecast, .fc-realized { margin-top: .3rem; }
+.fc-realized { border-top: 1px solid #dce6e8; padding-top: .3rem; }
+details.fc-machine { border-bottom: 1px solid #eef0f3; padding: .2rem 0; } details.fc-machine summary { cursor: pointer; }
+.fc-counters { display: flex; gap: .6rem; flex-wrap: wrap; margin: .3rem 0 .4rem; }
+.fc-counters .counter { background: #fff; border: 1px solid #dce6e8; border-radius: 8px; padding: .3rem .6rem; display: flex; gap: .4rem; align-items: baseline; }
+.fc-counters .counter .n { font-weight: 700; font-variant-numeric: tabular-nums; }
+.fc-counters .counter.late .n { color: #9d2a26; } .fc-counters .counter.at .n { color: #9a6200; }
+table.capmap td.m { white-space: nowrap; font-variant-numeric: tabular-nums; }
+table.capmap tbody th small.fc-queue { font-weight: normal; }
+ul.fc-missing { margin: .2rem 0; padding-left: 1.2rem; }
 @media (max-width: 760px) { .load { padding: .6rem 16px 2rem; } dl.proof { grid-template-columns: 1fr; } }
 /* planning_hub.css transforma as tabelas em cartões abaixo de 720 px; aqui a tabela fica tabela e desliza dentro da caixa. */
 @media (max-width: 720px) {
@@ -86,3 +123,5 @@ table.groups tr.total th, table.groups tr.total td { font-weight: 700; border-to
   .load .grid-wrap, .load .scroll { overflow-x: auto; }
   .load table tbody th { white-space: normal; min-width: 6.5rem; }
 }
+/* A 390 px, as tabelas dos riscos e do detalhe do dia deslizam dentro da sua caixa em vez de espremer as colunas. */
+#fc-risks-table, details.fc-machine table.orders, #fc-realized { min-width: 46rem; }

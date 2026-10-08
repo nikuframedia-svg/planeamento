@@ -21,11 +21,14 @@
   // Barra de vistas (P10, 08/10): Máquinas (Por semana = vista=semanas, por defeito; Totais = vista=maquinas, o
   // código do redirecionamento das Capacidades) · Setores · Perfis · Famílias de produto · Famílias SKU.
   const GROUPS = {setores: 'setor', perfis: 'perfil', familias: 'familia', familias_sku: 'familia_sku'};
+  // Vistas da previsão (Etapa 3, 08/10): Calendário e Capacidade e prazos (carga_previsao.js) e Cenários
+  // (window.cenariosView, de cenarios.js; sem ele, «Cenários ainda não disponíveis.»).
+  const FORECAST = new Set(['calendario', 'capacidade', 'cenarios']);
   const UNIT_LABEL = {h: 'h', m: 'm', pecas: 'peças', kg: 'kg'};
   const UNKNOWN = {h: 'sem horas', m: 'sem metros', pecas: 'sem peças', kg: 'sem peso'};
   const view = () => {
     const v = new URLSearchParams(location.search).get('vista');
-    return v === 'maquinas' || GROUPS[v] ? v : 'semanas';
+    return v === 'maquinas' || GROUPS[v] || FORECAST.has(v) ? v : 'semanas';
   };
   const unitParam = () => new URLSearchParams(location.search).get('unidade') || 'h';
   let group = null, groupLoads = 0, groupTicket = 0;
@@ -215,13 +218,15 @@
   }
 
   function renderBar() {
-    const v = view(), grouped = Boolean(GROUPS[v]);
-    for (const b of $('views').querySelectorAll('button')) b.setAttribute('aria-pressed', String(b.dataset.vista === 'maquinas' ? !grouped : b.dataset.vista === v));
-    $('machines-mode').hidden = grouped;
+    const v = view(), grouped = Boolean(GROUPS[v]), predicted = FORECAST.has(v);
+    for (const b of $('views').querySelectorAll('button')) b.setAttribute('aria-pressed', String(b.dataset.vista === 'maquinas' ? !grouped && !predicted : b.dataset.vista === v));
+    $('machines-mode').hidden = grouped || predicted;
     $('tab-semanas').setAttribute('aria-pressed', String(v === 'semanas'));
     $('tab-maquinas').setAttribute('aria-pressed', String(v === 'maquinas'));
     $('group-view').hidden = !grouped;
-    if (grouped) { $('weeks-view').hidden = true; $('machines-view').hidden = true; }
+    if (grouped || predicted) { $('weeks-view').hidden = true; $('machines-view').hidden = true; }
+    $('forecast-view').hidden = !predicted;
+    if (predicted) { $('apply-all').hidden = true; $('apply-less').hidden = true; }
     $('unit-mode').hidden = !grouped || !group || !(group.units || []).length;
   }
 
@@ -230,7 +235,7 @@
     if (!data) return;
     const v = view();
     $('tab-maquinas').hidden = !data.totals;
-    if (!GROUPS[v]) {
+    if (!GROUPS[v] && !FORECAST.has(v)) {
       $('weeks-view').hidden = v !== 'semanas' && Boolean(data.totals);
       $('machines-view').hidden = v !== 'maquinas' || !data.totals;
     }
@@ -641,6 +646,22 @@
     history.replaceState(null, '', url);
     render();
     if (GROUPS[v]) loadGroup().catch(error);
+    if (FORECAST.has(v)) showForecast();
+  }
+
+  function showForecast() {
+    const v = view();
+    const box = $('forecast-view');
+    if (!FORECAST.has(v)) return;
+    if (!window.cargaPrevisao) {
+      box.replaceChildren(el('p', {class: 'error'}, 'Esta vista precisa que a página seja recarregada.'));
+      return;
+    }
+    const scenarios = window.cargaPrevisao.show(box, {vista: v, setor: $('setor').value});
+    if (v !== 'cenarios' || !scenarios) return;
+    if (typeof window.cenariosView === 'function') {
+      try { window.cenariosView(scenarios, {setor: $('setor').value}); } catch (e) { scenarios.replaceChildren(el('p', {class: 'error'}, e.message)); }
+    } else scenarios.replaceChildren(el('p', {}, 'Cenários ainda não disponíveis.'));
   }
 
   document.addEventListener('DOMContentLoaded', () => {
@@ -658,5 +679,6 @@
     renderBar();
     load().catch(error);
     loadGroup().catch(error);
+    showForecast();
   });
 })();
