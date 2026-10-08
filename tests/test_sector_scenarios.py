@@ -136,6 +136,31 @@ def test_causes_follow_the_first_change_and_the_chain_of_start_reasons():
     assert r["OF1"]["why"].startswith("Começa depois da OF3 na M1, que passou à frente: OF3 urgente (alteração 2)")
 
 
+def test_explain_runs_and_stops_use_the_gantt_adjustments_like_the_reference():
+    """Revisão 08/10 (S1): prepare (choose_stops e as corridas do «porquê») aplica as âncoras do Gantt, como
+    forecast.compute; sem alterações, stages[0] acaba onde a referência acaba."""
+    from tests.test_sector_anchors import anchor
+    facts = [fact("a", "L1", "OF1", "m1", 3.0, due="2026-10-13"), fact("b", "L2", "OF2", "m1", 3.0, due="2026-10-30")]
+    ki, src = _inputs(facts, {"L1": None, "L2": None})
+    ki["anchors"] = [anchor("OF2", "m1", "2026-10-14")]                 # OF2 fixada na quarta
+    sim = scenarios.simulate("cantoneiras", ki, src, [])
+    ref = sim["reference"]["operations"]
+    assert ref["b"]["start"] >= lisbon(2026, 10, 14)
+    assert {k: r["end"] for k, r in sim["stages"][0].items()} == {k: r["end"] for k, r in ref.items()}
+    ops, _, _ = scenarios.prepare("cantoneiras", ki, src)
+    assert next(op for op in ops if op["key"] == "b").get("anchor")
+
+
+def test_compared_orders_are_capped_most_important_first_with_the_total(monkeypatch):
+    """Revisão 08/10 (R10): a comparação devolve no máximo ORDERS_SHOWN OF (as que passam a atrasar primeiro) e o total."""
+    monkeypatch.setattr(scenarios, "ORDERS_SHOWN", 3)
+    facts = [fact(f"k{i}", f"L{i}", f"OF{i:02}", "m1", 2.0, due="2026-10-30") for i in range(8)]
+    facts.append(fact("late", "LL", "OF99", "m1", 2.0, due="2026-10-13"))
+    full = compare(facts, [change("cancelar", {"of": "OF00"})])
+    assert full["orders_total"] == 8 and len(full["orders"]) == 3     # 7 acabam mais cedo (a OF99 já ia à frente) + a cancelada
+    assert full["orders"][-1]["of"] != "OF00"                          # a cancelada vai para o fim: fica de fora
+
+
 def test_due_date_change_moves_the_risk_and_never_the_queue_of_others():
     facts = [fact("a", "L1", "OF1", "m1", 7.0, due="2026-10-20"), fact("b", "L2", "OF2", "m1", 7.0, due="2026-10-30")]
     diff = compare(facts, [change("prazo", {"of": "OF1"}, {"data": "2026-10-12"})])
@@ -394,6 +419,35 @@ def test_apply_writes_in_one_transaction_and_undo_restores_only_what_is_unchange
         post(acao="desfazer_aplicada", cenario=sid, expected_revision=9, alteracao=items["pessoas_em_falta"]["change_id"])
     gone = post(acao="descartar", cenario=sid, expected_revision=9)
     assert gone["status"] == "arquivado" and scenarios.listing("cantoneiras")["scenarios"] == []
+
+
+def test_cancel_reads_the_carteira_before_the_write_transaction(world, monkeypatch):
+    """Revisão 08/10 (R3): «cancelar» a aplicar ou a desfazer lê a Carteira antes de abrir a transação (e o bloqueio)
+    dos cenários e passa-a à seleção; sem «cancelar» nem a lê."""
+    from app.sector import portfolio, selection
+    order, given = [], []
+    line = {"key": "k1", "of": "OF1", "reference": "R1", "aliases": ()}
+    monkeypatch.setattr(portfolio, "current", lambda sector, **kw: order.append("carteira") or {"lines": [line]})
+    monkeypatch.setattr(portfolio, "open_effective", lambda line, decisions: {"decision": None})
+    monkeypatch.setattr(portfolio, "decision_of", lambda line, decisions: "excluded")
+    monkeypatch.setattr(selection, "current", lambda sector, conn=None: {})
+    monkeypatch.setattr(selection, "apply", lambda payload, data=None, conn=None: given.append(data) or {"changed": 1})
+    real = planning.connect
+
+    def connect(*, readonly=False):
+        order.append("ro" if readonly else "rw")
+        return real(readonly=readonly)
+    monkeypatch.setattr(planning, "connect", connect)
+    sid = post(acao="criar", nome="Cancelar a OF1")["id"]
+    post(acao="alterar", cenario=sid, expected_revision=1, tipo="cancelar", alvo={"of": "OF1"})
+    assert "carteira" not in order
+    order.clear()
+    applied = post(acao="aplicar", cenario=sid, expected_revision=2)
+    assert order == ["ro", "carteira", "rw"] and given == [{"lines": [line]}]
+    item = scenarios.listing("cantoneiras")["scenarios"][0]["applied"][0]
+    order.clear()
+    post(acao="desfazer_aplicada", cenario=sid, expected_revision=applied["revision"], alteracao=item["change_id"])
+    assert order[:3] == ["ro", "carteira", "rw"] and given[-1] == {"lines": [line]}
 
 
 def test_without_the_migration_reads_are_empty_and_writes_say_so(monkeypatch):

@@ -241,3 +241,37 @@ def test_shared_post_in_the_forecast_is_one_resource_and_one_shortage():
     a, b = fc["operations"]["a"], fc["operations"]["b"]
     assert a["end"] <= b["start"] or b["end"] <= a["start"]   # nunca ao mesmo tempo
     assert [s["id"] for s in fc["slots"]] == ["post"] and fc["machines"]["doall"]["slot"] == "post"
+
+
+def test_principal_on_a_machine_without_calendar_is_no_forecast_but_a_following_one_is_ignored():
+    """Revisão 08/10 (F1): só a 2.ª operação e as seguintes sem calendário (Abocardar) ficam fora; a principal numa
+    máquina sem janelas deixa a OF «sem previsão» com o motivo, em vez de a OF desaparecer ou ficar «ok»."""
+    facts = [fact("a", "L1", "OF1", "nocal", 2.0),                                   # só a principal, sem calendário
+             fact("b", "L2", "OF2", "nocal", 2.0), fact("c", "L2", "OF2", "m1", 1.0, phase="seguinte"),
+             fact("d", "L3", "OF3", "m1", 2.0), fact("e", "L3", "OF3", "nocal", 1.0, phase="seguinte")]
+    ki, src = _inputs(facts, {}, machines=("m1",))
+    src["machines"].append({"id": "nocal", "name": "NOCAL"})
+    fc = forecast.compute("perfis", ki, src)
+    assert (fc["orders"]["OF1"]["state"], fc["orders"]["OF1"]["reason"]) == ("sem_previsao", "sem_calendario")
+    assert fc["lines"]["L1"]["missing"] == ["sem_calendario"]
+    assert fc["orders"]["OF2"]["state"] == "sem_previsao"        # o corte nunca está previsto: não fica «ok»
+    assert fc["orders"]["OF3"]["state"] in ("ok", "em_risco")    # Abocardar sem calendário: fora da conclusão
+    assert fc["counts"]["sem_previsao"] == 2
+    fc = forecast.compute("cantoneiras", ki, src)               # MTG3: a pior linha, com o mesmo motivo
+    assert (fc["orders"]["OF1"]["state"], fc["orders"]["OF1"]["reason"]) == ("sem_previsao", "sem_calendario")
+
+
+def test_beyond_the_horizon_uses_the_machine_own_calendar_end_not_the_longest_one():
+    """Revisão 08/10 (F2): m1 tem calendário só na semana 42, m2 até à 44. Trabalho de m1 além do horizonte com
+    prazo depois do fim de m1 é «sem previsão», mesmo que o prazo caia antes do fim do calendário de m2."""
+    facts = [fact("a", "L1", "OF1", "m1", 60.0, due="2026-10-28"), fact("b", "L2", "OF2", "m2", 1.0, due="2026-10-28")]
+    ki, src = _inputs(facts, {})
+    src["calendars"] = [d for d in src["calendars"] if d["resource_id"] != "m1" or d["week"] == 42]
+    for sector in ("perfis", "cantoneiras"):
+        fc = forecast.compute(sector, ki, src)
+        assert fc["operations"]["a"]["status"] == "alem_do_horizonte"
+        assert fc["lines"]["L1"]["horizon_end"] < fc["horizon_end"]
+        assert (fc["orders"]["OF1"]["state"], fc["orders"]["OF1"]["reason"]) == ("sem_previsao", "alem_do_horizonte")
+    # Prazo dentro do calendário da própria máquina: continua «atrasa».
+    facts[0]["priority"].update(priority_date=lisbon(2026, 10, 15).isoformat(), priority_day="2026-10-14")
+    assert forecast.compute("cantoneiras", ki, src)["orders"]["OF1"]["state"] == "atrasa"

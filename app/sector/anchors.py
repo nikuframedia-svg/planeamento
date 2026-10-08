@@ -42,6 +42,7 @@ NOT_INSTALLED = "A edição manual do Gantt ainda não está instalada (migraç�
 RULE = ("Uma alteração feita no Gantt fica até a retirares ou até a OF deixar de ter trabalho planeado nessa máquina; "
         "o cálculo automático nunca a apaga.")
 ACTIONS = ("mover", "retirar", "desfazer")
+DAYS_BEFORE, DAYS_AFTER = 31, 730  # dias aceites num ajuste, a contar de hoje (revisão 08/10)
 FIELDS = ("setor", "acao", "of", "de", "maquina", "dia", "hora", "turno", "ajuste_id")
 ENDED = {"retirada": "Retirada", "desfeita": "Desfeita", "substituida": "Substituída por outra alteração",
          "concluida": "A OF já não tem trabalho em aberto (concluída ou saiu da carteira)",
@@ -314,9 +315,12 @@ def _start_hour(payload: dict, template) -> time | None:
         return time(int(found[1]), int(found[2]))
     if shift not in (None, ""):
         try:
-            start = template[int(shift) - 1][0]
-        except (TypeError, ValueError, IndexError):
+            n = int(shift)
+        except (TypeError, ValueError):
             raise planning.PlanningError("Turno inválido.") from None
+        if not 1 <= n <= len(template):  # turno 0 ou negativo escolhia o último em silêncio (revisão 08/10)
+            raise planning.PlanningError("Turno inválido.")
+        start = template[n - 1][0]
         return time(int(start[:2]), int(start[3:5]))
     return None
 
@@ -370,6 +374,9 @@ def _move(c, sector, payload, before, ki, actor, request_id, fit) -> tuple[dict,
         raise planning.PlanningError("Escolhe uma máquina deste setor com turnos.")
     name = lambda rid: (machines.get(rid) or {}).get("name") or rid  # noqa: E731
     day = _day(payload.get("dia"))
+    today = ki.get("today") or date.today()
+    if not today - timedelta(days=DAYS_BEFORE) <= day <= today + timedelta(days=DAYS_AFTER):
+        raise planning.PlanningError("Dia fora do plano.")
     hour = _start_hour(payload, ki["settings"]["template"])
     source = str(payload.get("de") or "") or None
     if source is None:
@@ -404,9 +411,19 @@ def _move(c, sector, payload, before, ki, actor, request_id, fit) -> tuple[dict,
                                               detail={"of": of, "de": name(source), "pedido": str(request_id)})
         previous = {"from": source, "from_name": name(source), "to": target, "to_name": name(target),
                     "occ_stamp": (ki.get("occ") or {}).get("stamp"), "lines": written}
-    replaced = [str(r["id"]) for r in c.execute(
-        "SELECT id FROM planning_mtg.sector_plan_adjustments WHERE area = %s AND production_order_no = %s "
-        "AND resource_id = ANY(%s) AND active ORDER BY created_at FOR UPDATE", (sector, of, sorted({source, target}))).fetchall()]
+    found_rows = c.execute(
+        "SELECT id, previous_machine FROM planning_mtg.sector_plan_adjustments WHERE area = %s AND production_order_no = %s "
+        "AND resource_id = ANY(%s) AND active ORDER BY created_at FOR UPDATE", (sector, of, sorted({source, target}))).fetchall()
+    replaced = [str(r["id"]) for r in found_rows]
+    if previous is None:
+        # Novo dia na mesma máquina de uma OF que lá chegou por um ajuste: herda a mudança de máquina (as operações
+        # continuam a ser levadas da máquina anterior até as ocorrências se refazerem). Herdada = o Desfazer desta não
+        # repõe a Carteira; repõe o ajuste substituído, que a repõe no seu próprio Desfazer (revisão 08/10).
+        for r in reversed(found_rows):
+            prior = r["previous_machine"] or {}
+            if prior.get("to") == target and prior.get("lines"):
+                previous = {**prior, "inherited": True}
+                break
     for row_id in replaced:
         _end(c, sector, row_id, "substituida", "substituir", actor, request_id)
     new_id = uuid.uuid5(request_id, "ajuste")
@@ -425,7 +442,7 @@ def _restore_machine(c, sector, row, ki, actor, request_id) -> str | None:
     from . import machine_choice, member_machine
     previous = row.get("previous_machine") or {}
     lines = previous.get("lines") or []
-    if not lines:
+    if not lines or previous.get("inherited"):  # herdada: quem repõe a Carteira é o ajuste substituído (reposto)
         return None
     ctx = machine_choice.context(sector, conn=c)
 
@@ -500,6 +517,14 @@ def apply(payload: dict, *, conn=None, inputs=None, fit=None) -> dict:
     request_id = _uuid(payload.get("request_id"), "Pedido sem identificador; recarrega a página.")
     actor = registration.human_actor(payload)
     content = needs.digest({k: payload.get(k) for k in FIELDS})
+    # As entradas da previsão leem-se antes da transação e do bloqueio (ligações próprias, só leitura; a frio podem
+    # demorar): dentro ficam só os ajustes ativos, a gravação e as duas previsões (revisão 08/10).
+    if inputs is None:
+        with (planning.connect(readonly=True) if conn is None else nullcontext(conn)) as c:
+            if not installed(c):  # sem a 053 responde logo, sem ler a previsão
+                raise planning.PlanningError(NOT_INSTALLED, 503)
+        inputs = forecast.inputs(sector)
+    ki, src = inputs
     with (planning.connect() if conn is None else nullcontext(conn)) as c:
         if not installed(c):
             raise planning.PlanningError(NOT_INSTALLED, 503)
@@ -507,7 +532,6 @@ def apply(payload: dict, *, conn=None, inputs=None, fit=None) -> dict:
         repeated = _repeated(c, request_id, action, content)
         if repeated is not None:
             return repeated
-        ki, src = inputs if inputs is not None else forecast.inputs(sector)
         before = forecast.compute(sector, ki, src, anchors=_active(c, sector))
         # Com entradas antigas (a refazer) não se grava o fim de nenhum ajuste: podia ser só atraso das ocorrências.
         swept = [] if ki.get("stale") else _sweep(c, sector, before["anchors"], actor, request_id)
@@ -521,7 +545,7 @@ def apply(payload: dict, *, conn=None, inputs=None, fit=None) -> dict:
             if action == "retirar":
                 c.execute("UPDATE planning_mtg.sector_plan_adjustments SET active = false, ended_at = now(), "
                           "ended_reason = 'retirada', revision = revision + 1 WHERE id = %s", (row["id"],))
-                if (row.get("previous_machine") or {}).get("lines"):
+                if (row.get("previous_machine") or {}).get("lines") and not row["previous_machine"].get("inherited"):
                     notes.append(f"A máquina fica a {row['machine_name']} na Carteira (usa Desfazer para a repor).")
             else:
                 notes = _undo(c, sector, row, ki, actor, request_id)

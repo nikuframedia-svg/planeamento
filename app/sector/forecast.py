@@ -12,8 +12,9 @@ linhas da Carteira, decisões Planear (com a parte planeada, contrato 3A/3B) e o
 - Ordem em cada máquina: âmbito → «N.ª PRIORIDADE» escrita (urgente nas substituições de prazo = 0.ª) → clientes prioritários (Definições, lista) → com prazo
   antes de sem prazo → prazo → OF → perfil → comprimento → chave.
 - Fora da previsão, com o motivo: 2.ª operação das cantoneiras, estacionadas, saldo por confirmar, sem máquina,
-  máquina de outro setor, sem horas e máquina sem calendário. A 2.ª operação e as operações sem calendário ficam
-  fora da conclusão e da fiabilidade das linhas.
+  máquina de outro setor, sem horas e máquina sem calendário. A 2.ª operação e as operações seguintes sem
+  calendário (o Abocardar) ficam fora da conclusão e da fiabilidade das linhas; uma operação principal numa máquina
+  sem calendário deixa a linha (e a OF) «sem previsão» com o motivo à vista (revisão 08/10).
 - Origem = início do turno em curso (hora de Lisboa; entre turnos, o último que começou); dia = dia de Lisboa.
 - Risco (3 estados): «atrasa» (fim previsto depois do instante do prazo), «em_risco» (0 ≤ margem < folga, dias
   úteis, Definições «folga_dias», defeito 2) e «sem_previsao» (com o motivo). À parte, «já em atraso» (prazo antes
@@ -50,7 +51,7 @@ FOLGA_DEFAULT = 2
 CELL_WEEKS = 13
 LATE, AT_RISK, NO_FORECAST, OK = "atrasa", "em_risco", "sem_previsao", "ok"
 STATES = (LATE, AT_RISK, NO_FORECAST, OK)
-IGNORED = {"segunda_operacao", "sem_calendario"}  # fora da conclusão e da fiabilidade das linhas
+IGNORED = {"segunda_operacao", "sem_calendario"}  # fora da conclusão e da fiabilidade das linhas (sem calendário: só nas seguintes)
 REASON_TEXT = {
     "sem_maquina": "Sem máquina nem sugestão", "sem_horas": "Sem horas", "sem_calendario": "Máquina sem calendário",
     "estacionada": "Estacionada no Excel", "saldo_desconhecido": "Saldo por confirmar",
@@ -515,7 +516,8 @@ def compute(sector: str, ki: dict, src: dict, *, anchors: list[dict] | None = No
         if line is None:
             line = lines[lk] = {"line_key": lk, "of": m["of"], "reference": None, "customer": m["customer"], "end": None,
                                 "beyond": False, "missing": [], "due": None, "due_day": None, "machine": None,
-                                "resource_id": None, "approximate": set(), "planned": False, "parked": False, "ops": 0}
+                                "resource_id": None, "approximate": set(), "planned": False, "parked": False, "ops": 0,
+                                "horizon_end": None}
             by_order[m["of"]].append(lk)
         g = gone.get(key)
         if m["phase"] == "principal" or line["reference"] is None:
@@ -523,7 +525,7 @@ def compute(sector: str, ki: dict, src: dict, *, anchors: list[dict] | None = No
         line["planned"] = line["planned"] or m["plan"]
         line["parked"] = line["parked"] or m["parked"]
         if g:
-            if g["reason"] not in IGNORED:
+            if g["reason"] not in IGNORED or (g["reason"] == "sem_calendario" and m["phase"] == "principal"):
                 line["missing"].append(g["reason"])
             continue
         r = placed[key]
@@ -532,6 +534,10 @@ def compute(sector: str, ki: dict, src: dict, *, anchors: list[dict] | None = No
             line["resource_id"], line["machine"] = r["resource_id"], names.get(r["resource_id"]) or m["machine"]
         if r["status"] == dispatch.BEYOND:
             line["beyond"] = True
+            # Horizonte da própria máquina (não o calendário mais longo): o mais cedo das que deixam trabalho de fora.
+            mine = result["horizon_end"].get(r["resource_id"])
+            if mine is not None and (line["horizon_end"] is None or mine < line["horizon_end"]):
+                line["horizon_end"] = mine
         elif r["end"] is not None and (line["end"] is None or r["end"] > line["end"]):
             line["end"] = r["end"]
         if m["load_basis"] == "estimada":
@@ -557,10 +563,10 @@ def compute(sector: str, ki: dict, src: dict, *, anchors: list[dict] | None = No
     today_iso = today.isoformat()
     for lk, line in lines.items():
         cal = calendars.get(line["resource_id"]) or empty
-        _evaluate(line, cal, folga, horizon_end, today_iso)
+        _evaluate(line, cal, folga, line["horizon_end"], today_iso)
     orders = {}
     for of, keys in by_order.items():
-        # Fora das listas: linhas estacionadas e as que só têm trabalho ignorado (2.ª operação, sem calendário).
+        # Fora das listas: linhas estacionadas e as que só têm trabalho ignorado (2.ª operação, seguinte sem calendário).
         group = [x for x in (lines[k] for k in keys) if not x["parked"] and (x["ops"] or x["missing"])]
         if not group:
             continue
@@ -573,8 +579,9 @@ def compute(sector: str, ki: dict, src: dict, *, anchors: list[dict] | None = No
             o.update(end=max(ends) if ends else None, beyond=any(x["beyond"] for x in group),
                      missing=sorted({r for x in group for r in x["missing"]}),
                      due=min(dues)[0] if dues else None, due_day=min(dues)[1] if dues else None,
-                     resource_id=max(((x["end"], x["resource_id"]) for x in group if x["end"]), default=(None, None))[1])
-            _evaluate(o, sector_days, folga, horizon_end, today_iso)
+                     resource_id=max(((x["end"], x["resource_id"]) for x in group if x["end"]), default=(None, None))[1],
+                     horizon_end=min((x["horizon_end"] for x in group if x["horizon_end"] is not None), default=None))
+            _evaluate(o, sector_days, folga, o["horizon_end"], today_iso)
         else:  # MTG3: cada linha contra a sua Data Corte; a OF fica com a pior linha
             worst = min(group, key=lambda x: (_rank(x["state"]), x["margin_days"] if x["margin_days"] is not None else 10 ** 6))
             ends = [x["end"] for x in group if x["end"] is not None]

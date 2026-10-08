@@ -386,9 +386,12 @@ def save_override(payload: dict, conn=None) -> dict:
     if len(reason) > 1000:
         raise planning.PlanningError("O motivo tem no máximo 1000 caracteres.")
     urgent = payload.get("urgente") is True  # cenários (08/10): «urgente» com ou sem prazo próprio
+    # Sem a chave «urgente» (Gantt técnico, needs.js) mantém-se a urgência gravada (lida dentro do bloqueio); só
+    # urgente=False explícito a tira (revisão 08/10).
+    keep_urgent = "urgente" not in payload
+    due, field = payload.get("due_date"), payload.get("field")
     if not clear:
-        due, field = payload.get("due_date"), payload.get("field")
-        if (due and field) or (not due and not field and not urgent):
+        if (due and field) or (not due and not field and not urgent and not keep_urgent):
             raise planning.PlanningError("Escolhe uma data ou um campo de prazo, não ambos.")
         if due and _day(due) is None:
             raise planning.PlanningError("Data de prazo inválida.")
@@ -409,6 +412,11 @@ def save_override(payload: dict, conn=None) -> dict:
             WHERE area=%s AND production_order_no=%s AND reference=%s FOR UPDATE""", (area, of, reference)).fetchone()
         if (prior["revision"] if prior else 0) != payload.get("expected_revision", 0):
             raise planning.PlanningError("O prazo desta OF mudou entretanto. Reabre-o antes de gravar.", 409)
+        if not clear and keep_urgent:
+            if ((prior or {}).get("definition") or {}).get("urgent"):
+                definition["urgent"] = True
+            elif not due and not field:
+                raise planning.PlanningError("Escolhe uma data ou um campo de prazo, não ambos.")
         if clear:
             if prior:
                 c.execute("DELETE FROM planning_mtg.sector_priority_overrides WHERE area=%s AND production_order_no=%s AND reference=%s",

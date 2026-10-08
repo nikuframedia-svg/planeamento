@@ -302,7 +302,9 @@ def apply_change(sector: str, ki: dict, src: dict, change: dict, *, names: dict 
 # ================================================================ motor por grupos de máquinas (puro)
 
 def prepare(sector: str, ki: dict, src: dict) -> tuple[list, dict, dict]:
-    """(operações, meta, janelas): a primeira parte de forecast.compute, com as mesmas regras."""
+    """(operações, meta, janelas): a primeira parte de forecast.compute, com as mesmas regras (também os ajustes
+    do Gantt: OF fixadas e mudadas de máquina, como na referência — revisão 08/10)."""
+    from . import anchors as anchor_store
     settings = ki["settings"]
     clients = [c for c in (settings.get("clientes_prioritarios") or []) if str(c or "").strip()]
     own = {m["id"] for m in src["machines"]}
@@ -310,6 +312,8 @@ def prepare(sector: str, ki: dict, src: dict) -> tuple[list, dict, dict]:
                                          pools=src["posts"], clients=clients)
     windows = forecast.label_windows([d for d in src["calendars"] if str(d.get("resource_id")) in own], settings["template"],
                                      ki["origin"])
+    anchor_store.mark(ops, meta, ki.get("anchors") or [], ki["origin"], pools=src["posts"],
+                      occ_stamp=(ki.get("occ") or {}).get("stamp"))
     return ops, meta, windows
 
 
@@ -595,7 +599,7 @@ def difference(ref: dict, scen: dict, *, whys: dict, sector_days: forecast.Calen
                          "people_short_before": deficit(ref.get("people")) if has_people else None,
                          "people_short_after": deficit(scen.get("people")) if has_people else None,
                          "cancelled": len(cancelled)},
-            "orders": rows, "orders_total": len(rows), "machines": machines, "weeks": weeks, "people": people,
+            "orders": rows[:ORDERS_SHOWN], "orders_total": len(rows), "machines": machines, "weeks": weeks, "people": people,
             "people_defined": has_people, "stops": stops, "late_new": late_new, "late_gone": late_gone}
 
 
@@ -747,6 +751,11 @@ def save(payload: dict, *, conn=None) -> dict:
     request_id = _request(payload)
     actor = registration.human_actor(payload)
     content = needs.digest({k: v for k, v in payload.items() if k != "request_id"})
+    # A Carteira (pode recalcular-se 25–60 s depois de uma geração nova) lê-se antes da transação e do bloqueio,
+    # só quando há uma alteração «cancelar» a aplicar ou a desfazer (revisão 08/10).
+    extra = {}
+    if action in ("aplicar", "desfazer_aplicada") and _touches_cancel(sector, payload, action, conn):
+        extra["data"] = portfolio.current(sector)
     with (planning.connect() if conn is None else nullcontext(conn)) as c:
         if not installed(c):
             raise planning.PlanningError(NOT_INSTALLED, 503)
@@ -759,10 +768,31 @@ def save(payload: dict, *, conn=None) -> dict:
             return {**found["result"], "repeated": True}
         handler = {"criar": _create, "alterar": _add_change, "retirar_alteracao": _remove_change, "aplicar": _apply,
                    "desfazer_aplicada": _undo, "descartar": _discard}[action]
-        result = needs.serial(handler(c, sector, payload, actor, request_id))
+        result = needs.serial(handler(c, sector, payload, actor, request_id, **extra))
         c.execute("INSERT INTO planning_mtg.plan_scenario_requests (request_id, area, scenario_id, action, content_hash, actor, result) "
                   "VALUES (%s,%s,%s,%s,%s,%s,%s)", (request_id, sector, result.get("id"), action, content, actor, Jsonb(result)))
     return {**result, "repeated": False}
+
+
+def _touches_cancel(sector: str, payload: dict, action: str, conn=None) -> bool:
+    """Leitura rápida, fora da transação: o pedido aplica ou desfaz uma alteração «cancelar»? Na dúvida (cenário
+    inexistente, sem a 054) False — o handler responde com o erro certo e, se precisar, lê a Carteira lá dentro."""
+    from contextlib import nullcontext
+    try:
+        with (planning.connect(readonly=True) if conn is None else nullcontext(conn)) as c:
+            if not installed(c):
+                return False
+            row, changes = read(c, sector, payload.get("cenario"))
+    except planning.PlanningError:
+        return False
+    if action == "aplicar":
+        return any(ch["kind"] == "cancelar" for ch in changes)
+    try:
+        cid = str(needs.uid(payload.get("alteracao")))
+    except planning.PlanningError:
+        return False
+    items = (row.get("applied_summary") or {}).get("items") or []
+    return any(it.get("change_id") == cid and it.get("kind") == "cancelar" for it in items)
 
 
 def _locked(c, sector, payload, *, statuses=("aberto",)) -> tuple[dict, list[dict]]:
@@ -866,9 +896,9 @@ def _apply_stop(c, sector, ch, machines, request_id, names) -> dict:
     return {"weeks": weeks, "written": note, "calendar": bool(weeks)}
 
 
-def _apply_cancel(c, sector, ch, scenario_name, request_id) -> dict:
+def _apply_cancel(c, sector, ch, scenario_name, request_id, data=None) -> dict:
     from . import portfolio, selection
-    data = portfolio.current(sector)
+    data = data if data is not None else portfolio.current(sector)
     decisions = selection.current(sector, conn=c)
     members = []
     for line in data["lines"]:
@@ -929,7 +959,7 @@ def _simulated_snapshot(sector: str, sid: str, revision: int) -> dict | None:
             "orders": {of: {"end": o.get("end"), "state": o.get("state")} for of, o in fc["orders"].items()}}
 
 
-def _apply(c, sector, payload, actor, request_id) -> dict:
+def _apply(c, sector, payload, actor, request_id, data=None) -> dict:
     from . import settings as sector_settings
     row, changes = _locked(c, sector, payload)
     real = [ch for ch in changes if ch["kind"] != "pessoas_em_falta"]
@@ -950,7 +980,7 @@ def _apply(c, sector, payload, actor, request_id) -> dict:
             out = _apply_stop(c, sector, ch, machines, request_id, names)
             calendar = calendar or out.pop("calendar")
         elif ch["kind"] == "cancelar":
-            out = _apply_cancel(c, sector, ch, row["name"], request_id)
+            out = _apply_cancel(c, sector, ch, row["name"], request_id, data=data)
         else:
             out = _apply_priority(c, sector, ch, row["name"], request_id)
         items.append({**base, **out})
@@ -963,7 +993,7 @@ def _apply(c, sector, payload, actor, request_id) -> dict:
             "applied": [{k: it.get(k) for k in ("change_id", "label", "written")} for it in items]}
 
 
-def _undo(c, sector, payload, actor, request_id) -> dict:
+def _undo(c, sector, payload, actor, request_id, data=None) -> dict:
     from . import settings as sector_settings
     row, _ = _locked(c, sector, payload, statuses=("aplicado",))
     summary = row["applied_summary"] or {}
@@ -1009,7 +1039,7 @@ def _undo(c, sector, payload, actor, request_id) -> dict:
         if kept:
             note += f"; ficaram como estão (mudaram depois): {', '.join(kept)}"
     elif item["kind"] == "cancelar":
-        note = _undo_cancel(c, sector, item, sub)
+        note = _undo_cancel(c, sector, item, sub, data=data)
     else:
         note = _undo_priority(c, sector, item, sub)
     item.update(undone_at=datetime.now(timezone.utc).isoformat(), undone_by=actor, undo_note=note)
@@ -1017,9 +1047,9 @@ def _undo(c, sector, payload, actor, request_id) -> dict:
     return {"id": str(row["id"]), "revision": _bump(c, row), "undone": cid, "note": note}
 
 
-def _undo_cancel(c, sector, item, sub) -> str:
+def _undo_cancel(c, sector, item, sub, data=None) -> str:
     from . import portfolio, selection
-    data = portfolio.current(sector)
+    data = data if data is not None else portfolio.current(sector)
     decisions = selection.current(sector, conn=c)
     by_key = {}
     for line in data["lines"]:
@@ -1075,6 +1105,7 @@ _forecasts: OrderedDict = OrderedDict()   # (setor, id) → ((chave das entradas
 _running: dict = {}                        # (setor, id) → chave em cálculo
 _compute_lock = threading.Lock()          # um cálculo de cenário de cada vez neste processo
 KEEP_RESULTS, KEEP_FORECASTS = 12, 3
+ORDERS_SHOWN = 200  # OF que mudam devolvidas (as mais importantes primeiro); o total vem em orders_total (revisão 08/10)
 
 
 def _remember(store: OrderedDict, slot, key, value, keep: int) -> None:

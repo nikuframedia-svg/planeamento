@@ -280,7 +280,8 @@
             el('td', {}, `${end(r, 'before')} → ${end(r, 'after')}`, r.state_after && r.state_after !== r.state_before ? el('span', {class: `cen-tag cen-${r.state_after}`}, STATE[r.state_after]) : null),
             el('td', {class: 'num'}, r.delta_days === null || r.delta_days === undefined ? '—' : (r.delta_days > 0 ? `+${r.delta_days}` : String(r.delta_days))),
             el('td', {}, r.why)))));
-        if (d.orders.length > shown.length) parts.push(el('p', {class: 'muted'}, `Mais ${d.orders.length - shown.length} OF.`));
+        const total = d.orders_total ?? d.orders.length;  // o servidor devolve só as primeiras 200 (revisão 08/10)
+        if (total > shown.length) parts.push(el('p', {class: 'muted'}, `Mais ${total - shown.length} OF.`));
       } else parts.push(el('p', {class: 'muted'}, 'Nenhuma OF muda de conclusão nem de estado.'));
       if (d.machines.length) {
         const rec = (m, w) => !m[`overloaded_${w}`] ? 'sem falta' : m[`recovers_${w}`] ? dm(m[`recovery_${w}`]) : 'não recupera';
