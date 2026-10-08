@@ -82,7 +82,10 @@ def world(monkeypatch):
                                                                     "names": {m["id"]: m["name"] for m in MACHINES}})
     monkeypatch.setattr(load_sources, "fact_values", lambda f, lines: (None, None, False))
     monkeypatch.setattr(drive_notice, "text", lambda sector: None)
+    # Mundo sem a 2.ª operação, nas vistas e na grelha (a junção com P3 pôs a grelha a tirá-la; as duas iguais).
+    from app.sector import second_operation
     monkeypatch.setattr(load_views, "_second", None)
+    monkeypatch.setattr(second_operation, "operation", lambda sector, fact: False)
     load_views._cache.clear()
     yield state
     load_views._cache.clear()
@@ -144,8 +147,9 @@ def test_metres_and_pieces_only_from_the_main_operation_and_unknowns_apart(world
     assert l45["total"] == {"value": 50.0, "unknown": 1, "operations": 7}
     pieces = _view("perfil", "pecas")
     assert next(r for r in pieces["rows"] if r["key"] == "Cantoneira · L45X45X5")["total"]["value"] == 20.0
-    # Setores fica em horas ou kg: um pedido de metros devolve horas (nunca se somam metros entre setores).
-    assert _view("setor", "m")["unit"] == "h" and _view("setor", "kg")["unit"] == "kg"
+    # Setores fica só em horas (P4: sem alternador): um pedido de metros ou kg devolve horas.
+    setor = _view("setor", "m")
+    assert setor["unit"] == "h" and setor["units"] == ["h"] and _view("setor", "kg")["unit"] == "h"
     with pytest.raises(load.planning.PlanningError):
         _view("perfil", "toneladas")
     with pytest.raises(load.planning.PlanningError):
@@ -195,6 +199,7 @@ def test_second_operation_leaves_the_views_like_the_load(world, monkeypatch):
 def test_mtg2_has_no_sku_families_yet(world):
     v = _view("familia_sku", sector="perfis")
     assert v["empty"] == "A MTG2 ainda não tem famílias SKU." and v["rows"] == [] and v["note"] is None
+    assert v["units"] == []  # P5: sem alternador de unidade numa vista vazia
 
 
 def test_cell_shows_machines_and_orders_that_add_up_to_the_cell(world):
@@ -214,15 +219,59 @@ def test_cell_shows_machines_and_orders_that_add_up_to_the_cell(world):
         load_views.cell("cantoneiras", "perfil", "x", 2027, 30, today=TODAY, now=NOW)
 
 
-def test_views_are_kept_per_sector_and_view_until_the_occurrences_change(world):
+def test_views_are_kept_per_sector_and_view_until_the_occurrences_change(world, monkeypatch):
+    builds = []
+    real = load_views._population
+    monkeypatch.setattr(load_views, "_population", lambda *a, **k: builds.append(a[0]) or real(*a, **k))
     _view("perfil")
-    calls = world["overviews"]
     _view("perfil", "m")  # outra unidade: as mesmas células guardadas
     _view("perfil")
-    assert world["overviews"] == calls
+    assert len(builds) == 1
     world["stamp"] = "nova geração"
     _view("perfil")
-    assert world["overviews"] == calls + 1
+    assert len(builds) == 2
     for por in ("familia", "familia_sku", "setor"):
         _view(por)
     assert len([slot for slot in load_views._cache._entries if slot[0] == "cantoneiras"]) == 4
+
+
+def test_views_follow_the_machines_of_the_grid_even_with_the_same_occurrences(world, monkeypatch):
+    """E2-04: uma máquina que sai do setor (catálogo ou recursos) sai logo das vistas, como da grelha, sem esperar
+    que as ocorrências sejam refeitas: as máquinas da grelha fazem parte da chave."""
+    before = _view("perfil")
+    assert before["total"]["total"]["value"] == 64.5 and before["outside"] == 2
+    monkeypatch.setattr(sector_settings, "machine_rows", lambda c, sector: [m for m in MACHINES if m["id"] != "m2"])
+    after = _view("perfil")
+    over = load.overview("cantoneiras", today=TODAY, now=NOW)
+    assert "m2" not in {m["id"] for m in over["machines"]}
+    assert after["total"]["total"]["value"] == round(sum(t["load"] for t in over["totals"] if t["id"]), 1) < 64.5
+    assert after["outside"] > before["outside"]
+    # As decisões (exclusões) também: o mesmo número de ocorrências com outro digest refaz as células.
+    builds = []
+    real = load_views._population
+    monkeypatch.setattr(load_views, "_population", lambda *a, **k: builds.append(1) or real(*a, **k))
+    context = load._context
+    monkeypatch.setattr(load, "_context", lambda sector, today=None: (lambda d, p, o: (d, p, {**o, "decisions": "outro"}))(*context(sector, today)))
+    _view("perfil")
+    assert builds == [1]
+
+
+def test_views_use_the_load_memory_when_the_day_is_not_fixed(world, monkeypatch):
+    """E2-05/P2: sem dia fixado, as vistas pedem load.overview(setor) sem today/now (a memória de 120 s da Carga);
+    a vista Setores faz um só overview por setor e por pedido."""
+    calls = []
+    grid = {s: load.overview(s, today=TODAY, now=NOW) for s in ("perfis", "cantoneiras")}
+
+    def overview(sector, **kw):
+        calls.append((sector, kw))
+        return grid[sector]
+    monkeypatch.setattr(load, "overview", overview)
+    monkeypatch.setattr(load, "_today", lambda: TODAY)
+    v = load_views.view("cantoneiras", "setor")
+    assert calls == [("perfis", {}), ("cantoneiras", {})] and {r["key"] for r in v["rows"]} == {"perfis", "cantoneiras"}
+    calls.clear()
+    load_views.cell("cantoneiras", "perfil", "Cantoneira · L45X45X5", 2026, 41)
+    assert calls == [("cantoneiras", {})]
+    calls.clear()
+    load_views.view("cantoneiras", "perfil", today=TODAY, now=NOW)  # dia fixado (testes): sem memória
+    assert calls == [("cantoneiras", {"today": TODAY, "now": NOW})]

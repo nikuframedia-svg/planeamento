@@ -567,10 +567,16 @@ def week_slice(sector: str, codes, *, today: date | None = None) -> dict:
     for m in agg["machines"]:
         rid = m["id"]
         acc, full, with_calendar, timeless = _empty_cell(), 0.0, False, bool(special)
+        # Calendário como na Carga (E2-07): semanas gravadas a 0 turnos não contam; sem nenhuma semana com horas no
+        # horizonte, a máquina fica «sem calendário» e a capacidade não entra (nem troca as máquinas de um posto).
+        has_calendar = any(shifts.week_hours(agg["cal"][(rid, y, w)]) > 0 for y, w in agg["weeks"] if (rid, y, w) in agg["cal"])
         for y, w in chosen:
             if (y, w) < current:
-                _merge_cell(acc, agg["past"].get((rid, y, w)))
-                timeless = True
+                # Com a semana atual escolhida, o atrasado das semanas passadas já vem em late_before (a coluna
+                # Atrasado): não se soma à carga, para não contar duas vezes nem misturar com a célula (E2-06).
+                if current not in chosen:
+                    _merge_cell(acc, agg["past"].get((rid, y, w)))
+                    timeless = True
                 continue
             _merge_cell(acc, (agg["cells"] if (y, w) in horizon else agg["later"]).get((rid, y, w)))
             d = agg["cal"].get((rid, y, w))
@@ -581,14 +587,14 @@ def week_slice(sector: str, codes, *, today: date | None = None) -> dict:
             _merge_cell(acc, (agg["undated"] if code == NO_WEEK else agg["parked"]).get(rid))
         load = acc[PLAN] + acc[DUE] + acc[SUGGESTED]
         dated = any((y, w) >= current for y, w in chosen)
-        status = None if not dated else "sem_calendario" if not with_calendar else None if timeless else status_of(load, full)
+        status = None if not dated else "sem_calendario" if not (with_calendar and has_calendar) else None if timeless else status_of(load, full)
         lb = agg["late_before"].get(rid) or _empty_cell()
         machines[rid] = {"id": rid, "name": m["name"], "load": round(load, 1), "capacity": round(full, 1) if dated else None,
                          PLAN: round(acc[PLAN], 1), DUE: round(acc[DUE], 1), SUGGESTED: round(acc[SUGGESTED], 1),
                          "unknown": acc["unknown"], "operations": acc["operations"], "metres": round(acc["metres"], 1),
                          "metres_unknown": acc["metres_unknown"], "status": status,
                          "late_before": round(lb[PLAN] + lb[DUE] + lb[SUGGESTED], 1) if current in chosen else None}
-        caps[rid] = full if dated and with_calendar else None
+        caps[rid] = full if dated and with_calendar and has_calendar else None
         for k in (PLAN, DUE, SUGGESTED):
             kinds[k]["hours"] += acc[k]
             kinds[k]["unknown"] += acc["unknown_" + k]
@@ -644,7 +650,7 @@ def cell(sector: str, machine: str, year: int, week: int, *, today: date | None 
     groups = {}
     summary = {"plan_principal": 0.0, "excel_hours": 0.0, "excel_unknown": 0, "weight_kg": 0.0, "weight_unknown": 0}
     late = {"hours": 0.0, "unknown": 0, "operations": 0, PLAN: 0.0, DUE: 0.0, SUGGESTED: 0.0}
-    for f in _cell_facts(occ, planned, current, horizon, machine, target, today, data["lines"]):
+    for f in _cell_facts(occ, planned, current, horizon, machine, target, today, data["lines"], sector):
         kind = f["_kind"]
         extra = bool(f.get("_extra"))
         before = target == current and _before_week(f, monday_now)
@@ -739,12 +745,16 @@ def pieces_text(value) -> str:
     return f"{round(value):,}".replace(",", "\u00a0")
 
 
-def _cell_facts(occ, planned, current, horizon, machine, target, today=None, lines=None):
+def _cell_facts(occ, planned, current, horizon, machine, target, today=None, lines=None, sector=None):
     """Ocorrências de uma célula (máquina × semana), com o tipo (no plano / a vencer / sugerida) e o atraso.
-    Com as linhas, as ocorrências das linhas planeadas em parte vêm divididas (split_facts)."""
+    Com as linhas, as ocorrências das linhas planeadas em parte vêm divididas (split_facts).
+    Sem a 2.ª operação das cantoneiras, como as células de _aggregate (P3, 08/10): o detalhe soma o que a célula mostra."""
+    from . import second_operation
     facts = split_facts(occ["facts"], planned, lines) if lines is not None else occ["facts"]
     for f in facts:
         if f.get("planning_resource_id") != machine:
+            continue
+        if sector and second_operation.operation(sector, f):
             continue
         found = classify(f, planned, current, horizon, today)
         if not found or found[1] != target:
@@ -801,7 +811,7 @@ def operations(sector: str, machine: str, year: int, week: int, of: str, *, toda
     today = today or _today()
     weeks = week_list(today)
     data, planned, occ = _context(sector, today)
-    facts = [f for f in _cell_facts(occ, planned, weeks[0], set(weeks), machine, (int(year), int(week)), today, data["lines"])
+    facts = [f for f in _cell_facts(occ, planned, weeks[0], set(weeks), machine, (int(year), int(week)), today, data["lines"], sector)
              if f["of"] == of]
     with planning.connect(readonly=True) as c:
         src = load_sources.context(c, sector)

@@ -764,7 +764,11 @@ def by_date(group: dict, order: str, today: date) -> tuple[tuple, dict]:
     else:
         rank = 3 if group["only_parked"] else 2
         return (rank, date.max, -group["metres"], group["key"]), {"none": "estacionada" if rank == 3 else "sem data"}
-    late = (today - day).days
+    if field in ("picking", "planned_period"):
+        # Campo de semana (E2-02): atrasado = semana anterior à atual, contado a partir do domingo dessa semana.
+        late = (today - (day + timedelta(days=6 - day.weekday()))).days
+    else:
+        late = (today - day).days
     tag = {"day": day, "field": field, "late": late > 0, "late_days": max(late, 0), "provisional": bool(provisional)}
     if field in ("picking", "planned_period"):
         tag["week"] = iso_week(day)

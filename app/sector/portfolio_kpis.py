@@ -278,14 +278,27 @@ def overview(sector: str, weeks: list[str] | None = None, *, today: date | None 
                     w["kg"] += line["kg"] * share
     panels = {code: {"id": code, "label": label, "machines": []} for code, label, _ in PANELS[sector]}
     others = []
+    week_of = (lambda rid: _week_cell(sliced, rid)) if sliced is not None else (lambda rid: None)
+    if sliced is not None:  # máquina com célula na Carga que o catálogo da Carteira não conhece: entra também (E2-03)
+        for rid, found in sliced["machines"].items():
+            if rid not in machines and week_of(rid):
+                machines[rid] = {"id": rid, "name": found.get("name") or rid, "code": None, "process": None, "unit": None,
+                                 "type": None, "in_catalog": False}
     for rid, m in machines.items():
         panel = _panel_of(sector, m)
+        week = week_of(rid)
         if panel == "outras":
-            if base[rid]["metres"] > 0 or base[rid]["hours"] > 0:
+            # Com semanas, «Outras máquinas planeadas» leva os números da semana (as que têm célula na Carga com
+            # carga, operações ou capacidade) e não o Planeado de todas as semanas (E2-03/E2-10).
+            if sliced is not None:
+                if week:
+                    others.append({"id": rid, "name": m["name"], "base": _out(base[rid]) if rid in base else _out(_empty()),
+                                   "week": {k: week[k] for k in WEEK_FIELDS}})
+            elif base[rid]["metres"] > 0 or base[rid]["hours"] > 0:
                 others.append({"id": rid, "name": m["name"], "base": _out(base[rid])})
             continue
-        if PANELS[sector][0][2] is None and rid not in base and m.get("type") != "maquina":
-            continue  # MTG2: postos sem carga não ocupam o painel
+        if PANELS[sector][0][2] is None and rid not in base and m.get("type") != "maquina" and not week:
+            continue  # MTG2: postos sem carga não ocupam o painel (com semanas, salvo se tiverem célula na Carga)
         row = {**{k: m[k] for k in ("id", "name", "code", "process", "in_catalog")},
                "base": _out(base[rid]) if rid in base else _out(_empty())}
         if sliced is not None:  # sem célula na Carga (máquina fora das Definições do setor): sem números da semana
@@ -319,6 +332,12 @@ def overview(sector: str, weeks: list[str] | None = None, *, today: date | None 
     if sliced is not None:
         out["week_totals"] = sliced["totals"]
     return out
+
+
+def _week_cell(sliced: dict, rid: str) -> dict | None:
+    """A célula da Carga de uma máquina nas semanas escolhidas, quando tem carga, operações ou capacidade."""
+    found = sliced["machines"].get(rid)
+    return found if found and (found["load"] or found["operations"] or found["capacity"]) else None
 
 
 WEEK_FIELDS = ("load", "capacity", "plan", "due", "suggested", "unknown", "metres", "metres_unknown", "status", "late_before")

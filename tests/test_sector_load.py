@@ -293,6 +293,17 @@ def test_current_week_cell_separates_the_week_hours_from_the_late_ones(monkeypat
     assert later["week_hours"] == later["hours"] == 5.0 and later["late_before"]["operations"] == 0
 
 
+def test_cell_detail_leaves_out_the_second_operation_like_the_grid(monkeypatch):
+    """P3 (08/10): uma operação seguinte das cantoneiras numa Punção não entra na célula; o detalhe também não a soma."""
+    facts = [{**fact("now", "m1", "2026-10-08", 6.0), "of": "OF2"},
+             {**fact("2op", "m1", "2026-10-08", 9.0, line_key="L2", phase="seguinte"), "of": "OF2"}]
+    d = _cell(monkeypatch, facts)
+    assert d["hours"] == d["week_hours"] == 6.0 and [o["of"] for o in d["orders"]] == ["OF2"]
+    _install_world(monkeypatch, facts)
+    [row] = load.overview("cantoneiras", today=TODAY, now=NOW)["machines"]
+    assert row["weeks"][0]["load"] == d["week_hours"]
+
+
 def test_cell_weight_pieces_and_metres_unknown_are_never_zero(monkeypatch):
     """F09/F21 (08/10): peso da Carteira (peso unitário × saldo); sem peso, «—» (None), nunca 0,0 kg."""
     lines = [{"key": "L1", "pieces": 10, "metres": 20.0, "weight_unit": 2.5, "metres_unknown": False},
@@ -436,6 +447,53 @@ def test_past_cells_sum_to_late_before(monkeypatch):
     sliced = load.week_slice("cantoneiras", ["estacionada", "sem"], today=TODAY)
     assert sliced["codes"] == ["sem", "estacionada"] and sliced["machines"]["m1"]["load"] == 5.0 and sliced["machines"]["m1"]["capacity"] is None
     assert load.week_slice("cantoneiras", ["estacionada"], today=TODAY)["machines"]["m1"]["load"] == 2.0
+
+
+def test_week_slice_with_past_and_current_week_counts_the_late_once(monkeypatch):
+    """E2-06: Prazo = S40 + S41 (hoje na S41). A carga e a cor são as da célula da S41; o atrasado (S40 incluída)
+    aparece uma só vez, em late_before, e não se soma à carga."""
+    facts = [fact("a", "m1", "2026-09-30", 30.0), fact("d", "m1", "2026-10-07", 4.0)]
+    _install_world(monkeypatch, facts)
+    [row] = load.overview("cantoneiras", today=TODAY, now=NOW)["machines"]
+    both = load.week_slice("cantoneiras", ["2026-W40", "2026-W41"], today=TODAY)
+    m = both["machines"]["m1"]
+    cell = row["weeks"][0]
+    assert (m["load"], m["capacity"], m["status"]) == (cell["load"], cell["full_capacity"], cell["status"]) == (4.0, cell["full_capacity"], cell["status"])
+    assert m["late_before"] == row["late_before"]["hours"] == 30.0
+    assert both["totals"]["load"] == 4.0 and both["totals"]["late_before"] == 30.0
+    # Só a semana passada: as horas atrasadas dessa semana, sem capacidade nem cor (como antes).
+    w40 = load.week_slice("cantoneiras", ["2026-W40"], today=TODAY)["machines"]["m1"]
+    assert (w40["load"], w40["capacity"], w40["status"], w40["late_before"]) == (30.0, None, None, None)
+
+
+def test_week_slice_post_with_zero_shift_calendar_does_not_replace_its_machines(monkeypatch):
+    """E2-07: um posto com calendário gravado a 0 turnos em todas as semanas é «sem calendário», como na Carga e nos
+    Setores: a capacidade da semana soma as máquinas do posto em vez de as trocar por 0 h."""
+    from app.sector import shifts
+    machines = [{"id": "post", "name": "Serrote Fita pav.1", "code": "FITA1", "process": "Serrar", "default_shifts": 0},
+                {"id": "doall", "name": "Serrote Doall Pav.1", "code": "DOALL", "process": "Serrar", "default_shifts": 2},
+                {"id": "thomas", "name": "Thomas IS639", "code": "THOMAS", "process": "Serrar", "default_shifts": 2}]
+    _install_world(monkeypatch, [fact("x", "doall", "2026-10-07", 5.0)], machines=machines,
+                   src={"lines": {}, "actual": {}, "posts": {"post": ["doall", "thomas"]}})
+    settings = sector_settings.default(TODAY)
+    calendars = [{"definition": shifts.definition_for(m["id"], y, w, {str(d): (0 if m["id"] == "post" else 2) if d <= 5 else 0
+                                                                       for d in range(1, 8)}, {}, settings, manual=False)}
+                 for m in machines for y, w in load.week_list(TODAY)]
+
+    class Conn:
+        def execute(self, sql, params=None):
+            return _Rows(calendars if "kind='calendar'" in sql else [])
+
+    @contextmanager
+    def connect(readonly=True):
+        yield Conn()
+    monkeypatch.setattr(load.planning, "connect", connect)
+    grid = {r["id"]: r for r in load.overview("perfis", today=TODAY, now=NOW)["machines"]}
+    assert grid["doall"]["has_calendar"] and grid["thomas"]["has_calendar"]
+    sliced = load.week_slice("perfis", ["2026-W41"], today=TODAY)
+    expected = grid["doall"]["weeks"][0]["full_capacity"] + grid["thomas"]["weeks"][0]["full_capacity"]
+    assert expected > 0 and sliced["totals"]["capacity"] == expected
+    assert sliced["machines"]["post"]["status"] == "sem_calendario"
 
 
 def test_line_and_principal_operation_use_one_week_function():

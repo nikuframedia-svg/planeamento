@@ -288,7 +288,9 @@ def test_overview_leaves_the_second_operation_machines_out_of_the_list(monkeypat
 
 
 def test_without_the_second_operation_module_the_list_stays_as_it_was(monkeypatch):
+    import app.sector
     monkeypatch.setitem(sys.modules, "app.sector.second_operation", None)  # import falha: código antigo
+    monkeypatch.delattr(app.sector, "second_operation", raising=False)  # o «from . import» também olha para o pacote
     result, _, _ = _overview(monkeypatch)
     assert [m["id"] for m in result["machines"]] == [P8, XP4, PRENSA, PLASMA] and result["second_operation"] == []
     perfis, _, _ = _overview(monkeypatch, "perfis")

@@ -830,9 +830,8 @@
   function scopeLine(data) {
     const scope = data.scope;
     if (!scope) return weeks().length ? el('p', {class: 'kpis-scope muted'}, 'O Prazo ainda não muda estes números: falta reiniciar o serviço do planeamento.') : null;
-    const week = (scope.weeks || []).length > 0;
-    return el('p', {class: 'kpis-scope muted'},
-      `${scope.sector_label} · ${scope.label} · ${week ? 'carga e capacidade como na Carga e turnos' : 'carga do que está Planeado'}`);
+    if (!(scope.weeks || []).length) return null; // sem Prazo: sem linha (P6, ecrãs simples)
+    return el('p', {class: 'kpis-scope muted'}, `${scope.sector_label} · ${scope.label} · carga e capacidade como na Carga e turnos`);
   }
 
   function summaryRow(s) {
@@ -865,8 +864,16 @@
         el('select', {id: 'assign-machine', 'aria-label': 'Máquina para as linhas marcadas'}, el('option', {value: ''}, 'Máquina…')), ' ',
         el('button', {type: 'button', id: 'assign', class: 'assign'}, 'Atribuir')),
       data.stale ? el('p', {class: 'muted'}, 'A atualizar as horas…') : null);
-    const others = (data.other_machines || []).length
-      ? el('p', {class: 'others muted'}, `Outras máquinas planeadas: ${data.other_machines.map((m) => `${shortName(m.name)} ${metres(m.base.metres)}`).join(' · ')}`) : null;
+    // Na semana (E2-10): só as outras máquinas com números dessa semana (célula da Carga), «carga / capacidade h»;
+    // sem eles (Python antiga) a linha não aparece, para não mostrar o Planeado de todas as semanas como da semana.
+    const otherList = (data.other_machines || []).filter((m) => !state.kpisWeek || m.week);
+    const otherText = (m) => {
+      if (!state.kpisWeek) return `${shortName(m.name)} ${metres(m.base.metres)}`;
+      const cap = m.week.capacity === null || m.week.capacity === undefined ? '' : ` / ${hoursFmt.format(m.week.capacity)}`;
+      return `${shortName(m.name)} ${hoursFmt.format(m.week.load || 0)}${cap} h`;
+    };
+    const others = otherList.length
+      ? el('p', {class: 'others muted'}, `Outras máquinas planeadas: ${otherList.map(otherText).join(' · ')}`) : null;
     const scope = scopeLine(data);
     $('kpis').replaceChildren(...(scope ? [scope] : []), ...panels, resumo, ...(others ? [others] : []));
     $('kpis').dataset.panels = String(panels.length + 1); // MTG3: Punção, Broca, Resumo; MTG2: máquinas e Resumo
