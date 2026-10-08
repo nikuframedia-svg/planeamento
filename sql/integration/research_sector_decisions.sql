@@ -175,10 +175,12 @@ DROP VIEW IF EXISTS consulta_v2.selecao_planear_membros_atual;
 CREATE VIEW consulta_v2.selecao_planear_membros_atual AS
  SELECT dados->>'area' area,dados->>'member_key' membro,dados->>'production_order_no' of,dados->>'reference' referencia,
   dados->>'decision' decisao,dados->>'reason' motivo,dados->>'actor' autor,
-  (dados->>'decided_at')::timestamptz decidida_em,(dados->>'revision')::integer revisao,versao versao_sincronizacao
+  (dados->>'decided_at')::timestamptz decidida_em,(dados->>'revision')::integer revisao,
+  (dados->>'planned_quantity')::integer quantidade_planeada,(dados->>'made_at_plan')::numeric feito_ao_planear,
+  versao versao_sincronizacao
  FROM consulta_v2.dados_aplicacao_atuais WHERE conjunto='application:sector_member_selection';
 COMMENT ON VIEW consulta_v2.selecao_planear_membros_atual IS
- 'Decisão Planear atual por membro (linha da carteira). Precedência: membro, depois OF × referência, depois OF inteira. Planeado, não produzido.';
+ 'Decisão Planear atual por membro (linha da carteira). Precedência: membro, depois OF × referência, depois OF inteira. quantidade_planeada: peças planeadas da operação principal (vazio = a linha inteira; migração 052); a produção registada depois de feito_ao_planear consome primeiro a parte planeada. Planeado, não produzido.';
 
 -- Máquina escolhida na Carteira por membro e conjuntos de famílias SKU com máquina pré-definida (05/10/2026).
 -- Ordem da máquina efetiva: Carteira → coluna Máquina da Tabela → conjunto de famílias. Planeado, não produzido.

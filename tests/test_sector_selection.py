@@ -1,4 +1,5 @@
-"""«Planear»/«Limpar» por membro (app/sector/selection.py) num PostgreSQL 16 descartável com as migrações 039, 040, 046 e 047.
+"""«Planear»/«Limpar» por membro (app/sector/selection.py) num PostgreSQL 16 descartável com as migrações 039, 040, 046,
+047, 048 e 052 (Planear parte, 08/10/2026).
 
 Critérios CA05, CA06, CA07, CA10–CA12 e CA14 do plano de 02/10/2026."""
 import importlib.util
@@ -51,7 +52,8 @@ def database(tmp_path_factory):
         # to the independent selection migrations rather than later features.
         migrations = tmp_path_factory.mktemp('selection-migrations')
         names = ["039_schema_migrations.sql", "040_sector_selection.sql", "046_sector_member_selection.sql",
-                 "047_member_selection_no_phase.sql", "048_family_sets_member_machine.sql"]
+                 "047_member_selection_no_phase.sql", "048_family_sets_member_machine.sql",
+                 "052_member_planned_quantity.sql"]
         for filename in names:
             shutil.copy2(ROOT / 'sql' / filename,migrations / filename)
         assert migrate.apply(prefix, migrations) == names
@@ -578,3 +580,184 @@ def test_a_repeated_group_request_returns_the_saved_result_even_after_the_group_
     first = selection.apply(request, data=d, conn=conn)
     again = selection.apply(request, data=d, conn=conn)  # o selo já mudou (revisões), mas é o mesmo pedido
     assert first["changed"] == 18 and again["repeated"] and again["changed"] == 0
+
+
+# --- Planear parte (P5, migração 052, 08/10/2026) ---------------------------------------------------------------
+
+PARTIAL = data(raw("OF5", "DLT319", 3139, 1660, key="p:1", machine=P8, made=0), raw("OF5", "DLT20", 10, 1000, key="p:2", machine=P8))
+
+
+def _plan(conn, d, members, **kw):
+    return selection.apply({"setor": "cantoneiras", "acao": "selecionar", "request_id": str(uuid.uuid4()), "membros": members, **kw},
+                           data=d, conn=conn)
+
+
+def _token(conn, d, key):
+    decisions = selection.current("cantoneiras", conn=conn)
+    line = next(x for x in d["lines"] if x["key"] == key)
+    return portfolio.member_token(line, portfolio.effective(line, decisions)["revision"])
+
+
+def quantity_rows(conn):
+    return conn.execute("SELECT member_key, decision, revision, planned_quantity, made_at_plan "
+                        "FROM planning_mtg.sector_member_selection ORDER BY member_key").fetchall()
+
+
+def test_planear_part_saves_and_reads_the_quantity_and_the_production_already_made(conn):
+    d = data(raw("OF5", "DLT319", 3139, 1660, key="p:1", machine=P8, made=139))
+    result = _plan(conn, d, [{"chave": "p:1", "token": _token(conn, d, "p:1"), "quantidade": 1200}])
+    assert result["changed"] == 1 and result["partial"] == 1
+    assert result["metres"] == pytest.approx(1200 * 1.66, abs=0.1)
+    row = quantity_rows(conn)[0]
+    assert (row["decision"], row["planned_quantity"], float(row["made_at_plan"])) == ("selected", 1200, 139.0)
+    decisions = selection.current("cantoneiras", conn=conn)
+    found = decisions.members["p:1"]
+    assert found["planned_quantity"] == 1200 and found["made_at_plan"] == 139
+    line = d["lines"][0]
+    view = portfolio.member_view(line, decisions)
+    assert (view["planned_pieces"], view["planned_quantity"], view["rest_pieces"], view["partial"]) == (1200, 1200, 1800, True)
+    assert view["status"] == {"planeado": True, "nesting": False, "sem_maquina": False}
+    # O evento guarda a quantidade e a produção no momento.
+    event = conn.execute("SELECT detail FROM planning_mtg.sector_decision_events WHERE kind = 'member'").fetchone()["detail"]
+    assert event["after"]["planned_quantity"] == 1200 and event["after"]["made_at_plan"] == 139
+
+
+def test_changing_only_the_quantity_saves_and_moves_revision_token_seal_and_digests(conn):
+    from app.sector import scope
+    d = PARTIAL
+    _plan(conn, d, [{"chave": "p:1", "token": _token(conn, d, "p:1"), "quantidade": 1200}])
+
+    def marks():
+        decisions = selection.current("cantoneiras", conn=conn)
+        return {"token": _token(conn, d, "p:1"), "seal": portfolio.group_seal(d["lines"], decisions),
+                "area": scope.area_digest(scope.read(conn), "cantoneiras"), "digest": scope.digest(scope.read(conn))}
+    before = marks()
+    result = _plan(conn, d, [{"chave": "p:1", "token": before["token"], "quantidade": 2000}])
+    assert result["changed"] == 1 and result["partial"] == 1
+    assert [(r["revision"], r["planned_quantity"]) for r in quantity_rows(conn)] == [(2, 2000)]
+    after = marks()
+    # Token e selo da lupa, area_digest (carimbo das ocorrências) e o digest de scope.read (selo do Gantt técnico).
+    assert all(before[k] != after[k] for k in before), (before, after)
+    same = _plan(conn, d, [{"chave": "p:1", "token": after["token"], "quantidade": 2000}])  # a mesma: nada a gravar
+    assert same["changed"] == 0 and quantity_rows(conn)[0]["revision"] == 2
+
+
+def test_partial_to_whole_saves_and_whole_lines_keep_the_digest_of_before(conn):
+    from app.sector import scope
+    d = PARTIAL
+    _plan(conn, d, [{"chave": "p:2", "token": _token(conn, d, "p:2")}])  # linha inteira
+    whole = scope.read(conn).members[("cantoneiras", "p:2")]
+    assert "planned_quantity" not in whole  # sem quantidade, a linha lida é a de antes da 052 (digests iguais)
+    _plan(conn, d, [{"chave": "p:1", "token": _token(conn, d, "p:1"), "quantidade": 100}])
+    result = _plan(conn, d, [{"chave": "p:1", "token": _token(conn, d, "p:1")}])  # Planear sem quantidade: passa a inteira
+    assert result["changed"] == 1 and result["partial"] == 0
+    rows = {r["member_key"]: r for r in quantity_rows(conn)}
+    assert rows["p:1"]["planned_quantity"] is None and rows["p:1"]["made_at_plan"] is None and rows["p:1"]["revision"] == 2
+    # Quantidade ≥ saldo também é a linha inteira (NULL).
+    _plan(conn, d, [{"chave": "p:2", "token": _token(conn, d, "p:2"), "quantidade": 10}])
+    assert {r["member_key"]: r["planned_quantity"] for r in quantity_rows(conn)} == {"p:1": None, "p:2": None}
+    # Limpar tira tudo.
+    selection.apply({"setor": "cantoneiras", "acao": "limpar", "request_id": str(uuid.uuid4()),
+                     "membros": [{"chave": "p:1", "token": _token(conn, d, "p:1")}]}, data=d, conn=conn)
+    assert [r["member_key"] for r in quantity_rows(conn)] == ["p:2"]
+
+
+def test_production_after_planning_consumes_the_planned_part_first(conn):
+    planned_day = data(raw("OF5", "DLT319", 3139, 1660, key="p:1", machine=P8, made=100))
+    _plan(conn, planned_day, [{"chave": "p:1", "token": _token(conn, planned_day, "p:1"), "quantidade": 1200}])
+    decisions = selection.current("cantoneiras", conn=conn)
+    for made, expected_part, planned in ((100, 1200, True), (600, 700, True), (1299, 1, True), (1300, 0, False), (2000, 0, False)):
+        later = data(raw("OF5", "DLT319", 3139, 1660, key="p:1", machine=P8, made=made))
+        line = later["lines"][0]
+        split = portfolio.plan_split(line, decisions)
+        assert split["status"]["planeado"] is planned, made
+        if planned:
+            assert (split["planned_pieces"], split["rest_pieces"]) == (expected_part, line["pieces"] - expected_part)
+        else:  # parte feita: volta a «Planeado para nesting» pelo resto, sem gravar nada
+            assert split["status"]["nesting"] and split["rest_pieces"] == line["pieces"]
+    assert len(quantity_rows(conn)) == 1 and quantity_rows(conn)[0]["revision"] == 1
+    # Planear outra vez a mesma quantidade depois de a parte estar feita recomeça a contar a partir de agora.
+    later = data(raw("OF5", "DLT319", 3139, 1660, key="p:1", machine=P8, made=1300))
+    again = _plan(conn, later, [{"chave": "p:1", "token": _token(conn, later, "p:1"), "quantidade": 1200}])
+    assert again["changed"] == 1 and float(quantity_rows(conn)[0]["made_at_plan"]) == 1300.0
+
+
+def test_invalid_quantities_and_unknown_balance_are_refused(conn):
+    d = data(raw("OF5", "DLT319", 3139, 1660, key="p:1", machine=P8), raw("OF5", "X", 10, 1000, key="p:3", machine=P8))
+    for bad in (0, -3, 2.5, "12", True, float("nan"), float("inf")):
+        with pytest.raises(planning.PlanningError, match="Quantidade inválida"):
+            _plan(conn, d, [{"chave": "p:1", "quantidade": bad}])
+    with pytest.raises(planning.PlanningError, match="só se usa com Planear"):
+        selection.apply({"setor": "cantoneiras", "acao": "excluir", "request_id": str(uuid.uuid4()),
+                         "membros": [{"chave": "p:1", "quantidade": 3}]}, data=d, conn=conn)
+    assert _plan(conn, d, [{"chave": "p:1", "quantidade": 3.0}])["partial"] == 1  # 3.0 são 3 peças inteiras
+    unknown = {**d, "lines": [{**x, "pieces": None, "done": None, "balance_unknown": True} if x["key"] == "p:3" else x
+                              for x in d["lines"]]}
+    with pytest.raises(selection.Conflict) as error:
+        _plan(conn, unknown, [{"chave": "p:3", "quantidade": 3}])
+    assert error.value.fields["conflicts"][0]["reason"] == selection.UNKNOWN_BALANCE == \
+        "Saldo por confirmar: só se pode planear a linha inteira."
+    assert _plan(conn, unknown, [{"chave": "p:3"}])["changed"] == 1  # inteira, sim
+
+
+def test_request_hash_includes_the_quantity():
+    base = {"setor": "cantoneiras", "acao": "selecionar", "membros": [{"chave": "p:1", "token": "t", "quantidade": 1200}]}
+    other = {**base, "membros": [{"chave": "p:1", "token": "t", "quantidade": 1201}]}
+    whole = {**base, "membros": [{"chave": "p:1", "token": "t"}]}
+    assert len({selection.request_hash(x, "selected") for x in (base, other, whole)}) == 3
+
+
+def test_a_reused_request_id_with_another_quantity_is_refused(conn):
+    request = {"setor": "cantoneiras", "acao": "selecionar", "request_id": str(uuid.uuid4()),
+               "membros": [{"chave": "p:1", "quantidade": 1200}]}
+    selection.apply(request, data=PARTIAL, conn=conn)
+    with pytest.raises(planning.PlanningError, match="outro conteúdo"):
+        selection.apply({**request, "membros": [{"chave": "p:1", "quantidade": 1300}]}, data=PARTIAL, conn=conn)
+
+
+def test_planning_is_not_producing_pieces_and_done_never_change(conn):
+    d = data(raw("OF5", "DLT319", 3139, 1660, key="p:1", machine=P8, made=139))
+    line = d["lines"][0]
+    before = (line["quantity"], line["pieces"], line["done"], line["metres"])
+    _plan(conn, d, [{"chave": "p:1", "token": _token(conn, d, "p:1"), "quantidade": 1200}])
+    view = portfolio.member_view(line, selection.current("cantoneiras", conn=conn))
+    assert (line["quantity"], line["pieces"], line["done"], line["metres"]) == before
+    assert (view["quantity"], view["pieces"], view["done"]) == (3139, 3000, 139)
+
+
+class _Undo(Exception):
+    pass
+
+
+def test_without_migration_052_whole_lines_work_and_a_part_is_refused(conn):
+    """Numa base só de leitura (produção antes de ativar) a 052 não existe: tudo como antes, a parte é recusada."""
+    d = PARTIAL
+    try:
+        with conn.transaction():
+            conn.execute("ALTER TABLE planning_mtg.sector_member_selection DROP CONSTRAINT sector_member_selection_partial")
+            conn.execute("ALTER TABLE planning_mtg.sector_member_selection DROP COLUMN made_at_plan")
+            conn.execute("ALTER TABLE planning_mtg.sector_member_selection DROP COLUMN planned_quantity")
+            resolution._QUANTITY_COLUMNS.clear()
+            assert not resolution.has_quantity(conn)
+            assert _plan(conn, d, [{"chave": "p:1", "token": _token(conn, d, "p:1")}])["changed"] == 1
+            assert "planned_quantity" not in selection.current("cantoneiras", conn=conn).members["p:1"]
+            with pytest.raises(planning.PlanningError, match="migração 052") as error:
+                _plan(conn, d, [{"chave": "p:2", "quantidade": 3}])
+            assert error.value.status == 503
+            raise _Undo
+    except _Undo:
+        pass
+    finally:
+        resolution._QUANTITY_COLUMNS.clear()
+    assert resolution.has_quantity(conn)
+
+
+def test_reverter_052_runs_and_the_quantity_check_follows_it(database):
+    with psycopg.connect(database, row_factory=dict_row) as c:
+        body = (ROOT / "sql/reverter_052.sql").read_text().replace("BEGIN;", "").replace("COMMIT;", "")
+        c.execute(body)
+        resolution._QUANTITY_COLUMNS.clear()
+        assert not resolution.has_quantity(c)
+        c.rollback()
+        resolution._QUANTITY_COLUMNS.clear()
+        assert resolution.has_quantity(c)

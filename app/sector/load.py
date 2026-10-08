@@ -10,6 +10,9 @@ Para cada máquina e semana ISO (a atual e as 12 seguintes):
   e sugerida desde 08/10), e não entra na carga da semana atual (07/10/2026); o que tem prazo entre segunda e
   ontem fica na semana atual, marcado como atrasado (a mesma regra da Carteira e do painel Máquinas);
 - linhas excluídas na Carteira não contam (como na lista vermelha do quadro);
+- linha planeada em parte (08/10): cada ocorrência divide-se na parte planeada («no plano») e no resto («a vencer»),
+  pela regra única decisions.planned_open (a operação principal leva min(parte, saldo); as seguintes as peças já
+  cortadas que lhes faltam mais a parte). Parte + resto = saldo; a operação conta uma vez;
 - máquinas do setor sem calendário que têm trabalho aparecem com capacidade 0 e «Sem calendário»;
 - recomendação de turnos (shifts.advise): na semana atual, atrasado + carga da semana contra as horas que
   faltam, e o texto diz «inclui N h atrasadas» (08/10); nas outras, a carga da semana. Tirar turnos só nas 3
@@ -76,7 +79,7 @@ def classify(fact: dict, planned_keys: set, current: tuple[int, int], horizon: s
     rid = fact.get("planning_resource_id")
     if not rid:
         return None
-    planned = fact.get("line_key") in planned_keys and fact.get("machine_basis") == "atribuída"
+    planned = fact.get("line_key") in planned_keys and fact.get("machine_basis") == "atribuída" and fact.get("_part") != "rest"
     kind = PLAN if planned else DUE if fact.get("machine_basis") == "atribuída" else SUGGESTED
     day = fact.get("priority_day")
     week = _week_of(day)
@@ -86,6 +89,27 @@ def classify(fact: dict, planned_keys: set, current: tuple[int, int], horizon: s
     if week < current:
         return kind, current, True
     return (kind, week, late) if week in horizon else (kind, "depois", late)
+
+
+def split_facts(facts, planned, lines) -> list[dict]:
+    """As ocorrências com as das linhas planeadas em parte divididas em parte planeada e resto (08/10).
+
+    `planned` = load._context()[1]: {chave: peças planeadas por fazer ou None}; None (ou um conjunto, contrato
+    antigo) = a linha inteira, sem divisão. A parte leva `_part: "plan"`; o resto `_part: "rest"` (fica «a vencer»)
+    e, quando a mesma operação também tem parte, `_extra` (não conta outra vez a operação nem os desconhecidos).
+    """
+    if not isinstance(planned, dict) or not any(v is not None for v in planned.values()):
+        return facts
+    from .portfolio import split_fact
+    pieces = {x["key"]: x["pieces"] for x in lines}
+    out = []
+    for f in facts:
+        part = planned.get(f.get("line_key"))
+        if part is None or f.get("machine_basis") != "atribuída":
+            out.append(f)
+            continue
+        out.extend(x for x in split_fact(f, part, pieces.get(f.get("line_key"))) if x is not None)
+    return out
 
 
 def _empty_cell():
@@ -141,28 +165,29 @@ def recommend(load_hours: float, capacity: float, n: int, settings: dict, *, wor
 
 
 def _add_total(t: dict, f: dict, week, late: bool, excel, weight, applies: bool, before: bool = False) -> None:
-    t["operations"] += 1
+    extra = bool(f.get("_extra"))  # resto de uma operação planeada em parte: a operação e os desconhecidos já contaram
+    t["operations"] += not extra
     if f.get("phase", "principal") == "principal":
         # Desconhecido ≠ 0 (F09): saldo ou comprimento em falta conta-se à parte, como na Carteira (achado C-carga-totais-zero).
         for name in ("pieces", "metres"):
             if f.get(name) is None:
-                t[name + "_unknown"] += 1
+                t[name + "_unknown"] += not extra
             else:
                 t[name] += f[name]
         if f.get("remaining") is not None and f.get("section_unit"):
             t["area_mm2"] += f["remaining"] * f["section_unit"]
         if weight is None:
-            t["weight_unknown"] += 1
+            t["weight_unknown"] += not extra
         else:
             t["weight_kg"] += weight
     if applies:
         if excel is None:
-            t["excel_unknown"] += 1
+            t["excel_unknown"] += not extra
         else:
             t["excel_hours"] += excel
     hours = f.get("load_hours")
     if hours is None:
-        t["unknown"] += 1
+        t["unknown"] += not extra
         return
     t["load"] += hours
     if late:
@@ -230,7 +255,8 @@ def _context(sector: str, today: date | None = None):
     from . import occurrences, portfolio, scope, selection
     data = portfolio.current(sector, allow_stale=True)
     decisions = selection.current(sector)
-    planned = {x["key"] for x in data["lines"] if portfolio.status_of(x, decisions)["planeado"]}
+    # {chave: peças planeadas por fazer ou None = a linha inteira} (quantidade parcial, 08/10); `in` continua a valer.
+    planned = portfolio.planned_parts(data["lines"], decisions)
     occ = occurrences.load(sector, allow_stale=True)
     # Linha excluída na Carteira não é trabalho a planear: não conta na Carga, como na lista vermelha (A8-5).
     excluded = {x["key"] for x in data["lines"] if portfolio.decision_of(x, decisions) == "excluded"}
@@ -284,20 +310,21 @@ def _parked(fact: dict) -> bool:
 
 
 def _add_cell(target: dict, f: dict, kind: str, late: bool, excel, applies: bool) -> None:
-    target["operations"] += 1
+    extra = bool(f.get("_extra"))  # resto de uma operação planeada em parte: não conta outra vez (08/10)
+    target["operations"] += not extra
     if applies:
         if excel is None:
-            target["excel_unknown"] += 1
+            target["excel_unknown"] += not extra
         else:
             target["excel"] += excel
     if f.get("phase", "principal") == "principal":  # metros só na operação principal, como na Carteira
         if f.get("metres") is None:
-            target["metres_unknown"] += 1
+            target["metres_unknown"] += not extra
         else:
             target["metres"] += f["metres"]
     if f.get("load_hours") is None:
-        target["unknown"] += 1
-        target["unknown_" + kind] += 1
+        target["unknown"] += not extra
+        target["unknown_" + kind] += not extra
         return
     target[kind] += f["load_hours"]
     if late:
@@ -353,7 +380,7 @@ def _aggregate(sector: str, today: date | None = None, *, memo: bool = False) ->
     elsewhere_work = _empty_total()  # peças, metros e kg dessas operações: para o fecho com a Carteira (08/10)
     second = []
     weights = weights_of(data["lines"])
-    for f in occ["facts"]:
+    for f in split_facts(occ["facts"], planned, data["lines"]):
         if second_operation.operation(sector, f):  # 2.ª operação das cantoneiras: fora do plano (08/10)
             second.append(f)
             continue
@@ -366,9 +393,9 @@ def _aggregate(sector: str, today: date | None = None, *, memo: bool = False) ->
         rid = f["planning_resource_id"]
         if rid not in own:  # trabalho do setor numa máquina de outro setor: nota à parte
             e = elsewhere[rid]
-            e["operations"] += 1
+            e["operations"] += not f.get("_extra")
             e["hours"] += f.get("load_hours") or 0
-            e["unknown"] += f.get("load_hours") is None
+            e["unknown"] += f.get("load_hours") is None and not f.get("_extra")
             _add_total(elsewhere_work, f, None, False, excel, weight, applies)
             continue
         kind, week, late = found
@@ -617,8 +644,9 @@ def cell(sector: str, machine: str, year: int, week: int, *, today: date | None 
     groups = {}
     summary = {"plan_principal": 0.0, "excel_hours": 0.0, "excel_unknown": 0, "weight_kg": 0.0, "weight_unknown": 0}
     late = {"hours": 0.0, "unknown": 0, "operations": 0, PLAN: 0.0, DUE: 0.0, SUGGESTED: 0.0}
-    for f in _cell_facts(occ, planned, current, horizon, machine, target, today):
+    for f in _cell_facts(occ, planned, current, horizon, machine, target, today, data["lines"]):
         kind = f["_kind"]
+        extra = bool(f.get("_extra"))
         before = target == current and _before_week(f, monday_now)
         excel, _, applies = load_sources.fact_values(f, src["lines"])
         weight = fact_weight(f, weights)
@@ -628,50 +656,56 @@ def cell(sector: str, machine: str, year: int, week: int, *, today: date | None 
                                         "pieces": 0.0, "pieces_unknown": 0, "metres": 0.0, "metres_unknown": 0, "operations": 0,
                                         "references": set(), "kinds": set(), "priority_day": None, "late_days": 0,
                                         "excel_hours": 0.0, "excel_unknown": 0, "weight_kg": 0.0, "weight_unknown": 0, "_weights": 0})
+        if principal and f.get("_part") == "plan":  # «planeado X de Y» (quantidade parcial, 08/10)
+            g.setdefault("planned_part", {"pieces": 0.0, "of": 0.0})
+            g["planned_part"]["pieces"] += f["remaining"]
+            g["planned_part"]["of"] += f["planned_of"]
         if applies:
             if excel is None:
-                g["excel_unknown"] += 1
-                summary["excel_unknown"] += 1
+                g["excel_unknown"] += not extra
+                summary["excel_unknown"] += not extra
             else:
                 g["excel_hours"] += excel
                 summary["excel_hours"] += excel
         if principal:
             if weight is None:
-                g["weight_unknown"] += 1
-                summary["weight_unknown"] += 1
+                g["weight_unknown"] += not extra
+                summary["weight_unknown"] += not extra
             else:
                 g["weight_kg"] += weight
                 g["_weights"] += 1
                 summary["weight_kg"] += weight
         if principal and f.get("load_hours") is not None:
             summary["plan_principal"] += f["load_hours"]
-        g["operations"] += 1
+        g["operations"] += not extra
         g["references"].add(f.get("reference"))
         g["kinds"].add(kind)
         hours = f.get("load_hours")
         if hours is None:
-            g["unknown"] += 1
+            g["unknown"] += not extra
         else:
             g["hours"] += hours
             g["late_before_hours" if before else "week_hours"] += hours
         if before:
-            g["late_before_operations"] += 1
-            late["operations"] += 1
+            g["late_before_operations"] += not extra
+            late["operations"] += not extra
             if hours is None:
-                late["unknown"] += 1
+                late["unknown"] += not extra
             else:
                 late["hours"] += hours
                 late[kind] += hours
         line = lines.get(f.get("line_key"))
         if f.get("phase") == "principal" and line:
+            # Linha dividida (parte + resto, 08/10): peças e metros pela proporção desta ocorrência.
+            share = f["remaining"] / f["planned_of"] if f.get("_part") and f.get("planned_of") else 1.0
             if line["pieces"] is None:
-                g["pieces_unknown"] += 1
+                g["pieces_unknown"] += not extra
             else:
-                g["pieces"] += line["pieces"]
+                g["pieces"] += line["pieces"] * share
             if line.get("metres_unknown", line.get("balance_unknown")):
-                g["metres_unknown"] += 1
+                g["metres_unknown"] += not extra
             else:
-                g["metres"] += line["metres"] or 0
+                g["metres"] += (line["metres"] or 0) * share
         day = f.get("priority_day")
         if day and (g["priority_day"] is None or str(day) < str(g["priority_day"])):
             g["priority_day"] = day
@@ -684,6 +718,10 @@ def cell(sector: str, machine: str, year: int, week: int, *, today: date | None 
             g[k] = round(g[k], 2)
         g["metres"] = round(g["metres"], 1)
         g["pieces"] = round(g["pieces"])
+        if g.get("planned_part"):
+            part = g["planned_part"]
+            g["planned_part"] = {"pieces": round(part["pieces"]), "of": round(part["of"])}
+            g["planned_text"] = f"planeado {pieces_text(part['pieces'])} de {pieces_text(part['of'])}"
         # Só operações sem peso → peso desconhecido («—»), nunca 0,0 kg (F09).
         g["weight_kg"] = round(g["weight_kg"], 1) if g.pop("_weights") or not g["weight_unknown"] else None
     extra = src["actual"].get((machine, int(year), int(week))) or {}
@@ -696,9 +734,16 @@ def cell(sector: str, machine: str, year: int, week: int, *, today: date | None 
                          "actual_hours": extra.get("actual_hours"), "excel_calendar_hours": extra.get("excel_calendar_hours")})
 
 
-def _cell_facts(occ, planned, current, horizon, machine, target, today=None):
-    """Ocorrências de uma célula (máquina × semana), com o tipo (no plano / a vencer / sugerida) e o atraso."""
-    for f in occ["facts"]:
+def pieces_text(value) -> str:
+    """3139 → «3 139» (peças, como no ecrã)."""
+    return f"{round(value):,}".replace(",", "\u00a0")
+
+
+def _cell_facts(occ, planned, current, horizon, machine, target, today=None, lines=None):
+    """Ocorrências de uma célula (máquina × semana), com o tipo (no plano / a vencer / sugerida) e o atraso.
+    Com as linhas, as ocorrências das linhas planeadas em parte vêm divididas (split_facts)."""
+    facts = split_facts(occ["facts"], planned, lines) if lines is not None else occ["facts"]
+    for f in facts:
         if f.get("planning_resource_id") != machine:
             continue
         found = classify(f, planned, current, horizon, today)
@@ -756,7 +801,8 @@ def operations(sector: str, machine: str, year: int, week: int, of: str, *, toda
     today = today or _today()
     weeks = week_list(today)
     data, planned, occ = _context(sector, today)
-    facts = [f for f in _cell_facts(occ, planned, weeks[0], set(weeks), machine, (int(year), int(week)), today) if f["of"] == of]
+    facts = [f for f in _cell_facts(occ, planned, weeks[0], set(weeks), machine, (int(year), int(week)), today, data["lines"])
+             if f["of"] == of]
     with planning.connect(readonly=True) as c:
         src = load_sources.context(c, sector)
         proofs = load_sources.proofs(c, sector, sorted({f["line_key"] for f in facts if f.get("line_key")}))
@@ -777,7 +823,11 @@ def operations(sector: str, machine: str, year: int, week: int, of: str, *, toda
                     "excel_hours": excel if applies else None, "weight_kg": weight,
                     # Horas estimadas: a conta que as deu; a prova do motor fica marcada como não usada (CARGA-OPS-01).
                     "estimate": estimate_calculation(f), "proof_used": f.get("load_basis") != "estimada",
-                    "proof": proofs.get((f.get("line_key"), name))})
+                    "proof": proofs.get((f.get("line_key"), name)),
+                    # Quantidade parcial (08/10): a parte planeada desta operação e o saldo todo.
+                    **({"planned_of": f["planned_of"], "part": f["_part"]} if f.get("_part") and f.get("planned_of") else {}),
+                    **({"planned_text": f"planeado {pieces_text(f['remaining'])} de {pieces_text(f['planned_of'])}"}
+                       if f.get("_part") == "plan" else {})})
     return needs.serial({"sector": sector, "machine": machine, "year": int(year), "week": int(week), "of": of, "operations": out})
 
 

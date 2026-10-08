@@ -54,10 +54,11 @@ def _empty() -> dict:
 
 def _add(acc: dict, fact: dict, kind: str, weight: float | None) -> None:
     """Uma ocorrência numa célula: horas (desconhecidas à parte) e, só na principal, metros, peças e kg."""
-    acc["operations"] += 1
+    extra = bool(fact.get("_extra"))  # resto de uma operação planeada em parte (load.split_facts): conta uma vez
+    acc["operations"] += not extra
     hours = fact.get("load_hours")
     if hours is None:
-        acc["hours_unknown"] += 1
+        acc["hours_unknown"] += not extra
     else:
         acc["hours"] += hours
         acc[kind] += hours
@@ -65,7 +66,7 @@ def _add(acc: dict, fact: dict, kind: str, weight: float | None) -> None:
         return
     for field, value in (("metres", fact.get("metres")), ("pieces", fact.get("pieces")), ("kg", weight)):
         if value is None:
-            acc[field + "_unknown"] += 1
+            acc[field + "_unknown"] += not extra
         else:
             acc[field] += value
 
@@ -103,12 +104,12 @@ def _population(sector: str, own: set, today: date, context=None):
     weeks = load.week_list(today)
     horizon, current = set(weeks), weeks[0]
     out, outside = [], 0
-    for f in occ["facts"]:
+    for f in load.split_facts(occ["facts"], planned, data["lines"]):
         if second_operation(sector, f):
             continue
         found = slot_of(f, planned, current, horizon, today)
         if found is None or f.get("planning_resource_id") not in own:
-            outside += 1
+            outside += not f.get("_extra")
             continue
         out.append((f, *found))
     return out, outside, load.weights_of(data["lines"])
@@ -116,7 +117,7 @@ def _population(sector: str, own: set, today: date, context=None):
 
 def _context_key(context, today: date) -> tuple:
     data, planned, occ = context
-    return (occ.get("stamp"), len(occ["facts"]), len(data["lines"]), hash(frozenset(planned)), today)
+    return (occ.get("stamp"), len(occ["facts"]), len(data["lines"]), hash(frozenset(planned.items() if isinstance(planned, dict) else planned)), today)
 
 
 def _aggregate(sector: str, por: str, today: date, now: datetime, context=None) -> dict:

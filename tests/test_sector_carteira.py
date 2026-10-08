@@ -513,7 +513,7 @@ def test_cut_date_order_puts_the_oldest_late_group_first_then_future_without_dat
              _row("OF7", "P", cut="2026-03-01", raw_w="2026/53"), _row("OF7", "Q", cut="2026-10-20"))
     view = portfolio.groups("cantoneiras", "of_perfil", sort="corte", data=d)
     assert [g["key"] for g in view["groups"]] == ["OF3", "OF1", "OF2", "OF5", "OF7", "OF4", "OF6"]
-    assert view["order"] == "corte" and view["capabilities"] == {"ordem_data": True}
+    assert view["order"] == "corte" and view["capabilities"] == {"ordem_data": True, "parcial": True}
     tags = {g["key"]: g["due_tag"] for g in view["groups"]}
     assert tags["OF1"] == {"day": date(2026, 7, 20), "field": "cut_date", "late": True, "late_days": 70, "provisional": False}
     assert tags["OF2"]["late"] is False and tags["OF2"]["late_days"] == 0 and "week" not in tags["OF2"]

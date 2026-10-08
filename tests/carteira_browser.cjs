@@ -1,7 +1,7 @@
 // Aceitação da Carteira simples (esboço do Luís, 02/10/2026). Nada é gravado:
 // o pedido de gravação (/selecao) é intercetado no browser e respondido com uma confirmação simulada.
 // Uso: CARTEIRA_BASE=http://127.0.0.1:8113 CARTEIRA_SHOT=/tmp/carteira.png node tests/carteira_browser.cjs
-// 08/10: cabeçalho fixo (P2) e ordem por data (P6), também com a Python antiga simulada (sem «order»).
+// 08/10: cabeçalho fixo (P2) e ordem por data (P6), também com a Python antiga simulada (sem «order»); Planear parte (P5).
 const {chromium} = require('./playwright_core.cjs');
 const assert = require('node:assert/strict');
 const base = process.env.CARTEIRA_BASE || 'http://127.0.0.1:8113';
@@ -194,6 +194,60 @@ const DUE = /^(\d\d\/\d\d|S\d\d\??|sem data|estacionada)$/;
     assert.ok(writes[0].membros.every((m) => m.chave && m.token));
     assert.ok(!('filtros' in writes[0]) && !('fase' in writes[0]));
 
+    // Planear parte (P5, 08/10): «%» junto de Planear abre o diálogo com o âmbito do Planear (o grupo todo, já sem
+    // marcadas); metros → peças inteiras, distribuição pela ordem de prazo, linhas editáveis; Planear grava (intercetado).
+    await page.waitForSelector(`#rows tr.group[data-name="${name}"] .act-part`, {timeout: 30000});
+    assert.equal(await byName().locator('.act-part').getAttribute('title'), 'Planear parte');
+    await byName().locator('.act-part').click();
+    await page.waitForSelector('#parcial[open] #parcial-saldo', {timeout: 60000});
+    assert.match(await page.textContent('#parcial-saldo'), /^Saldo: [\d\s  .]+ peças · [\d\s  .]+,\d m$/);
+    assert.equal(await page.locator('#parcial p', {hasText: 'Planear não regista produção.'}).count(), 1);
+    const num = (t) => Number(String(t).replace(/[^\d,]/g, '').replace(',', '.'));
+    const partLines = await page.locator('#parcial .parcial-linhas tbody tr').evaluateAll((trs) => trs.map((tr) => ({
+      key: tr.querySelector('input').dataset.key, length: tr.children[2].textContent, pieces: tr.children[3].textContent})));
+    let expected;
+    if (partLines.length >= 2) {
+      const [a, b] = partLines.map((l) => ({...l, length: num(l.length), pieces: num(l.pieces)}));
+      assert.deepEqual(await page.locator('#parcial .parcial-linhas thead th').allTextContents(), ['OF', 'Referência', 'Comp.', 'Saldo', 'Planear', 'm']);
+      // Pedir a 1.ª linha toda mais 0,4 peça da 2.ª em metros: a 1.ª enche-se, a 2.ª leva o mínimo de 1 peça.
+      const asked = Math.round((a.pieces * a.length / 1000 + 0.4 * b.length / 1000) * 10) / 10;
+      await page.selectOption('#parcial-unidade', 'm');
+      await page.fill('#parcial-quantidade', String(asked));
+      const inputs = page.locator('#parcial input.parcial-linha');
+      assert.equal(await inputs.nth(0).inputValue(), String(a.pieces));
+      assert.equal(await inputs.nth(1).inputValue(), '1');
+      const chosen = await page.textContent('#parcial-escolhido');
+      assert.match(chosen, /^Escolhido: [\d\s\u00a0.]+ peças · [\d\s\u00a0.]+,\d m \(pediste [\d\s\u00a0.,]+ m → [\d\s\u00a0.]+ peças inteiras\)$/);
+      assert.equal(num(chosen.split(' peças')[0]), a.pieces + 1);
+      assert.match(await page.textContent('#parcial-resto'), /^Fica na Carteira: [\d\s .]+ peças · [\d\s .]+,\d m$/);
+      // Mudar uma linha atualiza o total.
+      const more = Math.min(b.pieces, 2);
+      await inputs.nth(1).fill(String(more));
+      await page.waitForFunction((n) => Number(document.getElementById('parcial-escolhido').textContent.split(' peças')[0].replace(/\D/g, '')) === n,
+        a.pieces + more);
+      expected = [{chave: a.key, whole: true}, {chave: b.key, quantidade: more < b.pieces ? more : undefined}];
+    } else {
+      const saldo = num((await page.textContent('#parcial-saldo')).split('·')[0]);
+      const half = Math.max(1, Math.floor(saldo / 2));
+      await page.fill('#parcial-quantidade', String(half));
+      await page.waitForFunction(() => !document.getElementById('parcial-planear').disabled);
+      expected = [{quantidade: half < saldo ? half : undefined}];
+    }
+    if (shot) await page.screenshot({path: shot.replace(/\.png$/, '-parcial.png'), fullPage: false});
+    await page.click('#parcial-planear');
+    await page.waitForFunction(() => !document.getElementById('parcial').open, null, {timeout: 30000});
+    await page.waitForFunction(() => /planeada/.test(document.getElementById('notice').textContent), null, {timeout: 30000});
+    assert.equal(writes.length, 2);
+    const sent = writes[1];
+    assert.equal(sent.acao, 'selecionar');
+    assert.ok(sent.request_id && sent.membros.every((m) => m.chave && m.token));
+    assert.equal(sent.membros.length, expected.length, 'só as linhas com peças escolhidas');
+    expected.forEach((e, i) => {
+      if (e.chave) assert.equal(sent.membros[i].chave, e.chave);
+      assert.equal(sent.membros[i].quantidade, e.quantidade, 'linha inteira vai sem quantidade; a parte vai em peças inteiras');
+    });
+    console.log('Planear parte:', JSON.stringify(sent.membros.map((m) => m.quantidade ?? 'inteira')));
+
     // Conjuntos de famílias: a página abre, lista famílias e máquinas; nada é gravado.
     await page.click('a.sets-link');
     await page.waitForSelector('#novo:not([disabled])', {timeout: 60000});
@@ -249,11 +303,12 @@ const DUE = /^(\d\d\/\d\d|S\d\d\??|sem data|estacionada)$/;
     assert.equal(await old.inputValue('#ordem'), 'urgencia');
     assert.equal(await old.evaluate(() => document.querySelector('#ordem option[value=corte]').disabled), true, 'a ordem por data fica desligada');
     assert.equal(await old.locator('#rows .due').count(), 0);
+    assert.equal(await old.locator('#rows .act-part').count(), 0, 'sem capabilities.parcial não há «%»');
     assert.equal(await old.textContent('#order-note'), 'A ordem por data precisa que o serviço do planeamento seja reiniciado.');
     await old.close();
     assert.deepEqual(errors, []);
     assert.ok(!writes.includes('conjunto'));
-    console.log(`Carteira OK: ${name} ${total - 1}/${total}, Atribuir máquina e Planear exatos (intercetados), Conjuntos, filtros sem efeito na carga, 390 px sem scroll, cabeçalho fixo, ordem por data`);
+    console.log(`Carteira OK: ${name} ${total - 1}/${total}, Atribuir máquina e Planear exatos (intercetados), Conjuntos, filtros sem efeito na carga, 390 px sem scroll, cabeçalho fixo, ordem por data, Planear parte`);
   } finally {
     await browser.close();
   }
