@@ -499,12 +499,13 @@ def test_warm_up_runs_once_in_background_and_does_not_block_startup(warmup_modul
 
 
 def test_warm_up_builds_every_cache_of_both_sectors_and_logs_durations(warmup_module, monkeypatch, caplog):
-    from app.sector import board, load, occurrences, portfolio, portfolio_kpis
+    from app.sector import board, forecast, load, occurrences, portfolio, portfolio_kpis
     calls = []
     monkeypatch.setattr(portfolio, "current", lambda sector, **kw: calls.append(("carteira", sector, kw)))
     monkeypatch.setattr(occurrences, "load", lambda sector, **kw: calls.append(("ocorrencias", sector, kw)))
     monkeypatch.setattr(board, "board", lambda sector, **kw: calls.append(("quadro", sector, kw)))
     monkeypatch.setattr(load, "overview", lambda sector, **kw: calls.append(("carga", sector, kw)))
+    monkeypatch.setattr(forecast, "current", lambda sector, **kw: calls.append(("previsao", sector, kw)))
 
     def kpis(sector, **kw):
         if sector == "perfis":
@@ -514,9 +515,11 @@ def test_warm_up_builds_every_cache_of_both_sectors_and_logs_durations(warmup_mo
     monkeypatch.setattr(portfolio_kpis, "overview", kpis)
     with caplog.at_level("INFO", logger="app.sector.warmup"):
         assert warmup_module.warm() is False  # um passo falhou: tenta outra vez mais tarde
+    # Etapa 3 (08/10): Carteira → ocorrências → Carga → Previsão → Gantt → KPIs (cada passo lê o anterior).
     assert [(name, sector) for name, sector, _ in calls] == [
-        ("carteira", "cantoneiras"), ("ocorrencias", "cantoneiras"), ("quadro", "cantoneiras"), ("carga", "cantoneiras"),
-        ("kpis", "cantoneiras"), ("carteira", "perfis"), ("ocorrencias", "perfis"), ("quadro", "perfis"), ("carga", "perfis")]
+        ("carteira", "cantoneiras"), ("ocorrencias", "cantoneiras"), ("carga", "cantoneiras"), ("previsao", "cantoneiras"),
+        ("quadro", "cantoneiras"), ("kpis", "cantoneiras"), ("carteira", "perfis"), ("ocorrencias", "perfis"), ("carga", "perfis"),
+        ("previsao", "perfis"), ("quadro", "perfis")]
     assert all(not kw.get("allow_stale") for _, _, kw in calls)  # calcula as versões atuais
     text = caplog.text
     assert "cantoneiras" in text and " s" in text and "falhou" in text

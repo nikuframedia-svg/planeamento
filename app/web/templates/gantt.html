@@ -6,7 +6,7 @@
   <title>Gantt MTG2 e MTG3 · Planeamento</title>
   <link rel="stylesheet" href="/static/planning_typography.css">
   <link rel="stylesheet" href="/static/gantt.css">
-  <script src="/static/gantt.js?v=20261008x" defer></script>
+  <script src="/static/gantt.js?v=20261008p3" defer></script>
   <link rel="stylesheet" href="/static/needs.css">
   <script src="/static/needs.js?v=20261007a" defer></script>
 <link rel="stylesheet" href="/static/planeamento_ui.css?v=20261002">
@@ -15,7 +15,7 @@
   {% set active = 'gantt' %}{% include "_app_nav.html" %}
   <main>
     <section class="hero">
-      <div><p class="eyebrow">PERFIS E CANTONEIRAS</p><h1>Plano de produção</h1><p class="lead">Escolha automática de máquinas com condições e alternativas visíveis. Ajusta a máquina de cada operação e calcula a carga conjunta.</p></div>
+      <div><p class="eyebrow">PERFIS E CANTONEIRAS</p><h1>Plano de produção</h1><p class="lead">Escolha automática de máquinas com condições e alternativas visíveis. Ajusta a máquina de cada operação e calcula a carga conjunta.</p><p class="lead" id="study-note"><strong>Estudo; o plano em uso é o do <a href="/planeamento/gantt">Gantt</a>.</strong></p></div>
       <div class="hero-actions"><button id="refresh">Atualizar fontes</button><button id="generate" class="primary">Gerar proposta</button><button id="accept">Aceitar plano</button></div>
     </section>
     <div id="notice" role="status" aria-live="polite"></div>

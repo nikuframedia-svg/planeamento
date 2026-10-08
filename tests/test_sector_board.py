@@ -1,5 +1,5 @@
 """Quadro simples do plano e lista vermelha das OF por planear (02/10/2026). Sem base de dados."""
-from datetime import date
+from datetime import date, timedelta
 
 from app.sector import board
 
@@ -60,31 +60,6 @@ def test_order_is_priority_then_deadline_then_size():
     assert result["orders"][1]["late_days"] == 62
 
 
-def op(key, of, remaining, due=None):
-    return {"key": key, "of": of, "planning_remaining": remaining, "priority": {"priority_day": due}}
-
-
-def test_source_plan_boxes_merge_one_order_per_machine_and_mark_late():
-    plan = {"entries": [
-        {"key": "a", "resource_id": "m1", "start_date": "2026-10-01", "end_date_exclusive": "2026-10-02", "precision": "day"},
-        {"key": "b", "resource_id": "m1", "start_date": "2026-10-02", "end_date_exclusive": "2026-10-03", "precision": "day"},
-        {"key": "c", "resource_id": "m1", "start_date": "2026-10-10", "end_date_exclusive": "2026-10-11", "precision": "day"},
-        {"key": "d", "resource_id": "m2", "start_date": "2026-10-05", "end_date_exclusive": "2026-10-12", "precision": "week"}]}
-    boxes = board.boxes_from_source_plan(plan, [op("a", "OF1", 10, "2026-10-01"), op("b", "OF1", 5), op("c", "OF1", 1), op("d", "OF2", 7)])
-    assert [(b["resource_id"], b["of"], str(b["start"]), str(b["end"]), b["pieces"], b["lines"]) for b in boxes] == [
-        ("m1", "OF1", "2026-10-01", "2026-10-03", 15, 2), ("m1", "OF1", "2026-10-10", "2026-10-11", 1, 1),
-        ("m2", "OF2", "2026-10-05", "2026-10-12", 7, 1)]
-    assert boxes[0]["late"] and not boxes[2]["late"]
-    assert boxes[2]["approximate"]
-
-
-def test_proposal_boxes_use_lisbon_days_of_segments():
-    snapshot = {"started_at": "2026-10-01T22:30:00+00:00", "operations": [op("a", "OF1", 3, "2026-10-05")]}
-    proposal = {"bars": {"a": {"resource_id": "m1", "segments": [[0, 60], [1440, 1500]]}}}
-    [box] = board.boxes_from_proposal(snapshot, proposal)
-    assert (str(box["start"]), str(box["end"]), box["late"]) == ("2026-10-01", "2026-10-04", False)
-
-
 def test_order_numbers_compare_with_or_without_prefix():
     assert board._order_no("OF264095") == board._order_no("264095") == board._order_no("264095.0") == "264095"
 
@@ -135,34 +110,16 @@ def test_not_in_plans_uses_the_newest_cpis_copy_and_treats_pronta_as_open():
     assert [r["status"] for r in result] == ["Em Produção", "Pronta", "Pronta"]
 
 
-def test_past_forecast_is_late_and_blocked_operation_is_listed_with_its_reason():
-    """A8-2: previsão da Tabela a 08/09 com prazo 08/09 está atrasada a 02/10; a operação bloqueada na proposta
-    aparece na lista das operações sem hora, com o motivo e o dia da previsão."""
-    plan = {"entries": [
-        {"key": "a", "resource_id": "m1", "start_date": "2026-09-08", "end_date_exclusive": "2026-09-09", "precision": "day"},
-        {"key": "b", "resource_id": "m1", "start_date": "2026-10-30", "end_date_exclusive": "2026-10-31", "precision": "day"}]}
-    ops = [op("a", "OF1", 52, "2026-09-08"), op("b", "OF2", 29, "2026-10-30")]
-    boxes = board.boxes_from_source_plan(plan, ops, today=TODAY)
-    assert [b["late"] for b in boxes] == [True, False]
-    assert not board.boxes_from_source_plan(plan, ops)[0]["late"]  # sem `today`, a regra antiga (só o fim da caixa)
-    ops[0]["blocking_reasons"] = ["Duração admissível por confirmar."]
-    ops[1]["blocking_reasons"] = ["Duração admissível por confirmar."]
-    found = board.forecast_only(plan, ops + [{**op("c", "OF3", 1), "blocking_reasons": ["Sem máquina."]}], placed={"b"})
-    assert found == [{"of": "OF1", "reference": None, "operation": None, "forecast": True, "forecast_day": "2026-09-08",
-                      "reasons": ["Duração admissível por confirmar."]}]
-
-
 def test_unknown_pieces_never_become_zero_in_the_red_list_or_the_boxes():
     """F09 (08/10): saldo por confirmar → peças None (e a contagem à parte), nunca 0 peças."""
     result = board.unplanned("cantoneiras", data=data(line("OF1", pieces=None), line("OF1", reference="R2", pieces=None)), decisions={})
     assert result["orders"][0]["pieces"] is None and result["orders"][0]["pieces_unknown"] == 2
     mixed = board.unplanned("cantoneiras", data=data(line("OF1", pieces=None), line("OF1", reference="R2", pieces=4)), decisions={})
     assert mixed["orders"][0]["pieces"] == 4 and mixed["orders"][0]["pieces_unknown"] == 1
-    plan = {"entries": [
-        {"key": "a", "resource_id": "m1", "start_date": "2026-10-01", "end_date_exclusive": "2026-10-02", "precision": "day"},
-        {"key": "b", "resource_id": "m1", "start_date": "2026-10-01", "end_date_exclusive": "2026-10-02", "precision": "day"},
-        {"key": "c", "resource_id": "m2", "start_date": "2026-10-01", "end_date_exclusive": "2026-10-02", "precision": "day"}]}
-    boxes = board.boxes_from_source_plan(plan, [op("a", "OF1", None), op("b", "OF1", 6), op("c", "OF2", None)])
+    items = [{"resource_id": "m1", "of": "OF1", "start": TODAY, "end": TODAY, "pieces": None, "due": None, "approximate": False},
+             {"resource_id": "m1", "of": "OF1", "start": TODAY, "end": TODAY, "pieces": 6, "due": None, "approximate": False},
+             {"resource_id": "m2", "of": "OF2", "start": TODAY, "end": TODAY, "pieces": None, "due": None, "approximate": False}]
+    boxes = board._merge(items)
     assert [(b["of"], b["pieces"], b["pieces_unknown"]) for b in boxes] == [("OF1", 6, 1), ("OF2", None, 1)]
 
 
@@ -172,16 +129,72 @@ def test_orders_with_machine_keeps_the_old_name_for_one_version():
     assert result["orders_with_machine"] == result["planned_orders"] == 1
 
 
-def test_second_operation_of_the_cantoneiras_leaves_the_missing_list_and_is_only_counted():
-    """P3-A (08/10): as operações seguintes da MTG3 (2.ª operação) saem de «não aparecem no quadro» e contam-se em
-    `second_operation`; a operação principal sem hora continua na lista, com o motivo. Na MTG2 nada muda."""
-    ops = [{**op("p", "OF1", 5), "occurrence": 1, "reference": "R1", "operation": "CPIS:112"},
-           {**op("s1", "OF1", 5), "occurrence": 2, "operation": "CPIS:111"},
-           {**op("s2", "OF2", 3), "occurrence": 3, "operation": "CPIS:1034", "blocking_reasons": ["Sequência operacional por validar."]}]
-    plan = {"pending": [{"key": "p", "reasons": ["Sem máquina."]}, {"key": "s1", "reasons": ["Previsão da operação por indicar."]}],
-            "entries": [{"key": "s2", "resource_id": "prensa", "start_date": "2026-10-05", "end_date_exclusive": "2026-10-06", "precision": "day"}]}
-    missing, second = board.missing_operations("cantoneiras", plan, ops, placed=set())
-    assert missing == [{"of": "OF1", "reference": "R1", "operation": "CPIS:112", "reasons": ["Sem máquina."]}] and second == 2
-    missing, second = board.missing_operations("perfis", plan, ops, placed=set())
-    assert [m["of"] for m in missing] == ["OF1", "OF1", "OF2"] and second == 0
-    assert board.missing_operations("cantoneiras", plan, ops, placed={"p", "s1"}) == ([], 1)
+# --- Plano em uso (Etapa 3, 08/10): o quadro vem da previsão com capacidade finita
+
+def test_board_comes_from_the_forecast_and_each_planned_line_is_on_its_portfolio_machine():
+    from tests.test_sector_forecast_risk import _inputs, fact
+    from app.sector import forecast
+    facts = [fact("a", "L1", "OF1", "m1", 2.0), fact("b", "L2", "OF1", "m2", 1.0), fact("c", "L3", "OF2", "m1", 3.0),
+             fact("d", "L4", "OF3", "m2", 1.5, basis="sugerida"), fact("s", "L1", "OF1", "m1", 1.0, phase="seguinte"),
+             fact("x", "L5", "OF4", "elsewhere", 2.0), fact("n", "L6", "OF5", "m1", None)]
+    ki, src = _inputs(facts, {"L1": None, "L2": None, "L4": None, "L5": None, "L6": None})
+    fc = forecast.compute("cantoneiras", ki, src)
+    boxes, missing, extra = board.boxes_from_forecast(fc, today=ki["today"], names={"m1": "M1", "m2": "M2"})
+    placed = {(b["of"], b["resource_id"]): b for b in boxes}
+    assert set(placed) == {("OF1", "m1"), ("OF1", "m2")}       # só as linhas Planeado (a sugerida não é Planeado)
+    assert placed[("OF1", "m1")]["keys"] == ["a"] and placed[("OF1", "m2")]["keys"] == ["b"]
+    box = placed[("OF1", "m1")]
+    assert box["start_at"] == fc["origin"] and box["end_at"] == fc["origin"] + timedelta(hours=2)
+    assert box["hours"] == 2.0
+    assert box["conclusion"] == fc["orders"]["OF1"]["end"] and box["risk"] == fc["orders"]["OF1"]["state"]
+    assert box["margin_days"] == fc["orders"]["OF1"]["margin_days"]
+    assert [m["reasons"] for m in missing] == [["Sem horas"]] and missing[0]["of"] == "OF5"
+    assert extra["second_operation"] == 1                      # a 2.ª operação da linha Planeado só se conta
+    assert extra["elsewhere"]["operations"] == 1 and extra["elsewhere"]["machines"][0]["id"] == "elsewhere"
+    for f in facts:  # cada linha Planeado colocada fica na máquina da Carteira (a efetiva)
+        for b in boxes:
+            if f["key"] in b["keys"]:
+                assert b["resource_id"] == f["planning_resource_id"]
+
+
+def test_partial_plan_shows_only_the_planned_part_in_the_box():
+    from tests.test_sector_forecast_risk import _inputs, fact
+    from app.sector import forecast
+    ki, src = _inputs([fact("a", "L1", "OF1", "m1", 5.0, remaining=10)], {"L1": 4})
+    fc = forecast.compute("cantoneiras", ki, src)
+    [box] = board.boxes_from_forecast(fc, today=ki["today"])[0]
+    assert box["keys"] == ["a"] and box["pieces"] == 4 and box["hours"] == 2.0
+
+
+def test_box_is_late_when_the_forecast_ends_after_the_due_instant():
+    from tests.test_sector_forecast_risk import _inputs, fact, lisbon
+    from app.sector import forecast
+    f = fact("a", "L1", "OF1", "m1", 10.0)
+    f["priority"].update(priority_date=lisbon(2026, 10, 13, 8).isoformat(), priority_day="2026-10-13")
+    ki, src = _inputs([f], {"L1": None})
+    fc = forecast.compute("perfis", ki, src)
+    [box] = board.boxes_from_forecast(fc, today=ki["today"])[0]
+    assert box["late"] is True and box["risk"] == "atrasa"   # acaba terça 08:30, Picking terça 08:00
+
+
+def test_build_uses_the_forecast_and_never_the_technical_gantt(monkeypatch):
+    """O quadro deixa de chamar service.snapshot (16,6 s na MTG3): a fonte é «plano_em_uso»."""
+    import sys
+    from tests.test_sector_forecast_risk import _inputs, fact
+    from app.sector import forecast
+    ki, src = _inputs([fact("a", "L1", "OF1", "m1", 2.0)], {"L1": None})
+    fc = forecast.compute("cantoneiras", ki, src)
+    monkeypatch.setattr(forecast, "current", lambda sector, **kw: fc)
+    monkeypatch.setattr(board.portfolio, "current", lambda sector, **kw: {"lines": [{"of": "OF1", "customer": "Cliente", "designation": "X"}],
+                                                                         "imported_at": None, "today": ki["today"]})
+    monkeypatch.setattr(board, "_machine_days", lambda ids, today: {})
+    monkeypatch.setattr(board, "not_in_plans", lambda **kw: [])
+    service = sys.modules.get("app.gantt.service")
+    if service is not None:
+        monkeypatch.setattr(service, "snapshot", lambda **kw: (_ for _ in ()).throw(AssertionError("snapshot chamado")))
+    result, private = board._build("cantoneiras")
+    assert result["source"]["kind"] == "plano_em_uso" and result["source"]["placed"] == 1
+    assert result["source"]["origin"] == fc["origin"] and result["source"]["missing"] == []
+    [machine] = [m for m in result["machines"] if m["boxes"]]
+    assert machine["id"] == "m1" and machine["boxes"][0]["customer"] == "Cliente" and machine["boxes"][0]["keys"] == ["a"]
+    assert private["timed"]["m1"] and {m["id"] for m in result["machines"]} == {"m1", "m2"}  # m2: com calendário, sem trabalho
