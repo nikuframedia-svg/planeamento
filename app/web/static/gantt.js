@@ -41,8 +41,11 @@
     try{
       const response=await fetch(`/planeamento/api/setor/definicoes?setor=${encodeURIComponent(area)}`,{cache:"no-store",headers:{Accept:"application/json"}});
       if(!response.ok)throw Error(`HTTP ${response.status}`);
-      const machines=(await response.json()).machines||[];
-      const second=machines.filter(m=>area==="cantoneiras"&&m.process&&!MAIN_PROCESSES.has(m.process)).map(m=>m.id);
+      const json=await response.json();const machines=json.machines||[];
+      // Python nova: a 2.ª operação vem à parte em `second_operation` (e já não está em `machines`); a regra do processo
+      // fica para o serviço antigo, que ainda a manda em `machines` (E2-01).
+      const second=[...machines.filter(m=>area==="cantoneiras"&&m.process&&!MAIN_PROCESSES.has(m.process)).map(m=>m.id),
+        ...(Array.isArray(json.second_operation)?json.second_operation.map(m=>m.id):[])];
       areaMachines[area]={main:new Set(machines.map(m=>m.id).filter(id=>!second.includes(id))),second:new Set(second)};
     }catch(error){areaMachines[area]=null}
     return areaMachines[area];
@@ -261,6 +264,7 @@
       summary.style.cssText="padding:11px 20px;border-top:1px solid #edf1f2;cursor:pointer;color:var(--muted)";
       box.append(summary);
       for(const op of second.slice(0,500))box.append(operationRow(op,shown,bars));
+      if(second.length>500)box.append(text('p',`A mostrar as primeiras 500 de ${second.length} operações. Pesquisa para encontrar uma OF ou referência.`,'hint'));
       wrap.append(box);
     }
   }

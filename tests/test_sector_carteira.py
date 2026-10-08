@@ -151,6 +151,47 @@ def client(monkeypatch):
     return TestClient(app)
 
 
+def _week_cell(rid, name, load, capacity=None, operations=1):
+    return {"id": rid, "name": name, "load": load, "capacity": capacity, "plan": 0.0, "due": load, "suggested": 0.0,
+            "unknown": 0, "operations": operations, "metres": 0.0, "metres_unknown": 0, "status": None, "late_before": None}
+
+
+def test_week_kpis_show_every_machine_with_a_load_cell(monkeypatch):
+    """E2-03/E2-10: no modo semana, um posto da MTG2 sem Planeado mas com carga na semana aparece no painel, e as
+    «Outras máquinas» levam os números da semana (não o Planeado de todas as semanas): a soma bate com o total."""
+    def run(sector, resources, catalog, cells):
+        def week_slice(sector_, codes, today):
+            return {"today": TODAY, "current": False, "stale": False, "machines": cells,
+                    "kinds": {k: {"hours": 0.0, "unknown": 0} for k in ("plan", "due", "suggested")},
+                    "totals": {"capacity": None, "load": round(sum(c["load"] for c in cells.values()), 1), "late_before": None, "no_date": 0.0}}
+        monkeypatch.setattr(portfolio_kpis, "_week_slice", week_slice)
+        occ = {"facts": [], "resources": resources, "stamp": "s", "stale": False}
+        d = {"sector": sector, "generation": 1, "imported_at": None, "lines": []}
+        kw = dict(data=d, decisions=resolution.Decisions(), occurrences_data=occ, resources_catalog=catalog)
+        return portfolio_kpis.overview(sector, ["2026-W41"], today=TODAY, **kw), portfolio_kpis.overview(sector, [], today=TODAY, **kw)
+
+    # MTG2: o Serrote Fita pav.1 (posto) só tem carga na semana, sem linhas Planeado.
+    week, plain = run("perfis", {"fita": {"code": "FITA1", "name": "Serrote Fita pav.1", "type": "posto"},
+                                 "ficep": {"code": "FICEP", "name": "Ficep", "type": "maquina"}},
+                      {"FITA1": {"process": "Serrar", "unit": "MTG2", "type": "posto"},
+                       "FICEP": {"process": "Furar", "unit": "MTG2", "type": "maquina"}},
+                      {"fita": _week_cell("fita", "Serrote Fita pav.1", 7.5), "ficep": _week_cell("ficep", "Ficep", 2.0)})
+    shown = [m for p in week["panels"] for m in p["machines"]]
+    assert {m["id"] for m in shown} == {"fita", "ficep"}
+    assert sum(m["week"]["load"] for m in shown) == week["week_totals"]["load"] == 9.5
+    assert {m["id"] for p in plain["panels"] for m in p["machines"]} == {"ficep"}  # sem semanas, como antes
+    # MTG3: uma máquina fora da Punção e da Broca com célula na Carga vai para as outras, com os números da semana.
+    week, plain = run("cantoneiras", {PEDDI: {"code": "PEDDI8", "name": "Peddi 8", "type": "maquina"},
+                                      "serra": {"code": "SERRA", "name": "Serra", "type": "maquina"}},
+                      {"PEDDI8": {"process": "Punção", "unit": "MTG3", "type": "maquina"},
+                       "SERRA": {"process": "Serrar", "unit": "MTG3", "type": "maquina"}},
+                      {PEDDI: _week_cell(PEDDI, "Peddi 8", 3.0, 60.0), "serra": _week_cell("serra", "Serra", 4.0, 40.0)})
+    assert [(m["id"], m["week"]["load"], m["week"]["capacity"]) for m in week["other_machines"]] == [("serra", 4.0, 40.0)]
+    shown = [m["week"]["load"] for p in week["panels"] for m in p["machines"] if m["week"]] + [m["week"]["load"] for m in week["other_machines"]]
+    assert sum(shown) == week["week_totals"]["load"] == 7.0
+    assert plain["other_machines"] == []  # sem semanas: só com Planeado
+
+
 def test_kpis_follow_only_the_week_filter(client, monkeypatch):
     """P4 (08/10): o Prazo (semanas) é o único filtro que muda os KPIs; os outros continuam ignorados (GD01)."""
     calls = []
@@ -552,7 +593,8 @@ def test_picking_order_with_deduced_year_and_profiles_without_picking_by_the_pol
     assert [g["key"] for g in view["groups"]] == ["P3", "P2", "P1", "P5", "P4", "P6"]
     tags = {g["key"]: g["due_tag"] for g in view["groups"]}
     assert tags["P2"] == {"day": date(2026, 9, 28), "field": "picking", "late": False, "late_days": 0, "provisional": True, "week": "2026-W40"}
-    assert tags["P3"]["late"] and tags["P3"]["late_days"] == 14 and tags["P3"]["week"] == "2026-W38"
+    # Semana: atraso contado a partir do domingo da S38 (20/09), não da segunda (E2-02).
+    assert tags["P3"]["late"] and tags["P3"]["late_days"] == 8 and tags["P3"]["week"] == "2026-W38"
     assert tags["P4"]["field"] == "galvanizing" and tags["P4"]["day"] == date(2026, 10, 1) and "week" not in tags["P4"]
     assert tags["P5"]["field"] == "cut_date" and tags["P6"] == {"none": "sem data"}
     # A data com o ano confirmado numa linha confirma o grupo: deixa de ser «S40?».
@@ -561,6 +603,26 @@ def test_picking_order_with_deduced_year_and_profiles_without_picking_by_the_pol
     assert portfolio.groups("perfis", "of_perfil", sort="picking", data=both)["groups"][0]["due_tag"]["provisional"] is False
     # Pela data de corte, os perfis seguem a Data Corte.
     assert [g["key"] for g in portfolio.groups("perfis", "of_perfil", sort="corte", data=d)["groups"]][:3] == ["P4", "P5", "P2"]
+
+
+def test_week_tag_of_the_current_week_is_not_late_in_the_middle_of_the_week():
+    """E2-02: numa quinta da S40, um grupo com Picking ou Semana na S40 não está atrasado; atrasado = semana anterior."""
+    thursday = date(2026, 10, 1)
+    base = {"earliest_open_cut": None, "earliest_open_due": None, "earliest_open_due_field": None,
+            "earliest_open_due_provisional": False, "only_parked": False, "metres": 10.0, "key": "G"}
+    _, tag = portfolio.by_date({**base, "earliest_open_picking": date(2026, 9, 28),
+                                "earliest_open_picking_provisional": False}, "picking", thursday)
+    assert tag["week"] == "2026-W40" and tag["late"] is False and tag["late_days"] == 0
+    _, tag = portfolio.by_date({**base, "earliest_open_picking": date(2026, 9, 21),
+                                "earliest_open_picking_provisional": False}, "picking", thursday)
+    assert tag["week"] == "2026-W39" and tag["late"] is True and tag["late_days"] == 4  # desde domingo 27/09
+    _, tag = portfolio.by_date({**base, "earliest_open_picking": None, "earliest_open_picking_provisional": False,
+                                "earliest_open_due": date(2026, 9, 28), "earliest_open_due_field": "planned_period"},
+                               "picking", thursday)
+    assert tag["week"] == "2026-W40" and tag["late"] is False
+    # Datas de dia continuam a contar desde o próprio dia.
+    _, tag = portfolio.by_date({**base, "earliest_open_cut": date(2026, 9, 28)}, "corte", thursday)
+    assert tag["late"] is True and tag["late_days"] == 3 and "week" not in tag
 
 
 def test_zero_metre_group_is_ranked_by_its_lines_not_sent_to_the_end(monkeypatch):

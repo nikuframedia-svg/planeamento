@@ -222,8 +222,11 @@
     $('tab-maquinas').setAttribute('aria-pressed', String(v === 'maquinas'));
     $('group-view').hidden = !grouped;
     if (grouped) { $('weeks-view').hidden = true; $('machines-view').hidden = true; }
-    $('unit-mode').hidden = !grouped || !group || !(group.units || []).length;
+    $('unit-mode').hidden = !unitsShown();
   }
+
+  // Uma só regra para o alternador de unidade (P5): vista agrupada com tabela e pelo menos duas unidades.
+  function unitsShown() { return Boolean(GROUPS[view()] && group && !group.empty && (group.units || []).length >= 2); }
 
   function render() {
     renderBar();
@@ -521,7 +524,7 @@
       b.addEventListener('click', () => { if (u !== group.unit) setUnit(u); });
       return b;
     }));
-    box.hidden = units.length < 2 || !GROUPS[view()];
+    box.hidden = !unitsShown();
   }
 
   function renderGroup() {
@@ -533,9 +536,6 @@
     $('group-empty').hidden = !d.empty;
     $('group-empty').textContent = d.empty || '';
     $('group-wrap').hidden = Boolean(d.empty);
-    const outside = $('group-outside');
-    outside.hidden = !d.outside;
-    outside.textContent = d.outside ? `${h.format(d.outside)} operações sem máquina ou em máquinas de outro setor não entram (como nas Máquinas).` : '';
     if (d.empty) { $('group-head').replaceChildren(); $('group-body').replaceChildren(); return; }
     const profile = d.por === 'perfil';
     $('group-head').replaceChildren(el('tr', {}, el('th', {scope: 'col'}, groupHead[d.por]), profile ? el('th', {scope: 'col'}, 'Dimensão') : null,
@@ -606,7 +606,7 @@
         group = null;
         renderBar();
         $('group-text').textContent = 'A carregar…';
-        $('group-empty').hidden = true; $('group-outside').hidden = true;
+        $('group-empty').hidden = true;
         $('group-head').replaceChildren(); $('group-body').replaceChildren();
       }
     }

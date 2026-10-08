@@ -254,6 +254,7 @@ const fs = require('node:fs');
       if (code === 'familias_sku' && setor === 'perfis') {
         assert.equal(await page.locator('#group-empty').innerText(), 'A MTG2 ainda não tem famílias SKU.');
         assert.ok(await page.locator('#group-wrap').isHidden());
+        assert.ok(await page.locator('#unit-mode').isHidden(), 'vista vazia: sem alternador de unidade (P5)');
         continue;
       }
       const ths = await page.locator('#group-head th').allInnerTexts();
@@ -274,7 +275,7 @@ const fs = require('node:fs');
         for (const t of await page.locator('#group-body tr:not(.total)').evaluateAll((trs) => trs.flatMap((tr) => [...tr.querySelectorAll('td.g')].slice(1, 14).map((td) => td.textContent)))) {
           assert.match(t, new RegExp(`^(${NUM} / ${NUM} h( · ${NUM} %)?|${NUM} h)?\\*?$`), `célula do setor: ${t}`);
         }
-        assert.deepEqual(await page.locator('#unit-mode button').allInnerTexts(), ['h', 'kg']);
+        assert.ok(await page.locator('#unit-mode').isHidden(), 'Setores só em horas: sem alternador (P4)');
       } else {
         assert.deepEqual(await page.locator('#unit-mode button').allInnerTexts(), ['h', 'm', 'peças']);
       }

@@ -28,15 +28,16 @@ except ImportError:  # pragma: no cover - só enquanto a parte da 2.ª operaçã
     _second = None
 
 BY = {"setor": "Setores", "perfil": "Perfis", "familia": "Famílias de produto", "familia_sku": "Famílias SKU"}
-UNITS = {"setor": ("h", "kg"), "perfil": ("h", "m", "pecas"), "familia": ("h", "m", "pecas"), "familia_sku": ("h", "m", "pecas")}
+UNITS = {"setor": ("h",), "perfil": ("h", "m", "pecas"), "familia": ("h", "m", "pecas"), "familia_sku": ("h", "m", "pecas")}
 LATE, NO_DATE, AFTER = "atrasado", "sem_prazo", "mais_tarde"
 TEXT = {"h": "Horas", "m": "Metros", "pecas": "Peças", "kg": "Peso (kg)"}
 FAMILY_NOTE = "Família de Produto = tipo de obra do CPIS, por OF. Família SKU = grupo de referências, por peça; só MTG3."
 NO_SKU = "A MTG2 ainda não tem famílias SKU."
 _FIELD = {"h": "hours", "m": "metres", "pecas": "pieces", "kg": "kg"}
 
-# Uma entrada por (setor, vista): no máximo 4 por setor. A chave é o carimbo das ocorrências e as decisões.
-_cache = cache.Cache("Vistas da Carga")
+# Uma entrada por (setor, vista): no máximo 4 por setor. A chave junta o carimbo das ocorrências, a geração, as
+# decisões e as máquinas da grelha (E2-04); a idade máxima é a da memória da Carga, como a grelha das Máquinas.
+_cache = cache.Cache("Vistas da Carga", max_age=load.MEMORY_SECONDS)
 
 
 KEYS = {  # a chave de cada vista, por ocorrência (os campos que as ocorrências já trazem)
@@ -114,18 +115,25 @@ def _population(sector: str, own: set, today: date, context=None):
     return out, outside, load.weights_of(data["lines"])
 
 
-def _context_key(context, today: date) -> tuple:
+def _context_key(context, today: date, machines: dict) -> tuple:
     data, planned, occ = context
-    return (occ.get("stamp"), len(occ["facts"]), len(data["lines"]), hash(frozenset(planned)), today)
+    return (occ.get("stamp"), data.get("generation"), occ.get("decisions"), len(occ["facts"]), len(data["lines"]),
+            hash(frozenset(planned)), today, tuple(sorted(machines.items())))
 
 
-def _aggregate(sector: str, por: str, today: date, now: datetime, context=None) -> dict:
-    """Células de uma vista num setor (todas as unidades), guardadas pelo carimbo das ocorrências e das decisões."""
+def _overview(sector: str, today: date, now: datetime, fixed: bool) -> dict:
+    """A grelha das Máquinas: com a memória de 120 s da Carga quando o pedido não fixa o dia (E2-05/P2); só os testes
+    (ou um dia pedido) passam today/now, que desligam a memória."""
+    return load.overview(sector, today=today, now=now) if fixed else load.overview(sector)
+
+
+def _aggregate(sector: str, por: str, today: date, overview: dict, context=None) -> dict:
+    """Células de uma vista num setor (todas as unidades), guardadas pelo carimbo das ocorrências, das decisões e
+    pelas máquinas da grelha (`overview`, a mesma população que as Máquinas)."""
     context = context or load._context(sector, today)
+    machines = {m["id"]: m["name"] for m in overview["machines"]}
 
     def build():
-        overview = load.overview(sector, today=today, now=now)
-        machines = {m["id"]: m["name"] for m in overview["machines"]}
         rows, outside, weights = _population(sector, set(machines), today, context)
         groups = {}
         for f, kind, slot in rows:
@@ -138,7 +146,7 @@ def _aggregate(sector: str, por: str, today: date, now: datetime, context=None) 
                     g["sections"][f["section_unit"]] = g["sections"].get(f["section_unit"], 0) + 1
         return {"groups": groups, "outside": outside, "machines": machines,
                 "stale": bool(context[2].get("stale") or context[0].get("stale"))}
-    return _cache.get((sector, por), (por, *_context_key(context, today)), build)
+    return _cache.get((sector, por), (por, *_context_key(context, today, machines)), build)
 
 
 def dimension(sector: str, group: dict) -> dict | None:
@@ -187,9 +195,8 @@ def sector_capacity(rows: list[dict], posts: dict) -> tuple[list[float | None], 
     return out, sorted(merged)
 
 
-def _setor_capacity(sector: str, today: date, now: datetime) -> tuple[list, str | None]:
+def _setor_capacity(sector: str, overview: dict) -> tuple[list, str | None]:
     from . import load_sources
-    overview = load.overview(sector, today=today, now=now)
     with planning.connect(readonly=True) as c:
         src = load_sources.context(c, sector)
     capacity, merged = sector_capacity(overview["machines"], src.get("posts") or {})
@@ -206,7 +213,8 @@ def view(sector: str, por: str, unit: str = "h", *, today: date | None = None, n
         raise planning.PlanningError("Vista inválida.")
     if unit not in _FIELD:
         raise planning.PlanningError("Unidade inválida.")
-    unit = unit if unit in UNITS[por] else UNITS[por][0]  # Setores fica em horas ou kg: nunca metros nem peças
+    unit = unit if unit in UNITS[por] else UNITS[por][0]  # Setores fica em horas: nunca metros nem peças
+    fixed = today is not None or now is not None
     today = today or load._today()
     now = now or datetime.now(timezone.utc)
     weeks = load.week_list(today)
@@ -214,18 +222,19 @@ def view(sector: str, por: str, unit: str = "h", *, today: date | None = None, n
             "text": f"{TEXT[unit]} do trabalho aberto na semana do prazo (como na Carteira).",
             "note": FAMILY_NOTE if por in ("familia", "familia_sku") else None,
             "weeks": [{"year": y, "week": w, "monday": date.fromisocalendar(y, w, 1)} for y, w in weeks]}
-    if por == "familia_sku" and sector == "perfis":
-        return needs.serial({**base, "note": None, "rows": [], "total": None, "outside": 0, "stale": False, "empty": NO_SKU})
+    if por == "familia_sku" and sector == "perfis":  # vista vazia: sem alternador de unidade (P5)
+        return needs.serial({**base, "units": [], "note": None, "rows": [], "total": None, "outside": 0, "stale": False, "empty": NO_SKU})
     sectors = ["perfis", "cantoneiras"] if por == "setor" else [sector]
     rows, outside, stale, notes = [], 0, False, []
     total = {}
     for s in sectors:
-        agg = _aggregate(s, por, today, now)
+        overview = _overview(s, today, now, fixed)
+        agg = _aggregate(s, por, today, overview)
         outside += agg["outside"]
         stale = stale or agg["stale"]
         capacity = None
         if por == "setor":
-            capacity, note = _setor_capacity(s, today, now)
+            capacity, note = _setor_capacity(s, overview)
             if note:
                 notes.append(note)
         groups = agg["groups"] or ({s: {"cells": {}}} if por == "setor" else {})  # Setores: sempre as duas linhas
@@ -264,6 +273,7 @@ def cell(sector: str, por: str, key: str, year, week, *, today: date | None = No
     planning.check_area(sector)
     if por not in BY:
         raise planning.PlanningError("Vista inválida.")
+    fixed = today is not None or now is not None
     today = today or load._today()
     now = now or datetime.now(timezone.utc)
     weeks = load.week_list(today)
@@ -271,7 +281,7 @@ def cell(sector: str, por: str, key: str, year, week, *, today: date | None = No
     if por == "setor":
         sector = planning.check_area(key)
     context = load._context(sector, today)
-    agg = _aggregate(sector, por, today, now, context)
+    agg = _aggregate(sector, por, today, _overview(sector, today, now, fixed), context)
     rows, _, weights = _population(sector, set(agg["machines"]), today, context)
     machines, orders, total = {}, {}, _empty()
     for f, kind, found in rows:

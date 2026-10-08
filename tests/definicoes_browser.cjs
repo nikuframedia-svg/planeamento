@@ -23,7 +23,7 @@ const SECOND = ['Saca bocados', 'Plasma manual', 'Fresadora', 'Prensa'];
     return route.fulfill({status: 200, contentType: 'application/json', body: JSON.stringify({changed: 1, repeated: false})});
   });
   // Resposta das Definições: `mode` = 'novo' (acrescenta medido e 2.ª operação se faltarem) ou 'antigo' (sem os campos novos).
-  let mode = 'novo', machines = null;
+  let mode = 'novo', machines = null, thomasSimulated = false;
   await page.route(/\/planeamento\/api\/setor\/definicoes\?/, async (route) => {
     const setor = new URL(route.request().url()).searchParams.get('setor');
     let body;
@@ -37,12 +37,19 @@ const SECOND = ['Saca bocados', 'Plasma manual', 'Fresadora', 'Prensa'];
         body.machines = body.machines.filter((m) => !SECOND.includes(m.name));
         body.weeks = body.weeks.filter((w) => body.machines.some((m) => m.id === w.machine));
       }
-      const [a, b] = body.machines;
+      const [a, b, c] = body.machines;
       if (a && !(a.measured || []).length) {
         a.excel_rate = a.excel_rate || {value: 120, unit: 'm/h', source: 'teste'};
         a.measured = [{operation: '112', value: 85.5, unit: a.excel_rate.unit, hours: 40, sheets: 12, enough: true, ratio_pct: Math.round(85.5 / a.excel_rate.value * 100), plausible: true}];
       }
       if (b && !(b.measured || []).length) b.measured = [{operation: '112', value: 60, unit: 'm/h', hours: 6, sheets: 2, enough: false, ratio_pct: 50, plausible: true}];
+      // Como a Thomas (E2-11): sem % e com a nota do × 3; o ecrã diz «sem comparação» e põe a nota no título.
+      if (c && !(c.measured || []).length) {
+        thomasSimulated = true;
+        c.excel_rate = c.excel_rate || {value: 50, unit: 'm/h', source: 'teste'};
+        c.measured = [{operation: '112', value: 150, unit: 'm/h', hours: 30, sheets: 9, enough: true, ratio_pct: null, plausible: true,
+                       note: 'O × 3 da Thomas (QTD > 50) já está nas horas: este medido não se compara com a taxa base nem deve ir para a eficiência.'}];
+      }
     }
     machines = body.machines;
     return route.fulfill({status: 200, contentType: 'application/json', body: JSON.stringify(body)});
@@ -62,7 +69,10 @@ const SECOND = ['Saca bocados', 'Plasma manual', 'Fresadora', 'Prensa'];
   const measured = await page.locator('#planning-rows tr[data-param="efficiency"] td.measured').allInnerTexts();
   assert.match(measured[0], /^\d+ % \([\d,]+ ÷ [\d,]+ m\/h do Excel, 12 folhas\)$/, `medido: ${measured[0]}`);
   assert.match(measured[1], /^amostra insuficiente \(2 folhas, 6 h\)$/, `medido: ${measured[1]}`);
-  if (measured.length > 2) assert.equal(measured.at(-1), 'sem dados');
+  if (measured.length > 2 && thomasSimulated) {
+    assert.match(measured[2], /^150 m\/h \(9 folhas\) · sem comparação com o Excel$/, `medido: ${measured[2]}`);
+    assert.match(await page.locator('#planning-rows tr[data-param="efficiency"] td.measured').nth(2).getAttribute('title'), /× 3 da Thomas/);
+  }
   assert.equal(await page.locator('#planning-rows tr[data-param="efficiency"] td.what').count(), 1, '«O que muda» uma vez para a eficiência');
   assert.equal(await page.locator('#planning-rows tr[data-param="efficiency"] td', {hasText: 'Pressuposto'}).count(), 1);
   assert.equal(await page.locator('#planning-rows tr[data-param="deadline_policy"] summary').innerText(), 'Data Corte');

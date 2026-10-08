@@ -434,10 +434,16 @@
       const op = many ? `${opLabel(x.operation)}: ` : '';
       const sample = x.sheets ? `${x.sheets} folhas` : null;
       if (!x.enough) return `${op}amostra insuficiente${sample ? ` (${sample}, ${fmt.format(x.hours || 0)} h)` : ''}`;
-      if (x.ratio_pct === null || x.ratio_pct === undefined || !m.excel_rate) return `${op}${fmt.format(x.value)} ${x.unit || ''}${sample ? ` (${sample})` : ''}`;
+      if (x.ratio_pct === null || x.ratio_pct === undefined || !m.excel_rate) {
+        // Sem % com o Excel ao lado (unidades diferentes ou Thomas): dizê-lo; a razão da Thomas vai no título (E2-11).
+        const apart = m.excel_rate ? ' · sem comparação com o Excel' : '';
+        return `${op}${fmt.format(x.value)} ${x.unit || ''}${sample ? ` (${sample})` : ''}${apart}`;
+      }
       return `${op}${x.ratio_pct} % (${fmt.format(x.value)} ÷ ${fmt.format(m.excel_rate.value)} ${x.unit || ''} do Excel${sample ? `, ${sample}` : ''})`;
     }).join(' · ');
-    return {text, title: odd ? 'Muito longe do Excel: confirmar as folhas.' : null};
+    const notes = list.map((x) => x.note).filter(Boolean);
+    const title = [odd ? 'Muito longe do Excel: confirmar as folhas.' : null, ...new Set(notes)].filter(Boolean).join(' ');
+    return {text, title: title || null};
   }
 
   // Uma linha da tabela: Parâmetro | Valor | Unidade | O que muda | Origem | Medido. `span` > 1 junta «O que muda» e

@@ -1,7 +1,7 @@
 // KPIs da semana na Carteira (P4, 08/10/2026) e 2.ª operação fora das listas (P3-A). Nada é gravado: qualquer POST
 // de gravação é intercetado e falha o teste.
 // Compara, máquina a máquina, a Carga e turnos da semana atual (/api/setor/carga) com /api/carteira/kpis?semanas=<atual>
-// e confirma o cabeçalho «MTG3 Cantoneiras · Semana N (dd/mm–dd/mm) · …» e a volta a «todas as semanas».
+// e confirma o cabeçalho «MTG3 Cantoneiras · Semana N (dd/mm–dd/mm) · …»; sem Prazo não há linha de âmbito (P6).
 // Uso: CARTEIRA_BASE=http://127.0.0.1:8191 [CARTEIRA_SHOT=/caminho.png] node tests/carteira_semana_browser.cjs
 const {chromium} = require('./playwright_core.cjs');
 const assert = require('node:assert/strict');
@@ -37,6 +37,10 @@ async function json(path) {
     assert.deepEqual([m.week.plan, m.week.due, m.week.suggested, m.week.unknown], [cell.plan, cell.due, cell.suggested, cell.unknown], `${m.name}: tipos`);
     assert.equal(m.week.late_before, row.late_before.hours, `${m.name}: atrasado`);
   }
+  // E2-03: todas as máquinas com célula na Carga entram (painéis ou outras): a soma bate com o total da semana.
+  const everyWeek = [...kpis.panels.flatMap((p) => p.machines), ...(kpis.other_machines || [])].filter((m) => m.week);
+  assert.equal(Math.round(everyWeek.reduce((a, m) => a + m.week.load, 0) * 10) / 10, kpis.week_totals.load, 'soma das máquinas ≠ total da semana');
+  assert.ok((kpis.other_machines || []).every((m) => m.week), 'na semana, as outras máquinas levam os números da semana (E2-10)');
   console.log('Semana', code, '·', shown.map((m) => `${m.name} ${m.week.load}/${m.week.capacity} h (${m.week.status}) atrasado ${m.week.late_before}`).join(' · '));
   // 2.ª operação: fora das linhas da Carga e de «Atribuir máquina»/Conjuntos; só contada à parte.
   for (const name of SECOND) assert.ok(!carga.machines.some((m) => m.name === name), `${name} ainda é linha da Carga`);
@@ -76,10 +80,12 @@ async function json(path) {
     assert.match(resumo, /na sugerida/);
     if (shot) await page.screenshot({path: shot, fullPage: false});
 
-    // Limpar filtros: volta logo a «todas as semanas», com a carga do que está Planeado e os acréscimos.
+    if ((kpis.other_machines || []).length) {
+      assert.match(await page.textContent('#kpis .others'), / h( · |$)/, 'outras máquinas na semana em horas da semana');
+    }
+    // Limpar filtros: volta logo à carga do que está Planeado, com os acréscimos e sem linha de âmbito (P6).
     await page.click('#limpar-filtros');
-    await page.waitForFunction(() => /todas as semanas/.test(document.querySelector('#kpis .kpis-scope')?.textContent || ''), null, {timeout: 60000});
-    assert.equal(await page.textContent('#kpis .kpis-scope'), 'MTG3 Cantoneiras · todas as semanas · carga do que está Planeado');
+    await page.waitForFunction(() => !document.querySelector('#kpis .kpis-scope') && document.querySelector('#kpis .delta'), null, {timeout: 60000});
     assert.ok(await page.locator('#kpis .delta').count() > 0);
     // Escolher a semana no Prazo recarrega os KPIs (sem recarregar a página).
     await page.click('#semanas summary');
