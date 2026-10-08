@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="/static/planning_typography.css">
   <link rel="stylesheet" href="/static/setor_carga.css?v={{ version }}">
   <script src="/static/tabela_fixa.js?v={{ version }}" defer></script>
+  <script src="/static/carga_previsao.js?v={{ version }}" defer></script>
   <script src="/static/setor_carga.js?v={{ version }}" defer></script>
   <link rel="stylesheet" href="/static/planeamento_ui.css?v=20261008">
 </head>
@@ -30,6 +31,9 @@
       <button type="button" data-vista="perfis" aria-pressed="false">Perfis</button>
       <button type="button" data-vista="familias" aria-pressed="false">Famílias de produto</button>
       <button type="button" data-vista="familias_sku" aria-pressed="false">Famílias SKU</button>
+      <button type="button" data-vista="calendario" aria-pressed="false">Calendário</button>
+      <button type="button" data-vista="capacidade" aria-pressed="false">Capacidade e prazos</button>
+      <button type="button" data-vista="cenarios" aria-pressed="false">Cenários</button>
     </nav>
     <div class="view-line">
       <span class="seg" id="machines-mode" role="group" aria-label="Máquinas">
@@ -59,6 +63,7 @@
       <div class="grid-wrap" id="group-wrap"><table class="loadgrid groups" id="group-table"><thead id="group-head"></thead><tbody id="group-body"></tbody></table></div>
       <section id="group-detail" class="detail" hidden></section>
     </div>
+    <div id="forecast-view" hidden></div>
   </main>
 </body>
 </html>

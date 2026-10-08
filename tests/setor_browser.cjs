@@ -78,7 +78,8 @@ const fs = require('node:fs');
   }
   assert.equal(await page.locator('#body td.c.sem_calendario').count(), 0, 'sem células cinzentas');
   // Barra de vistas (P10, 08/10): substitui os separadores; Máquinas ativa, com «Por semana | Totais».
-  assert.deepEqual(await page.locator('#views button').allInnerTexts(), ['Máquinas', 'Setores', 'Perfis', 'Famílias de produto', 'Famílias SKU']);
+  assert.deepEqual(await page.locator('#views button').allInnerTexts(), ['Máquinas', 'Setores', 'Perfis', 'Famílias de produto', 'Famílias SKU',
+    'Calendário', 'Capacidade e prazos', 'Cenários']);  // as três da previsão: tests/carga_previsao_browser.cjs
   assert.equal(await page.locator('#views button[aria-pressed="true"]').innerText(), 'Máquinas');
   assert.equal(await page.locator('#tab-semanas').innerText(), 'Por semana');
   assert.equal(await page.locator('#tab-semanas').getAttribute('aria-pressed'), 'true');
