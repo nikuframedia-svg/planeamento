@@ -138,6 +138,19 @@ def test_kpis_b_takes_only_the_planned_part_and_part_plus_rest_is_the_balance():
     assert rows["planeado"]["pieces"] + rows["nesting"]["pieces"] == 3139 + 10 + 8
 
 
+def test_unknown_hours_and_metres_of_a_partial_line_count_once_in_the_summary():
+    """Revisão 08/10 (K1): sem horas e sem comprimento numa linha parcial, o Resumo conta 1 desconhecida (em
+    Planeado), como a Carga — não 1 em Planeado e outra em nesting."""
+    unknown = [{**FACTS[0], "load_hours": None}, *FACTS[1:]]
+    lines = [{**x, "metres_unknown": True} if x["key"] == "p:1" else x for x in D["lines"]]
+    occ = {"facts": unknown, "resources": {"m1": {"id": "m1", "name": P8, "code": "P8"}}, "stamp": "s"}
+    result = portfolio_kpis.overview("cantoneiras", data={**D, "lines": lines}, decisions=PART, occurrences_data=occ,
+                                     resources_catalog={"P8": {"process": "Punção", "unit": "MTG3", "type": "maquina"}})
+    rows = {r["code"]: r for r in result["summary"]}
+    assert (rows["planeado"]["hours_unknown"], rows["nesting"]["hours_unknown"]) == (1, 0)
+    assert (rows["planeado"]["metres_unknown"], rows["nesting"]["metres_unknown"]) == (1, 0)
+
+
 def test_preview_puts_the_rest_of_a_partial_line_in_the_delta():
     occ = {"facts": FACTS, "resources": {"m1": {"id": "m1", "name": P8, "code": "P8"}}, "stamp": "s"}
     result = portfolio_kpis.preview({"setor": "cantoneiras", "chaves": ["p:1"]}, data=D, decisions=PART, occurrences_data=occ,

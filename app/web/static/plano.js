@@ -507,8 +507,10 @@
   function renderManual() {
     const box = $("manual"), info = state.data?.manual, rule = $("edit-rule");
     if (rule) {
-      rule.hidden = !canEdit();
-      rule.textContent = canEdit() ? `Arrasta uma caixa para outro dia ou para outra máquina, ou carrega nela e usa «Mudar dia/máquina». ${state.data.capabilities.regra_ajustes || ""}` : "";
+      // Só a regra do ajuste (ecrã simples como o esboço: sem instruções de uso, revisão 08/10).
+      const text = canEdit() ? (state.data.capabilities.regra_ajustes || "") : "";
+      rule.hidden = !text;
+      rule.textContent = text;
     }
     const legend = $("legend-fixed");
     if (legend) legend.hidden = !info?.count;

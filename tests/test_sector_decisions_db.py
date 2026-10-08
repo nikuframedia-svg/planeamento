@@ -212,6 +212,22 @@ def test_priority_policy_and_override_are_revisioned_and_idempotent(db):
     assert [(e["kind"], e["action"]) for e in events] == [("priority_policy", "saved"), ("priority_override", "saved"), ("priority_override", "cleared")]
 
 
+def test_editing_the_due_date_without_the_urgent_key_keeps_the_scenario_urgency(db):
+    """Revisão 08/10 (R6): o Gantt técnico (needs.js) não envia «urgente»; editar o prazo mantém a urgência gravada
+    por um cenário. Só urgente=False explícito a tira."""
+    base = {"setor": "cantoneiras", "of": "OF9"}
+    saved = priority.save_override({**base, "request_id": str(uuid.uuid4()), "urgente": True})
+    assert saved["override"]["definition"]["urgent"] is True
+    edited = priority.save_override({**base, "request_id": str(uuid.uuid4()), "due_date": "2026-10-21", "expected_revision": 1})
+    assert edited["override"]["definition"]["urgent"] is True and edited["override"]["definition"]["due_date"] == "2026-10-21"
+    plain = priority.save_override({**base, "request_id": str(uuid.uuid4()), "due_date": "2026-10-22", "expected_revision": 2,
+                                    "urgente": False})
+    assert "urgent" not in plain["override"]["definition"]
+    with pytest.raises(planning.PlanningError, match="data ou um campo"):  # sem data, sem campo, sem urgência anterior
+        priority.save_override({**base, "request_id": str(uuid.uuid4()), "expected_revision": 3})
+    priority.save_override({**base, "request_id": str(uuid.uuid4()), "limpar": True, "expected_revision": 3})
+
+
 def test_reasons_are_optional_and_author_and_time_stay_recorded(world, db):
     # Plano de 07/10/2026: prazo, política e máquina por grupo gravam sem motivo; a base recebe «Sem motivo indicado».
     from app.sector.decisions import NO_REASON

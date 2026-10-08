@@ -45,12 +45,16 @@ def _empty():
     return {"metres": 0.0, "hours": 0.0, "hours_unknown": 0, "metres_unknown": 0, "lines": set()}
 
 
-def _add(target, fact, line, sector=None):
-    """Horas por ocorrência; metros da linha (os mesmos da lista) só na ocorrência principal."""
+def _add(target, fact, line, sector=None, *, once=False):
+    """Horas por ocorrência; metros da linha (os mesmos da lista) só na ocorrência principal.
+
+    `once` (Resumo): o resto de uma linha parcial (`_extra`) não volta a contar horas nem metros desconhecidos —
+    contam uma vez por linha, como na Carga (revisão 08/10)."""
     target["lines"].add(line["key"])
+    unknown = not (once and fact.get("_extra"))
     if fact.get("phase", "principal") == "principal":
         if _metres_unknown(line):
-            target["metres_unknown"] += 1
+            target["metres_unknown"] += unknown
         else:
             target["metres"] += line["metres"]
     hours = fact.get("load_hours") if fact.get("machine_basis") == "atribuída" else None
@@ -59,7 +63,7 @@ def _add(target, fact, line, sector=None):
     if second_operation.operation(sector, fact):
         return  # 2.ª operação das cantoneiras: fora do plano, não soma horas nem desconhecidas (08/10)
     if hours is None:
-        target["hours_unknown"] += 1
+        target["hours_unknown"] += unknown
     else:
         target["hours"] += hours
 
@@ -262,7 +266,7 @@ def overview(sector: str, weeks: list[str] | None = None, *, today: date | None 
             else:
                 s["kg"] += line["kg"] * share
             for f, part_line in pairs:
-                _add(s, f, part_line, sector)
+                _add(s, f, part_line, sector, once=True)
             if part_code != code:
                 s["lines"].discard(line["key"])  # a linha parcial conta uma vez, em Planeado
             if codes and portfolio.matches(line, {"semanas": codes}):  # a semana da linha = a da operação principal

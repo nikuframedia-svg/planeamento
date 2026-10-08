@@ -175,9 +175,34 @@ def test_start_hour_from_hour_or_shift_and_bad_values_are_refused():
     assert anchors._start_hour({"hora": "14:30"}, template).strftime("%H:%M") == "14:30"
     assert anchors._start_hour({"turno": 2}, template).strftime("%H:%M") == template[1][0]
     assert anchors._start_hour({}, template) is None
-    for bad in ({"hora": "25:00"}, {"turno": 9}):
-        with pytest.raises(planning.PlanningError):
+    for bad in ({"hora": "25:00"}, {"turno": 9}, {"turno": 0}, {"turno": -1}, {"turno": "x"}):  # 0/-1: revisão 08/10 (R5)
+        with pytest.raises(planning.PlanningError, match="(Turno|Hora) inválid"):
             anchors._start_hour(bad, template)
+
+
+def test_forecast_inputs_are_read_before_the_write_transaction_and_the_lock(monkeypatch):
+    """Revisão 08/10 (R2): forecast.inputs (pode demorar a frio) corre antes de abrir a ligação de escrita."""
+    order = []
+    monkeypatch.setattr(forecast, "inputs", lambda sector: order.append("inputs") or ({}, {}))
+
+    class Conn(_NoTable):
+        def __init__(self, readonly):
+            self.readonly = readonly
+
+        def execute(self, sql, *a, **k):
+            order.append(("ro " if self.readonly else "rw ") + sql.split()[0] + (" lock" if "advisory" in sql else ""))
+            if "advisory" in sql:
+                raise RuntimeError("parar aqui")
+
+            class R:
+                @staticmethod
+                def fetchone():
+                    return {"t": "planning_mtg.sector_plan_adjustments"}
+            return R()
+    monkeypatch.setattr(planning, "connect", lambda readonly=False, **kw: Conn(readonly))
+    with pytest.raises(RuntimeError, match="parar aqui"):
+        anchors.apply({"setor": "cantoneiras", "acao": "mover", "request_id": str(uuid.uuid4())})
+    assert order == ["ro SELECT", "inputs", "rw SELECT", "rw SELECT lock"]
 
 
 class _NoTable:
@@ -349,6 +374,30 @@ def test_changing_machine_writes_the_carteira_choice_and_undo_restores_it(conn):
     assert "Máquina reposta: M1." in undone["avisos"]
     assert conn.execute("SELECT count(*) n FROM planning_mtg.sector_member_machine").fetchone()["n"] == 0
     assert rows(conn)[0]["ended_reason"] == "desfeita"
+
+
+def test_a_new_day_on_the_new_machine_keeps_the_machine_change_until_the_occurrences_are_rebuilt(conn):
+    """Revisão 08/10 (A1): mudar para a m2 e, logo a seguir (ocorrências ainda as de antes), mudar o dia na m2: a OF
+    continua na m2; o Desfazer repõe o ajuste anterior e só o Desfazer desse repõe a Carteira."""
+    first, _ = move(conn, maquina="m2")
+    second, _ = move(conn, de="m2", maquina="m2", dia="2026-10-15")
+    assert second["ajuste"]["state"] == "ativa" and second["ajuste"]["resource_id"] == "m2"
+    assert sorted(second["ajuste"]["moved"]) == ["a1", "a2"]                   # não volta à m1
+    undone = act(conn, "desfazer", second["ajuste"]["id"])
+    assert not any(w.startswith("Máquina reposta") for w in undone["avisos"])
+    assert any(w.startswith("Volta a alteração anterior") for w in undone["avisos"])
+    assert {r["resource_id"] for r in conn.execute("SELECT resource_id FROM planning_mtg.sector_member_machine")} == {"m2"}
+    again = act(conn, "desfazer", first["ajuste"]["id"])
+    assert "Máquina reposta: M1." in again["avisos"]
+
+
+def test_a_day_outside_the_plan_is_refused(conn):
+    """Revisão 08/10 (R5): dia muito no passado ou no futuro (9999-12-31 dava um 500) é recusado sem gravar."""
+    for bad in ("9999-12-31", "2100-01-01", "2026-08-01"):
+        with pytest.raises(planning.PlanningError, match="Dia fora do plano"):
+            move(conn, dia=bad)
+        conn.rollback()
+    assert rows(conn) == []
 
 
 def test_undo_keeps_the_machine_when_the_carteira_choice_changed_in_between(conn):

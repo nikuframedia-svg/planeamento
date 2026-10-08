@@ -6,7 +6,6 @@
 // Com ?cenario=<id>: os mesmos dados da simulação, com a faixa «Simulação …: nada mudou no plano em uso».
 // Uso (setor_carga.js): window.cargaPrevisao.show(contentor, {vista: 'calendario'|'capacidade', setor}).
 (() => {
-  const TEXT = 'Previsão: o que cada máquina vai fazer, com a capacidade dos turnos.';
   const h = new Intl.NumberFormat('pt-PT', {maximumFractionDigits: 0});
   const h1 = new Intl.NumberFormat('pt-PT', {maximumFractionDigits: 1});
   const DAYS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
@@ -61,7 +60,7 @@
   function skeleton(box) {
     if (box.querySelector('#fc-text')) return;
     box.replaceChildren(
-      el('p', {id: 'fc-text', class: 'legend muted'}, TEXT),
+      el('p', {id: 'fc-text', hidden: true}),  // marca do esqueleto; sem texto de explicação (revisão 08/10)
       el('p', {id: 'fc-banner', class: 'fc-banner', role: 'status', hidden: true}),
       el('p', {id: 'fc-error', class: 'error', role: 'alert', hidden: true}),
       el('div', {id: 'fc-cal', hidden: true},
@@ -84,7 +83,7 @@
           el('span', {id: 'fc-cap-when', class: 'muted'})),
         el('div', {id: 'fc-counters', class: 'fc-counters'}),
         el('p', {id: 'fc-apart', class: 'muted', hidden: true}),
-        el('p', {class: 'legend muted'}, 'Cada célula: horas previstas ÷ capacidade dos turnos. ',
+        el('p', {class: 'legend muted', title: 'Horas previstas ÷ capacidade dos turnos'},
           el('span', {class: 'sw fc-closed'}), ' fechado · ', el('span', {class: 'sw fc-lt85'}), ' < 85 % · ',
           el('span', {class: 'sw fc-p85'}), ' 85–99 % · ', el('span', {class: 'sw fc-full'}), ' 100 % · completa (normal) · ',
           el('span', {class: 'dot late'}, '●'), ' acaba e atrasa · ', el('span', {class: 'dot risk'}, '●'), ' acaba em risco.'),
@@ -238,7 +237,7 @@
     const gantt = `/planeamento/gantt?${new URLSearchParams({setor: S.setor, dia: date, semana: isoWeek(date)})}`;
     const carga = `/planeamento/setor/carga?${new URLSearchParams({setor: S.setor})}`;
     const head = [el('h2', {}, `${weekday(date)} ${dmy(date)}`),
-      el('p', {class: 'fc-links'}, el('a', {href: gantt}, 'Ver no Gantt (dia)'), ' · ', el('a', {href: carga}, 'Ver a semana na Carga'))];
+      el('p', {class: 'fc-links'}, el('a', {href: gantt}, 'Ver no Gantt (dia)'), ' · ', el('a', {href: carga}, 'Ver na Carga'))];
     if (!quiet) box.replaceChildren(...head, el('p', {class: 'muted'}, 'A carregar…'));
     let d;
     try { d = await getJson(`/planeamento/api/setor/calendario/dia?${params({dia: date})}`); } catch (e) { if (t === S.dayTicket) box.replaceChildren(...head, el('p', {class: 'error'}, e.message)); return; }
@@ -254,7 +253,7 @@
     }
     const realizedPart = [];
     if (d.past || date === S.cal.today) {
-      realizedPart.push(el('h3', {}, 'Realizado neste dia'), el('p', {class: 'muted'}, 'Do MES (folhas OCR validadas), pela data de produção. Não entra na previsão.'));
+      realizedPart.push(el('h3', {title: 'MES (folhas OCR validadas), pela data de produção; fora da previsão'}, 'Realizado neste dia'));
       if (!d.realized_available) realizedPart.push(el('p', {class: 'muted'}, 'Sem dados do MES.'));
       else if (!d.realized.length) realizedPart.push(el('p', {}, 'Sem registos neste dia.'));
       else realizedPart.push(el('div', {class: 'scroll'}, el('table', {class: 'orders', id: 'fc-realized'},

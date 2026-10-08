@@ -159,3 +159,26 @@ def test_scenario_uses_compute_for_when_installed_and_the_plan_in_use_otherwise(
     monkeypatch.setattr(fv, "_scenario_compute", lambda: compute_for)
     f, scenario = fv.forecast_for("cantoneiras", "7")
     assert asked == [("cantoneiras", "7")] and scenario == {"id": "7", "name": "Peddi parada", "available": True}
+
+
+def test_memos_keep_the_plan_in_use_and_only_the_last_scenarios_and_drop_expired_realized(monkeypatch):
+    """Revisão 08/10 (R1): o índice prende a previsão inteira — fica o do plano em uso e os 3 últimos cenários; o
+    realizado tira os expirados ao gravar e não passa de REALIZED_KEPT entradas."""
+    monkeypatch.setattr(fv, "build_index", lambda f: {"of": id(f)})
+    fv.invalidate()
+    for slot in (("cantoneiras", None), ("cantoneiras", "a"), ("perfis", None), ("cantoneiras", "b"),
+                 ("perfis", "c"), ("cantoneiras", "d")):
+        fv._index({}, slot)
+    assert list(fv._index_memo) == [("cantoneiras", None), ("perfis", None), ("cantoneiras", "b"), ("perfis", "c"),
+                                    ("cantoneiras", "d")]
+    now = [1000.0]
+    monkeypatch.setattr(fv.clock, "monotonic", lambda: now[0])
+    fv._remember_realized(("cantoneiras", 1, 1), ([], {}))
+    now[0] += fv.REALIZED_SECONDS
+    fv._remember_realized(("cantoneiras", 2, 2), ([], {}))
+    assert list(fv._realized_memo) == [("cantoneiras", 2, 2)]                  # o expirado saiu ao gravar
+    for i in range(fv.REALIZED_KEPT + 10):
+        fv._remember_realized(("perfis", i, i), ([], {}))
+    last = fv.REALIZED_KEPT + 9
+    assert len(fv._realized_memo) == fv.REALIZED_KEPT and ("perfis", last, last) in fv._realized_memo
+    fv.invalidate()

@@ -5,7 +5,6 @@ const {chromium} = require('./playwright_core.cjs');
 const assert = require('node:assert/strict');
 const base = process.env.CARGA_BASE || 'http://127.0.0.1:8113';
 const shots = process.env.CARGA_SHOTS;
-const TEXT = 'Previsão: o que cada máquina vai fazer, com a capacidade dos turnos.';
 
 (async () => {
   const browser = await chromium.launch({executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE, headless: true, args: ['--no-sandbox']});
@@ -20,11 +19,11 @@ const TEXT = 'Previsão: o que cada máquina vai fazer, com a capacidade dos tur
     return route.abort();
   });
 
-  // --- Calendário: 6 semanas × 7 dias, a frase da previsão, a semana passada só com realizado.
+  // --- Calendário: 6 semanas × 7 dias, sem texto de explicação (revisão 08/10), a semana passada só com realizado.
   await page.goto(`${base}/planeamento/setor/carga?setor=cantoneiras&vista=calendario`);
   await page.waitForSelector('#fc-cal-body td.fc-day', {timeout: 240000});
   assert.equal(await page.locator('#views button[aria-pressed="true"]').innerText(), 'Calendário');
-  assert.equal(await page.locator('#fc-text').innerText(), TEXT);
+  assert.ok(await page.locator('#fc-text').isHidden(), 'sem a frase de explicação');
   assert.ok(await page.locator('#weeks-view').isHidden() && await page.locator('#group-view').isHidden(), 'só o calendário');
   assert.equal(await page.locator('#fc-cal-body tr').count(), 6, '6 semanas');
   assert.equal(await page.locator('#fc-cal-body td').count(), 42, '7 dias por semana');
@@ -45,10 +44,10 @@ const TEXT = 'Previsão: o que cada máquina vai fazer, com a capacidade dos tur
   assert.equal(await page.locator('#fc-day .fc-forecast h3').first().innerText(), 'Previsão');
   assert.equal(await page.locator('#fc-day .fc-realized h3').innerText(), 'Realizado neste dia');
   assert.equal(await page.locator('#fc-day .fc-forecast .fc-realized, #fc-day .fc-realized .fc-forecast').count(), 0, 'nunca uma dentro da outra');
-  assert.match(await page.locator('#fc-day .fc-realized').innerText(), /MES/);
+  assert.match(await page.locator('#fc-day .fc-realized h3').getAttribute('title'), /MES/);
   const gantt = await page.locator('#fc-day a', {hasText: 'Ver no Gantt (dia)'}).getAttribute('href');
   assert.match(gantt, /^\/planeamento\/gantt\?setor=cantoneiras&dia=\d{4}-\d{2}-\d{2}/);
-  assert.equal(await page.locator('#fc-day a', {hasText: 'Ver a semana na Carga'}).count(), 1);
+  assert.equal(await page.locator('#fc-day a', {hasText: 'Ver na Carga'}).count(), 1);  // o link não leva a semana
   if (await page.locator('#fc-day details.fc-machine').count()) {
     await page.locator('#fc-day details.fc-machine summary').first().click();
     const head = await page.locator('#fc-day details.fc-machine').first().locator('thead th').allInnerTexts();

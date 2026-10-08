@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import threading
 import time as clock
-from collections import defaultdict
+from collections import OrderedDict, defaultdict
 from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
@@ -35,11 +35,15 @@ MISSING = ("sem_horas", "sem_calendario", "sem_maquina", "saldo_desconhecido", "
 TEXT = "Previsão: o que cada máquina vai fazer, com a capacidade dos turnos."
 
 _lock = threading.Lock()
-_index_memo: dict[tuple, tuple] = {}
+# Memória limitada (revisão 08/10; houve um OOM a 07/10): o índice prende a previsão inteira, por isso guarda-se o
+# do plano em uso de cada setor e só os dos últimos cenários vistos (como scenarios.KEEP_FORECASTS).
+_index_memo: OrderedDict[tuple, tuple] = OrderedDict()
 _names_memo: dict[str, tuple] = {}
-_realized_memo: dict[tuple, tuple] = {}
+_realized_memo: OrderedDict[tuple, tuple] = OrderedDict()
 NAMES_SECONDS = 300
 REALIZED_SECONDS = 60
+INDEX_SCENARIOS_KEPT = 3
+REALIZED_KEPT = 64
 
 
 # ---------------------------------------------------------------- previsão (com ou sem cenário)
@@ -192,6 +196,10 @@ def _index(f: dict, slot) -> dict:
     index = build_index(f)
     with _lock:
         _index_memo[slot] = (f, index)
+        _index_memo.move_to_end(slot)
+        scenarios = [k for k in _index_memo if k[1] is not None]
+        for old in scenarios[:max(0, len(scenarios) - INDEX_SCENARIOS_KEPT)]:
+            del _index_memo[old]
     return index
 
 
@@ -488,9 +496,20 @@ def realized_rows(sector: str, de: date, ate: date) -> tuple[list, dict]:
             hours = {}
     out = ([{"machine": r["machine"], "day": r["day"].isoformat(), "quantity": _number(r["quantity"]),
              "length_mm": _number(r["length_mm"]), "sheet": r["sheet"]} for r in rows], hours)
-    with _lock:
-        _realized_memo[slot] = (clock.monotonic(), out)
+    _remember_realized(slot, out)
     return out
+
+
+def _remember_realized(slot, out) -> None:
+    """Guarda o realizado de um intervalo: tira os expirados e fica com os REALIZED_KEPT mais recentes."""
+    with _lock:
+        now = clock.monotonic()
+        for old in [k for k, v in _realized_memo.items() if now - v[0] >= REALIZED_SECONDS]:
+            del _realized_memo[old]
+        _realized_memo[slot] = (now, out)
+        _realized_memo.move_to_end(slot)
+        while len(_realized_memo) > REALIZED_KEPT:
+            _realized_memo.popitem(last=False)
 
 
 def _add_row(a: dict, r: dict) -> None:
